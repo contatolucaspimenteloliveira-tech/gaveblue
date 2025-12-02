@@ -2,659 +2,544 @@
 <html lang="pt-BR">
  <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gerador de Recibos</title>
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <title>Portal de Gestão Gaveblue</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script><!-- Canva SDKs -->
   <script src="/_sdk/element_sdk.js"></script>
   <style>
     body {
       box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 40px;
-      background-color: #f7f7f7;
-      width: 100%;
     }
 
+    /* Garantir altura total em iframe sem usar unidades de viewport */
     html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .app-wrapper {
       width: 100%;
       height: 100%;
+      min-height: 100%;
     }
 
-    .recibo {
-      border: 2px solid #ddd;
-      padding: 30px 30px 15px 30px;
-      width: 650px;
-      min-height: 500px;
-      margin: auto;
-      margin-bottom: 40px;
-      background-color: #fff;
-      border-radius: 10px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      page-break-after: always;
+    /* Foco visível para acessibilidade */
+    .focus-outline:focus-visible {
+      outline: 3px solid rgba(255, 255, 255, 0.9);
+      outline-offset: 2px;
     }
 
-    .topo {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 30px;
-      margin-top: -20px;
+    /* Garantir fundo escuro com animação */
+    #app-root {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      background-size: 200% 200%;
+      animation: gradientShift 8s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    /* Animação de hover nos cards */
+    .card-hover {
       position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
     }
 
-    .titulo {
-      font-size: 28px;
-      font-weight: bold;
-    }
-
-    .valor-topo {
-      font-size: 14px;
-      text-align: right;
+    .card-hover::before {
+      content: '';
       position: absolute;
-      right: 0;
-    }
-
-    .valor-topo label {
-      font-weight: bold;
-    }
-
-    .valor-topo input {
-      border: 2px solid #007BFF;
-      border-radius: 8px;
-      padding: 4px 6px;
-      background-color: #eef6ff;
-      font-weight: bold;
-      font-size: 14px;
-      width: 120px;
-      outline: none;
-    }
-
-    .linha {
-      margin: 6px 0;
-      font-size: 16px;
-    }
-
-    input {
-      border: none;
-      border-bottom: 1px solid #ccc;
+      top: 0;
+      left: -100%;
       width: 100%;
-      font-size: 16px;
-      outline: none;
-      padding: 2px 4px;
-      background-color: transparent;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.5s ease;
     }
 
-    textarea {
-      border: none;
-      border-bottom: 1px solid #ccc;
-      width: 100%;
-      font-size: 16px;
-      outline: none;
-      padding: 2px 4px;
-      background-color: transparent;
-      resize: none;
-      overflow: hidden;
-      line-height: 1.4em;
-      min-height: 1.4em;
-      font-family: inherit;
+    .card-hover:hover::before {
+      left: 100%;
     }
 
-    .assinatura {
-      margin-top: 30px;
-      text-align: center;
+    .card-hover:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     }
 
-    .assinatura-linha {
-      border-bottom: 1px solid #000;
-      width: 300px;
-      margin: 0 auto;
-      height: 30px;
-    }
-
-    .assinatura-nome {
-      margin-top: 5px;
-      font-size: 14px;
-      font-weight: bold;
-      min-height: 20px;
-      max-height: 20px;
-      overflow: hidden;
-    }
-
-    .linha-horizontal {
-      display: flex;
-      gap: 20px;
-      align-items: center;
-    }
-
-    .linha-horizontal .campo-pequeno {
-      flex: 1;
-    }
-
-    .botoes {
-      text-align: center;
-      margin-top: 40px;
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-    }
-
-    .botoes button {
-      border: none;
-      padding: 12px 24px;
-      border-radius: 30px;
-      font-size: 16px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      transition: background 0.3s ease;
-    }
-
-    .botoes button:hover {
-      opacity: 0.9;
-    }
-
-    .botoes .imprimir {
-      background: linear-gradient(to right, #007BFF, #0056b3);
-      color: #fff;
-    }
-
-    .botoes .limpar {
-      background: linear-gradient(to right, #dc3545, #a71d2a);
-      color: #fff;
-    }
-
-    .botoes .importar {
-      background: linear-gradient(to right, #10b981, #059669);
-      color: #fff;
-    }
-
-    @page {
-      size: A4 portrait;
-      margin: 0;
-    }
-
-    @media print {
-      .botoes {
-        display: none !important;
+    /* Animação do popup de manutenção */
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
       }
-
-      body {
-        margin: 0 !important;
-        padding: 0 !important;
-        background: white !important;
+      to {
+        opacity: 1;
+        transform: scale(1);
       }
+    }
 
-      .recibo {
-        width: 180mm !important;
-        min-height: auto !important;
-        max-height: none !important;
-        margin: 10mm auto !important;
-        page-break-after: always;
-        border: none !important;
-        box-shadow: none !important;
-      }
+    .animate-scale-in {
+      animation: scaleIn 0.3s ease-out;
+    }
 
-      * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
+    #maintenance-overlay {
+      transition: opacity 0.3s ease, transform 0.3s ease;
     }
   </style>
   <style>@view-transition { navigation: auto; }</style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
-  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
  </head>
- <body>
-  <header class="sr-only">
-   <h1>Gerador de Recibos</h1>
-  </header>
-  <main><!-- Recibo original visível, editável manualmente -->
-   <section class="recibo" id="recibo">
-    <div class="topo">
-     <div class="titulo" id="titulo-recibo">
-      RECIBO
+ <body style="background: #0f172a;">
+  <div id="app-root" class="app-wrapper text-slate-50 flex flex-col relative overflow-hidden"><!-- Efeitos de fundo modernos -->
+   <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-0 left-0 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl"></div>
+   </div>
+   <header class="w-full relative z-10 backdrop-blur-sm">
+    <nav class="max-w-6xl mx-auto w-full flex items-center justify-between px-6 py-5">
+     <div class="flex items-center"><img src="https://i.imgur.com/Zih5jH8.png" alt="Gaveblue" class="h-10 sm:h-12 md:h-14 w-auto" onerror="this.style.display='block'; this.alt='Logo Gaveblue';">
      </div>
-     <div class="valor-topo"><label for="valor">VALOR</label><br><input type="text" id="valor" aria-label="Valor do recibo">
+     <div class="flex items-center gap-3"><a href="https://gaveblue.com/login" target="_blank" rel="noopener noreferrer" class="focus-outline px-5 py-2.5 text-sm font-medium text-slate-300 hover:text-white transition-all rounded-lg hover:bg-white/5"> Entrar </a> <a href="https://gaveblue.com/cadastro" target="_blank" rel="noopener noreferrer" class="focus-outline px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-400 hover:to-emerald-500 transition-all shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5"> Cadastre-se </a>
+     </div>
+    </nav>
+   </header>
+   <main class="flex-1 w-full relative z-10">
+    <section class="max-w-6xl mx-auto w-full px-4 sm:px-6 pb-8 sm:pb-12 pt-2 sm:pt-4">
+     <div class="grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-8 lg:gap-12 items-start lg:items-center"><!-- Texto principal -->
+      <div class="space-y-6 sm:space-y-8">
+       <div class="space-y-5">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/10 to-sky-500/10 border border-emerald-500/20 backdrop-blur-sm"><span class="relative flex h-2 w-2"> <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span> <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span> </span> <span class="text-xs font-medium text-emerald-300">Plataforma em evolução</span>
+        </div>
+        <h1 id="hero-title" class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight">Central moderna de gestão para o seu negócio</h1>
+        <p id="hero-subtitle" class="text-sm sm:text-base md:text-lg text-slate-300 max-w-2xl leading-relaxed">Acesse, em um só lugar, os sistemas Gaveblue para gestão de frotas, finanças e outras soluções corporativas em evolução constante.</p>
+       </div><!-- Botões de sistemas -->
+       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" aria-label="Sistemas de gestão disponíveis"><!-- WeFrotas --> <a id="btn-wefrotas" href="https://gaveblue.com/gestaodefrotas" target="_blank" rel="noopener noreferrer" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl px-4 sm:px-5 py-3 sm:py-4 text-left text-slate-200 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/10">
+         <div class="flex flex-col gap-0.5 sm:gap-1 flex-1"><span class="text-sm sm:text-base font-bold tracking-tight text-white"> WeFrotas </span> <span class="text-[11px] sm:text-xs text-slate-400 leading-relaxed"> Gestão completa de frotas, veículos e operações logísticas </span>
+         </div><span class="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 text-emerald-400 group-hover:scale-110 transition-transform flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+          </svg></span> </a> <!-- WeFinance --> <button id="btn-wefinance" type="button" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl px-4 sm:px-5 py-3 sm:py-4 text-left text-slate-200 hover:border-sky-500/50 hover:shadow-xl hover:shadow-sky-500/10" aria-disabled="true">
+         <div class="flex flex-col gap-0.5 sm:gap-1 flex-1"><span class="text-sm sm:text-base font-bold tracking-tight text-white"> WeFinance </span> <span class="text-[11px] sm:text-xs text-slate-400 leading-relaxed"> Visão financeira unificada, indicadores e fluxo de caixa </span>
+         </div><span class="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br from-sky-500/20 to-sky-600/20 text-sky-400 group-hover:scale-110 transition-transform flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+          </svg></span> </button> <!-- WePeople - Em desenvolvimento --> <button id="btn-dev1" type="button" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl px-4 sm:px-5 py-3 sm:py-4 text-left text-slate-200 hover:border-purple-500/50 hover:shadow-xl hover:shadow-purple-500/10" aria-disabled="true">
+         <div class="flex flex-col gap-0.5 sm:gap-1 flex-1"><span class="text-sm sm:text-base font-bold tracking-tight text-white"> WePeople </span> <span class="text-[11px] sm:text-xs text-slate-400 leading-relaxed"> Departamento pessoal completo </span>
+         </div><span class="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/20 text-purple-400 group-hover:scale-110 transition-transform flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+          </svg></span> </button> <!-- WeFiscal - Em desenvolvimento --> <button id="btn-dev2" type="button" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl px-4 sm:px-5 py-3 sm:py-4 text-left text-slate-200 hover:border-amber-500/50 hover:shadow-xl hover:shadow-amber-500/10" aria-disabled="true">
+         <div class="flex flex-col gap-0.5 sm:gap-1 flex-1"><span class="text-sm sm:text-base font-bold tracking-tight text-white"> WeFiscal </span> <span class="text-[11px] sm:text-xs text-slate-400 leading-relaxed"> Gestão fiscal e tributária </span>
+         </div><span class="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 text-amber-400 group-hover:scale-110 transition-transform flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg></span> </button>
+       </div><!-- Aviso sobre módulos em dev -->
+       <div class="inline-flex items-center gap-2 sm:gap-2.5 rounded-lg sm:rounded-xl border border-amber-500/20 bg-gradient-to-r from-amber-500/10 to-orange-500/10 backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-xs text-amber-200"><span class="inline-flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full bg-amber-400/20 text-amber-300 text-[10px] sm:text-xs font-bold flex-shrink-0"> ⚡ </span> <span>Todos os módulos estão em desenvolvimento e serão liberados em breve</span>
+       </div>
+      </div><!-- Card lateral de resumo -->
+      <aside class="w-full order-first lg:order-last">
+       <div class="card-hover rounded-2xl sm:rounded-3xl border border-slate-700/50 bg-gradient-to-br from-slate-800/80 via-slate-900/80 to-slate-950/80 backdrop-blur-2xl p-4 sm:p-6 shadow-2xl shadow-slate-950/50">
+        <div class="flex items-center gap-2 mb-3 sm:mb-4">
+         <div class="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-gradient-to-br from-emerald-500 to-sky-500 flex items-center justify-center flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+          </svg>
+         </div>
+         <h2 class="text-sm sm:text-base font-bold tracking-tight text-white">Visão rápida da plataforma</h2>
+        </div>
+        <p class="text-xs sm:text-sm text-slate-300 mb-4 sm:mb-6 leading-relaxed">Conecte seus times em uma única experiência de gestão: dados consolidados, segurança e escalabilidade para negócios de qualquer porte.</p>
+        <div class="space-y-2.5 sm:space-y-4 text-xs sm:text-sm text-slate-200">
+         <div class="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+          <div class="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 flex-shrink-0">
+           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+           </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+           <p class="font-semibold text-white mb-0.5 text-xs sm:text-sm">Gestão de frotas inteligente</p>
+           <p class="text-slate-400 text-[11px] sm:text-xs leading-relaxed">Controle quilometragem, manutenções, abastecimentos e ocorrências em tempo real.</p>
+          </div>
+         </div>
+         <div class="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-sky-500/5 border border-sky-500/10">
+          <div class="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 flex-shrink-0">
+           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+           </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+           <p class="font-semibold text-white mb-0.5 text-xs sm:text-sm">Saúde financeira em foco</p>
+           <p class="text-slate-400 text-[11px] sm:text-xs leading-relaxed">Dashboards claros para decisões rápidas, previsões e acompanhamento diário.</p>
+          </div>
+         </div>
+         <div class="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-purple-500/5 border border-purple-500/10">
+          <div class="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400 flex-shrink-0">
+           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+           </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+           <p class="font-semibold text-white mb-0.5 text-xs sm:text-sm">Roadmap em evolução</p>
+           <p class="text-slate-400 text-[11px] sm:text-xs leading-relaxed">Novos módulos de gestão serão integrados de forma nativa ao ecossistema Gaveblue.</p>
+          </div>
+         </div>
+        </div>
+        <div class="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-slate-700/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+         <div class="flex flex-wrap items-center gap-2"><span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[10px] font-medium text-emerald-300"> <span class="relative flex h-2 w-2"> <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span> <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span> </span> Online </span> <a href="https://gaveblue.com/recibos" target="_blank" rel="noopener noreferrer" class="focus-outline inline-flex items-center gap-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 px-2.5 py-1 text-[10px] font-medium text-sky-300 hover:bg-sky-500/20 hover:border-sky-500/30 transition-all">
+           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+           </svg> Gerador de Recibos </a>
+         </div>
+         <p id="footer-text" class="text-xs text-slate-400"></p>
+        </div>
+       </div>
+      </aside>
+     </div>
+    </section>
+   </main>
+   <footer class="w-full border-t border-slate-800/50 backdrop-blur-sm relative z-10">
+    <div class="max-w-6xl mx-auto w-full px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400"><span class="font-medium">© <span id="year-span"></span> gaveblue.com - Todos os direitos reservados.</span> <span class="text-slate-500 text-[11px]"> Interface demonstrativa de portal de gestão. </span>
+    </div>
+   </footer><!-- Popup de Manutenção -->
+   <div id="maintenance-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);">
+    <div class="relative w-full max-w-lg rounded-2xl border border-amber-500/30 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 sm:p-8 shadow-2xl shadow-amber-500/20 animate-scale-in"><!-- Ícone de Aviso -->
+     <div class="flex justify-center mb-4">
+      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/50">
+       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-8 h-8 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+       </svg>
+      </div>
+     </div><!-- Título -->
+     <h2 class="text-center text-2xl sm:text-3xl font-bold text-white mb-2">Manutenção Programada</h2><!-- Badge de Versão -->
+     <div class="flex justify-center mb-4"><span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/20 to-sky-500/20 border border-emerald-500/30">
+       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-emerald-400"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+       </svg><span class="text-xs font-semibold text-emerald-300">Atualização 2.0 • 2026</span> </span>
+     </div><!-- Mensagem -->
+     <p class="text-center text-slate-300 mb-6 leading-relaxed">O sistema <span class="font-semibold text-white">Gaveblue</span> passará por uma manutenção geral para implementação de grandes novidades e melhorias.</p><!-- Período de Manutenção -->
+     <div class="rounded-xl border border-slate-700 bg-slate-800/50 p-4 mb-6">
+      <div class="flex items-center justify-center gap-2 mb-3">
+       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-amber-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+       </svg>
+       <h3 class="text-sm font-semibold text-white">Período de Indisponibilidade</h3>
+      </div>
+      <div class="space-y-2 text-sm">
+       <div class="flex items-center justify-between"><span class="text-slate-400">Início:</span> <span class="font-semibold text-white">01/12 às 09:00h</span>
+       </div>
+       <div class="flex items-center justify-between"><span class="text-slate-400">Término:</span> <span class="font-semibold text-white">18/12 às 00:00h</span>
+       </div>
+      </div>
+     </div><!-- Informação Adicional -->
+     <div class="flex items-start gap-2 rounded-lg bg-sky-500/10 border border-sky-500/20 p-3 mb-6">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-sky-400 flex-shrink-0 mt-0.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+      </svg>
+      <p class="text-xs text-slate-300 leading-relaxed">Durante este período, todos os serviços estarão temporariamente indisponíveis. Agradecemos sua compreensão!</p>
+     </div><!-- Botão Fechar --> <button id="close-maintenance-btn" type="button" class="focus-outline w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-400 hover:to-emerald-500 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5"> Entendi </button>
+    </div>
+   </div><!-- Botão de Suporte Flutuante -->
+   <div class="fixed bottom-20 right-6 z-50"><button id="support-btn" type="button" class="focus-outline flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 transition-all hover:bg-emerald-400 hover:scale-110 hover:shadow-xl" aria-label="Abrir menu de suporte">
+     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+     </svg></button> <!-- Menu de Suporte -->
+    <div id="support-menu" class="absolute bottom-20 right-0 w-64 rounded-xl border border-slate-700 bg-slate-800 shadow-2xl transition-all origin-bottom-right scale-0 opacity-0" style="display: none;">
+     <div class="p-4">
+      <h3 class="text-sm font-semibold text-slate-50 mb-1">Precisa de ajuda?</h3>
+      <p class="text-xs text-slate-300 mb-3">Entre em contato com nosso suporte</p>
+      <div class="space-y-2"><!-- WhatsApp --> <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" class="focus-outline flex items-center gap-3 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2.5 text-left transition-all hover:border-emerald-400 hover:bg-slate-700">
+        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500">
+         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewbox="0 0 24 24" class="w-5 h-5 text-white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+         </svg>
+        </div>
+        <div class="flex-1">
+         <p class="text-xs font-semibold text-slate-50">WhatsApp</p>
+         <p class="text-[10px] text-slate-300">Atendimento rápido</p>
+        </div></a> <!-- E-mail --> <a href="mailto:suporte@gaveblue.com?subject=Suporte%20-%20Plataforma%20Gaveblue" class="focus-outline flex items-center gap-3 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2.5 text-left transition-all hover:border-sky-400 hover:bg-slate-700">
+        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-sky-500">
+         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+         </svg>
+        </div>
+        <div class="flex-1">
+         <p class="text-xs font-semibold text-slate-50">E-mail</p>
+         <p class="text-[10px] text-slate-300">suporte@gaveblue.com</p>
+        </div></a>
+      </div><button id="close-support-btn" type="button" class="focus-outline mt-3 w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-xs text-slate-300 transition-all hover:bg-slate-700 hover:text-slate-50"> Fechar </button>
      </div>
     </div>
-    <div class="linha"><label for="recebedor">Recebi (emos) de</label> <input type="text" id="recebedor" aria-label="Nome de quem pagou">
-    </div>
-    <div class="linha"><label for="campoQuantia">a quantia de</label> <textarea id="campoQuantia" readonly aria-label="Valor por extenso"></textarea>
-    </div>
-    <div class="linha"><label for="referencia">Referente a</label> <input type="text" id="referencia" aria-label="Referência do pagamento">
-    </div>
-    <div class="linha"><input type="text" id="descricao" aria-label="Descrição adicional">
-    </div>
-    <div class="linha"><label for="emitente">Emitente:</label> <input type="text" id="emitente" aria-label="Nome do emitente">
-    </div>
-    <div class="linha-horizontal">
-     <div class="campo-pequeno"><label for="cpfcnpj">CPF/CNPJ:</label> <input type="text" id="cpfcnpj" aria-label="CPF ou CNPJ do emitente">
-     </div>
-     <div class="campo-pequeno"><label for="data">Data:</label> <input type="text" id="data" placeholder="dd/mm/aaaa" aria-label="Data do recibo">
-     </div>
-    </div>
-    <div class="linha">
-     e para clareza firmo (amos) o presente.
-    </div>
-    <div class="assinatura">
-     <div class="assinatura-linha"></div>
-     <div class="assinatura-nome" id="assinaturaNome"></div>
-     <div class="assinatura-nome" id="assinaturaCpf"></div>
-    </div>
-   </section><!-- MODELO oculto para gerar novos recibos -->
-   <section class="recibo" id="modelo-recibo" style="display: none" aria-hidden="true">
-    <div class="topo">
-     <div class="titulo titulo-modelo">
-      RECIBO
-     </div>
-     <div class="valor-topo"><label>VALOR</label><br><input type="text" class="valor">
-     </div>
-    </div>
-    <div class="linha">
-     Recebi (emos) de <input type="text" class="recebedor">
-    </div>
-    <div class="linha">
-     a quantia de <textarea class="campoQuantia" readonly></textarea>
-    </div>
-    <div class="linha">
-     Referente a <input type="text" class="referencia">
-    </div>
-    <div class="linha">
-     <input type="text" class="descricao">
-    </div>
-    <div class="linha">
-     Emitente: <input type="text" class="emitente">
-    </div>
-    <div class="linha-horizontal">
-     <div class="campo-pequeno">
-      CPF/CNPJ: <input type="text" class="cpfcnpj">
-     </div>
-     <div class="campo-pequeno">
-      Data: <input type="text" class="data" placeholder="dd/mm/aaaa">
-     </div>
-    </div>
-    <div class="linha">
-     e para clareza firmo (amos) o presente.
-    </div>
-    <div class="assinatura">
-     <div class="assinatura-linha"></div>
-     <div class="assinatura-nome assinaturaNome"></div>
-     <div class="assinatura-nome assinaturaCpf"></div>
-    </div>
-   </section><!-- Contêiner para os recibos importados -->
-   <div id="recibos-gerados"></div>
-  </main>
-  <footer class="botoes"><button class="imprimir" onclick="imprimirPagina()">Imprimir Recibos</button> <button class="limpar" onclick="limparCampos()">Limpar Tudo</button> <button class="importar" onclick="document.getElementById('excelFile').click()">Importar Dados</button> <input type="file" id="excelFile" accept=".xlsx, .xls" style="display: none" onchange="importarExcel(event)">
-  </footer>
+   </div>
+  </div>
   <script>
-    // Função de impressão segura
-    function imprimirPagina() {
-      setTimeout(() => {
-        window.focus();
-        window.print();
-      }, 200);
-    }
-
-    // Função para converter número para extenso
-    function numeroParaExtenso(valor) {
-      if (!valor || isNaN(valor) || valor === 0) return '';
-      
-      const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
-      const dez = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
-      const dezenas = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
-      const centenas = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
-      
-      function converterGrupo(n) {
-        if (n === 0) return '';
-        if (n === 100) return 'cem';
-        
-        let resultado = '';
-        const c = Math.floor(n / 100);
-        const d = Math.floor((n % 100) / 10);
-        const u = n % 10;
-        
-        if (c > 0) resultado += centenas[c];
-        if (d === 1) {
-          if (resultado) resultado += ' e ';
-          resultado += dez[u];
-          return resultado;
-        }
-        if (d > 0) {
-          if (resultado) resultado += ' e ';
-          resultado += dezenas[d];
-        }
-        if (u > 0) {
-          if (resultado) resultado += ' e ';
-          resultado += unidades[u];
-        }
-        return resultado;
-      }
-      
-      const partes = valor.toFixed(2).split('.');
-      const reais = parseInt(partes[0]);
-      const centavos = parseInt(partes[1]);
-      
-      let extenso = '';
-      
-      if (reais === 0) {
-        extenso = 'zero reais';
-      } else if (reais === 1) {
-        extenso = 'um real';
-      } else if (reais < 1000) {
-        extenso = converterGrupo(reais) + ' reais';
-      } else if (reais < 1000000) {
-        const milhares = Math.floor(reais / 1000);
-        const resto = reais % 1000;
-        
-        if (milhares === 1) {
-          extenso = 'mil';
-        } else {
-          extenso = converterGrupo(milhares) + ' mil';
-        }
-        
-        if (resto > 0) {
-          extenso += ' e ' + converterGrupo(resto);
-        }
-        extenso += ' reais';
-      } else {
-        const milhoes = Math.floor(reais / 1000000);
-        const resto = reais % 1000000;
-        
-        if (milhoes === 1) {
-          extenso = 'um milhão';
-        } else {
-          extenso = converterGrupo(milhoes) + ' milhões';
-        }
-        
-        if (resto > 0) {
-          if (resto < 1000) {
-            extenso += ' e ';
-          } else {
-            extenso += ', ';
-          }
-          
-          const milhares = Math.floor(resto / 1000);
-          const centenas = resto % 1000;
-          
-          if (milhares > 0) {
-            if (milhares === 1) {
-              extenso += 'mil';
-            } else {
-              extenso += converterGrupo(milhares) + ' mil';
-            }
-            if (centenas > 0) {
-              extenso += ' e ' + converterGrupo(centenas);
-            }
-          } else {
-            extenso += converterGrupo(centenas);
-          }
-        }
-        extenso += ' reais';
-      }
-      
-      if (centavos > 0) {
-        extenso += ' e ' + converterGrupo(centavos);
-        extenso += centavos === 1 ? ' centavo' : ' centavos';
-      }
-      
-      return extenso.charAt(0).toUpperCase() + extenso.slice(1);
-    }
-
-    // Formatar moeda
-    function formatarMoeda(input) {
-      let valor = input.value.replace(/\D/g, '');
-      
-      if (valor === '') {
-        input.value = '';
-        const recibo = input.closest('.recibo');
-        const campoQuantia = recibo.querySelector('.campoQuantia') || recibo.querySelector('#campoQuantia');
-        if (campoQuantia) {
-          campoQuantia.value = '';
-        }
-        return;
-      }
-      
-      const numero = parseInt(valor);
-      const reais = numero / 100;
-      
-      input.value = reais.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      
-      const recibo = input.closest('.recibo');
-      const campoQuantia = recibo.querySelector('.campoQuantia') || recibo.querySelector('#campoQuantia');
-      if (campoQuantia && reais > 0) {
-        const extenso = numeroParaExtenso(reais);
-        campoQuantia.value = extenso.toUpperCase();
-      }
-    }
-
-    // Formatar CPF/CNPJ
-    function formatarCpfCnpj(input) {
-      let valor = input.value.replace(/\D/g, '');
-      valor = valor.substring(0, 14);
-      
-      if (valor.length <= 11) {
-        valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
-        valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
-        valor = valor.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-      } else {
-        valor = valor.replace(/^(\d{2})(\d)/, '$1.$2');
-        valor = valor.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
-        valor = valor.replace(/\.(\d{3})(\d)/, '.$1/$2');
-        valor = valor.replace(/(\d{4})(\d)/, '$1-$2');
-      }
-      
-      input.value = valor;
-    }
-
-    // Atualizar assinatura do recibo principal
-    function atualizarAssinatura() {
-      const emitente = document.getElementById('emitente').value;
-      const cpfcnpj = document.getElementById('cpfcnpj').value;
-      document.getElementById('assinaturaNome').textContent = emitente;
-      document.getElementById('assinaturaCpf').textContent = cpfcnpj;
-    }
-
-    // Atualizar assinatura de recibos gerados
-    function atualizarAssinaturaDireto(input) {
-      const recibo = input.closest('.recibo');
-      const emitente = recibo.querySelector('.emitente').value;
-      const cpfcnpj = recibo.querySelector('.cpfcnpj').value;
-      recibo.querySelector('.assinaturaNome').textContent = emitente;
-      recibo.querySelector('.assinaturaCpf').textContent = cpfcnpj;
-    }
-
-    // Limpar campos
-    function limparCampos() {
-      document.getElementById('valor').value = '';
-      document.getElementById('campoQuantia').value = '';
-      document.getElementById('recebedor').value = '';
-      document.getElementById('referencia').value = '';
-      document.getElementById('descricao').value = '';
-      document.getElementById('emitente').value = '';
-      document.getElementById('cpfcnpj').value = '';
-      document.getElementById('data').value = '';
-      document.getElementById('assinaturaNome').textContent = '';
-      document.getElementById('assinaturaCpf').textContent = '';
-      
-      document.getElementById('recibos-gerados').innerHTML = '';
-    }
-
-    // Importar Excel
-    function importarExcel(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-
-        const container = document.getElementById('recibos-gerados');
-        container.innerHTML = '';
-
-        jsonData.forEach((row, index) => {
-          const modelo = document.getElementById('modelo-recibo');
-          const novoRecibo = modelo.cloneNode(true);
-          novoRecibo.id = 'recibo-' + index;
-          novoRecibo.style.display = 'block';
-
-          const tituloConfig = window.elementSdk && window.elementSdk.config ? window.elementSdk.config.titulo_recibo : 'RECIBO';
-          novoRecibo.querySelector('.titulo-modelo').textContent = tituloConfig || 'RECIBO';
-
-          if (row.Valor) {
-            const valorInput = novoRecibo.querySelector('.valor');
-            valorInput.value = row.Valor;
-            formatarMoeda(valorInput);
-          }
-          if (row.Recebedor) novoRecibo.querySelector('.recebedor').value = row.Recebedor;
-          if (row.Referencia) novoRecibo.querySelector('.referencia').value = row.Referencia;
-          if (row.Descricao) novoRecibo.querySelector('.descricao').value = row.Descricao;
-          if (row.Emitente) {
-            novoRecibo.querySelector('.emitente').value = row.Emitente;
-            novoRecibo.querySelector('.assinaturaNome').textContent = row.Emitente;
-          }
-          if (row.CPFCNPJ) {
-            const cpfInput = novoRecibo.querySelector('.cpfcnpj');
-            cpfInput.value = row.CPFCNPJ;
-            formatarCpfCnpj(cpfInput);
-            novoRecibo.querySelector('.assinaturaCpf').textContent = cpfInput.value;
-          }
-          if (row.Data) novoRecibo.querySelector('.data').value = row.Data;
-
-          // Adicionar eventos
-          novoRecibo.querySelector('.valor').oninput = function() { formatarMoeda(this); };
-          novoRecibo.querySelector('.cpfcnpj').oninput = function() { 
-            formatarCpfCnpj(this); 
-            atualizarAssinaturaDireto(this);
-          };
-          novoRecibo.querySelector('.emitente').oninput = function() { 
-            atualizarAssinaturaDireto(this);
-          };
-
-          container.appendChild(novoRecibo);
-        });
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    // Eventos do recibo principal
-    document.getElementById('valor').oninput = function() { formatarMoeda(this); };
-    document.getElementById('cpfcnpj').oninput = function() { 
-      formatarCpfCnpj(this); 
-      atualizarAssinatura();
-    };
-    document.getElementById('emitente').oninput = function() { 
-      atualizarAssinatura();
+    // Config padrão para edição via Canva
+    const defaultConfig = {
+      hero_title: "Central moderna de gestão para o seu negócio",
+      hero_subtitle: "Acesse, em um só lugar, os sistemas Gaveblue para gestão de frotas, finanças e outras soluções corporativas em evolução constante.",
+      cta_wefrotas_label: "WeFrotas",
+      cta_wefinance_label: "WeFinance",
+      cta_dev1_label: "WePeople",
+      cta_dev2_label: "WeFiscal",
+      footer_text: "",
+      // Cores (até 5)
+      background_color: "#0f172a",      // BACKGROUND - slate-950
+      surface_color: "#1e293b",         // SECONDARY_SURFACE - card/base
+      text_color: "#f1f5f9",            // TEXT - slate-100
+      primary_action_color: "#10b981",  // PRIMARY_ACTION - emerald-500
+      secondary_action_color: "#0ea5e9",// SECONDARY_ACTION - sky-500
+      // Tipografia
+      font_family: "Inter",
+      font_size: 14
     };
 
-    // Element SDK
+    // Atualiza o ano no rodapé
+    (function setYear() {
+      const yearSpan = document.getElementById("year-span");
+      if (yearSpan) {
+        const now = new Date();
+        yearSpan.textContent = now.getFullYear();
+      }
+    })();
+
+    // Função de aplicação de config
+    async function applyConfig(config) {
+      const effective = Object.assign({}, defaultConfig, config || {});
+      const baseFont = effective.font_family || defaultConfig.font_family;
+      const baseSize = Number(effective.font_size || defaultConfig.font_size) || 14;
+      const fullFont = baseFont + ", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+      // Elementos de texto
+      const heroTitleEl = document.getElementById("hero-title");
+      const heroSubtitleEl = document.getElementById("hero-subtitle");
+      const btnWeFrotasEl = document.getElementById("btn-wefrotas");
+      const btnWeFinanceEl = document.getElementById("btn-wefinance");
+      const btnDev1El = document.getElementById("btn-dev1");
+      const btnDev2El = document.getElementById("btn-dev2");
+      const footerTextEl = document.getElementById("footer-text");
+      const appRoot = document.getElementById("app-root");
+
+      // Texto editável
+      if (heroTitleEl) {
+        heroTitleEl.textContent = effective.hero_title || defaultConfig.hero_title;
+      }
+      if (heroSubtitleEl) {
+        heroSubtitleEl.textContent = effective.hero_subtitle || defaultConfig.hero_subtitle;
+      }
+      if (btnWeFrotasEl) {
+        const labelSpan = btnWeFrotasEl.querySelector("span.text-sm");
+        if (labelSpan) {
+          labelSpan.textContent = effective.cta_wefrotas_label || defaultConfig.cta_wefrotas_label;
+        }
+      }
+      if (btnWeFinanceEl) {
+        const labelSpan = btnWeFinanceEl.querySelector("span.text-sm");
+        if (labelSpan) {
+          labelSpan.textContent = effective.cta_wefinance_label || defaultConfig.cta_wefinance_label;
+        }
+      }
+      if (btnDev1El) {
+        const labelSpan = btnDev1El.querySelector("span.text-sm");
+        if (labelSpan) {
+          labelSpan.textContent = effective.cta_dev1_label || defaultConfig.cta_dev1_label;
+        }
+      }
+      if (btnDev2El) {
+        const labelSpan = btnDev2El.querySelector("span.text-sm");
+        if (labelSpan) {
+          labelSpan.textContent = effective.cta_dev2_label || defaultConfig.cta_dev2_label;
+        }
+      }
+      if (footerTextEl) {
+        footerTextEl.textContent = effective.footer_text || defaultConfig.footer_text;
+      }
+
+      // Aplicar cores
+      if (appRoot) {
+        appRoot.style.background = `linear-gradient(135deg, ${effective.background_color} 0%, ${effective.surface_color} 50%, ${effective.background_color} 100%)`;
+        appRoot.style.color = effective.text_color || defaultConfig.text_color;
+      }
+
+      // Botões principais
+      if (btnWeFrotasEl) {
+        btnWeFrotasEl.style.backgroundColor = (effective.primary_action_color || defaultConfig.primary_action_color) + "33";
+        btnWeFrotasEl.style.borderColor = (effective.primary_action_color || defaultConfig.primary_action_color) + "80";
+      }
+      if (btnWeFinanceEl) {
+        btnWeFinanceEl.style.backgroundColor = (effective.secondary_action_color || defaultConfig.secondary_action_color) + "33";
+        btnWeFinanceEl.style.borderColor = (effective.secondary_action_color || defaultConfig.secondary_action_color) + "80";
+      }
+
+      // Tipografia global
+      document.body.style.fontFamily = fullFont;
+      document.body.style.fontSize = baseSize + "px";
+
+      // Escala de texto
+      if (heroTitleEl) {
+        heroTitleEl.style.fontSize = (baseSize * 2) + "px";
+      }
+      if (heroSubtitleEl) {
+        heroSubtitleEl.style.fontSize = (baseSize * 1) + "px";
+      }
+      if (footerTextEl) {
+        footerTextEl.style.fontSize = (baseSize * 0.8) + "px";
+      }
+      const navBrand = document.getElementById("brand-title");
+      if (navBrand) {
+        navBrand.style.fontSize = (baseSize * 0.95) + "px";
+      }
+      [btnWeFrotasEl, btnWeFinanceEl, btnDev1El, btnDev2El].forEach(function(el) {
+        if (!el) return;
+        const labelSpan = el.querySelector("span.text-sm");
+        const descSpan = el.querySelector("span.text-[11px]");
+        if (labelSpan) labelSpan.style.fontSize = (baseSize * 0.9) + "px";
+        if (descSpan) descSpan.style.fontSize = (baseSize * 0.75) + "px";
+      });
+    }
+
+    // Inicializar Element SDK, se disponível
     (function initElementSdk() {
-      if (!window.elementSdk) return;
-
-      const defaultConfig = {
-        background_color: "#f5f5f5",
-        surface_color: "#ffffff",
-        text_color: "#000000",
-        primary_action_color: "#6366f1",
-        secondary_action_color: "#10b981",
-        font_family: "Arial",
-        font_size: 16,
-        titulo_recibo: "RECIBO"
-      };
-
-      function applyConfig(config) {
-        const cfg = Object.assign({}, defaultConfig, config || {});
-        const baseFontStack = "Arial, sans-serif";
-        const fontFamily = cfg.font_family + ", " + baseFontStack;
-
-        document.body.style.background = cfg.background_color;
-        document.body.style.fontFamily = fontFamily;
-
-        const recibos = document.querySelectorAll('.recibo');
-        recibos.forEach(r => {
-          r.style.backgroundColor = cfg.surface_color;
-          r.style.fontFamily = fontFamily;
-        });
-
-        const titulos = document.querySelectorAll('.titulo, .titulo-modelo');
-        titulos.forEach(t => {
-          t.textContent = cfg.titulo_recibo;
-          t.style.color = cfg.primary_action_color;
-          t.style.fontFamily = fontFamily;
-        });
-
-        const baseSize = Number(cfg.font_size) || 16;
-        document.querySelectorAll('.linha, .campo-pequeno').forEach(el => {
-          el.style.fontSize = baseSize + 'px';
-          el.style.fontFamily = fontFamily;
-        });
-
-        document.querySelectorAll('.linha input, .linha textarea, .campo-pequeno input').forEach(el => {
-          el.style.fontSize = baseSize + 'px';
-          el.style.fontFamily = fontFamily;
-          el.style.color = cfg.text_color;
-        });
-
-        const buttons = document.querySelectorAll('.botoes button');
-        buttons.forEach((btn, index) => {
-          btn.style.fontFamily = fontFamily;
-          if (btn.classList.contains('imprimir')) btn.style.backgroundColor = cfg.primary_action_color;
-          if (btn.classList.contains('importar')) btn.style.backgroundColor = cfg.secondary_action_color;
-        });
+      if (!window.elementSdk) {
+        // Sem SDK (por exemplo, preview fora do Canva) — aplica apenas default
+        applyConfig(defaultConfig);
+        return;
       }
 
       window.elementSdk.init({
-        defaultConfig,
-        onConfigChange: async (config) => {
-          applyConfig(config);
+        defaultConfig: defaultConfig,
+        onConfigChange: async function(config) {
+          await applyConfig(config);
         },
-        mapToCapabilities: (config) => {
-          const cfg = Object.assign({}, defaultConfig, config || {});
-          return {
-            recolorables: [
-              {
-                get: () => cfg.background_color,
-                set: (value) => window.elementSdk.setConfig({ background_color: value })
-              },
-              {
-                get: () => cfg.surface_color,
-                set: (value) => window.elementSdk.setConfig({ surface_color: value })
-              },
-              {
-                get: () => cfg.text_color,
-                set: (value) => window.elementSdk.setConfig({ text_color: value })
-              },
-              {
-                get: () => cfg.primary_action_color,
-                set: (value) => window.elementSdk.setConfig({ primary_action_color: value })
-              },
-              {
-                get: () => cfg.secondary_action_color,
-                set: (value) => window.elementSdk.setConfig({ secondary_action_color: value })
+        mapToCapabilities: function(config) {
+          const cfg = config || defaultConfig;
+
+          const recolorables = [
+            {
+              get: function() { return cfg.background_color || defaultConfig.background_color; },
+              set: function(value) {
+                cfg.background_color = value;
+                window.elementSdk.setConfig({ background_color: value });
               }
-            ],
-            borderables: [],
-            fontEditable: {
-              get: () => cfg.font_family,
-              set: (value) => window.elementSdk.setConfig({ font_family: value })
             },
-            fontSizeable: {
-              get: () => cfg.font_size,
-              set: (value) => window.elementSdk.setConfig({ font_size: value })
+            {
+              get: function() { return cfg.surface_color || defaultConfig.surface_color; },
+              set: function(value) {
+                cfg.surface_color = value;
+                window.elementSdk.setConfig({ surface_color: value });
+              }
+            },
+            {
+              get: function() { return cfg.text_color || defaultConfig.text_color; },
+              set: function(value) {
+                cfg.text_color = value;
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            },
+            {
+              get: function() { return cfg.primary_action_color || defaultConfig.primary_action_color; },
+              set: function(value) {
+                cfg.primary_action_color = value;
+                window.elementSdk.setConfig({ primary_action_color: value });
+              }
+            },
+            {
+              get: function() { return cfg.secondary_action_color || defaultConfig.secondary_action_color; },
+              set: function(value) {
+                cfg.secondary_action_color = value;
+                window.elementSdk.setConfig({ secondary_action_color: value });
+              }
+            }
+          ];
+
+          const fontEditable = {
+            get: function() { return cfg.font_family || defaultConfig.font_family; },
+            set: function(value) {
+              cfg.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
             }
           };
+
+          const fontSizeable = {
+            get: function() { return cfg.font_size || defaultConfig.font_size; },
+            set: function(value) {
+              cfg.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          };
+
+          return {
+            recolorables: recolorables,
+            borderables: [],
+            fontEditable: fontEditable,
+            fontSizeable: fontSizeable
+          };
         },
-        mapToEditPanelValues: (config) => {
+        mapToEditPanelValues: function(config) {
           const cfg = Object.assign({}, defaultConfig, config || {});
           return new Map([
-            ["titulo_recibo", cfg.titulo_recibo]
+            ["hero_title", cfg.hero_title],
+            ["hero_subtitle", cfg.hero_subtitle],
+            ["cta_wefrotas_label", cfg.cta_wefrotas_label],
+            ["cta_wefinance_label", cfg.cta_wefinance_label],
+            ["cta_dev1_label", cfg.cta_dev1_label],
+            ["cta_dev2_label", cfg.cta_dev2_label],
+            ["footer_text", cfg.footer_text]
           ]);
         }
       });
+    })();
 
-      applyConfig(window.elementSdk.config || defaultConfig);
+    // Funcionalidade do popup de manutenção
+    (function initMaintenancePopup() {
+      const overlay = document.getElementById("maintenance-overlay");
+      const closeBtn = document.getElementById("close-maintenance-btn");
+
+      if (!overlay || !closeBtn) return;
+
+      closeBtn.addEventListener("click", function() {
+        overlay.style.opacity = "0";
+        overlay.style.transform = "scale(0.95)";
+        setTimeout(function() {
+          overlay.style.display = "none";
+        }, 300);
+      });
+    })();
+
+    // Funcionalidade do botão de suporte
+    (function initSupportButton() {
+      const supportBtn = document.getElementById("support-btn");
+      const supportMenu = document.getElementById("support-menu");
+      const closeBtn = document.getElementById("close-support-btn");
+
+      if (!supportBtn || !supportMenu || !closeBtn) return;
+
+      function openMenu() {
+        supportMenu.style.display = "block";
+        setTimeout(function() {
+          supportMenu.style.transform = "scale(1)";
+          supportMenu.style.opacity = "1";
+        }, 10);
+      }
+
+      function closeMenu() {
+        supportMenu.style.transform = "scale(0)";
+        supportMenu.style.opacity = "0";
+        setTimeout(function() {
+          supportMenu.style.display = "none";
+        }, 200);
+      }
+
+      supportBtn.addEventListener("click", function() {
+        if (supportMenu.style.display === "none" || !supportMenu.style.display) {
+          openMenu();
+        } else {
+          closeMenu();
+        }
+      });
+
+      closeBtn.addEventListener("click", closeMenu);
+
+      // Fechar ao clicar fora
+      document.addEventListener("click", function(e) {
+        if (!supportBtn.contains(e.target) && !supportMenu.contains(e.target)) {
+          closeMenu();
+        }
+      });
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a76fc86a563f1a7',t:'MTc2NDYzODI2NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a77545995758769',t:'MTc2NDY0MTg2Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
