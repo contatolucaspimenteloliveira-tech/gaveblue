@@ -10,7 +10,8 @@
     body {
       box-sizing: border-box;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 40px;
+      margin: 0;
+      padding: 20px 20px 20px 20px;
       background-color: #f7f7f7;
       width: 100%;
     }
@@ -22,33 +23,37 @@
 
     .recibo {
       border: 2px solid #ddd;
-      padding: 30px 30px 15px 30px;
-      width: 650px;
-      min-height: 500px;
+      padding: 20px 25px 15px 25px;
+      width: 100%;
+      max-width: 700px;
+      min-height: auto;
       margin: auto;
-      margin-bottom: 40px;
+      margin-bottom: 120px;
       background-color: #fff;
       border-radius: 10px;
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      page-break-after: always;
+    }
+
+    .recibo:last-child {
+      margin-bottom: 20px;
     }
 
     .topo {
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-bottom: 30px;
-      margin-top: -20px;
+      margin-bottom: 25px;
+      margin-top: -10px;
       position: relative;
     }
 
     .titulo {
-      font-size: 28px;
+      font-size: 22px;
       font-weight: bold;
     }
 
     .valor-topo {
-      font-size: 14px;
+      font-size: 12px;
       text-align: right;
       position: absolute;
       right: 0;
@@ -61,24 +66,24 @@
     .valor-topo input {
       border: 2px solid #007BFF;
       border-radius: 8px;
-      padding: 4px 6px;
+      padding: 3px 8px;
       background-color: #eef6ff;
       font-weight: bold;
-      font-size: 14px;
-      width: 120px;
+      font-size: 12px;
+      width: 130px;
       outline: none;
     }
 
     .linha {
-      margin: 6px 0;
-      font-size: 16px;
+      margin: 5px 0;
+      font-size: 14px;
     }
 
     input {
       border: none;
       border-bottom: 1px solid #ccc;
       width: 100%;
-      font-size: 16px;
+      font-size: 14px;
       outline: none;
       padding: 2px 4px;
       background-color: transparent;
@@ -88,35 +93,35 @@
       border: none;
       border-bottom: 1px solid #ccc;
       width: 100%;
-      font-size: 16px;
+      font-size: 14px;
       outline: none;
       padding: 2px 4px;
       background-color: transparent;
       resize: none;
       overflow: hidden;
-      line-height: 1.4em;
-      min-height: 1.4em;
+      line-height: 1.3em;
+      min-height: 1.3em;
       font-family: inherit;
     }
 
     .assinatura {
-      margin-top: 30px;
+      margin-top: 20px;
       text-align: center;
     }
 
     .assinatura-linha {
       border-bottom: 1px solid #000;
-      width: 300px;
+      width: 250px;
       margin: 0 auto;
-      height: 30px;
+      height: 25px;
     }
 
     .assinatura-nome {
-      margin-top: 5px;
-      font-size: 14px;
+      margin-top: 4px;
+      font-size: 12px;
       font-weight: bold;
-      min-height: 20px;
-      max-height: 20px;
+      min-height: 18px;
+      max-height: 18px;
       overflow: hidden;
     }
 
@@ -131,71 +136,702 @@
     }
 
     .botoes {
-      text-align: center;
-      margin-top: 40px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.95) 100%);
+      backdrop-filter: blur(10px);
+      padding: 15px 10px;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
       display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+      .botoes {
+        padding: 10px 5px;
+        gap: 8px;
+      }
+    }
+
+    .botoes-esquerda {
+      display: flex;
+      gap: 10px;
+      flex: 1;
       justify-content: center;
-      gap: 20px;
     }
 
-    .botoes button {
+    @media (max-width: 768px) {
+      .botoes-esquerda {
+        gap: 8px;
+      }
+    }
+
+    .botoes button, .botoes a.btn-icon {
       border: none;
-      padding: 12px 24px;
-      border-radius: 30px;
-      font-size: 16px;
+      padding: 12px;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      transition: background 0.3s ease;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
     }
 
-    .botoes button:hover {
-      opacity: 0.9;
+    @media (max-width: 768px) {
+      .botoes button, .botoes a.btn-icon {
+        width: 42px;
+        height: 42px;
+        padding: 10px;
+      }
     }
 
-    .botoes .imprimir {
+    .botoes button:hover, .botoes a.btn-icon:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+    }
+
+    .botoes button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .botoes .baixar-pdf {
       background: linear-gradient(to right, #007BFF, #0056b3);
       color: #fff;
     }
 
+    .botoes .imprimir-pdf {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+    }
+
     .botoes .limpar {
-      background: linear-gradient(to right, #dc3545, #a71d2a);
+      background: linear-gradient(135deg, #dc3545, #a71d2a);
       color: #fff;
     }
 
     .botoes .importar {
-      background: linear-gradient(to right, #10b981, #059669);
+      background: linear-gradient(135deg, #10b981, #059669);
       color: #fff;
     }
 
-    @page {
-      size: A4 portrait;
-      margin: 0;
+    .botoes .voltar {
+      background: linear-gradient(135deg, #6b7280, #4b5563);
+      color: #fff;
+    }
+
+    .status-contador {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      z-index: 1000;
+      display: none;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .status-contador.visible {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 20px 40px;
+      border-radius: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4);
+      z-index: 10001;
+      display: none;
+      animation: toastPop 0.3s ease-out;
+    }
+
+    .toast.visible {
+      display: block;
+    }
+
+    @keyframes toastPop {
+      0% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0;
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.05);
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .popup-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      z-index: 10002;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .popup-overlay.hidden {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .popup-content {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      animation: popupSlide 0.4s ease-out;
+      position: relative;
+    }
+
+    @keyframes popupSlide {
+      from {
+        transform: translateY(-50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .popup-moderno .popup-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    .popup-moderno .popup-icon svg {
+      stroke: white;
+    }
+
+    @keyframes iconPulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(102, 126, 234, 0);
+      }
+    }
+
+    .popup-content h2 {
+      color: #1f2937;
+      font-size: 24px;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+
+    .popup-content p {
+      color: #4b5563;
+      font-size: 16px;
+      line-height: 1.8;
+      margin-bottom: 30px;
+    }
+
+    .popup-ajuda-content {
+      max-width: 850px;
+      text-align: left;
+    }
+
+    .popup-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: transparent;
+      border: none;
+      font-size: 32px;
+      color: #dc2626;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      font-weight: bold;
+    }
+
+    .popup-close:hover {
+      background: #fee2e2;
+      color: #991b1b;
+      transform: rotate(90deg);
+    }
+
+    .popup-icon-help {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .popup-icon-help svg {
+      stroke: white;
+    }
+
+    .ajuda-intro {
+      text-align: center;
+      font-size: 15px;
+      color: #6b7280;
+      margin-bottom: 25px;
+    }
+
+    .ajuda-tabela {
+      margin-bottom: 25px;
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+    }
+
+    .excel-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .excel-table th {
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      padding: 10px;
+      font-weight: bold;
+      color: #374151;
+      text-align: center;
+    }
+
+    .excel-table th.col-header {
+      background: #e5e7eb;
+      color: #1f2937;
+      font-weight: bold;
+      width: 50px;
+    }
+
+    .excel-table th.row-header {
+      background: #e5e7eb;
+      color: #1f2937;
+      font-weight: bold;
+      width: 50px;
+    }
+
+    .excel-table td {
+      border: 1px solid #d1d5db;
+      padding: 10px 12px;
+      color: #374151;
+    }
+
+    .excel-table td.row-number {
+      background: #f9fafb;
+      text-align: center;
+      font-weight: bold;
+      color: #6b7280;
+    }
+
+    .excel-table td.data-cell {
+      background: white;
+    }
+
+    .excel-table tr:nth-child(2) td.data-cell {
+      font-family: 'Courier New', monospace;
+      color: #059669;
+      font-weight: 500;
+    }
+
+    .ajuda-dica {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      background: #eff6ff;
+      padding: 15px;
+      border-radius: 10px;
+      border-left: 4px solid #3b82f6;
+      margin-bottom: 25px;
+    }
+
+    .ajuda-dica svg {
+      flex-shrink: 0;
+      stroke: #3b82f6;
+      margin-top: 2px;
+    }
+
+    .ajuda-dica span {
+      font-size: 14px;
+      color: #1e40af;
+      line-height: 1.6;
+    }
+
+    .popup-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 25px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      transition: transform 0.2s ease;
+    }
+
+    .popup-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    .whatsapp-btn {
+      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(37, 211, 102, 0.3);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      animation: pulse 2s infinite;
+    }
+
+    .whatsapp-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(37, 211, 102, 0.5);
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    .dark-mode-btn {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: #1f2937;
+      border: none;
+      padding: 12px;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(251, 191, 36, 0.3);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dark-mode-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(251, 191, 36, 0.5);
+    }
+
+    /* Modo Escuro */
+    body.dark-mode {
+      background-color: #1f2937 !important;
+      color: #e5e7eb;
+    }
+
+    body.dark-mode .recibo {
+      background-color: #374151 !important;
+      border-color: #4b5563;
+      color: #e5e7eb;
+    }
+
+    body.dark-mode .titulo {
+      color: #60a5fa !important;
+    }
+
+    body.dark-mode .valor-topo input {
+      background-color: #1f2937;
+      border-color: #60a5fa;
+      color: #e5e7eb;
+    }
+
+    body.dark-mode input,
+    body.dark-mode textarea {
+      color: #e5e7eb !important;
+      border-bottom-color: #6b7280;
+    }
+
+    body.dark-mode .linha {
+      color: #d1d5db;
+    }
+
+    body.dark-mode .botoes {
+      background: linear-gradient(to top, rgba(31, 41, 55, 0.98) 0%, rgba(31, 41, 55, 0.95) 100%);
+    }
+
+    body.dark-mode .popup-content {
+      background: #374151;
+      color: #e5e7eb;
+    }
+
+    body.dark-mode .popup-content h2 {
+      color: #e5e7eb;
+    }
+
+    body.dark-mode .popup-content p {
+      color: #d1d5db;
+    }
+
+    body.dark-mode .ajuda-tabela {
+      background: #374151;
+      border-color: #4b5563;
+    }
+
+    body.dark-mode .excel-table th {
+      background: #4b5563;
+      border-color: #6b7280;
+      color: #e5e7eb;
+    }
+
+    body.dark-mode .excel-table th.col-header,
+    body.dark-mode .excel-table th.row-header {
+      background: #374151;
+      color: #d1d5db;
+    }
+
+    body.dark-mode .excel-table td {
+      border-color: #6b7280;
+      color: #d1d5db;
+    }
+
+    body.dark-mode .excel-table td.row-number {
+      background: #374151;
+      color: #9ca3af;
+    }
+
+    body.dark-mode .excel-table td.data-cell {
+      background: #1f2937;
+    }
+
+    body.dark-mode .ajuda-dica {
+      background: #1e3a5f;
+      border-left-color: #60a5fa;
+    }
+
+    body.dark-mode .ajuda-dica span {
+      color: #93c5fd;
+    }
+
+    body.dark-mode .popup-close {
+      color: #ef4444;
+    }
+
+    body.dark-mode .popup-close:hover {
+      background: #7f1d1d;
+      color: #fca5a5;
+    }
+
+    body.dark-mode .toggle-footer-btn {
+      background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+    }
+
+    .help-btn {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .help-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(59, 130, 246, 0.5);
+    }
+
+    .toggle-footer-btn {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1001;
+    }
+
+    .toggle-footer-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+    }
+
+    .toggle-footer-btn svg {
+      transition: transform 0.3s ease;
+    }
+
+    .botoes.hidden {
+      transform: translateY(100%);
+    }
+
+    .toggle-footer-btn.footer-hidden svg {
+      transform: rotate(180deg);
+    }
+
+    @media (max-width: 768px) {
+      .whatsapp-btn, .help-btn {
+        width: 42px;
+        height: 42px;
+        padding: 10px;
+      }
+
+      .toggle-footer-btn {
+        width: 42px;
+        height: 42px;
+        bottom: 80px;
+        right: 15px;
+      }
+      
+      .popup-content {
+        padding: 30px 20px;
+      }
+      
+      .popup-content h2 {
+        font-size: 20px;
+      }
+      
+      .popup-content p {
+        font-size: 14px;
+      }
+
+      .popup-moderno .popup-icon {
+        width: 64px;
+        height: 64px;
+      }
+
+      .popup-icon-help {
+        width: 48px;
+        height: 48px;
+      }
+
+      .popup-ajuda-content {
+        max-width: 95%;
+      }
+
+      .excel-table {
+        font-size: 11px;
+      }
+
+      .excel-table th,
+      .excel-table td {
+        padding: 6px 8px;
+      }
+
+      .excel-table th.col-header,
+      .excel-table th.row-header,
+      .excel-table td.row-number {
+        width: 35px;
+      }
     }
 
     @media print {
-      .botoes {
+      body {
+        margin: 0;
+        padding: 0;
+        background: white;
+      }
+      .botoes, .loading-overlay, .status-contador, .toast, .popup-overlay, .whatsapp-btn {
         display: none !important;
       }
-
-      body {
-        margin: 0 !important;
-        padding: 0 !important;
-        background: white !important;
-      }
-
       .recibo {
-        width: 180mm !important;
-        min-height: auto !important;
-        max-height: none !important;
-        margin: 10mm auto !important;
+        box-shadow: none;
         page-break-after: always;
-        border: none !important;
-        box-shadow: none !important;
+        page-break-inside: avoid;
+        margin: 20px auto;
+        width: 100%;
+        max-width: 700px;
+        border: none;
+        padding: 30px;
       }
-
-      * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+      #recibos-gerados .recibo:last-child {
+        page-break-after: auto;
       }
     }
   </style>
@@ -206,8 +842,76 @@
  <body>
   <header class="sr-only">
    <h1>Gerador de Recibos</h1>
-  </header>
-  <main><!-- Recibo original visível, editável manualmente -->
+  </header><!-- Popup de Aviso -->
+  <div class="popup-overlay" id="popup-aviso">
+   <div class="popup-content popup-moderno">
+    <div class="popup-icon">
+     <svg width="64" height="64" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /> <polyline points="22 4 12 14.01 9 11.01"></polyline>
+     </svg>
+    </div>
+    <h2>Bem-vindo ao Gerador de Recibos</h2>
+    <p>Informamos que o gerador de recibos encontra-se plenamente operacional, porém ainda em fase de testes. Caso deseje contribuir com sugestões de aperfeiçoamento, clique no botão verde e envie sua mensagem.</p><button class="popup-btn" onclick="fecharPopup()">Começar a usar</button>
+   </div>
+  </div><!-- Popup de Ajuda -->
+  <div class="popup-overlay hidden" id="popup-ajuda">
+   <div class="popup-content popup-ajuda-content"><button class="popup-close" onclick="fecharAjuda()">×</button>
+    <div class="popup-icon-help">
+     <svg width="48" height="48" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle> <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /> <line x1="12" y1="17" x2="12.01" y2="17"></line>
+     </svg>
+    </div>
+    <h2>Como importar múltiplos recibos?</h2>
+    <p class="ajuda-intro">Para importar vários recibos de uma vez, prepare uma planilha Excel (.xlsx ou .xls) com as seguintes colunas:</p>
+    <div class="ajuda-tabela">
+     <table class="excel-table">
+      <thead>
+       <tr>
+        <th class="row-header"></th>
+        <th class="col-header">A</th>
+        <th class="col-header">B</th>
+        <th class="col-header">C</th>
+        <th class="col-header">D</th>
+        <th class="col-header">E</th>
+        <th class="col-header">F</th>
+        <th class="col-header">G</th>
+       </tr>
+      </thead>
+      <tbody>
+       <tr>
+        <td class="row-number">1</td>
+        <td class="data-cell"><strong>Valor</strong></td>
+        <td class="data-cell"><strong>Recebedor</strong></td>
+        <td class="data-cell"><strong>Referencia</strong></td>
+        <td class="data-cell"><strong>Descricao</strong></td>
+        <td class="data-cell"><strong>Emitente</strong></td>
+        <td class="data-cell"><strong>CPFCNPJ</strong></td>
+        <td class="data-cell"><strong>Data</strong></td>
+       </tr>
+       <tr>
+        <td class="row-number">2</td>
+        <td class="data-cell">R$ 1.500,00</td>
+        <td class="data-cell">João Silva</td>
+        <td class="data-cell">Serviços de consultoria</td>
+        <td class="data-cell">Projeto X - Fase 1</td>
+        <td class="data-cell">Maria Santos</td>
+        <td class="data-cell">123.456.789-00</td>
+        <td class="data-cell">15/01/2024</td>
+       </tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="ajuda-dica">
+     <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z" /> <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+     </svg><span><strong>Dica:</strong> Os nomes das colunas devem ser exatamente como mostrado acima. Cada linha da planilha gerará um recibo.</span>
+    </div><button class="popup-btn" onclick="fecharAjuda()">Entendi</button>
+   </div>
+  </div>
+  <main><!-- Contador de recibos -->
+   <div class="status-contador" id="status-contador">
+    📋 <span id="contador-numero">0</span> recibos gerados
+   </div><!-- Toast de sucesso -->
+   <div class="toast" id="toast-sucesso">
+    ✅ Recibos importados com sucesso!
+   </div><!-- Recibo original visível, editável manualmente -->
    <section class="recibo" id="recibo">
     <div class="topo">
      <div class="titulo" id="titulo-recibo">
@@ -282,16 +986,159 @@
     </div>
    </section><!-- Contêiner para os recibos importados -->
    <div id="recibos-gerados"></div>
-  </main>
-  <footer class="botoes"><button class="imprimir" onclick="imprimirPagina()">Imprimir Recibos</button> <button class="limpar" onclick="limparCampos()">Limpar Tudo</button> <button class="importar" onclick="document.getElementById('excelFile').click()">Importar Dados</button> <input type="file" id="excelFile" accept=".xlsx, .xls" style="display: none" onchange="importarExcel(event)">
+  </main><!-- Botão flutuante para ocultar/mostrar rodapé --> <button class="toggle-footer-btn" id="toggle-footer" onclick="toggleFooter()" title="Ocultar/Mostrar Barra de Ferramentas">
+   <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline>
+   </svg></button>
+  <footer class="botoes">
+   <div class="botoes-esquerda"><button class="imprimir-pdf" id="btn-imprimir-pdf" onclick="imprimirPDF()" title="Imprimir">
+     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline> <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /> <rect x="6" y="14" width="12" height="8"></rect>
+     </svg></button> <button class="limpar" onclick="limparCampos()" title="Limpar Tudo">
+     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /> <line x1="10" y1="11" x2="10" y2="17"></line> <line x1="14" y1="11" x2="14" y2="17"></line>
+     </svg></button> <button class="importar" onclick="document.getElementById('excelFile').click()" title="Importar Dados">
+     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /> <polyline points="14 2 14 8 20 8"></polyline> <line x1="12" y1="18" x2="12" y2="12"></line> <line x1="9" y1="15" x2="15" y2="15"></line>
+     </svg></button> <button class="voltar" onclick="window.open('https://gaveblue.com', '_blank')" title="Voltar">
+     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line> <polyline points="12 19 5 12 12 5"></polyline>
+     </svg></button> <button class="dark-mode-btn" onclick="toggleDarkMode()" title="Modo Escuro" id="dark-mode-toggle">
+     <svg width="24" height="24" viewbox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+     </svg></button> <button class="help-btn" onclick="abrirAjuda()" title="Ajuda - Como importar">
+     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle> <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /> <line x1="12" y1="17" x2="12.01" y2="17"></line>
+     </svg></button>
+   </div><a href="https://wa.me/5527988790381?text=Olá,%20tenho%20uma%20sugestão%20para%20o%20Gerador%20de%20Recibos" target="_blank" rel="noopener noreferrer" class="whatsapp-btn btn-icon" title="Sugestões WhatsApp">
+    <svg width="24" height="24" viewbox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+    </svg></a> <input type="file" id="excelFile" accept=".xlsx, .xls" style="display: none" onchange="importarExcel(event)">
   </footer>
   <script>
-    // Função de impressão segura
-    function imprimirPagina() {
+
+    // Função para alternar visibilidade do rodapé
+    function toggleFooter() {
+      const footer = document.querySelector('.botoes');
+      const toggleBtn = document.getElementById('toggle-footer');
+      
+      footer.classList.toggle('hidden');
+      toggleBtn.classList.toggle('footer-hidden');
+      
+      // Salvar preferência
+      const isHidden = footer.classList.contains('hidden');
+      localStorage.setItem('footerHidden', isHidden ? 'true' : 'false');
+    }
+
+    // Carregar preferência do rodapé ao iniciar
+    window.addEventListener('DOMContentLoaded', function() {
+      const footerHidden = localStorage.getItem('footerHidden');
+      if (footerHidden === 'true') {
+        document.querySelector('.botoes').classList.add('hidden');
+        document.getElementById('toggle-footer').classList.add('footer-hidden');
+      }
+    });
+
+    // Função para fechar popup
+    function fecharPopup() {
+      document.getElementById('popup-aviso').classList.add('hidden');
+    }
+
+    // Função para abrir ajuda
+    function abrirAjuda() {
+      document.getElementById('popup-ajuda').classList.remove('hidden');
+    }
+
+    // Função para fechar ajuda
+    function fecharAjuda() {
+      document.getElementById('popup-ajuda').classList.add('hidden');
+    }
+
+    // Função para alternar modo escuro
+    function toggleDarkMode() {
+      const body = document.body;
+      const isDark = body.classList.toggle('dark-mode');
+      const btn = document.getElementById('dark-mode-toggle');
+      
+      // Salvar preferência
+      localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+      
+      // Atualizar ícone
+      if (isDark) {
+        btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+        btn.style.background = 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
+      } else {
+        btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+        btn.style.background = 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
+      }
+    }
+
+    // Carregar preferências ao iniciar (modo escuro)
+    (function loadDarkMode() {
+      const darkMode = localStorage.getItem('darkMode');
+      if (darkMode === 'enabled') {
+        document.body.classList.add('dark-mode');
+        const btn = document.getElementById('dark-mode-toggle');
+        if (btn) {
+          btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2"></line><line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2"></line><line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2"></line><line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2"></line></svg>';
+        }
+      }
+    })();
+
+    // Função para imprimir
+    function imprimirPDF() {
+      const recibos = coletarRecibos();
+      
+      if (recibos.length === 0) {
+        mostrarMensagem('Preencha pelo menos um recibo!', 'erro');
+        return;
+      }
+
+      window.print();
+    }
+
+    // Função auxiliar para coletar recibos
+    function coletarRecibos() {
+      const recibos = [];
+      const reciboOriginal = document.getElementById('recibo');
+      if (reciboOriginal && reciboOriginal.style.display !== 'none') {
+        recibos.push(reciboOriginal);
+      }
+      
+      const recibosGerados = document.querySelectorAll('#recibos-gerados .recibo');
+      recibosGerados.forEach(r => {
+        if (r.style.display !== 'none') {
+          recibos.push(r);
+        }
+      });
+      
+      return recibos;
+    }
+
+    // Função para atualizar contador
+    function atualizarContador() {
+      const recibosGerados = document.querySelectorAll('#recibos-gerados .recibo');
+      const total = recibosGerados.length;
+      const contador = document.getElementById('status-contador');
+      const numeroSpan = document.getElementById('contador-numero');
+      
+      if (total > 0) {
+        numeroSpan.textContent = total;
+        contador.classList.add('visible');
+      } else {
+        contador.classList.remove('visible');
+      }
+    }
+
+    // Função para mostrar toast
+    function mostrarToast() {
+      const toast = document.getElementById('toast-sucesso');
+      toast.classList.add('visible');
       setTimeout(() => {
-        window.focus();
-        window.print();
-      }, 200);
+        toast.classList.remove('visible');
+      }, 3000);
+    }
+
+    // Função auxiliar para mostrar mensagens
+    function mostrarMensagem(texto, tipo) {
+      const cor = tipo === 'erro' ? '#ff4444' : '#10b981';
+      const mensagem = document.createElement('div');
+      mensagem.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: ' + cor + '; color: white; padding: 20px 40px; border-radius: 10px; font-size: 18px; z-index: 10000; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
+      mensagem.textContent = texto;
+      document.body.appendChild(mensagem);
+      setTimeout(() => mensagem.remove(), 3000);
     }
 
     // Função para converter número para extenso
@@ -416,7 +1263,7 @@
       const numero = parseInt(valor);
       const reais = numero / 100;
       
-      input.value = reais.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      input.value = 'R$ ' + reais.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       
       const recibo = input.closest('.recibo');
       const campoQuantia = recibo.querySelector('.campoQuantia') || recibo.querySelector('#campoQuantia');
@@ -476,6 +1323,7 @@
       document.getElementById('assinaturaCpf').textContent = '';
       
       document.getElementById('recibos-gerados').innerHTML = '';
+      atualizarContador();
     }
 
     // Importar Excel
@@ -534,6 +1382,10 @@
 
           container.appendChild(novoRecibo);
         });
+
+        // Atualizar contador e mostrar toast
+        atualizarContador();
+        mostrarToast();
       };
       reader.readAsArrayBuffer(file);
     }
@@ -553,7 +1405,7 @@
       if (!window.elementSdk) return;
 
       const defaultConfig = {
-        background_color: "#f5f5f5",
+        background_color: "#f5f5f7",
         surface_color: "#ffffff",
         text_color: "#000000",
         primary_action_color: "#6366f1",
@@ -597,9 +1449,11 @@
         });
 
         const buttons = document.querySelectorAll('.botoes button');
-        buttons.forEach((btn, index) => {
+        buttons.forEach((btn) => {
           btn.style.fontFamily = fontFamily;
-          if (btn.classList.contains('imprimir')) btn.style.backgroundColor = cfg.primary_action_color;
+          if (btn.classList.contains('baixar-pdf') || btn.classList.contains('imprimir-pdf')) {
+            btn.style.backgroundColor = cfg.primary_action_color;
+          }
           if (btn.classList.contains('importar')) btn.style.backgroundColor = cfg.secondary_action_color;
         });
       }
@@ -656,5 +1510,5 @@
       applyConfig(window.elementSdk.config || defaultConfig);
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a76fc86a563f1a7',t:'MTc2NDYzODI2NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a80171d923a794f',t:'MTc2NDczMzcyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
