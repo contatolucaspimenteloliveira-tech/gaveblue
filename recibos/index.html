@@ -1036,7 +1036,11 @@
     <div class="ajuda-dica">
      <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z" /> <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
      </svg><span><strong>Dica:</strong> Os nomes das colunas devem ser exatamente como mostrado acima. O sistema aceita datas e valores em qualquer formato!</span>
-    </div><button class="popup-btn" onclick="fecharAjuda()">Entendi</button>
+    </div>
+    <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;"><button class="popup-btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);" onclick="baixarModeloPlanilha()">
+      <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <polyline points="7 10 12 15 17 10"></polyline> <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg> Baixar Modelo </button> <button class="popup-btn" onclick="fecharAjuda()">Entendi</button>
+    </div>
    </div>
   </div>
   <main><!-- Contador de recibos -->
@@ -1340,7 +1344,7 @@
       localStorage.setItem('modeloRecibo', modeloAtual);
     }
 
-    // Carregar preferência do modelo ao iniciar
+    // Carregar prefer����ncia do modelo ao iniciar
     window.addEventListener('DOMContentLoaded', function() {
       const modeloSalvo = localStorage.getItem('modeloRecibo');
       if (modeloSalvo === 'simplificado') {
@@ -1383,6 +1387,48 @@
     // Função para fechar ajuda
     function fecharAjuda() {
       document.getElementById('popup-ajuda').classList.add('hidden');
+    }
+
+    // Função para baixar modelo de planilha
+    function baixarModeloPlanilha() {
+      // Mostrar toast de download iniciado
+      const toastDownload = document.createElement('div');
+      toastDownload.className = 'toast visible';
+      toastDownload.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+      toastDownload.innerHTML = '📥 Download iniciado!';
+      document.body.appendChild(toastDownload);
+      
+      setTimeout(() => {
+        toastDownload.remove();
+      }, 3000);
+      
+      // Criar dados do modelo
+      const dados = [
+        ['Valor', 'Recebedor', 'Referencia', 'Descricao', 'Emitente', 'CPFCNPJ', 'Data'],
+        ['R$ 1.500,00', 'João Silva', 'Serviços de consultoria', 'Projeto X - Fase 1', 'Maria Santos', '123.456.789-00', '15/01/2024'],
+        ['R$ 2.300,00', 'Pedro Costa', 'Manutenção predial', 'Reparo hidráulico', 'José Oliveira', '987.654.321-00', '20/01/2024']
+      ];
+
+      // Criar workbook
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(dados);
+
+      // Definir largura das colunas
+      ws['!cols'] = [
+        { wch: 15 },  // Valor
+        { wch: 20 },  // Recebedor
+        { wch: 25 },  // Referencia
+        { wch: 30 },  // Descricao
+        { wch: 20 },  // Emitente
+        { wch: 18 },  // CPFCNPJ
+        { wch: 12 }   // Data
+      ];
+
+      // Adicionar worksheet ao workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Recibos');
+
+      // Gerar arquivo e fazer download
+      XLSX.writeFile(wb, 'modelo_recibos.xlsx');
     }
 
     // Função para abrir confirmação de limpeza
@@ -1679,6 +1725,25 @@
       recibo.querySelector('.assinaturaCpf').textContent = cpfcnpj;
     }
 
+    // Verificar se o recibo principal está preenchido
+    function verificarReciboPrincipalPreenchido() {
+      if (modeloAtual === 'simplificado') {
+        const valor = document.getElementById('valor-simples').value.trim();
+        const nome = document.getElementById('nome-principal').value.trim();
+        const cpf = document.getElementById('cpf-principal').value.trim();
+        const data = document.getElementById('data-principal').value.trim();
+        return valor !== '' || nome !== '' || cpf !== '' || data !== '';
+      } else {
+        const valor = document.getElementById('valor').value.trim();
+        const recebedor = document.getElementById('recebedor').value.trim();
+        const referencia = document.getElementById('referencia').value.trim();
+        const emitente = document.getElementById('emitente').value.trim();
+        const cpfcnpj = document.getElementById('cpfcnpj').value.trim();
+        const data = document.getElementById('data').value.trim();
+        return valor !== '' || recebedor !== '' || referencia !== '' || emitente !== '' || cpfcnpj !== '' || data !== '';
+      }
+    }
+
     // Limpar campos
     function limparCampos() {
       document.getElementById('valor').value = '';
@@ -1691,6 +1756,14 @@
       document.getElementById('data').value = '';
       document.getElementById('assinaturaNome').textContent = '';
       document.getElementById('assinaturaCpf').textContent = '';
+      
+      // Limpar recibo simplificado
+      document.getElementById('valor-simples').value = '';
+      document.getElementById('nome-principal').value = '';
+      document.getElementById('cpf-principal').value = '';
+      document.getElementById('data-principal').value = '';
+      document.getElementById('assinaturaNomeSimples').textContent = '';
+      document.getElementById('assinaturaCpfSimples').textContent = '';
       
       document.getElementById('recibos-gerados').innerHTML = '';
       atualizarContador();
@@ -1709,11 +1782,19 @@
         const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
         const container = document.getElementById('recibos-gerados');
-        container.innerHTML = '';
+        
+        // Resetar o input file para permitir importar o mesmo arquivo novamente
+        event.target.value = '';
+        
+        // Verificar se o recibo principal já está preenchido
+        const reciboPrincipalPreenchido = verificarReciboPrincipalPreenchido();
+        
+        // Se o recibo principal já estiver preenchido, todos os registros viram novos recibos
+        const inicioLoop = reciboPrincipalPreenchido ? 0 : 1;
 
         jsonData.forEach((row, index) => {
-          // Para o primeiro recibo, preencher o recibo principal
-          if (index === 0) {
+          // Para o primeiro recibo (se o principal estiver vazio), preencher o recibo principal
+          if (index === 0 && !reciboPrincipalPreenchido) {
             if (modeloAtual === 'simplificado') {
               // Preencher recibo simplificado principal
               if (row.Valor) {
@@ -1772,7 +1853,7 @@
             return; // Pular para o próximo registro
           }
 
-          // Para os demais recibos, criar cópias
+          // Para os demais recibos (ou todos se o principal já estiver preenchido), criar cópias
           const modeloId = modeloAtual === 'simplificado' ? 'modelo-recibo-simplificado' : 'modelo-recibo';
           const modelo = document.getElementById(modeloId);
           const novoRecibo = modelo.cloneNode(true);
@@ -2006,5 +2087,5 @@
       applyConfig(window.elementSdk.config || defaultConfig);
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f0d0bf780cd97',t:'MTc2NDg5MDYwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f3b4376fedb39',t:'MTc2NDg5MjQ5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
