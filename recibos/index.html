@@ -28,14 +28,22 @@
       max-width: 700px;
       min-height: auto;
       margin: auto;
-      margin-bottom: 120px;
+      margin-bottom: 40px;
       background-color: #fff;
       border-radius: 10px;
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     }
 
-    .recibo:last-child {
-      margin-bottom: 20px;
+    .recibo:first-child {
+      margin-top: 20px;
+    }
+
+    #recibos-gerados .recibo:last-child {
+      margin-bottom: 200px;
+    }
+
+    body {
+      padding-bottom: 200px;
     }
 
     .topo {
@@ -185,6 +193,30 @@
       align-items: center;
       justify-content: center;
       text-decoration: none;
+      position: relative;
+    }
+
+    .botoes button::after, .botoes a.btn-icon::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 10000;
+    }
+
+    .botoes button:hover::after, .botoes a.btn-icon:hover::after {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-4px);
     }
 
     @media (max-width: 768px) {
@@ -225,14 +257,39 @@
       color: #fff;
     }
 
-    .botoes .voltar {
-      background: linear-gradient(135deg, #6b7280, #4b5563);
-      color: #fff;
+    .btn-sair {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 1002;
+    }
+
+    .btn-sair:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(220, 38, 38, 0.6);
+    }
+
+    .btn-sair svg {
+      width: 18px;
+      height: 18px;
     }
 
     .status-contador {
       position: fixed;
-      top: 20px;
+      top: 80px;
       right: 20px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -244,10 +301,13 @@
       z-index: 1000;
       display: none;
       animation: slideIn 0.3s ease-out;
+      opacity: 0;
+      transition: opacity 0.3s ease-out;
     }
 
     .status-contador.visible {
       display: block;
+      opacity: 1;
     }
 
     @keyframes slideIn {
@@ -334,6 +394,33 @@
       text-align: center;
       animation: popupSlide 0.4s ease-out;
       position: relative;
+    }
+
+    .popup-confirmacao-content {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .popup-header-vermelho {
+      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      padding: 30px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin: 0;
+    }
+
+    .popup-icon-branco {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .popup-body-confirmacao {
+      padding: 30px 40px;
     }
 
     @keyframes popupSlide {
@@ -575,15 +662,15 @@
     }
 
     .dark-mode-btn {
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-      color: #1f2937;
+      background: linear-gradient(135deg, #475569 0%, #334155 100%);
+      color: #e2e8f0;
       border: none;
       padding: 12px;
       border-radius: 50%;
       width: 48px;
       height: 48px;
       cursor: pointer;
-      box-shadow: 0 3px 10px rgba(251, 191, 36, 0.3);
+      box-shadow: 0 3px 10px rgba(71, 85, 105, 0.3);
       transition: all 0.3s ease;
       display: flex;
       align-items: center;
@@ -592,7 +679,7 @@
 
     .dark-mode-btn:hover {
       transform: translateY(-3px);
-      box-shadow: 0 5px 15px rgba(251, 191, 36, 0.5);
+      box-shadow: 0 5px 15px rgba(71, 85, 105, 0.5);
     }
 
     /* Modo Escuro */
@@ -641,6 +728,14 @@
     }
 
     body.dark-mode .popup-content p {
+      color: #d1d5db;
+    }
+
+    body.dark-mode .popup-body-confirmacao {
+      background: #374151;
+    }
+
+    body.dark-mode .popup-body-confirmacao p {
       color: #d1d5db;
     }
 
@@ -718,6 +813,8 @@
       box-shadow: 0 5px 15px rgba(59, 130, 246, 0.5);
     }
 
+
+
     .toggle-footer-btn {
       position: fixed;
       bottom: 90px;
@@ -755,8 +852,29 @@
       transform: rotate(180deg);
     }
 
+    .modelo-toggle-btn-footer {
+      background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(236, 72, 153, 0.3);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modelo-toggle-btn-footer:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(236, 72, 153, 0.5);
+    }
+
     @media (max-width: 768px) {
-      .whatsapp-btn, .help-btn {
+      .whatsapp-btn, .help-btn, .modelo-toggle-btn-footer {
         width: 42px;
         height: 42px;
         padding: 10px;
@@ -817,7 +935,7 @@
         padding: 0;
         background: white;
       }
-      .botoes, .loading-overlay, .status-contador, .toast, .popup-overlay, .whatsapp-btn {
+      .botoes, .loading-overlay, .status-contador, .toast, .popup-overlay, .whatsapp-btn, .btn-sair, .toggle-footer-btn {
         display: none !important;
       }
       .recibo {
@@ -851,6 +969,22 @@
     </div>
     <h2>Bem-vindo ao Gerador de Recibos</h2>
     <p>Informamos que o gerador de recibos encontra-se plenamente operacional, porém ainda em fase de testes. Caso deseje contribuir com sugestões de aperfeiçoamento, clique no botão verde e envie sua mensagem.</p><button class="popup-btn" onclick="fecharPopup()">Começar a usar</button>
+   </div>
+  </div><!-- Popup de Confirmação de Limpeza -->
+  <div class="popup-overlay hidden" id="popup-confirmacao">
+   <div class="popup-content popup-confirmacao-content">
+    <div class="popup-header-vermelho">
+     <div class="popup-icon-branco">
+      <svg width="48" height="48" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /> <line x1="12" y1="9" x2="12" y2="13"></line> <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+     </div>
+     <h2 style="color: white; margin: 0;">AVISO!</h2>
+    </div>
+    <div class="popup-body-confirmacao">
+     <p>Tem certeza que deseja excluir todos os dados selecionados? Esta ação não poderá ser desfeita.</p>
+     <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;"><button class="popup-btn" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);" onclick="fecharConfirmacao()">Cancelar</button> <button class="popup-btn" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);" onclick="confirmarLimpeza()">Sim, Excluir Tudo</button>
+     </div>
+    </div>
    </div>
   </div><!-- Popup de Ajuda -->
   <div class="popup-overlay hidden" id="popup-ajuda">
@@ -901,7 +1035,7 @@
     </div>
     <div class="ajuda-dica">
      <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z" /> <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
-     </svg><span><strong>Dica:</strong> Os nomes das colunas devem ser exatamente como mostrado acima. Cada linha da planilha gerará um recibo.</span>
+     </svg><span><strong>Dica:</strong> Os nomes das colunas devem ser exatamente como mostrado acima. O sistema aceita datas e valores em qualquer formato!</span>
     </div><button class="popup-btn" onclick="fecharAjuda()">Entendi</button>
    </div>
   </div>
@@ -911,6 +1045,9 @@
    </div><!-- Toast de sucesso -->
    <div class="toast" id="toast-sucesso">
     ✅ Recibos importados com sucesso!
+   </div><!-- Toast de limpeza -->
+   <div class="toast" id="toast-limpeza" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);">
+    🗑️ Dados excluídos com sucesso!
    </div><!-- Recibo original visível, editável manualmente -->
    <section class="recibo" id="recibo">
     <div class="topo">
@@ -926,7 +1063,7 @@
     </div>
     <div class="linha"><label for="referencia">Referente a</label> <input type="text" id="referencia" aria-label="Referência do pagamento">
     </div>
-    <div class="linha"><input type="text" id="descricao" aria-label="Descrição adicional">
+    <div class="linha"><input type="text" id="descricao" aria-label="Descri��ão adicional">
     </div>
     <div class="linha"><label for="emitente">Emitente:</label> <input type="text" id="emitente" aria-label="Nome do emitente">
     </div>
@@ -943,6 +1080,26 @@
      <div class="assinatura-linha"></div>
      <div class="assinatura-nome" id="assinaturaNome"></div>
      <div class="assinatura-nome" id="assinaturaCpf"></div>
+    </div>
+   </section><!-- Recibo SIMPLIFICADO principal -->
+   <section class="recibo" id="recibo-simplificado" style="display: none">
+    <div class="topo">
+     <div class="titulo" id="titulo-recibo-simples">
+      RECIBO
+     </div>
+     <div class="valor-topo"><label for="valor-simples">VALOR</label><br><input type="text" id="valor-simples" aria-label="Valor do recibo">
+     </div>
+    </div>
+    <div class="linha"><label for="nome-principal">Nome:</label> <input type="text" id="nome-principal" aria-label="Nome">
+    </div>
+    <div class="linha"><label for="cpf-principal">CPF:</label> <input type="text" id="cpf-principal" aria-label="CPF">
+    </div>
+    <div class="linha"><label for="data-principal">Data:</label> <input type="text" id="data-principal" placeholder="dd/mm/aaaa" aria-label="Data">
+    </div>
+    <div class="assinatura">
+     <div class="assinatura-linha"></div>
+     <div class="assinatura-nome" id="assinaturaNomeSimples"></div>
+     <div class="assinatura-nome" id="assinaturaCpfSimples"></div>
     </div>
    </section><!-- MODELO oculto para gerar novos recibos -->
    <section class="recibo" id="modelo-recibo" style="display: none" aria-hidden="true">
@@ -984,30 +1141,212 @@
      <div class="assinatura-nome assinaturaNome"></div>
      <div class="assinatura-nome assinaturaCpf"></div>
     </div>
+   </section><!-- MODELO SIMPLIFICADO oculto -->
+   <section class="recibo" id="modelo-recibo-simplificado" style="display: none" aria-hidden="true">
+    <div class="topo">
+     <div class="titulo titulo-modelo">
+      RECIBO
+     </div>
+     <div class="valor-topo"><label>VALOR</label><br><input type="text" class="valor">
+     </div>
+    </div>
+    <div class="linha"><label for="nome-simples">Nome:</label> <input type="text" class="nome-simples" aria-label="Nome">
+    </div>
+    <div class="linha"><label for="cpf-simples">CPF:</label> <input type="text" class="cpf-simples" aria-label="CPF">
+    </div>
+    <div class="linha"><label for="data-simples">Data:</label> <input type="text" class="data-simples" placeholder="dd/mm/aaaa" aria-label="Data">
+    </div>
+    <div class="assinatura">
+     <div class="assinatura-linha"></div>
+     <div class="assinatura-nome assinaturaNome"></div>
+     <div class="assinatura-nome assinaturaCpf"></div>
+    </div>
    </section><!-- Contêiner para os recibos importados -->
    <div id="recibos-gerados"></div>
   </main><!-- Botão flutuante para ocultar/mostrar rodapé --> <button class="toggle-footer-btn" id="toggle-footer" onclick="toggleFooter()" title="Ocultar/Mostrar Barra de Ferramentas">
    <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline>
-   </svg></button>
+   </svg></button> <!-- Botão Sair no canto superior direito --> <button class="btn-sair" onclick="window.open('https://gaveblue.com', '_blank')">
+   <svg viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /> <polyline points="16 17 21 12 16 7"></polyline> <line x1="21" y1="12" x2="9" y2="12"></line>
+   </svg> Sair </button>
   <footer class="botoes">
-   <div class="botoes-esquerda"><button class="imprimir-pdf" id="btn-imprimir-pdf" onclick="imprimirPDF()" title="Imprimir">
+   <div class="botoes-esquerda"><button class="imprimir-pdf" id="btn-imprimir-pdf" onclick="imprimirPDF()" data-tooltip="Imprimir">
      <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline> <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /> <rect x="6" y="14" width="12" height="8"></rect>
-     </svg></button> <button class="limpar" onclick="limparCampos()" title="Limpar Tudo">
+     </svg></button> <button class="limpar" onclick="abrirConfirmacaoLimpeza()" data-tooltip="Limpar Dados">
      <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /> <line x1="10" y1="11" x2="10" y2="17"></line> <line x1="14" y1="11" x2="14" y2="17"></line>
-     </svg></button> <button class="importar" onclick="document.getElementById('excelFile').click()" title="Importar Dados">
+     </svg></button> <button class="importar" onclick="document.getElementById('excelFile').click()" data-tooltip="Importar Dados">
      <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /> <polyline points="14 2 14 8 20 8"></polyline> <line x1="12" y1="18" x2="12" y2="12"></line> <line x1="9" y1="15" x2="15" y2="15"></line>
-     </svg></button> <button class="voltar" onclick="window.open('https://gaveblue.com', '_blank')" title="Voltar">
-     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line> <polyline points="12 19 5 12 12 5"></polyline>
-     </svg></button> <button class="dark-mode-btn" onclick="toggleDarkMode()" title="Modo Escuro" id="dark-mode-toggle">
+     </svg></button> <button class="modelo-toggle-btn-footer" onclick="alternarModelo()" data-tooltip="Alternar Modelo">
+     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 3 12 8 7"></polyline> <polyline points="16 7 21 12 16 17"></polyline> <line x1="3" y1="12" x2="21" y2="12"></line>
+     </svg></button> <button class="dark-mode-btn" onclick="toggleDarkMode()" data-tooltip="Modo Escuro" id="dark-mode-toggle">
      <svg width="24" height="24" viewbox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-     </svg></button> <button class="help-btn" onclick="abrirAjuda()" title="Ajuda - Como importar">
+     </svg></button> <button class="help-btn" onclick="abrirAjuda()" data-tooltip="Ajuda">
      <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle> <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /> <line x1="12" y1="17" x2="12.01" y2="17"></line>
      </svg></button>
-   </div><a href="https://wa.me/5527988790381?text=Olá,%20tenho%20uma%20sugestão%20para%20o%20Gerador%20de%20Recibos" target="_blank" rel="noopener noreferrer" class="whatsapp-btn btn-icon" title="Sugestões WhatsApp">
+   </div><a href="https://wa.me/5527988790381?text=Olá,%20tenho%20uma%20sugestão%20para%20o%20Gerador%20de%20Recibos" target="_blank" rel="noopener noreferrer" class="whatsapp-btn btn-icon" data-tooltip="Sugestões WhatsApp">
     <svg width="24" height="24" viewbox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
     </svg></a> <input type="file" id="excelFile" accept=".xlsx, .xls" style="display: none" onchange="importarExcel(event)">
   </footer>
   <script>
+
+    // Função para processar data de forma inteligente
+    function processarDataInteligente(valorData) {
+      if (!valorData) return '';
+      
+      // Se for número (data serial do Excel)
+      if (typeof valorData === 'number') {
+        const dataExcel = XLSX.SSF.parse_date_code(valorData);
+        const dia = String(dataExcel.d).padStart(2, '0');
+        const mes = String(dataExcel.m).padStart(2, '0');
+        const ano = dataExcel.y;
+        return `${dia}/${mes}/${ano}`;
+      }
+      
+      // Se for string, tentar converter
+      const valorStr = String(valorData).trim();
+      
+      // Se já estiver no formato dd/mm/aaaa, retornar direto
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(valorStr)) {
+        return valorStr;
+      }
+      
+      // Tentar converter formatos comuns
+      let data = null;
+      
+      // Formato: dd-mm-aaaa ou dd.mm.aaaa
+      if (/^\d{2}[-\.]\d{2}[-\.]\d{4}$/.test(valorStr)) {
+        const partes = valorStr.split(/[-\.]/);
+        data = new Date(partes[2], partes[1] - 1, partes[0]);
+      }
+      // Formato: aaaa-mm-dd ou aaaa/mm/dd
+      else if (/^\d{4}[-\/]\d{2}[-\/]\d{2}$/.test(valorStr)) {
+        const partes = valorStr.split(/[-\/]/);
+        data = new Date(partes[0], partes[1] - 1, partes[2]);
+      }
+      // Formato: dd/mm/aa (ano com 2 dígitos)
+      else if (/^\d{2}\/\d{2}\/\d{2}$/.test(valorStr)) {
+        const partes = valorStr.split('/');
+        const ano = parseInt(partes[2]) < 50 ? '20' + partes[2] : '19' + partes[2];
+        data = new Date(ano, partes[1] - 1, partes[0]);
+      }
+      // Tentar parse direto
+      else {
+        data = new Date(valorStr);
+      }
+      
+      // Se conseguiu converter, formatar para dd/mm/aaaa
+      if (data && !isNaN(data.getTime())) {
+        const dia = String(data.getDate()).padStart(2, '0');
+        const mes = String(data.getMonth() + 1).padStart(2, '0');
+        const ano = data.getFullYear();
+        return `${dia}/${mes}/${ano}`;
+      }
+      
+      // Se não conseguiu converter, retornar o valor original
+      return valorStr;
+    }
+
+    // Função para processar valor monetário de forma inteligente
+    function processarValorInteligente(valorMonetario) {
+      if (!valorMonetario) return '';
+      
+      // Se já for número, retornar formatado
+      if (typeof valorMonetario === 'number') {
+        return 'R$ ' + valorMonetario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+      
+      // Converter para string e limpar
+      let valorStr = String(valorMonetario).trim();
+      
+      // Se já estiver no formato correto R$ X.XXX,XX, retornar direto
+      if (/^R\$\s?\d{1,3}(\.\d{3})*(,\d{2})?$/.test(valorStr)) {
+        return valorStr.replace(/^R\$\s?/, 'R$ ');
+      }
+      
+      // Remover tudo exceto números, vírgula e ponto
+      valorStr = valorStr.replace(/[^\d,\.]/g, '');
+      
+      // Se estiver vazio após limpeza, retornar vazio
+      if (!valorStr) return '';
+      
+      // Detectar formato e converter
+      let valorNumerico = 0;
+      
+      // Formato: 1500 ou 1500.50 (sem separador de milhar)
+      if (/^\d+(\.\d{1,2})?$/.test(valorStr) && !valorStr.includes(',')) {
+        valorNumerico = parseFloat(valorStr);
+      }
+      // Formato: 1.500 ou 1.500,50 (ponto como milhar, vírgula como decimal)
+      else if (valorStr.includes('.') && valorStr.includes(',')) {
+        valorStr = valorStr.replace(/\./g, '').replace(',', '.');
+        valorNumerico = parseFloat(valorStr);
+      }
+      // Formato: 1,500.50 (vírgula como milhar, ponto como decimal) - formato americano
+      else if (valorStr.includes(',') && valorStr.includes('.')) {
+        valorStr = valorStr.replace(/,/g, '');
+        valorNumerico = parseFloat(valorStr);
+      }
+      // Formato: 1.500 (apenas ponto - assumir como milhar se > 3 dígitos antes do ponto)
+      else if (valorStr.includes('.') && !valorStr.includes(',')) {
+        const partes = valorStr.split('.');
+        if (partes[0].length > 3 || partes[1].length === 3) {
+          // É separador de milhar
+          valorStr = valorStr.replace(/\./g, '');
+          valorNumerico = parseFloat(valorStr);
+        } else {
+          // É separador decimal
+          valorNumerico = parseFloat(valorStr);
+        }
+      }
+      // Formato: 1,50 ou 1500,50 (vírgula como decimal)
+      else if (valorStr.includes(',') && !valorStr.includes('.')) {
+        valorStr = valorStr.replace(',', '.');
+        valorNumerico = parseFloat(valorStr);
+      }
+      // Apenas números
+      else {
+        valorNumerico = parseFloat(valorStr);
+      }
+      
+      // Se não conseguiu converter ou é inválido, retornar vazio
+      if (isNaN(valorNumerico) || valorNumerico < 0) {
+        return '';
+      }
+      
+      // Retornar formatado no padrão brasileiro
+      return 'R$ ' + valorNumerico.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Variável global para controlar o modelo atual
+    let modeloAtual = 'padrao'; // 'padrao' ou 'simplificado'
+
+    // Função para alternar entre modelos
+    function alternarModelo() {
+      const reciboPadrao = document.getElementById('recibo');
+      const reciboSimplificado = document.getElementById('recibo-simplificado');
+      
+      if (modeloAtual === 'padrao') {
+        // Mudar para simplificado
+        reciboPadrao.style.display = 'none';
+        reciboSimplificado.style.display = 'block';
+        modeloAtual = 'simplificado';
+      } else {
+        // Mudar para padrão
+        reciboSimplificado.style.display = 'none';
+        reciboPadrao.style.display = 'block';
+        modeloAtual = 'padrao';
+      }
+      
+      // Salvar preferência
+      localStorage.setItem('modeloRecibo', modeloAtual);
+    }
+
+    // Carregar preferência do modelo ao iniciar
+    window.addEventListener('DOMContentLoaded', function() {
+      const modeloSalvo = localStorage.getItem('modeloRecibo');
+      if (modeloSalvo === 'simplificado') {
+        alternarModelo();
+      }
+    });
 
     // Função para alternar visibilidade do rodapé
     function toggleFooter() {
@@ -1046,6 +1385,32 @@
       document.getElementById('popup-ajuda').classList.add('hidden');
     }
 
+    // Função para abrir confirmação de limpeza
+    function abrirConfirmacaoLimpeza() {
+      document.getElementById('popup-confirmacao').classList.remove('hidden');
+    }
+
+    // Função para fechar confirmação
+    function fecharConfirmacao() {
+      document.getElementById('popup-confirmacao').classList.add('hidden');
+    }
+
+    // Função para confirmar limpeza
+    function confirmarLimpeza() {
+      fecharConfirmacao();
+      limparCampos();
+      mostrarToastLimpeza();
+    }
+
+    // Função para mostrar toast de limpeza
+    function mostrarToastLimpeza() {
+      const toast = document.getElementById('toast-limpeza');
+      toast.classList.add('visible');
+      setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 3000);
+    }
+
     // Função para alternar modo escuro
     function toggleDarkMode() {
       const body = document.body;
@@ -1057,11 +1422,11 @@
       
       // Atualizar ícone
       if (isDark) {
-        btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+        btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2"></line><line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2"></line><line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2"></line><line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2"></line></svg>';
         btn.style.background = 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
       } else {
         btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
-        btn.style.background = 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
+        btn.style.background = 'linear-gradient(135deg, #475569 0%, #334155 100%)';
       }
     }
 
@@ -1117,6 +1482,11 @@
       if (total > 0) {
         numeroSpan.textContent = total;
         contador.classList.add('visible');
+        
+        // Remover após 3 segundos
+        setTimeout(() => {
+          contador.classList.remove('visible');
+        }, 3000);
       } else {
         contador.classList.remove('visible');
       }
@@ -1342,7 +1712,69 @@
         container.innerHTML = '';
 
         jsonData.forEach((row, index) => {
-          const modelo = document.getElementById('modelo-recibo');
+          // Para o primeiro recibo, preencher o recibo principal
+          if (index === 0) {
+            if (modeloAtual === 'simplificado') {
+              // Preencher recibo simplificado principal
+              if (row.Valor) {
+                const valorInput = document.getElementById('valor-simples');
+                const valorFormatado = processarValorInteligente(row.Valor);
+                valorInput.value = valorFormatado;
+              }
+              if (row.Recebedor || row.Emitente) {
+                const nomeInput = document.getElementById('nome-principal');
+                nomeInput.value = row.Recebedor || row.Emitente || '';
+                document.getElementById('assinaturaNomeSimples').textContent = nomeInput.value;
+              }
+              if (row.CPFCNPJ) {
+                const cpfInput = document.getElementById('cpf-principal');
+                cpfInput.value = row.CPFCNPJ;
+                formatarCpfCnpj(cpfInput);
+                document.getElementById('assinaturaCpfSimples').textContent = cpfInput.value;
+              }
+              if (row.Data) {
+                const dataFormatada = processarDataInteligente(row.Data);
+                document.getElementById('data-principal').value = dataFormatada;
+              }
+            } else {
+              // Preencher recibo padrão principal
+              if (row.Valor) {
+                const valorInput = document.getElementById('valor');
+                const valorFormatado = processarValorInteligente(row.Valor);
+                valorInput.value = valorFormatado;
+                
+                // Atualizar o campo por extenso
+                const valorLimpo = valorFormatado.replace(/[^\d,]/g, '').replace(',', '.');
+                const valorNumerico = parseFloat(valorLimpo);
+                if (!isNaN(valorNumerico) && valorNumerico > 0) {
+                  const extenso = numeroParaExtenso(valorNumerico);
+                  document.getElementById('campoQuantia').value = extenso.toUpperCase();
+                }
+              }
+              if (row.Recebedor) document.getElementById('recebedor').value = row.Recebedor;
+              if (row.Referencia) document.getElementById('referencia').value = row.Referencia;
+              if (row.Descricao) document.getElementById('descricao').value = row.Descricao;
+              if (row.Emitente) {
+                document.getElementById('emitente').value = row.Emitente;
+                document.getElementById('assinaturaNome').textContent = row.Emitente;
+              }
+              if (row.CPFCNPJ) {
+                const cpfInput = document.getElementById('cpfcnpj');
+                cpfInput.value = row.CPFCNPJ;
+                formatarCpfCnpj(cpfInput);
+                document.getElementById('assinaturaCpf').textContent = cpfInput.value;
+              }
+              if (row.Data) {
+                const dataFormatada = processarDataInteligente(row.Data);
+                document.getElementById('data').value = dataFormatada;
+              }
+            }
+            return; // Pular para o próximo registro
+          }
+
+          // Para os demais recibos, criar cópias
+          const modeloId = modeloAtual === 'simplificado' ? 'modelo-recibo-simplificado' : 'modelo-recibo';
+          const modelo = document.getElementById(modeloId);
           const novoRecibo = modelo.cloneNode(true);
           novoRecibo.id = 'recibo-' + index;
           novoRecibo.style.display = 'block';
@@ -1350,35 +1782,81 @@
           const tituloConfig = window.elementSdk && window.elementSdk.config ? window.elementSdk.config.titulo_recibo : 'RECIBO';
           novoRecibo.querySelector('.titulo-modelo').textContent = tituloConfig || 'RECIBO';
 
-          if (row.Valor) {
-            const valorInput = novoRecibo.querySelector('.valor');
-            valorInput.value = row.Valor;
-            formatarMoeda(valorInput);
-          }
-          if (row.Recebedor) novoRecibo.querySelector('.recebedor').value = row.Recebedor;
-          if (row.Referencia) novoRecibo.querySelector('.referencia').value = row.Referencia;
-          if (row.Descricao) novoRecibo.querySelector('.descricao').value = row.Descricao;
-          if (row.Emitente) {
-            novoRecibo.querySelector('.emitente').value = row.Emitente;
-            novoRecibo.querySelector('.assinaturaNome').textContent = row.Emitente;
-          }
-          if (row.CPFCNPJ) {
-            const cpfInput = novoRecibo.querySelector('.cpfcnpj');
-            cpfInput.value = row.CPFCNPJ;
-            formatarCpfCnpj(cpfInput);
-            novoRecibo.querySelector('.assinaturaCpf').textContent = cpfInput.value;
-          }
-          if (row.Data) novoRecibo.querySelector('.data').value = row.Data;
+          if (modeloAtual === 'simplificado') {
+            // Preencher modelo simplificado
+            if (row.Valor) {
+              const valorInput = novoRecibo.querySelector('.valor');
+              const valorFormatado = processarValorInteligente(row.Valor);
+              valorInput.value = valorFormatado;
+            }
+            if (row.Recebedor || row.Emitente) {
+              const nomeInput = novoRecibo.querySelector('.nome-simples');
+              nomeInput.value = row.Recebedor || row.Emitente || '';
+              novoRecibo.querySelector('.assinaturaNome').textContent = nomeInput.value;
+            }
+            if (row.CPFCNPJ) {
+              const cpfInput = novoRecibo.querySelector('.cpf-simples');
+              cpfInput.value = row.CPFCNPJ;
+              formatarCpfCnpj(cpfInput);
+              novoRecibo.querySelector('.assinaturaCpf').textContent = cpfInput.value;
+            }
+            if (row.Data) {
+              const dataFormatada = processarDataInteligente(row.Data);
+              novoRecibo.querySelector('.data-simples').value = dataFormatada;
+            }
 
-          // Adicionar eventos
-          novoRecibo.querySelector('.valor').oninput = function() { formatarMoeda(this); };
-          novoRecibo.querySelector('.cpfcnpj').oninput = function() { 
-            formatarCpfCnpj(this); 
-            atualizarAssinaturaDireto(this);
-          };
-          novoRecibo.querySelector('.emitente').oninput = function() { 
-            atualizarAssinaturaDireto(this);
-          };
+            // Adicionar eventos para modelo simplificado
+            novoRecibo.querySelector('.valor').oninput = function() { formatarMoeda(this); };
+            novoRecibo.querySelector('.cpf-simples').oninput = function() { 
+              formatarCpfCnpj(this); 
+              atualizarAssinaturaDireto(this);
+            };
+            novoRecibo.querySelector('.nome-simples').oninput = function() { 
+              atualizarAssinaturaDireto(this);
+            };
+          } else {
+            // Preencher modelo padrão
+            if (row.Valor) {
+              const valorInput = novoRecibo.querySelector('.valor');
+              const valorFormatado = processarValorInteligente(row.Valor);
+              valorInput.value = valorFormatado;
+              
+              // Atualizar o campo por extenso
+              const valorLimpo = valorFormatado.replace(/[^\d,]/g, '').replace(',', '.');
+              const valorNumerico = parseFloat(valorLimpo);
+              if (!isNaN(valorNumerico) && valorNumerico > 0) {
+                const extenso = numeroParaExtenso(valorNumerico);
+                novoRecibo.querySelector('.campoQuantia').value = extenso.toUpperCase();
+              }
+            }
+            if (row.Recebedor) novoRecibo.querySelector('.recebedor').value = row.Recebedor;
+            if (row.Referencia) novoRecibo.querySelector('.referencia').value = row.Referencia;
+            if (row.Descricao) novoRecibo.querySelector('.descricao').value = row.Descricao;
+            if (row.Emitente) {
+              novoRecibo.querySelector('.emitente').value = row.Emitente;
+              novoRecibo.querySelector('.assinaturaNome').textContent = row.Emitente;
+            }
+            if (row.CPFCNPJ) {
+              const cpfInput = novoRecibo.querySelector('.cpfcnpj');
+              cpfInput.value = row.CPFCNPJ;
+              formatarCpfCnpj(cpfInput);
+              novoRecibo.querySelector('.assinaturaCpf').textContent = cpfInput.value;
+            }
+            if (row.Data) {
+              const dataFormatada = processarDataInteligente(row.Data);
+              novoRecibo.querySelector('.data').value = dataFormatada;
+            }
+
+            // Adicionar eventos para modelo padrão
+            novoRecibo.querySelector('.valor').oninput = function() { formatarMoeda(this); };
+            novoRecibo.querySelector('.cpfcnpj').oninput = function() { 
+              formatarCpfCnpj(this); 
+              atualizarAssinaturaDireto(this);
+            };
+            novoRecibo.querySelector('.emitente').oninput = function() { 
+              atualizarAssinaturaDireto(this);
+            };
+          }
 
           container.appendChild(novoRecibo);
         });
@@ -1390,6 +1868,14 @@
       reader.readAsArrayBuffer(file);
     }
 
+    // Função para atualizar assinatura do recibo simplificado
+    function atualizarAssinaturaSimples() {
+      const nome = document.getElementById('nome-principal').value;
+      const cpf = document.getElementById('cpf-principal').value;
+      document.getElementById('assinaturaNomeSimples').textContent = nome;
+      document.getElementById('assinaturaCpfSimples').textContent = cpf;
+    }
+
     // Eventos do recibo principal
     document.getElementById('valor').oninput = function() { formatarMoeda(this); };
     document.getElementById('cpfcnpj').oninput = function() { 
@@ -1398,6 +1884,16 @@
     };
     document.getElementById('emitente').oninput = function() { 
       atualizarAssinatura();
+    };
+
+    // Eventos do recibo simplificado
+    document.getElementById('valor-simples').oninput = function() { formatarMoeda(this); };
+    document.getElementById('cpf-principal').oninput = function() { 
+      formatarCpfCnpj(this); 
+      atualizarAssinaturaSimples();
+    };
+    document.getElementById('nome-principal').oninput = function() { 
+      atualizarAssinaturaSimples();
     };
 
     // Element SDK
@@ -1510,5 +2006,5 @@
       applyConfig(window.elementSdk.config || defaultConfig);
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a80171d923a794f',t:'MTc2NDczMzcyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f0d0bf780cd97',t:'MTc2NDg5MDYwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
