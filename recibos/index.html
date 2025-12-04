@@ -1391,15 +1391,31 @@
 
     // Função para baixar modelo de planilha
     function baixarModeloPlanilha() {
-      // Mostrar toast de download iniciado
-      const toastDownload = document.createElement('div');
-      toastDownload.className = 'toast visible';
-      toastDownload.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-      toastDownload.innerHTML = '📥 Download iniciado!';
-      document.body.appendChild(toastDownload);
+      // Mostrar mensagem dentro do popup de ajuda
+      const popupAjuda = document.getElementById('popup-ajuda');
+      const mensagemDownload = document.createElement('div');
+      mensagemDownload.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 30px 50px;
+        border-radius: 20px;
+        font-size: 24px;
+        font-weight: bold;
+        box-shadow: 0 10px 40px rgba(16, 185, 129, 0.5);
+        z-index: 10003;
+        animation: toastPop 0.3s ease-out;
+      `;
+      mensagemDownload.innerHTML = '📥 Download iniciado com sucesso!';
+      popupAjuda.appendChild(mensagemDownload);
       
       setTimeout(() => {
-        toastDownload.remove();
+        mensagemDownload.style.opacity = '0';
+        mensagemDownload.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => mensagemDownload.remove(), 300);
       }, 3000);
       
       // Criar dados do modelo
@@ -1436,7 +1452,7 @@
       document.getElementById('popup-confirmacao').classList.remove('hidden');
     }
 
-    // Função para fechar confirmação
+    // Fun��ão para fechar confirmação
     function fecharConfirmacao() {
       document.getElementById('popup-confirmacao').classList.add('hidden');
     }
@@ -2087,5 +2103,5 @@
       applyConfig(window.elementSdk.config || defaultConfig);
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f3b4376fedb39',t:'MTc2NDg5MjQ5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f3eeb7608f1b4',t:'MTc2NDg5MjY0My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
