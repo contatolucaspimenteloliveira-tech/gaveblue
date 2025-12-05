@@ -1,18 +1,548 @@
 <!doctype html>
 <html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Login - Deu Azul</title>
-</head>
-<body style="font-family:Arial, sans-serif; padding:24px;">
-  <h1>Login</h1>
-  <form>
-    <label>Email</label><br>
-    <input type="email" placeholder="voce@exemplo.com"><br><br>
-    <label>Senha</label><br>
-    <input type="password" placeholder="•••••••"><br><br>
-    <button type="submit">Entrar</button>
-  </form>
-</body>
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern Login</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+    
+    /* Glass Morphism Effects */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .glass-input {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .glass-input:focus {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(37, 99, 235, 0.5);
+      box-shadow: 
+        0 0 0 3px rgba(37, 99, 235, 0.1),
+        0 10px 25px -5px rgba(37, 99, 235, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .glass-button {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.8), rgba(59, 130, 246, 0.8));
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .glass-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.6s;
+    }
+    
+    .glass-button:hover::before {
+      left: 100%;
+    }
+    
+    .glass-button:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 
+        0 20px 40px -10px rgba(37, 99, 235, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.2);
+    }
+    
+    .glass-tab {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .glass-tab.active {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(37, 99, 235, 0.3);
+      box-shadow: 0 8px 25px -8px rgba(37, 99, 235, 0.3);
+    }
+    
+    .glass-tab:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-1px);
+    }
+    
+    /* Gradient Background */
+    .gradient-bg {
+      background: linear-gradient(135deg, 
+        #1e3a8a 0%, 
+        #1e40af 25%, 
+        #2563eb 50%, 
+        #3b82f6 75%, 
+        #60a5fa 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+    }
+    
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    /* Avatar Gradients */
+    .avatar-gradient {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8, #3b82f6, #60a5fa);
+      box-shadow: 0 15px 35px rgba(37, 99, 235, 0.4);
+    }
+    
+    .user-icon-gradient {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    }
+    
+    .lock-icon-gradient {
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    }
+    
+    /* Animations */
+    .fade-in-up {
+      animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .fade-in-up-delay {
+      animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+    }
+    
+    .fade-in-up-delay-2 {
+      animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.4s both;
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .error-shake {
+      animation: modernShake 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    @keyframes modernShake {
+      0%, 100% { transform: translateX(0) scale(1); }
+      25% { transform: translateX(-8px) scale(0.98); }
+      75% { transform: translateX(8px) scale(0.98); }
+    }
+    
+    /* Success Animation */
+    .success-scale {
+      animation: successScale 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    @keyframes successScale {
+      0% { transform: scale(0.8) rotate(-5deg); opacity: 0; }
+      50% { transform: scale(1.05) rotate(2deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    
+    /* Floating Elements */
+    .floating-orb {
+      position: absolute;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+      backdrop-filter: blur(10px);
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    .floating-orb:nth-child(1) {
+      width: 80px;
+      height: 80px;
+      top: 10%;
+      left: 10%;
+      animation-delay: 0s;
+    }
+    
+    .floating-orb:nth-child(2) {
+      width: 120px;
+      height: 120px;
+      top: 70%;
+      right: 10%;
+      animation-delay: 2s;
+    }
+    
+    .floating-orb:nth-child(3) {
+      width: 60px;
+      height: 60px;
+      top: 30%;
+      right: 20%;
+      animation-delay: 4s;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(180deg); }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="gradient-bg"><!-- Floating Orbs -->
+  <div class="floating-orb"></div>
+  <div class="floating-orb"></div>
+  <div class="floating-orb"></div>
+  <div class="min-h-full flex items-center justify-center p-6">
+   <div class="w-full max-w-md"><!-- Main Card -->
+    <div class="glass-card rounded-3xl p-6 fade-in-up"><!-- Avatar Section -->
+     <div class="text-center mb-6 fade-in-up-delay">
+      <div class="avatar-gradient w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 transform hover:scale-105 transition-all duration-300">
+       <svg class="w-8 h-8 text-white" fill="currentColor" viewbox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+       </svg>
+      </div>
+      <h1 id="page-title" class="text-2xl font-bold text-white mb-2">Bem-vindo de Volta</h1>
+      <p id="welcome-message" class="text-white/70 text-base">Faça login para continuar em sua conta</p>
+     </div><!-- Success Message -->
+     <div id="success-message" class="mb-6 p-4 glass-card rounded-2xl text-center hidden success-scale">
+      <div class="flex items-center justify-center mb-2">
+       <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+       </div>
+       <p class="font-semibold text-white">Login realizado com sucesso!</p>
+      </div>
+     </div><!-- Error Message -->
+     <div id="error-message" class="mb-6 p-4 glass-card rounded-2xl text-center hidden border-red-500/30">
+      <div class="flex items-center justify-center mb-2">
+       <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center mr-3">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+       </div>
+       <p class="font-semibold text-red-300">Usuário ou senha incorretos</p>
+      </div>
+     </div><!-- Content Container with Fixed Height -->
+     <div class="min-h-[240px] fade-in-up-delay-2"><!-- Login Form -->
+      <form id="login-form" class="space-y-4"><!-- Username Input -->
+       <div class="relative">
+        <div class="absolute left-4 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+         <svg class="w-4 h-4 text-white" fill="currentColor" viewbox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+         </svg>
+        </div><input type="text" id="username" class="glass-input w-full pl-14 pr-6 py-3 rounded-2xl text-white placeholder-white/50 focus:outline-none text-base" placeholder="Digite seu usuário" required>
+       </div><!-- Password Input -->
+       <div class="relative">
+        <div class="absolute left-4 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+         </svg>
+        </div><input type="password" id="password" class="glass-input w-full pl-14 pr-16 py-3 rounded-2xl text-white placeholder-white/50 focus:outline-none text-base" placeholder="Digite sua senha" required> <button type="button" id="toggle-password" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 glass-card rounded-xl flex items-center justify-center text-white/70 hover:text-white transition-all duration-300 hover:scale-105">
+         <svg id="eye-closed" class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+         </svg>
+         <svg id="eye-open" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+         </svg></button>
+       </div><!-- Login Button --> <button type="submit" id="login-button" class="glass-button w-full py-3 rounded-2xl font-bold text-white text-base relative z-10"> Entrar </button> <!-- Register Link -->
+       <div class="text-center mt-4">
+        <p class="text-white/60 text-sm">Ainda não tem login? <a href="https://gaveblue.com/cadastro" target="_blank" rel="noopener noreferrer" class="text-blue-300 hover:text-blue-200 font-semibold underline transition-colors duration-300"> Cadastre-se agora! </a></p>
+       </div>
+      </form>
+     </div>
+    </div>
+   </div>
+  </div><!-- Success Popup -->
+  <div id="success-popup" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 opacity-0 transition-all duration-500 pointer-events-none">
+   <div class="glass-card rounded-3xl p-8 max-w-sm mx-4 text-center transform scale-75 transition-all duration-500">
+    <div id="success-icon" class="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+     <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+     </svg>
+    </div>
+    <div id="loading-icon" class="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 hidden">
+     <div class="animate-spin rounded-full h-10 w-10 border-4 border-white/20 border-t-white border-r-white/60"></div>
+    </div>
+    <h3 id="popup-title" class="text-2xl font-bold text-white mb-3">Login Realizado!</h3>
+    <p id="popup-message" class="text-white/70 text-lg">Redirecionando para o sistema...</p>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      background_color: "#2563eb",
+      surface_color: "rgba(255, 255, 255, 0.08)",
+      text_color: "#ffffff",
+      primary_action_color: "#1d4ed8",
+      secondary_text_color: "rgba(255, 255, 255, 0.7)",
+      page_title: "Bem-vindo de Volta",
+      welcome_message: "Faça login para continuar em sua conta",
+      username_placeholder: "Digite seu usuário",
+      password_placeholder: "Digite sua senha",
+      button_text: "Entrar",
+      font_family: "system-ui",
+      font_size: 16
+    };
+
+    let config = { ...defaultConfig };
+
+    async function onConfigChange(newConfig) {
+      config = { ...config, ...newConfig };
+      
+      const textColor = config.text_color || defaultConfig.text_color;
+      const secondaryTextColor = config.secondary_text_color || defaultConfig.secondary_text_color;
+      const fontFamily = config.font_family || defaultConfig.font_family;
+      const baseFontSize = config.font_size || defaultConfig.font_size;
+      
+      document.body.style.fontFamily = `${fontFamily}, system-ui, -apple-system, sans-serif`;
+      
+      const pageTitle = document.getElementById('page-title');
+      pageTitle.textContent = config.page_title || defaultConfig.page_title;
+      pageTitle.style.color = textColor;
+      pageTitle.style.fontSize = `${baseFontSize * 1.5}px`;
+      pageTitle.style.fontFamily = `${fontFamily}, system-ui, -apple-system, sans-serif`;
+      
+      const welcomeMessage = document.getElementById('welcome-message');
+      welcomeMessage.textContent = config.welcome_message || defaultConfig.welcome_message;
+      welcomeMessage.style.color = secondaryTextColor;
+      welcomeMessage.style.fontSize = `${baseFontSize}px`;
+      welcomeMessage.style.fontFamily = `${fontFamily}, system-ui, -apple-system, sans-serif`;
+      
+      const usernameInput = document.getElementById('username');
+      usernameInput.placeholder = config.username_placeholder || defaultConfig.username_placeholder;
+      usernameInput.style.fontSize = `${baseFontSize}px`;
+      usernameInput.style.fontFamily = `${fontFamily}, system-ui, -apple-system, sans-serif`;
+      
+      const passwordInput = document.getElementById('password');
+      passwordInput.placeholder = config.password_placeholder || defaultConfig.password_placeholder;
+      passwordInput.style.fontSize = `${baseFontSize}px`;
+      passwordInput.style.fontFamily = `${fontFamily}, system-ui, -apple-system, sans-serif`;
+      
+      const loginButton = document.getElementById('login-button');
+      loginButton.textContent = config.button_text || defaultConfig.button_text;
+      loginButton.style.fontSize = `${baseFontSize}px`;
+      loginButton.style.fontFamily = `${fontFamily}, system-ui, -apple-system, sans-serif`;
+    }
+
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [
+          {
+            get: () => config.background_color || defaultConfig.background_color,
+            set: (value) => {
+              config.background_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ background_color: value });
+              }
+            }
+          },
+          {
+            get: () => config.surface_color || defaultConfig.surface_color,
+            set: (value) => {
+              config.surface_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ surface_color: value });
+              }
+            }
+          },
+          {
+            get: () => config.text_color || defaultConfig.text_color,
+            set: (value) => {
+              config.text_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            }
+          },
+          {
+            get: () => config.primary_action_color || defaultConfig.primary_action_color,
+            set: (value) => {
+              config.primary_action_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ primary_action_color: value });
+              }
+            }
+          },
+          {
+            get: () => config.secondary_text_color || defaultConfig.secondary_text_color,
+            set: (value) => {
+              config.secondary_text_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ secondary_text_color: value });
+              }
+            }
+          }
+        ],
+        borderables: [],
+        fontEditable: {
+          get: () => config.font_family || defaultConfig.font_family,
+          set: (value) => {
+            config.font_family = value;
+            if (window.elementSdk) {
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          }
+        },
+        fontSizeable: {
+          get: () => config.font_size || defaultConfig.font_size,
+          set: (value) => {
+            config.font_size = value;
+            if (window.elementSdk) {
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }
+      };
+    }
+
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ["page_title", config.page_title || defaultConfig.page_title],
+        ["welcome_message", config.welcome_message || defaultConfig.welcome_message],
+        ["username_placeholder", config.username_placeholder || defaultConfig.username_placeholder],
+        ["password_placeholder", config.password_placeholder || defaultConfig.password_placeholder],
+        ["button_text", config.button_text || defaultConfig.button_text]
+      ]);
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+    }
+
+
+
+    // Password toggle
+    document.getElementById('toggle-password').addEventListener('click', function() {
+      const passwordInput = document.getElementById('password');
+      const eyeClosed = document.getElementById('eye-closed');
+      const eyeOpen = document.getElementById('eye-open');
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeClosed.classList.add('hidden');
+        eyeOpen.classList.remove('hidden');
+      } else {
+        passwordInput.type = 'password';
+        eyeClosed.classList.remove('hidden');
+        eyeOpen.classList.add('hidden');
+      }
+    });
+
+    // Form submission
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const errorMessage = document.getElementById('error-message');
+      const loginForm = document.getElementById('login-form');
+      const successPopup = document.getElementById('success-popup');
+      const successIcon = document.getElementById('success-icon');
+      const loadingIcon = document.getElementById('loading-icon');
+      const popupTitle = document.getElementById('popup-title');
+      const popupMessage = document.getElementById('popup-message');
+      
+      errorMessage.classList.add('hidden');
+      
+      if (username === 'admin' && password === '12345') {
+        // Show success popup
+        successPopup.classList.remove('pointer-events-none');
+        successPopup.classList.remove('opacity-0');
+        successPopup.classList.add('opacity-100');
+        
+        setTimeout(() => {
+          successPopup.querySelector('.glass-card').classList.remove('scale-75');
+          successPopup.querySelector('.glass-card').classList.add('scale-100');
+        }, 50);
+        
+        // Clear form
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+        
+        // Switch to loading after 2 seconds
+        setTimeout(() => {
+          successIcon.classList.add('hidden');
+          loadingIcon.classList.remove('hidden');
+          popupTitle.textContent = 'Carregando...';
+          popupMessage.textContent = 'Aguarde um momento';
+          
+          // Redirect after 3 seconds
+          setTimeout(() => {
+            const newWindow = window.open('https://gaveblue.com/wefrotas', '_blank', 'noopener,noreferrer');
+            
+            if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+              popupTitle.textContent = 'Redirecionamento Bloqueado';
+              popupMessage.innerHTML = 'Clique <a href="https://gaveblue.com/wefrotas" target="_blank" rel="noopener noreferrer" class="text-blue-300 underline font-semibold hover:text-blue-200 transition-colors">aqui para acessar o sistema</a>';
+              return;
+            }
+            
+            // Hide popup
+            successPopup.classList.remove('opacity-100');
+            successPopup.classList.add('opacity-0');
+            successPopup.querySelector('.glass-card').classList.remove('scale-100');
+            successPopup.querySelector('.glass-card').classList.add('scale-75');
+            
+            setTimeout(() => {
+              successPopup.classList.add('pointer-events-none');
+              successIcon.classList.remove('hidden');
+              loadingIcon.classList.add('hidden');
+              popupTitle.textContent = 'Login Realizado!';
+              popupMessage.textContent = 'Redirecionando para o sistema...';
+            }, 500);
+          }, 3000);
+        }, 2000);
+      } else {
+        errorMessage.classList.remove('hidden');
+        loginForm.classList.add('error-shake');
+        
+        setTimeout(() => {
+          loginForm.classList.remove('error-shake');
+        }, 600);
+      }
+    });
+
+    onConfigChange(defaultConfig);
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f595a74b3cd97',t:'MTc2NDg5MzcyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
