@@ -1,0 +1,1397 @@
+<!doctype html>
+<html lang="pt-BR">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assistente de Cadastro - Sistema de Gestão de Frotas</title>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+      overflow: hidden;
+    }
+    html {
+      height: 100%;
+    }
+    .app-container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .chat-container::-webkit-scrollbar {
+      width: 4px;
+    }
+    .chat-container::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+    }
+    .chat-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+    .chat-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+      background-clip: content-box;
+    }
+    .header-fixed {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .input-fixed {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    @media (max-width: 768px) {
+      .chat-container {
+        padding-bottom: 120px;
+      }
+      .header-fixed {
+        padding: 12px 16px;
+      }
+      .input-fixed {
+        padding: 12px 16px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      }
+      .chat-messages-mobile {
+        padding: 12px 16px;
+      }
+      .mobile-avatar {
+        width: 32px;
+        height: 32px;
+      }
+      .mobile-message {
+        max-width: calc(100vw - 80px);
+        padding: 12px 16px;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      .mobile-title {
+        font-size: 18px;
+      }
+      .mobile-subtitle {
+        font-size: 12px;
+      }
+      .mobile-button {
+        padding: 12px 16px;
+        font-size: 14px;
+        min-height: 44px;
+      }
+      .mobile-input {
+        padding: 12px 16px;
+        font-size: 16px;
+        min-height: 44px;
+      }
+    }
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 0;
+    }
+    .typing-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      animation: typing 1.6s infinite ease-in-out;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    .typing-dot:nth-child(3) { animation-delay: 0s; }
+    @keyframes typing {
+      0%, 80%, 100% { 
+        transform: scale(0.8) translateY(0); 
+        opacity: 0.6; 
+      }
+      40% { 
+        transform: scale(1.1) translateY(-8px); 
+        opacity: 1; 
+      }
+    }
+    .message-enter {
+      animation: messageSlide 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    @keyframes messageSlide {
+      from { 
+        opacity: 0; 
+        transform: translateY(24px) scale(0.95); 
+      }
+      to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+      }
+    }
+    .glass-effect {
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .bot-avatar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    .user-avatar {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      box-shadow: 0 8px 32px rgba(245, 87, 108, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    .modern-button {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .modern-button:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    .modern-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: all 0.3s ease;
+    }
+    .modern-input:focus {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(102, 126, 234, 0.5);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="min-h-full">
+  <div id="app" class="min-h-full"></div>
+  <script>
+    const defaultConfig = {
+      background_color: "#0f172a",
+      surface_color: "#1e293b",
+      text_color: "#f1f5f9",
+      primary_action_color: "#3b82f6",
+      secondary_action_color: "#64748b",
+      font_family: "Inter",
+      font_size: 16,
+      form_title: "Assistente de Cadastro",
+      warning_message: "Estamos em fase de testes, por isso seu cadastro será analisado individualmente. Se quiser apoiar este projeto, fique à vontade para contribuir através da nossa chave PIX:",
+      pix_key: "financeiro@gaveblue.com",
+      success_message: "Cadastro enviado com sucesso! Entraremos em contato em breve."
+    };
+
+    const lightTheme = {
+      background_color: "#f8fafc",
+      surface_color: "#ffffff",
+      text_color: "#1e293b",
+      primary_action_color: "#3b82f6",
+      secondary_action_color: "#64748b"
+    };
+
+    const darkTheme = {
+      background_color: "#0f172a",
+      surface_color: "#1e293b",
+      text_color: "#f1f5f9",
+      primary_action_color: "#3b82f6",
+      secondary_action_color: "#64748b"
+    };
+
+    let isDarkMode = true;
+
+    let currentRecords = [];
+    let chatStep = 0;
+    let userData = {};
+    let isTyping = false;
+
+    const questions = [
+      { key: 'tipo_pessoa', question: 'Olá! 👋 Sou o assistente da GaveBlue. Que bom que você deseja ter um sistema de gestão de frotas eficiente e totalmente intuitivo! Vamos iniciar seu cadastro? Você deseja que seu contrato seja em nome de pessoa física ou jurídica?', type: 'select', options: ['Pessoa Física', 'Pessoa Jurídica'] },
+      { key: 'nome_completo', question: 'Perfeito! Agora me diga seu nome completo:', type: 'text', validation: 'fullname' },
+      { key: 'documento', question: '', type: 'text', validation: 'document' }, // Pergunta será definida dinamicamente
+      { key: 'email', question: 'Qual é o seu e-mail?', type: 'email', validation: 'email' },
+      { key: 'telefone', question: 'E seu telefone para contato?', type: 'tel', validation: 'phone' },
+      { key: 'quantidade_veiculos', question: 'Quantos veículos você possui na sua frota?', type: 'select', options: ['1-5 veículos', '6-10 veículos', '11-20 veículos', '21-50 veículos', 'Mais de 50 veículos'] },
+      { key: 'melhor_data_pagamento', question: 'Qual seria a melhor data do mês para pagamento?', type: 'select', options: ['Dia 5', 'Dia 10', 'Dia 15', 'Dia 20', 'Dia 25', 'Dia 30', 'Último dia útil'] },
+      { key: 'melhor_horario_contato', question: 'Qual o melhor horário para entrarmos em contato?', type: 'select', options: ['Manhã (8h às 12h)', 'Tarde (12h às 18h)', 'Noite (18h às 22h)', 'Qualquer horário'] },
+      { key: 'nome_usuario', question: 'Escolha um nome de usuário para acessar o sistema:', type: 'text', validation: 'username' },
+      { key: 'senha', question: 'Por último, crie uma senha segura (mínimo 6 caracteres):', type: 'password', validation: 'password' },
+      { key: 'confirmar_senha', question: 'Confirme sua senha:', type: 'password', validation: 'confirm_password' }
+    ];
+
+    const dataHandler = {
+      onDataChanged(data) {
+        currentRecords = data;
+      }
+    };
+
+    function validateInput(value, type, tipoPessoa = null) {
+      switch (type) {
+        case 'fullname':
+          if (value.length < 5) return 'Nome completo deve ter pelo menos 5 caracteres.';
+          if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(value)) return 'Nome deve conter apenas letras.';
+          if (value.split(' ').length < 2) return 'Digite nome e sobrenome.';
+          break;
+        
+        case 'email':
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) return 'Por favor, digite um e-mail válido.';
+          break;
+        
+        case 'phone':
+          const phoneRegex = /^\(?[1-9]{2}\)?\s?9?\d{4}-?\d{4}$/;
+          if (!phoneRegex.test(value.replace(/\s/g, ''))) return 'Digite um telefone válido (ex: 11999999999).';
+          break;
+        
+        case 'document':
+          if (tipoPessoa === 'Pessoa Física') {
+            const cpf = value.replace(/\D/g, '');
+            if (cpf.length !== 11) return 'CPF deve ter 11 dígitos.';
+            if (/^(\d)\1{10}$/.test(cpf)) return 'CPF inválido.';
+          } else if (tipoPessoa === 'Pessoa Jurídica') {
+            const cnpj = value.replace(/\D/g, '');
+            if (cnpj.length !== 14) return 'CNPJ deve ter 14 dígitos.';
+          }
+          break;
+        
+        case 'username':
+          if (value.length < 3) return 'Nome de usuário deve ter pelo menos 3 caracteres.';
+          if (!/^[a-zA-Z0-9_]+$/.test(value)) return 'Use apenas letras, números e underscore.';
+          break;
+        
+        case 'password':
+          if (value.length < 6) return 'Senha deve ter pelo menos 6 caracteres.';
+          break;
+        
+        case 'confirm_password':
+          if (value !== userData.senha) return 'As senhas não coincidem. Digite novamente.';
+          break;
+      }
+      return null;
+    }
+
+    function getSmartResponse(question, answer) {
+      const responses = {
+        'tipo_pessoa': `Entendi, ${answer}! 📄`,
+        'nome_completo': `Prazer em conhecê-lo, ${answer.split(' ')[0]}! 😊`,
+        'documento': `Documento registrado! ✅`,
+        'email': `E-mail confirmado! 📧`,
+        'telefone': `Telefone salvo! 📱`,
+        'quantidade_veiculos': `${answer}, ótimo tamanho de frota! 🚗`,
+        'melhor_data_pagamento': `${answer} anotado! 📅`,
+        'melhor_horario_contato': `${answer}, perfeito! ⏰`,
+        'nome_usuario': `Nome de usuário "${answer}" disponível! 👤`,
+        'senha': `Senha segura criada! 🔒`,
+        'confirmar_senha': `Senha confirmada com sucesso! ✅`
+      };
+      return responses[question] || 'Perfeito! ✅';
+    }
+
+    async function initializeApp() {
+      const initResult = await window.dataSdk.init(dataHandler);
+      if (!initResult.isOk) {
+        console.error("Erro ao inicializar Data SDK");
+        return;
+      }
+
+      if (window.elementSdk) {
+        window.elementSdk.init({
+          defaultConfig,
+          onConfigChange: async (config) => {
+            applyConfig(config);
+          },
+          mapToCapabilities: (config) => ({
+            recolorables: [
+              {
+                get: () => config.background_color || defaultConfig.background_color,
+                set: (value) => {
+                  config.background_color = value;
+                  window.elementSdk.setConfig({ background_color: value });
+                }
+              },
+              {
+                get: () => config.surface_color || defaultConfig.surface_color,
+                set: (value) => {
+                  config.surface_color = value;
+                  window.elementSdk.setConfig({ surface_color: value });
+                }
+              },
+              {
+                get: () => config.text_color || defaultConfig.text_color,
+                set: (value) => {
+                  config.text_color = value;
+                  window.elementSdk.setConfig({ text_color: value });
+                }
+              },
+              {
+                get: () => config.primary_action_color || defaultConfig.primary_action_color,
+                set: (value) => {
+                  config.primary_action_color = value;
+                  window.elementSdk.setConfig({ primary_action_color: value });
+                }
+              },
+              {
+                get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+                set: (value) => {
+                  config.secondary_action_color = value;
+                  window.elementSdk.setConfig({ secondary_action_color: value });
+                }
+              }
+            ],
+            borderables: [],
+            fontEditable: {
+              get: () => config.font_family || defaultConfig.font_family,
+              set: (value) => {
+                config.font_family = value;
+                window.elementSdk.setConfig({ font_family: value });
+              }
+            },
+            fontSizeable: {
+              get: () => config.font_size || defaultConfig.font_size,
+              set: (value) => {
+                config.font_size = value;
+                window.elementSdk.setConfig({ font_size: value });
+              }
+            }
+          }),
+          mapToEditPanelValues: (config) => new Map([
+            ["form_title", config.form_title || defaultConfig.form_title],
+            ["warning_message", config.warning_message || defaultConfig.warning_message],
+            ["pix_key", config.pix_key || defaultConfig.pix_key],
+            ["success_message", config.success_message || defaultConfig.success_message]
+          ])
+        });
+      }
+
+      renderApp();
+      applyConfig(window.elementSdk ? window.elementSdk.config : defaultConfig);
+      startChat();
+    }
+
+    function toggleTheme() {
+      isDarkMode = !isDarkMode;
+      const themeColors = isDarkMode ? darkTheme : lightTheme;
+      
+      // Atualizar configuração atual
+      const currentConfig = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      const newConfig = {
+        ...currentConfig,
+        ...themeColors
+      };
+      
+      if (window.elementSdk) {
+        window.elementSdk.setConfig(themeColors);
+      } else {
+        applyConfig(newConfig);
+      }
+      
+      updateThemeButton();
+    }
+
+    function updateThemeButton() {
+      const themeIcon = document.getElementById('theme-icon');
+      const themeText = document.getElementById('theme-text');
+      const themeButton = document.getElementById('theme-toggle');
+      
+      if (isDarkMode) {
+        // Ícone de lua para modo escuro - cor branca
+        themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+        themeText.textContent = 'Escuro';
+        themeText.style.color = 'white';
+        themeButton.style.color = 'white';
+      } else {
+        // Ícone de sol para modo claro - cor escura
+        themeIcon.innerHTML = '<path d="M12 3V4M12 20V21M4 12H3M6.31412 6.31412L5.5 5.5M17.6859 6.31412L18.5 5.5M6.31412 17.69L5.5 18.5M17.6859 17.69L18.5 18.5M21 12H20M16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12Z" stroke="#1e293b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+        themeText.textContent = 'Claro';
+        themeText.style.color = '#1e293b';
+        themeButton.style.color = '#1e293b';
+      }
+    }
+
+    function applyConfig(config) {
+      const app = document.getElementById('app');
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      const baseSize = config.font_size || defaultConfig.font_size;
+      
+      app.style.backgroundColor = config.background_color || defaultConfig.background_color;
+      app.style.fontFamily = `${customFont}, ${baseFontStack}`;
+
+      const title = document.getElementById('chat-title');
+      if (title) {
+        title.textContent = config.form_title || defaultConfig.form_title;
+        title.style.color = config.text_color || defaultConfig.text_color;
+        title.style.fontSize = `${baseSize * 1.5}px`;
+        title.style.fontFamily = `${customFont}, ${baseFontStack}`;
+      }
+
+      const subtitle = document.getElementById('subtitle');
+      if (subtitle) {
+        subtitle.style.color = config.text_color || defaultConfig.text_color;
+        subtitle.style.fontSize = `${baseSize * 0.875}px`;
+        subtitle.style.fontFamily = `${customFont}, ${baseFontStack}`;
+      }
+
+      const warningText = document.getElementById('warning-text');
+      if (warningText) {
+        warningText.textContent = config.warning_message || defaultConfig.warning_message;
+        warningText.style.color = config.text_color || defaultConfig.text_color;
+        warningText.style.fontSize = `${baseSize * 0.875}px`;
+        warningText.style.fontFamily = `${customFont}, ${baseFontStack}`;
+      }
+
+      const pixKey = document.getElementById('pix-key');
+      if (pixKey) {
+        pixKey.textContent = config.pix_key || defaultConfig.pix_key;
+        pixKey.style.color = config.primary_action_color || defaultConfig.primary_action_color;
+        pixKey.style.fontSize = `${baseSize}px`;
+        pixKey.style.fontFamily = `${customFont}, ${baseFontStack}`;
+      }
+
+      const messages = document.querySelectorAll('.bot-message, .user-message');
+      messages.forEach(msg => {
+        msg.style.fontSize = `${baseSize}px`;
+        msg.style.fontFamily = `${customFont}, ${baseFontStack}`;
+        if (msg.classList.contains('bot-message')) {
+          msg.style.backgroundColor = config.surface_color || defaultConfig.surface_color;
+          msg.style.color = config.text_color || defaultConfig.text_color;
+        } else {
+          msg.style.backgroundColor = config.primary_action_color || defaultConfig.primary_action_color;
+          msg.style.color = '#ffffff';
+        }
+      });
+
+      const input = document.getElementById('user-input');
+      if (input) {
+        input.style.backgroundColor = config.surface_color || defaultConfig.surface_color;
+        input.style.color = config.text_color || defaultConfig.text_color;
+        input.style.borderColor = config.secondary_action_color || defaultConfig.secondary_action_color;
+        input.style.fontSize = `${baseSize}px`;
+        input.style.fontFamily = `${customFont}, ${baseFontStack}`;
+      }
+
+      const sendBtn = document.getElementById('send-btn');
+      if (sendBtn) {
+        sendBtn.style.backgroundColor = config.primary_action_color || defaultConfig.primary_action_color;
+        sendBtn.style.fontSize = `${baseSize}px`;
+        sendBtn.style.fontFamily = `${customFont}, ${baseFontStack}`;
+      }
+
+      const optionButtons = document.querySelectorAll('.option-btn');
+      optionButtons.forEach(btn => {
+        btn.style.backgroundColor = config.surface_color || defaultConfig.surface_color;
+        btn.style.color = config.text_color || defaultConfig.text_color;
+        btn.style.borderColor = config.secondary_action_color || defaultConfig.secondary_action_color;
+        btn.style.fontSize = `${baseSize * 0.875}px`;
+        btn.style.fontFamily = `${customFont}, ${baseFontStack}`;
+      });
+    }
+
+    function renderApp() {
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="app-container max-w-4xl mx-auto">
+          <!-- Header Fixo -->
+          <div class="header-fixed flex-shrink-0 p-6 md:p-6 glass-effect border-b border-white/10">
+            <div class="flex items-center gap-3 md:gap-4">
+              <div class="w-10 h-10 md:w-12 md:h-12 mobile-avatar rounded-2xl flex items-center justify-center bot-avatar">
+                <svg width="20" height="20" class="md:w-6 md:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="6" y="6" width="12" height="10" rx="2" fill="white" fill-opacity="0.9"/>
+                  <circle cx="9" cy="10" r="1.5" fill="#667eea"/>
+                  <circle cx="15" cy="10" r="1.5" fill="#667eea"/>
+                  <path d="M10 13H14" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
+                  <rect x="11" y="2" width="2" height="4" rx="1" fill="white" fill-opacity="0.8"/>
+                  <rect x="4" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
+                  <rect x="17" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
+                  <rect x="8" y="16" width="8" height="3" rx="1.5" fill="white" fill-opacity="0.6"/>
+                </svg>
+              </div>
+              <div class="flex flex-col flex-1 min-w-0">
+                <h1 id="chat-title" class="font-semibold text-lg md:text-xl mobile-title tracking-tight truncate">Assistente de Cadastro</h1>
+                <p id="subtitle" class="text-xs md:text-sm mobile-subtitle mt-1 opacity-80 truncate">Sistema inteligente de cadastro</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="theme-toggle" class="flex items-center gap-1 md:gap-2 px-3 py-2 md:px-4 md:py-2 rounded-xl modern-button hover:scale-105 transition-all duration-300">
+                  <svg id="theme-icon" width="14" height="14" class="md:w-4 md:h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 3V4M12 20V21M4 12H3M6.31412 6.31412L5.5 5.5M17.6859 6.31412L18.5 5.5M6.31412 17.69L5.5 18.5M17.6859 17.69L18.5 18.5M21 12H20M16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span id="theme-text" class="text-xs font-medium hidden md:inline">Claro</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Messages - Área com Scroll -->
+          <div id="chat-messages" class="chat-container p-4 md:p-4 chat-messages-mobile space-y-3">
+          </div>
+
+          <!-- Input Area Fixo -->
+          <div id="input-area" class="input-fixed p-4 md:p-6 glass-effect border-t border-white/10">
+            <div class="flex gap-2 md:gap-3">
+              <input 
+                type="text" 
+                id="user-input" 
+                placeholder="Digite sua resposta..." 
+                class="flex-1 px-4 py-3 md:px-5 md:py-4 mobile-input modern-input rounded-2xl focus:outline-none text-white placeholder-white/60"
+                style="display: none;"
+              >
+              <button 
+                id="send-btn" 
+                class="px-6 py-3 md:px-8 md:py-4 mobile-button text-white font-medium rounded-2xl modern-button hover:scale-105 transition-all duration-300"
+                style="display: none;"
+              >
+                <svg width="18" height="18" class="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="currentColor"/>
+                </svg>
+              </button>
+            </div>
+            <div id="options-container" class="flex flex-wrap gap-2 md:gap-3 mt-3 md:mt-4" style="display: none;">
+            </div>
+          </div>
+        </div>
+      `;
+
+      const input = document.getElementById('user-input');
+      const sendBtn = document.getElementById('send-btn');
+      const themeToggle = document.getElementById('theme-toggle');
+      
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !isTyping) {
+          handleUserInput();
+        }
+      });
+      
+      sendBtn.addEventListener('click', handleUserInput);
+      themeToggle.addEventListener('click', toggleTheme);
+      
+      // Inicializar botão de tema
+      updateThemeButton();
+    }
+
+    async function startChat() {
+      // Mostrar aviso inicial
+      const avisoInicial = `
+        <div class="rounded-lg p-3 border-l-4 mb-3" style="background-color: rgba(251, 191, 36, 0.1); border-color: #f59e0b;">
+          <div class="flex items-start gap-2">
+            <span class="text-sm">⚠️</span>
+            <div class="text-sm">
+              <p class="mb-1">Estamos em fase de testes, por isso seu cadastro será analisado individualmente.</p>
+              <p>PIX para apoiar: <strong>financeiro@gaveblue.com</strong></p>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      await addBotMessageWithHTML(avisoInicial);
+      await addBotMessage("Bem-vindo ao sistema de cadastro da GaveBlue! 🚗");
+      setTimeout(() => {
+        askNextQuestion();
+      }, 1000);
+    }
+
+    async function addBotMessage(message) {
+      const chatMessages = document.getElementById('chat-messages');
+      
+      // Mostrar indicador de digitação
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'flex items-start gap-2 md:gap-3 message-enter';
+      typingDiv.innerHTML = `
+        <div class="w-8 h-8 md:w-10 md:h-10 mobile-avatar rounded-2xl flex items-center justify-center flex-shrink-0 bot-avatar">
+          <svg width="16" height="16" class="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="6" width="12" height="10" rx="2" fill="white" fill-opacity="0.9"/>
+            <circle cx="9" cy="10" r="1.5" fill="#667eea"/>
+            <circle cx="15" cy="10" r="1.5" fill="#667eea"/>
+            <path d="M10 13H14" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
+            <rect x="11" y="2" width="2" height="4" rx="1" fill="white" fill-opacity="0.8"/>
+            <rect x="4" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
+            <rect x="17" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
+            <rect x="8" y="16" width="8" height="3" rx="1.5" fill="white" fill-opacity="0.6"/>
+          </svg>
+        </div>
+        <div class="bot-message mobile-message max-w-xs md:max-w-md lg:max-w-lg px-4 py-3 md:px-5 md:py-4 rounded-3xl glass-effect">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+      `;
+      
+      chatMessages.appendChild(typingDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      
+      // Simular tempo de digitação
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      
+      // Remover indicador e mostrar mensagem real
+      typingDiv.remove();
+      
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'flex items-start gap-2 md:gap-3 message-enter';
+      messageDiv.innerHTML = `
+        <div class="w-8 h-8 md:w-10 md:h-10 mobile-avatar rounded-2xl flex items-center justify-center flex-shrink-0 bot-avatar">
+          <svg width="16" height="16" class="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="6" width="12" height="10" rx="2" fill="white" fill-opacity="0.9"/>
+            <circle cx="9" cy="10" r="1.5" fill="#667eea"/>
+            <circle cx="15" cy="10" r="1.5" fill="#667eea"/>
+            <path d="M10 13H14" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
+            <rect x="11" y="2" width="2" height="4" rx="1" fill="white" fill-opacity="0.8"/>
+            <rect x="4" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
+            <rect x="17" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
+            <rect x="8" y="16" width="8" height="3" rx="1.5" fill="white" fill-opacity="0.6"/>
+          </svg>
+        </div>
+        <div class="bot-message mobile-message max-w-xs md:max-w-md lg:max-w-lg px-4 py-3 md:px-5 md:py-4 rounded-3xl glass-effect">
+          ${message}
+        </div>
+      `;
+      
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      applyConfig(config);
+    }
+
+    function addUserMessage(message) {
+      const chatMessages = document.getElementById('chat-messages');
+      
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'flex items-end gap-2 md:gap-3 justify-end message-enter';
+      messageDiv.innerHTML = `
+        <div class="user-message mobile-message max-w-xs md:max-w-md lg:max-w-lg px-4 py-3 md:px-5 md:py-4 rounded-3xl text-white">
+          ${message}
+        </div>
+        <div class="w-8 h-8 md:w-10 md:h-10 mobile-avatar rounded-2xl flex items-center justify-center flex-shrink-0 user-avatar">
+          <svg width="16" height="16" class="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="white" fill-opacity="0.9"/>
+          </svg>
+        </div>
+      `;
+      
+      chatMessages.appendChild(messageDiv);
+      
+      // Smooth scroll to bottom
+      setTimeout(() => {
+        chatMessages.scrollTo({
+          top: chatMessages.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 50);
+      
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      applyConfig(config);
+    }
+
+    async function askNextQuestion() {
+      if (chatStep >= questions.length) {
+        await finishRegistration();
+        return;
+      }
+
+      isTyping = true;
+      const question = questions[chatStep];
+      
+      // Definir pergunta dinâmica para documento
+      if (question.key === 'documento') {
+        if (userData.tipo_pessoa === 'Pessoa Física') {
+          question.question = 'Agora digite seu CPF:';
+        } else {
+          question.question = 'Agora digite seu CNPJ:';
+        }
+      }
+      
+      await addBotMessage(question.question);
+      
+      const input = document.getElementById('user-input');
+      const sendBtn = document.getElementById('send-btn');
+      const optionsContainer = document.getElementById('options-container');
+      
+      if (question.type === 'select') {
+        // Mostrar opções como botões
+        input.style.display = 'none';
+        sendBtn.style.display = 'none';
+        optionsContainer.style.display = 'flex';
+        
+        optionsContainer.innerHTML = question.options.map(option => 
+          `<button class="option-btn mobile-button px-4 py-3 md:px-6 md:py-3 modern-button rounded-2xl hover:scale-105 transition-all duration-300 text-white/90 font-medium text-sm md:text-base" data-value="${option}">
+            ${option}
+          </button>`
+        ).join('');
+        
+        const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+        applyConfig(config);
+        
+        // Adicionar event listeners aos botões
+        optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const value = btn.getAttribute('data-value');
+            handleAnswer(value);
+          });
+        });
+      } else {
+        // Mostrar input de texto
+        input.style.display = 'block';
+        sendBtn.style.display = 'block';
+        optionsContainer.style.display = 'none';
+        
+        input.type = question.type;
+        input.focus();
+      }
+      
+      isTyping = false;
+    }
+
+    function handleUserInput() {
+      if (isTyping) return;
+      
+      const input = document.getElementById('user-input');
+      const value = input.value.trim();
+      
+      if (!value) return;
+      
+      handleAnswer(value);
+      input.value = '';
+    }
+
+    async function handleAnswer(answer) {
+      const question = questions[chatStep];
+      
+      // Validar entrada se necessário
+      if (question.validation) {
+        const tipoPessoa = question.key === 'documento' ? userData.tipo_pessoa : null;
+        const validationError = validateInput(answer, question.validation, tipoPessoa);
+        
+        if (validationError) {
+          await addBotMessage(`❌ ${validationError} Tente novamente:`);
+          return; // Não avança para próxima pergunta
+        }
+      }
+      
+      userData[question.key] = answer;
+      
+      // Mostrar senha como asteriscos no chat
+      const displayAnswer = question.type === 'password' ? '*'.repeat(answer.length) : answer;
+      addUserMessage(displayAnswer);
+      
+      // Esconder inputs
+      document.getElementById('user-input').style.display = 'none';
+      document.getElementById('send-btn').style.display = 'none';
+      document.getElementById('options-container').style.display = 'none';
+      
+      // Resposta inteligente do bot
+      const smartResponse = getSmartResponse(question.key, answer);
+      await addBotMessage(smartResponse);
+      
+      chatStep++;
+      
+      // Pequena pausa antes da próxima pergunta
+      setTimeout(() => {
+        askNextQuestion();
+      }, 1000);
+    }
+
+    async function finishRegistration() {
+      if (currentRecords.length >= 999) {
+        await addBotMessage("Ops! Atingimos o limite de cadastros. Entre em contato conosco diretamente.");
+        return;
+      }
+
+      isTyping = true;
+      await addBotMessage("Perfeito! Vamos revisar suas informações antes de finalizar:");
+
+      // Mostrar resumo dos dados
+      const resumo = `
+        <div class="space-y-2 text-sm">
+          <div><strong>📋 Tipo:</strong> ${userData.tipo_pessoa}</div>
+          <div><strong>👤 Nome:</strong> ${userData.nome_completo}</div>
+          <div><strong>📄 Documento:</strong> ${userData.documento}</div>
+          <div><strong>📧 E-mail:</strong> ${userData.email}</div>
+          <div><strong>📱 Telefone:</strong> ${userData.telefone}</div>
+          <div><strong>🚗 Frota:</strong> ${userData.quantidade_veiculos}</div>
+          <div><strong>📅 Pagamento:</strong> ${userData.melhor_data_pagamento}</div>
+          <div><strong>⏰ Contato:</strong> ${userData.melhor_horario_contato}</div>
+          <div><strong>👤 Usuário:</strong> ${userData.nome_usuario}</div>
+        </div>
+      `;
+
+      await addBotMessageWithHTML(resumo);
+      await addBotMessage("Todas as informações estão corretas?");
+
+      // Mostrar botões de confirmação
+      const input = document.getElementById('user-input');
+      const sendBtn = document.getElementById('send-btn');
+      const optionsContainer = document.getElementById('options-container');
+      
+      input.style.display = 'none';
+      sendBtn.style.display = 'none';
+      optionsContainer.style.display = 'flex';
+      
+      optionsContainer.innerHTML = `
+        <button class="option-btn px-8 py-4 rounded-2xl hover:scale-105 transition-all duration-300 text-white font-medium" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);" data-value="confirmar">
+          ✅ Sim, finalizar cadastro
+        </button>
+        <button class="option-btn px-8 py-4 rounded-2xl hover:scale-105 transition-all duration-300 text-white font-medium" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 8px 32px rgba(245, 158, 11, 0.3);" data-value="corrigir">
+          ✏️ Corrigir informação
+        </button>
+        <button class="option-btn px-8 py-4 rounded-2xl hover:scale-105 transition-all duration-300 text-white font-medium" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 8px 32px rgba(239, 68, 68, 0.3);" data-value="cancelar">
+          ❌ Cancelar cadastro
+        </button>
+      `;
+      
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      applyConfig(config);
+      
+      // Adicionar event listeners aos botões
+      optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const value = btn.getAttribute('data-value');
+          
+          // Esconder botões
+          optionsContainer.style.display = 'none';
+          
+          if (value === 'confirmar') {
+            addUserMessage("✅ Sim, finalizar cadastro");
+            await processRegistration();
+          } else if (value === 'corrigir') {
+            addUserMessage("✏️ Corrigir informação");
+            await showCorrectionOptions();
+          } else {
+            addUserMessage("❌ Cancelar cadastro");
+            await addBotMessage("Cadastro cancelado. Se desejar tentar novamente, recarregue a página. 😊");
+          }
+        });
+      });
+      
+      isTyping = false;
+    }
+
+    async function addBotMessageWithHTML(htmlContent) {
+      const chatMessages = document.getElementById('chat-messages');
+      
+      // Mostrar indicador de digitação
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'flex items-start gap-2 md:gap-3 message-enter';
+      typingDiv.innerHTML = `
+        <div class="w-8 h-8 md:w-10 md:h-10 mobile-avatar rounded-2xl flex items-center justify-center flex-shrink-0 bot-avatar">
+          <svg width="16" height="16" class="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="6" width="12" height="10" rx="2" fill="white" fill-opacity="0.9"/>
+            <circle cx="9" cy="10" r="1.5" fill="#667eea"/>
+            <circle cx="15" cy="10" r="1.5" fill="#667eea"/>
+            <path d="M10 13H14" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
+            <rect x="11" y="2" width="2" height="4" rx="1" fill="white" fill-opacity="0.8"/>
+            <rect x="4" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
+            <rect x="17" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
+            <rect x="8" y="16" width="8" height="3" rx="1.5" fill="white" fill-opacity="0.6"/>
+          </svg>
+        </div>
+        <div class="bot-message mobile-message max-w-xs md:max-w-md lg:max-w-lg px-4 py-3 md:px-5 md:py-4 rounded-3xl glass-effect">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+      `;
+      
+      chatMessages.appendChild(typingDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      
+      // Simular tempo de digitação
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Remover indicador e mostrar mensagem real
+      typingDiv.remove();
+      
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'flex items-start gap-2 md:gap-3 message-enter';
+      messageDiv.innerHTML = `
+        <div class="w-8 h-8 md:w-10 md:h-10 mobile-avatar rounded-2xl flex items-center justify-center flex-shrink-0 bot-avatar">
+          <svg width="16" height="16" class="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="6" width="12" height="10" rx="2" fill="white" fill-opacity="0.9"/>
+            <circle cx="9" cy="10" r="1.5" fill="#667eea"/>
+            <circle cx="15" cy="10" r="1.5" fill="#667eea"/>
+            <path d="M10 13H14" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
+            <rect x="11" y="2" width="2" height="4" rx="1" fill="white" fill-opacity="0.8"/>
+            <rect x="4" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
+            <rect x="17" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
+            <rect x="8" y="16" width="8" height="3" rx="1.5" fill="white" fill-opacity="0.6"/>
+          </svg>
+        </div>
+        <div class="bot-message mobile-message max-w-xs md:max-w-md lg:max-w-lg px-4 py-3 md:px-5 md:py-4 rounded-3xl glass-effect">
+          ${htmlContent}
+        </div>
+      `;
+      
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      applyConfig(config);
+    }
+
+    async function processRegistration() {
+      isTyping = true;
+      await addBotMessage("Perfeito! Estou processando seu cadastro...");
+
+      const clientData = {
+        id: Date.now().toString(),
+        tipo_pessoa: userData.tipo_pessoa,
+        nome_completo: userData.nome_completo,
+        documento: userData.documento,
+        email: userData.email,
+        telefone: userData.telefone,
+        melhor_data_pagamento: userData.melhor_data_pagamento,
+        quantidade_veiculos: userData.quantidade_veiculos,
+        melhor_horario_contato: userData.melhor_horario_contato,
+        nome_usuario: userData.nome_usuario,
+        senha: userData.senha,
+        data_cadastro: new Date().toISOString()
+      };
+
+      const result = await window.dataSdk.create(clientData);
+
+      if (result.isOk) {
+        const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+        await addBotMessage(`${config.success_message || defaultConfig.success_message} 🎉`);
+        await addBotMessage("Obrigado por se cadastrar! Nossa equipe entrará em contato em breve. 😊");
+        
+        // Mensagem adicional sobre fase de testes
+        const mensagemTeste = `
+          <div class="rounded-lg p-3 border-l-4 mt-3" style="background-color: rgba(59, 130, 246, 0.1); border-color: #3b82f6;">
+            <div class="flex items-start gap-2">
+              <span class="text-sm">💡</span>
+              <div class="text-sm">
+                <p class="mb-2"><strong>Lembrando novamente:</strong> Estamos em fase de testes, e nosso sistema ainda está em desenvolvimento, por isso seu cadastro será analisado individualmente.</p>
+                <p class="mb-2">Se quiser ser um dos primeiros usuários do nosso sistema, a partir de <strong>R$ 39,90</strong> você tem acesso ilimitado ao nosso sistema até a data do lançamento sem pagar mais nada.</p>
+                <p><strong>PIX para apoiar:</strong> <span style="color: #3b82f6; font-weight: bold;">financeiro@gaveblue.com</span></p>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        await addBotMessageWithHTML(mensagemTeste);
+        
+        // Mostrar opções finais
+        await showFinalOptions();
+      } else {
+        await addBotMessage("Ops! Ocorreu um erro ao salvar seu cadastro. Tente novamente mais tarde.");
+      }
+      
+      isTyping = false;
+    }
+
+    async function showFinalOptions() {
+      await addBotMessage("O que você gostaria de fazer agora?");
+
+      const input = document.getElementById('user-input');
+      const sendBtn = document.getElementById('send-btn');
+      const optionsContainer = document.getElementById('options-container');
+      
+      input.style.display = 'none';
+      sendBtn.style.display = 'none';
+      optionsContainer.style.display = 'flex';
+      
+      optionsContainer.innerHTML = `
+        <button class="option-btn px-8 py-4 rounded-2xl hover:scale-105 transition-all duration-300 text-white font-medium" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);" data-value="novo">
+          🔄 Iniciar novo cadastro
+        </button>
+        <button class="option-btn px-8 py-4 rounded-2xl hover:scale-105 transition-all duration-300 text-white font-medium" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); box-shadow: 0 8px 32px rgba(107, 114, 128, 0.3);" data-value="encerrar">
+          👋 Encerrar atendimento
+        </button>
+      `;
+      
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      applyConfig(config);
+      
+      // Adicionar event listeners aos botões
+      optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const value = btn.getAttribute('data-value');
+          
+          // Esconder botões
+          optionsContainer.style.display = 'none';
+          
+          if (value === 'novo') {
+            addUserMessage("🔄 Iniciar novo cadastro");
+            await restartChat();
+          } else {
+            addUserMessage("👋 Encerrar atendimento");
+            await addBotMessage("Obrigado por usar nosso sistema! Até logo! 👋😊");
+          }
+        });
+      });
+    }
+
+    async function showCorrectionOptions() {
+      await addBotMessage("Qual informação você gostaria de corrigir?");
+
+      const correctionOptions = [
+        { key: 'tipo_pessoa', label: '📋 Tipo de pessoa' },
+        { key: 'nome_completo', label: '👤 Nome completo' },
+        { key: 'documento', label: '📄 Documento (CPF/CNPJ)' },
+        { key: 'email', label: '📧 E-mail' },
+        { key: 'telefone', label: '📱 Telefone' },
+        { key: 'quantidade_veiculos', label: '🚗 Quantidade de veículos' },
+        { key: 'melhor_data_pagamento', label: '📅 Data de pagamento' },
+        { key: 'melhor_horario_contato', label: '⏰ Horário de contato' },
+        { key: 'nome_usuario', label: '👤 Nome de usuário' },
+        { key: 'senha', label: '🔒 Senha' }
+      ];
+
+      const input = document.getElementById('user-input');
+      const sendBtn = document.getElementById('send-btn');
+      const optionsContainer = document.getElementById('options-container');
+      
+      input.style.display = 'none';
+      sendBtn.style.display = 'none';
+      optionsContainer.style.display = 'flex';
+      
+      optionsContainer.innerHTML = correctionOptions.map(option => 
+        `<button class="option-btn px-4 py-2 border rounded-lg hover:opacity-80 transition-opacity" data-value="${option.key}">
+          ${option.label}
+        </button>`
+      ).join('') + `
+        <button class="option-btn px-4 py-2 border rounded-lg hover:opacity-80 transition-opacity bg-gray-600 text-white border-gray-600" data-value="voltar">
+          ↩️ Voltar para confirmação
+        </button>
+      `;
+      
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      applyConfig(config);
+      
+      // Adicionar event listeners aos botões
+      optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const value = btn.getAttribute('data-value');
+          
+          // Esconder botões
+          optionsContainer.style.display = 'none';
+          
+          if (value === 'voltar') {
+            addUserMessage("↩️ Voltar para confirmação");
+            await finishRegistration();
+          } else {
+            const selectedOption = correctionOptions.find(opt => opt.key === value);
+            addUserMessage(selectedOption.label);
+            await correctField(value);
+          }
+        });
+      });
+    }
+
+    async function correctField(fieldKey) {
+      // Encontrar a pergunta correspondente
+      const questionIndex = questions.findIndex(q => q.key === fieldKey);
+      const question = questions[questionIndex];
+      
+      if (!question) return;
+      
+      await addBotMessage(`Vamos corrigir: ${question.question}`);
+      
+      // Definir pergunta dinâmica para documento
+      if (question.key === 'documento') {
+        if (userData.tipo_pessoa === 'Pessoa Física') {
+          question.question = 'Digite o CPF correto:';
+        } else {
+          question.question = 'Digite o CNPJ correto:';
+        }
+        await addBotMessage(question.question);
+      }
+      
+      const input = document.getElementById('user-input');
+      const sendBtn = document.getElementById('send-btn');
+      const optionsContainer = document.getElementById('options-container');
+      
+      if (question.type === 'select') {
+        // Mostrar opções como botões
+        input.style.display = 'none';
+        sendBtn.style.display = 'none';
+        optionsContainer.style.display = 'flex';
+        
+        optionsContainer.innerHTML = question.options.map(option => 
+          `<button class="option-btn mobile-button px-4 py-3 md:px-6 md:py-3 modern-button rounded-2xl hover:scale-105 transition-all duration-300 text-white/90 font-medium text-sm md:text-base" data-value="${option}">
+            ${option}
+          </button>`
+        ).join('');
+        
+        const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+        applyConfig(config);
+        
+        // Adicionar event listeners aos botões
+        optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const value = btn.getAttribute('data-value');
+            handleCorrection(fieldKey, value, question);
+          });
+        });
+      } else {
+        // Mostrar input de texto
+        input.style.display = 'block';
+        sendBtn.style.display = 'block';
+        optionsContainer.style.display = 'none';
+        
+        input.type = question.type;
+        input.value = userData[fieldKey] || '';
+        input.focus();
+        
+        // Remover listeners anteriores e adicionar novo
+        const newSendBtn = sendBtn.cloneNode(true);
+        sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
+        
+        const newInput = input.cloneNode(true);
+        input.parentNode.replaceChild(newInput, input);
+        
+        newInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            const value = newInput.value.trim();
+            if (value) {
+              handleCorrection(fieldKey, value, question);
+              newInput.value = '';
+            }
+          }
+        });
+        
+        newSendBtn.addEventListener('click', () => {
+          const value = newInput.value.trim();
+          if (value) {
+            handleCorrection(fieldKey, value, question);
+            newInput.value = '';
+          }
+        });
+      }
+    }
+
+    async function handleCorrection(fieldKey, newValue, question) {
+      // Validar entrada se necessário
+      if (question.validation) {
+        const tipoPessoa = question.key === 'documento' ? userData.tipo_pessoa : null;
+        const validationError = validateInput(newValue, question.validation, tipoPessoa);
+        
+        if (validationError) {
+          await addBotMessage(`❌ ${validationError} Tente novamente:`);
+          return; // Não aceita a correção
+        }
+      }
+      
+      // Atualizar o dado
+      userData[fieldKey] = newValue;
+      
+      // Mostrar resposta do usuário (senha como asteriscos)
+      const displayValue = question.type === 'password' ? '*'.repeat(newValue.length) : newValue;
+      addUserMessage(displayValue);
+      
+      // Esconder inputs
+      document.getElementById('user-input').style.display = 'none';
+      document.getElementById('send-btn').style.display = 'none';
+      document.getElementById('options-container').style.display = 'none';
+      
+      // Confirmar correção
+      await addBotMessage(`✅ Informação atualizada com sucesso!`);
+      
+      // Se corrigiu a senha, pedir confirmação novamente
+      if (fieldKey === 'senha') {
+        await askPasswordConfirmation();
+      } else {
+        // Voltar para a tela de confirmação
+        setTimeout(async () => {
+          await addBotMessage("Vamos revisar novamente suas informações:");
+          await finishRegistration();
+        }, 1000);
+      }
+    }
+
+    async function askPasswordConfirmation() {
+      await addBotMessage("Confirme sua nova senha:");
+      
+      const input = document.getElementById('user-input');
+      const sendBtn = document.getElementById('send-btn');
+      const optionsContainer = document.getElementById('options-container');
+      
+      input.style.display = 'block';
+      sendBtn.style.display = 'block';
+      optionsContainer.style.display = 'none';
+      
+      input.type = 'password';
+      input.value = '';
+      input.focus();
+      
+      // Remover listeners anteriores e adicionar novo
+      const newSendBtn = sendBtn.cloneNode(true);
+      sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
+      
+      const newInput = input.cloneNode(true);
+      input.parentNode.replaceChild(newInput, input);
+      
+      const handlePasswordConfirmation = async () => {
+        const confirmPassword = newInput.value.trim();
+        if (!confirmPassword) return;
+        
+        if (confirmPassword !== userData.senha) {
+          addUserMessage('*'.repeat(confirmPassword.length));
+          
+          // Esconder inputs
+          newInput.style.display = 'none';
+          newSendBtn.style.display = 'none';
+          
+          await addBotMessage("❌ As senhas não coincidem. O que você gostaria de fazer?");
+          
+          // Mostrar opções para o usuário
+          optionsContainer.style.display = 'flex';
+          optionsContainer.innerHTML = `
+            <button class="option-btn px-6 py-3 border rounded-lg hover:opacity-80 transition-opacity bg-blue-600 text-white border-blue-600" data-value="tentar_novamente">
+              🔄 Tentar confirmar novamente
+            </button>
+            <button class="option-btn px-6 py-3 border rounded-lg hover:opacity-80 transition-opacity bg-orange-600 text-white border-orange-600" data-value="nova_senha">
+              🔑 Criar nova senha
+            </button>
+          `;
+          
+          const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+          applyConfig(config);
+          
+          // Adicionar event listeners aos botões
+          optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const value = btn.getAttribute('data-value');
+              
+              // Esconder botões
+              optionsContainer.style.display = 'none';
+              
+              if (value === 'tentar_novamente') {
+                addUserMessage("🔄 Tentar confirmar novamente");
+                await askPasswordConfirmation();
+              } else {
+                addUserMessage("🔑 Criar nova senha");
+                await askNewPassword();
+              }
+            });
+          });
+          
+          return;
+        }
+        
+        // Senha confirmada
+        addUserMessage('*'.repeat(confirmPassword.length));
+        
+        // Esconder inputs
+        newInput.style.display = 'none';
+        newSendBtn.style.display = 'none';
+        
+        await addBotMessage("✅ Senha confirmada com sucesso!");
+        
+        // Voltar para confirmação
+        setTimeout(async () => {
+          await addBotMessage("Vamos revisar novamente suas informações:");
+          await finishRegistration();
+        }, 1000);
+      };
+      
+      newInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          handlePasswordConfirmation();
+        }
+      });
+      
+      newSendBtn.addEventListener('click', handlePasswordConfirmation);
+    }
+
+    async function askNewPassword() {
+      await addBotMessage("Crie uma nova senha segura (mínimo 6 caracteres):");
+      
+      const input = document.getElementById('user-input');
+      const sendBtn = document.getElementById('send-btn');
+      const optionsContainer = document.getElementById('options-container');
+      
+      input.style.display = 'block';
+      sendBtn.style.display = 'block';
+      optionsContainer.style.display = 'none';
+      
+      input.type = 'password';
+      input.value = '';
+      input.focus();
+      
+      // Remover listeners anteriores e adicionar novo
+      const newSendBtn = sendBtn.cloneNode(true);
+      sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
+      
+      const newInput = input.cloneNode(true);
+      input.parentNode.replaceChild(newInput, input);
+      
+      const handleNewPassword = async () => {
+        const newPassword = newInput.value.trim();
+        if (!newPassword) return;
+        
+        // Validar nova senha
+        const validationError = validateInput(newPassword, 'password');
+        if (validationError) {
+          await addBotMessage(`❌ ${validationError} Tente novamente:`);
+          newInput.value = '';
+          return;
+        }
+        
+        // Atualizar senha
+        userData.senha = newPassword;
+        
+        addUserMessage('*'.repeat(newPassword.length));
+        
+        // Esconder inputs
+        newInput.style.display = 'none';
+        newSendBtn.style.display = 'none';
+        
+        await addBotMessage("✅ Nova senha criada! Agora confirme sua senha:");
+        
+        // Pedir confirmação da nova senha
+        setTimeout(() => {
+          askPasswordConfirmation();
+        }, 1000);
+      };
+      
+      newInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          handleNewPassword();
+        }
+      });
+      
+      newSendBtn.addEventListener('click', handleNewPassword);
+    }
+
+    async function restartChat() {
+      // Resetar variáveis
+      chatStep = 0;
+      userData = {};
+      isTyping = false;
+      
+      await addBotMessage("Perfeito! Vamos iniciar um novo cadastro. 🚀");
+      
+      setTimeout(() => {
+        askNextQuestion();
+      }, 1000);
+    }
+
+    initializeApp();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f5ebb6146624b',t:'MTc2NDg5Mzk0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
