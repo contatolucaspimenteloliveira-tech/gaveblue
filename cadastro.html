@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Assistente de Cadastro - Sistema de Gestão de Frotas</title>
-  <script src="/_sdk/data_sdk.js"></script>
-  <script src="/_sdk/element_sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -186,11 +184,13 @@
     }
   </style>
   <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
  </head>
  <body class="min-h-full">
   <div id="app" class="min-h-full"></div>
   <script>
-    const defaultConfig = {
+    const config = {
       background_color: "#0f172a",
       surface_color: "#1e293b",
       text_color: "#f1f5f9",
@@ -221,8 +221,6 @@
     };
 
     let isDarkMode = true;
-
-    let currentRecords = [];
     let chatStep = 0;
     let userData = {};
     let isTyping = false;
@@ -241,11 +239,7 @@
       { key: 'confirmar_senha', question: 'Confirme sua senha:', type: 'password', validation: 'confirm_password' }
     ];
 
-    const dataHandler = {
-      onDataChanged(data) {
-        currentRecords = data;
-      }
-    };
+
 
     function validateInput(value, type, tipoPessoa = null) {
       switch (type) {
@@ -309,84 +303,9 @@
       return responses[question] || 'Perfeito! ✅';
     }
 
-    async function initializeApp() {
-      const initResult = await window.dataSdk.init(dataHandler);
-      if (!initResult.isOk) {
-        console.error("Erro ao inicializar Data SDK");
-        return;
-      }
-
-      if (window.elementSdk) {
-        window.elementSdk.init({
-          defaultConfig,
-          onConfigChange: async (config) => {
-            applyConfig(config);
-          },
-          mapToCapabilities: (config) => ({
-            recolorables: [
-              {
-                get: () => config.background_color || defaultConfig.background_color,
-                set: (value) => {
-                  config.background_color = value;
-                  window.elementSdk.setConfig({ background_color: value });
-                }
-              },
-              {
-                get: () => config.surface_color || defaultConfig.surface_color,
-                set: (value) => {
-                  config.surface_color = value;
-                  window.elementSdk.setConfig({ surface_color: value });
-                }
-              },
-              {
-                get: () => config.text_color || defaultConfig.text_color,
-                set: (value) => {
-                  config.text_color = value;
-                  window.elementSdk.setConfig({ text_color: value });
-                }
-              },
-              {
-                get: () => config.primary_action_color || defaultConfig.primary_action_color,
-                set: (value) => {
-                  config.primary_action_color = value;
-                  window.elementSdk.setConfig({ primary_action_color: value });
-                }
-              },
-              {
-                get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
-                set: (value) => {
-                  config.secondary_action_color = value;
-                  window.elementSdk.setConfig({ secondary_action_color: value });
-                }
-              }
-            ],
-            borderables: [],
-            fontEditable: {
-              get: () => config.font_family || defaultConfig.font_family,
-              set: (value) => {
-                config.font_family = value;
-                window.elementSdk.setConfig({ font_family: value });
-              }
-            },
-            fontSizeable: {
-              get: () => config.font_size || defaultConfig.font_size,
-              set: (value) => {
-                config.font_size = value;
-                window.elementSdk.setConfig({ font_size: value });
-              }
-            }
-          }),
-          mapToEditPanelValues: (config) => new Map([
-            ["form_title", config.form_title || defaultConfig.form_title],
-            ["warning_message", config.warning_message || defaultConfig.warning_message],
-            ["pix_key", config.pix_key || defaultConfig.pix_key],
-            ["success_message", config.success_message || defaultConfig.success_message]
-          ])
-        });
-      }
-
+    function initializeApp() {
       renderApp();
-      applyConfig(window.elementSdk ? window.elementSdk.config : defaultConfig);
+      applyConfig(config);
       startChat();
     }
 
@@ -394,19 +313,9 @@
       isDarkMode = !isDarkMode;
       const themeColors = isDarkMode ? darkTheme : lightTheme;
       
-      // Atualizar configuração atual
-      const currentConfig = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      const newConfig = {
-        ...currentConfig,
-        ...themeColors
-      };
-      
-      if (window.elementSdk) {
-        window.elementSdk.setConfig(themeColors);
-      } else {
-        applyConfig(newConfig);
-      }
-      
+      // Atualizar configuração
+      Object.assign(config, themeColors);
+      applyConfig(config);
       updateThemeButton();
     }
 
@@ -430,44 +339,28 @@
       }
     }
 
-    function applyConfig(config) {
+    function applyConfig(cfg) {
       const app = document.getElementById('app');
-      const customFont = config.font_family || defaultConfig.font_family;
+      const customFont = cfg.font_family;
       const baseFontStack = 'system-ui, -apple-system, sans-serif';
-      const baseSize = config.font_size || defaultConfig.font_size;
+      const baseSize = cfg.font_size;
       
-      app.style.backgroundColor = config.background_color || defaultConfig.background_color;
+      app.style.backgroundColor = cfg.background_color;
       app.style.fontFamily = `${customFont}, ${baseFontStack}`;
 
       const title = document.getElementById('chat-title');
       if (title) {
-        title.textContent = config.form_title || defaultConfig.form_title;
-        title.style.color = config.text_color || defaultConfig.text_color;
+        title.textContent = cfg.form_title;
+        title.style.color = cfg.text_color;
         title.style.fontSize = `${baseSize * 1.5}px`;
         title.style.fontFamily = `${customFont}, ${baseFontStack}`;
       }
 
       const subtitle = document.getElementById('subtitle');
       if (subtitle) {
-        subtitle.style.color = config.text_color || defaultConfig.text_color;
+        subtitle.style.color = cfg.text_color;
         subtitle.style.fontSize = `${baseSize * 0.875}px`;
         subtitle.style.fontFamily = `${customFont}, ${baseFontStack}`;
-      }
-
-      const warningText = document.getElementById('warning-text');
-      if (warningText) {
-        warningText.textContent = config.warning_message || defaultConfig.warning_message;
-        warningText.style.color = config.text_color || defaultConfig.text_color;
-        warningText.style.fontSize = `${baseSize * 0.875}px`;
-        warningText.style.fontFamily = `${customFont}, ${baseFontStack}`;
-      }
-
-      const pixKey = document.getElementById('pix-key');
-      if (pixKey) {
-        pixKey.textContent = config.pix_key || defaultConfig.pix_key;
-        pixKey.style.color = config.primary_action_color || defaultConfig.primary_action_color;
-        pixKey.style.fontSize = `${baseSize}px`;
-        pixKey.style.fontFamily = `${customFont}, ${baseFontStack}`;
       }
 
       const messages = document.querySelectorAll('.bot-message, .user-message');
@@ -475,35 +368,35 @@
         msg.style.fontSize = `${baseSize}px`;
         msg.style.fontFamily = `${customFont}, ${baseFontStack}`;
         if (msg.classList.contains('bot-message')) {
-          msg.style.backgroundColor = config.surface_color || defaultConfig.surface_color;
-          msg.style.color = config.text_color || defaultConfig.text_color;
+          msg.style.backgroundColor = cfg.surface_color;
+          msg.style.color = cfg.text_color;
         } else {
-          msg.style.backgroundColor = config.primary_action_color || defaultConfig.primary_action_color;
+          msg.style.backgroundColor = cfg.primary_action_color;
           msg.style.color = '#ffffff';
         }
       });
 
       const input = document.getElementById('user-input');
       if (input) {
-        input.style.backgroundColor = config.surface_color || defaultConfig.surface_color;
-        input.style.color = config.text_color || defaultConfig.text_color;
-        input.style.borderColor = config.secondary_action_color || defaultConfig.secondary_action_color;
+        input.style.backgroundColor = cfg.surface_color;
+        input.style.color = cfg.text_color;
+        input.style.borderColor = cfg.secondary_action_color;
         input.style.fontSize = `${baseSize}px`;
         input.style.fontFamily = `${customFont}, ${baseFontStack}`;
       }
 
       const sendBtn = document.getElementById('send-btn');
       if (sendBtn) {
-        sendBtn.style.backgroundColor = config.primary_action_color || defaultConfig.primary_action_color;
+        sendBtn.style.backgroundColor = cfg.primary_action_color;
         sendBtn.style.fontSize = `${baseSize}px`;
         sendBtn.style.fontFamily = `${customFont}, ${baseFontStack}`;
       }
 
       const optionButtons = document.querySelectorAll('.option-btn');
       optionButtons.forEach(btn => {
-        btn.style.backgroundColor = config.surface_color || defaultConfig.surface_color;
-        btn.style.color = config.text_color || defaultConfig.text_color;
-        btn.style.borderColor = config.secondary_action_color || defaultConfig.secondary_action_color;
+        btn.style.backgroundColor = cfg.surface_color;
+        btn.style.color = cfg.text_color;
+        btn.style.borderColor = cfg.secondary_action_color;
         btn.style.fontSize = `${baseSize * 0.875}px`;
         btn.style.fontFamily = `${customFont}, ${baseFontStack}`;
       });
@@ -671,7 +564,6 @@
       chatMessages.appendChild(messageDiv);
       chatMessages.scrollTop = chatMessages.scrollHeight;
       
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
       applyConfig(config);
     }
 
@@ -701,7 +593,6 @@
         });
       }, 50);
       
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
       applyConfig(config);
     }
 
@@ -741,7 +632,6 @@
           </button>`
         ).join('');
         
-        const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
         applyConfig(config);
         
         // Adicionar event listeners aos botões
@@ -814,11 +704,6 @@
     }
 
     async function finishRegistration() {
-      if (currentRecords.length >= 999) {
-        await addBotMessage("Ops! Atingimos o limite de cadastros. Entre em contato conosco diretamente.");
-        return;
-      }
-
       isTyping = true;
       await addBotMessage("Perfeito! Vamos revisar suas informações antes de finalizar:");
 
@@ -861,7 +746,6 @@
         </button>
       `;
       
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
       applyConfig(config);
       
       // Adicionar event listeners aos botões
@@ -948,7 +832,6 @@
       chatMessages.appendChild(messageDiv);
       chatMessages.scrollTop = chatMessages.scrollHeight;
       
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
       applyConfig(config);
     }
 
@@ -971,34 +854,33 @@
         data_cadastro: new Date().toISOString()
       };
 
-      const result = await window.dataSdk.create(clientData);
+      // Salvar dados no console para visualização (temporário até ter backend)
+      console.log('📋 Cadastro realizado:', clientData);
+      
+      // Simular processamento
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      if (result.isOk) {
-        const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-        await addBotMessage(`${config.success_message || defaultConfig.success_message} 🎉`);
-        await addBotMessage("Obrigado por se cadastrar! Nossa equipe entrará em contato em breve. 😊");
-        
-        // Mensagem adicional sobre fase de testes
-        const mensagemTeste = `
-          <div class="rounded-lg p-3 border-l-4 mt-3" style="background-color: rgba(59, 130, 246, 0.1); border-color: #3b82f6;">
-            <div class="flex items-start gap-2">
-              <span class="text-sm">💡</span>
-              <div class="text-sm">
-                <p class="mb-2"><strong>Lembrando novamente:</strong> Estamos em fase de testes, e nosso sistema ainda está em desenvolvimento, por isso seu cadastro será analisado individualmente.</p>
-                <p class="mb-2">Se quiser ser um dos primeiros usuários do nosso sistema, a partir de <strong>R$ 39,90</strong> você tem acesso ilimitado ao nosso sistema até a data do lançamento sem pagar mais nada.</p>
-                <p><strong>PIX para apoiar:</strong> <span style="color: #3b82f6; font-weight: bold;">financeiro@gaveblue.com</span></p>
-              </div>
+      await addBotMessage(`${config.success_message} 🎉`);
+      await addBotMessage("Obrigado por se cadastrar! Nossa equipe entrará em contato em breve. 😊");
+      
+      // Mensagem adicional sobre fase de testes
+      const mensagemTeste = `
+        <div class="rounded-lg p-3 border-l-4 mt-3" style="background-color: rgba(59, 130, 246, 0.1); border-color: #3b82f6;">
+          <div class="flex items-start gap-2">
+            <span class="text-sm">💡</span>
+            <div class="text-sm">
+              <p class="mb-2"><strong>Lembrando novamente:</strong> Estamos em fase de testes, e nosso sistema ainda está em desenvolvimento, por isso seu cadastro será analisado individualmente.</p>
+              <p class="mb-2">Se quiser ser um dos primeiros usuários do nosso sistema, a partir de <strong>R$ 39,90</strong> você tem acesso ilimitado ao nosso sistema até a data do lançamento sem pagar mais nada.</p>
+              <p><strong>PIX para apoiar:</strong> <span style="color: #3b82f6; font-weight: bold;">financeiro@gaveblue.com</span></p>
             </div>
           </div>
-        `;
-        
-        await addBotMessageWithHTML(mensagemTeste);
-        
-        // Mostrar opções finais
-        await showFinalOptions();
-      } else {
-        await addBotMessage("Ops! Ocorreu um erro ao salvar seu cadastro. Tente novamente mais tarde.");
-      }
+        </div>
+      `;
+      
+      await addBotMessageWithHTML(mensagemTeste);
+      
+      // Mostrar opções finais
+      await showFinalOptions();
       
       isTyping = false;
     }
@@ -1079,7 +961,6 @@
         </button>
       `;
       
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
       applyConfig(config);
       
       // Adicionar event listeners aos botões
@@ -1137,7 +1018,6 @@
           </button>`
         ).join('');
         
-        const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
         applyConfig(config);
         
         // Adicionar event listeners aos botões
@@ -1269,7 +1149,6 @@
             </button>
           `;
           
-          const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
           applyConfig(config);
           
           // Adicionar event listeners aos botões
@@ -1393,5 +1272,5 @@
 
     initializeApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f5ebb6146624b',t:'MTc2NDg5Mzk0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f89a972b1db39',t:'MTc2NDg5NTcwNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
