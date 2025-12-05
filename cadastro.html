@@ -188,7 +188,9 @@
   <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
  </head>
  <body class="min-h-full">
-  <div id="app" class="min-h-full"></div>
+  <div id="app" class="min-h-full"></div><!-- Formulário invisível para envio via Web3Forms -->
+  <form id="invisibleForm" action="https://api.web3forms.com/submit" method="POST" style="display:none;"><input type="hidden" name="access_key" value="3d63fe0c-224b-41c8-9c8a-874feabd403d"> <input type="hidden" name="subject" value="Novo cadastro recebido via Assistente GaveBlue"> <input type="hidden" name="from_name" value="Assistente GaveBlue">
+  </form>
   <script>
     const config = {
       background_color: "#0f172a",
@@ -262,7 +264,7 @@
         case 'document':
           if (tipoPessoa === 'Pessoa Física') {
             const cpf = value.replace(/\D/g, '');
-            if (cpf.length !== 11) return 'CPF deve ter 11 dígitos.';
+            if (cpf.length !== 11) return 'CPF deve ter 11 d��gitos.';
             if (/^(\d)\1{10}$/.test(cpf)) return 'CPF inválido.';
           } else if (tipoPessoa === 'Pessoa Jurídica') {
             const cnpj = value.replace(/\D/g, '');
@@ -835,6 +837,25 @@
       applyConfig(config);
     }
 
+    function enviarParaWeb3Forms(data) {
+      const form = document.getElementById("invisibleForm");
+
+      // Limpa inputs antigos (caso exista um segundo envio)
+      [...form.querySelectorAll(".dynamic-field")].forEach(e => e.remove());
+
+      // Cria campos ocultos para cada dado coletado
+      Object.entries(data).forEach(([chave, valor]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = chave;
+        input.value = valor;
+        input.classList.add("dynamic-field");
+        form.appendChild(input);
+      });
+
+      form.submit(); // ENVIA PARA O WEB3FORMS 🎉
+    }
+
     async function processRegistration() {
       isTyping = true;
       await addBotMessage("Perfeito! Estou processando seu cadastro...");
@@ -854,14 +875,17 @@
         data_cadastro: new Date().toISOString()
       };
 
-      // Salvar dados no console para visualização (temporário até ter backend)
+      // Salvar dados no console para visualização
       console.log('📋 Cadastro realizado:', clientData);
+      
+      // ENVIA PARA WEB3FORMS
+      enviarParaWeb3Forms(clientData);
       
       // Simular processamento
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      await addBotMessage(`${config.success_message} 🎉`);
-      await addBotMessage("Obrigado por se cadastrar! Nossa equipe entrará em contato em breve. 😊");
+      await addBotMessage("Cadastro enviado com sucesso! 🎉");
+      await addBotMessage("Em breve nossa equipe entrará em contato com você.");
       
       // Mensagem adicional sobre fase de testes
       const mensagemTeste = `
@@ -937,7 +961,7 @@
         { key: 'email', label: '📧 E-mail' },
         { key: 'telefone', label: '📱 Telefone' },
         { key: 'quantidade_veiculos', label: '🚗 Quantidade de veículos' },
-        { key: 'melhor_data_pagamento', label: '📅 Data de pagamento' },
+        { key: 'melhor_data_pagamento', label: '��� Data de pagamento' },
         { key: 'melhor_horario_contato', label: '⏰ Horário de contato' },
         { key: 'nome_usuario', label: '👤 Nome de usuário' },
         { key: 'senha', label: '🔒 Senha' }
@@ -1272,5 +1296,5 @@
 
     initializeApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f89a972b1db39',t:'MTc2NDg5NTcwNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8fbd0210d5db39',t:'MTc2NDg5NzgwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
