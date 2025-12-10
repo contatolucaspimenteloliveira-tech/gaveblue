@@ -32,6 +32,7 @@
       background-color: #fff;
       border-radius: 10px;
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      position: relative;
     }
 
     .recibo:first-child {
@@ -44,6 +45,22 @@
 
     body {
       padding-bottom: 200px;
+    }
+
+    .checkbox-recibo {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      z-index: 10;
+      accent-color: #8b5cf6;
+    }
+
+    .recibo.selecionado {
+      border: 3px solid #8b5cf6;
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
     }
 
     .topo {
@@ -252,6 +269,11 @@
       color: #fff;
     }
 
+    .botoes .deletar-selecionados {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: #fff;
+    }
+
     .botoes .importar {
       background: linear-gradient(135deg, #10b981, #059669);
       color: #fff;
@@ -285,6 +307,52 @@
     .btn-sair svg {
       width: 18px;
       height: 18px;
+    }
+
+    .zoom-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .zoom-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.5);
+    }
+
+
+
+    .btn-adicionar-recibo {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .btn-adicionar-recibo:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(16, 185, 129, 0.5);
     }
 
     .status-contador {
@@ -403,6 +471,16 @@
 
     .popup-header-vermelho {
       background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      padding: 30px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin: 0;
+    }
+
+    .popup-header-laranja {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
       padding: 30px 40px;
       display: flex;
       align-items: center;
@@ -813,8 +891,6 @@
       box-shadow: 0 5px 15px rgba(59, 130, 246, 0.5);
     }
 
-
-
     .toggle-footer-btn {
       position: fixed;
       bottom: 90px;
@@ -886,6 +962,18 @@
         bottom: 80px;
         right: 15px;
       }
+
+      .btn-adicionar-recibo {
+        width: 42px;
+        height: 42px;
+        padding: 10px;
+      }
+
+      .zoom-btn {
+        width: 42px;
+        height: 42px;
+        padding: 10px;
+      }
       
       .popup-content {
         padding: 30px 20px;
@@ -933,9 +1021,10 @@
       body {
         margin: 0;
         padding: 0;
-        background: white;
+        background: white !important;
+        transform: none !important;
       }
-      .botoes, .loading-overlay, .status-contador, .toast, .popup-overlay, .whatsapp-btn, .btn-sair, .toggle-footer-btn {
+      .botoes, .loading-overlay, .status-contador, .toast, .popup-overlay, .whatsapp-btn, .btn-sair, .toggle-footer-btn, .btn-adicionar-recibo, .checkbox-recibo {
         display: none !important;
       }
       .recibo {
@@ -945,11 +1034,33 @@
         margin: 20px auto;
         width: 100%;
         max-width: 700px;
-        border: none;
+        border: 2px solid #000 !important;
         padding: 30px;
+        background-color: white !important;
+      }
+      .recibo.selecionado {
+        border: 2px solid #000 !important;
+        box-shadow: none !important;
       }
       #recibos-gerados .recibo:last-child {
         page-break-after: auto;
+      }
+      .linha, input, textarea, .assinatura-nome {
+        color: #000 !important;
+      }
+      input, textarea {
+        border-bottom: 1px solid #000 !important;
+      }
+      .assinatura-linha {
+        border-bottom: 1px solid #000 !important;
+      }
+      .titulo {
+        color: #000 !important;
+      }
+      .valor-topo input {
+        border: 2px solid #000 !important;
+        background-color: #f0f0f0 !important;
+        color: #000 !important;
       }
     }
   </style>
@@ -983,6 +1094,22 @@
     <div class="popup-body-confirmacao">
      <p>Tem certeza que deseja excluir todos os dados selecionados? Esta ação não poderá ser desfeita.</p>
      <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;"><button class="popup-btn" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);" onclick="fecharConfirmacao()">Cancelar</button> <button class="popup-btn" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);" onclick="confirmarLimpeza()">Sim, Excluir Tudo</button>
+     </div>
+    </div>
+   </div>
+  </div><!-- Popup de Confirmação de Exclusão de Selecionados -->
+  <div class="popup-overlay hidden" id="popup-deletar-selecionados">
+   <div class="popup-content popup-confirmacao-content">
+    <div class="popup-header-laranja">
+     <div class="popup-icon-branco">
+      <svg width="48" height="48" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /> <line x1="10" y1="11" x2="10" y2="17"></line> <line x1="14" y1="11" x2="14" y2="17"></line>
+      </svg>
+     </div>
+     <h2 style="color: white; margin: 0;">DELETAR SELECIONADOS</h2>
+    </div>
+    <div class="popup-body-confirmacao">
+     <p id="texto-deletar-selecionados">Tem certeza que deseja excluir os recibos selecionados? Esta ação não poderá ser desfeita.</p>
+     <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;"><button class="popup-btn" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);" onclick="fecharDeletarSelecionados()">Cancelar</button> <button class="popup-btn" style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);" onclick="confirmarDeletarSelecionados()">Sim, Deletar</button>
      </div>
     </div>
    </div>
@@ -1052,8 +1179,11 @@
    </div><!-- Toast de limpeza -->
    <div class="toast" id="toast-limpeza" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);">
     🗑️ Dados excluídos com sucesso!
+   </div><!-- Toast de zoom -->
+   <div class="toast" id="toast-zoom" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    🔍 Zoom: <span id="toast-zoom-valor">100%</span>
    </div><!-- Recibo original visível, editável manualmente -->
-   <section class="recibo" id="recibo">
+   <section class="recibo" id="recibo"><input type="checkbox" class="checkbox-recibo" onchange="toggleSelecaoRecibo(this)" aria-label="Selecionar recibo">
     <div class="topo">
      <div class="titulo" id="titulo-recibo">
       RECIBO
@@ -1065,9 +1195,9 @@
     </div>
     <div class="linha"><label for="campoQuantia">a quantia de</label> <textarea id="campoQuantia" readonly aria-label="Valor por extenso"></textarea>
     </div>
-    <div class="linha"><label for="referencia">Referente a</label> <input type="text" id="referencia" aria-label="Referência do pagamento">
+    <div class="linha"><label for="referencia">Referente a</label> <input type="text" id="referencia" aria-label="Refer��ncia do pagamento">
     </div>
-    <div class="linha"><input type="text" id="descricao" aria-label="Descri��ão adicional">
+    <div class="linha"><input type="text" id="descricao" aria-label="Descrição adicional">
     </div>
     <div class="linha"><label for="emitente">Emitente:</label> <input type="text" id="emitente" aria-label="Nome do emitente">
     </div>
@@ -1086,7 +1216,7 @@
      <div class="assinatura-nome" id="assinaturaCpf"></div>
     </div>
    </section><!-- Recibo SIMPLIFICADO principal -->
-   <section class="recibo" id="recibo-simplificado" style="display: none">
+   <section class="recibo" id="recibo-simplificado" style="display: none"><input type="checkbox" class="checkbox-recibo" onchange="toggleSelecaoRecibo(this)" aria-label="Selecionar recibo">
     <div class="topo" style="justify-content: flex-start;">
      <div class="titulo" id="titulo-recibo-simples">
       RECIBO
@@ -1105,7 +1235,7 @@
      </div>
     </div>
    </section><!-- MODELO oculto para gerar novos recibos -->
-   <section class="recibo" id="modelo-recibo" style="display: none" aria-hidden="true">
+   <section class="recibo" id="modelo-recibo" style="display: none" aria-hidden="true"><input type="checkbox" class="checkbox-recibo" onchange="toggleSelecaoRecibo(this)" aria-label="Selecionar recibo">
     <div class="topo">
      <div class="titulo titulo-modelo">
       RECIBO
@@ -1145,7 +1275,7 @@
      <div class="assinatura-nome assinaturaCpf"></div>
     </div>
    </section><!-- MODELO SIMPLIFICADO oculto -->
-   <section class="recibo" id="modelo-recibo-simplificado" style="display: none" aria-hidden="true">
+   <section class="recibo" id="modelo-recibo-simplificado" style="display: none" aria-hidden="true"><input type="checkbox" class="checkbox-recibo" onchange="toggleSelecaoRecibo(this)" aria-label="Selecionar recibo">
     <div class="topo" style="justify-content: flex-start;">
      <div class="titulo titulo-modelo">
       RECIBO
@@ -1165,22 +1295,28 @@
     </div>
    </section><!-- Contêiner para os recibos importados -->
    <div id="recibos-gerados"></div>
-  </main><!-- Botão flutuante para ocultar/mostrar rodap�� --> <button class="toggle-footer-btn" id="toggle-footer" onclick="toggleFooter()" title="Ocultar/Mostrar Barra de Ferramentas">
+  </main><!-- Botão flutuante para ocultar/mostrar rodapé --> <button class="toggle-footer-btn" id="toggle-footer" onclick="toggleFooter()" title="Ocultar/Mostrar Barra de Ferramentas">
    <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline>
-   </svg></button> <!-- Botão Sair no canto superior direito --> <button class="btn-sair" onclick="window.open('https://gaveblue.com', '_blank')">
+   </svg></button> <!-- Botão Sair no canto superior direito --> <button class="btn-sair" onclick="sairAplicacao()">
    <svg viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /> <polyline points="16 17 21 12 16 7"></polyline> <line x1="21" y1="12" x2="9" y2="12"></line>
    </svg> Sair </button>
   <footer class="botoes">
-   <div class="botoes-esquerda"><button class="imprimir-pdf" id="btn-imprimir-pdf" onclick="imprimirPDF()" data-tooltip="Imprimir">
+   <div class="botoes-esquerda"><button class="btn-adicionar-recibo" onclick="adicionarReciboVazio()" data-tooltip="Adicionar Recibo"> + </button> <button class="imprimir-pdf" id="btn-imprimir-pdf" onclick="imprimirPDF()" data-tooltip="Imprimir">
      <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline> <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /> <rect x="6" y="14" width="12" height="8"></rect>
      </svg></button> <button class="limpar" onclick="abrirConfirmacaoLimpeza()" data-tooltip="Limpar Dados">
      <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /> <line x1="10" y1="11" x2="10" y2="17"></line> <line x1="14" y1="11" x2="14" y2="17"></line>
+     </svg></button> <button class="deletar-selecionados" onclick="abrirDeletarSelecionados()" data-tooltip="Deletar Selecionados">
+     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18" /> <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /> <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /> <line x1="10" y1="11" x2="10" y2="17"></line> <line x1="14" y1="11" x2="14" y2="17"></line> <circle cx="18" cy="18" r="3" fill="currentColor"></circle> <path d="M16.5 16.5l3 3" stroke="white" stroke-width="1.5" />
      </svg></button> <button class="importar" onclick="document.getElementById('excelFile').click()" data-tooltip="Importar Dados">
      <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /> <polyline points="14 2 14 8 20 8"></polyline> <line x1="12" y1="18" x2="12" y2="12"></line> <line x1="9" y1="15" x2="15" y2="15"></line>
      </svg></button> <button class="modelo-toggle-btn-footer" onclick="alternarModelo()" data-tooltip="Alternar Modelo">
      <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 3 12 8 7"></polyline> <polyline points="16 7 21 12 16 17"></polyline> <line x1="3" y1="12" x2="21" y2="12"></line>
      </svg></button> <button class="dark-mode-btn" onclick="toggleDarkMode()" data-tooltip="Modo Escuro" id="dark-mode-toggle">
      <svg width="24" height="24" viewbox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+     </svg></button> <button class="zoom-btn" onclick="diminuirZoom()" data-tooltip="Diminuir Zoom">
+     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle> <line x1="21" y1="21" x2="16.65" y2="16.65"></line> <line x1="8" y1="11" x2="14" y2="11"></line>
+     </svg></button> <button class="zoom-btn" onclick="aumentarZoom()" data-tooltip="Aumentar Zoom">
+     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle> <line x1="21" y1="21" x2="16.65" y2="16.65"></line> <line x1="11" y1="8" x2="11" y2="14"></line> <line x1="8" y1="11" x2="14" y2="11"></line>
      </svg></button> <button class="help-btn" onclick="abrirAjuda()" data-tooltip="Ajuda">
      <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle> <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /> <line x1="12" y1="17" x2="12.01" y2="17"></line>
      </svg></button>
@@ -1189,6 +1325,156 @@
     </svg></a> <input type="file" id="excelFile" accept=".xlsx, .xls" style="display: none" onchange="importarExcel(event)">
   </footer>
   <script>
+    // Variável global para controlar o zoom
+    let zoomAtual = 100;
+
+    // Função para aumentar zoom
+    function aumentarZoom() {
+      if (zoomAtual < 200) {
+        zoomAtual += 10;
+        aplicarZoom();
+      }
+    }
+
+    // Função para diminuir zoom
+    function diminuirZoom() {
+      if (zoomAtual > 50) {
+        zoomAtual -= 10;
+        aplicarZoom();
+      }
+    }
+
+    // Função para aplicar zoom
+    function aplicarZoom() {
+      const escala = zoomAtual / 100;
+      
+      // Aplicar zoom apenas nos recibos
+      const recibos = document.querySelectorAll('.recibo');
+      recibos.forEach(recibo => {
+        recibo.style.transform = `scale(${escala})`;
+        recibo.style.transformOrigin = 'top center';
+        recibo.style.marginBottom = `${40 * escala}px`;
+      });
+      
+      // Mostrar toast com o nível de zoom
+      mostrarToastZoom();
+      
+      // Salvar preferência
+      localStorage.setItem('zoomRecibos', zoomAtual);
+    }
+
+    // Função para mostrar toast de zoom
+    function mostrarToastZoom() {
+      const toast = document.getElementById('toast-zoom');
+      const valorSpan = document.getElementById('toast-zoom-valor');
+      valorSpan.textContent = zoomAtual + '%';
+      
+      toast.classList.add('visible');
+      setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2000);
+    }
+
+    // Carregar zoom salvo
+    window.addEventListener('DOMContentLoaded', function() {
+      const zoomSalvo = localStorage.getItem('zoomRecibos');
+      if (zoomSalvo) {
+        zoomAtual = parseInt(zoomSalvo);
+        aplicarZoom();
+      }
+    });
+
+    // Função para alternar seleção de recibo
+    function toggleSelecaoRecibo(checkbox) {
+      const recibo = checkbox.closest('.recibo');
+      if (checkbox.checked) {
+        recibo.classList.add('selecionado');
+      } else {
+        recibo.classList.remove('selecionado');
+      }
+    }
+
+    // Função para abrir popup de deletar selecionados
+    function abrirDeletarSelecionados() {
+      const selecionados = document.querySelectorAll('.recibo.selecionado');
+      if (selecionados.length === 0) {
+        mostrarMensagem('Nenhum recibo selecionado!', 'erro');
+        return;
+      }
+      
+      const texto = document.getElementById('texto-deletar-selecionados');
+      texto.textContent = `Tem certeza que deseja excluir ${selecionados.length} recibo(s) selecionado(s)? Esta ação não poderá ser desfeita.`;
+      
+      document.getElementById('popup-deletar-selecionados').classList.remove('hidden');
+    }
+
+    // Função para fechar popup de deletar selecionados
+    function fecharDeletarSelecionados() {
+      document.getElementById('popup-deletar-selecionados').classList.add('hidden');
+    }
+
+    // Função para confirmar deletar selecionados
+    function confirmarDeletarSelecionados() {
+      const selecionados = document.querySelectorAll('.recibo.selecionado');
+      selecionados.forEach(recibo => recibo.remove());
+      
+      fecharDeletarSelecionados();
+      atualizarContador();
+      mostrarToastLimpeza();
+    }
+
+    // Função para adicionar recibo vazio
+    function adicionarReciboVazio() {
+      const modeloId = modeloAtual === 'simplificado' ? 'modelo-recibo-simplificado' : 'modelo-recibo';
+      const modelo = document.getElementById(modeloId);
+      const novoRecibo = modelo.cloneNode(true);
+      const timestamp = Date.now();
+      novoRecibo.id = 'recibo-novo-' + timestamp;
+      novoRecibo.style.display = 'block';
+
+      const tituloConfig = window.elementSdk && window.elementSdk.config ? window.elementSdk.config.titulo_recibo : 'RECIBO';
+      novoRecibo.querySelector('.titulo-modelo').textContent = tituloConfig || 'RECIBO';
+
+      if (modeloAtual === 'simplificado') {
+        novoRecibo.querySelector('.valor').oninput = function() { formatarMoeda(this); };
+      } else {
+        novoRecibo.querySelector('.valor').oninput = function() { formatarMoeda(this); };
+        novoRecibo.querySelector('.cpfcnpj').oninput = function() { 
+          formatarCpfCnpj(this); 
+          atualizarAssinaturaDireto(this);
+        };
+        novoRecibo.querySelector('.emitente').oninput = function() { 
+          atualizarAssinaturaDireto(this);
+        };
+      }
+
+      // Aplicar zoom atual ao novo recibo
+      const escala = zoomAtual / 100;
+      novoRecibo.style.transform = `scale(${escala})`;
+      novoRecibo.style.transformOrigin = 'top center';
+      novoRecibo.style.marginBottom = `${40 * escala}px`;
+
+      const container = document.getElementById('recibos-gerados');
+      container.appendChild(novoRecibo);
+      
+      atualizarContador();
+      
+      // Scroll suave até o novo recibo
+      setTimeout(() => {
+        novoRecibo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+
+    // Função para sair da aplicação
+    function sairAplicacao() {
+      // Tentar fechar a janela/aba atual
+      window.close();
+      
+      // Se não conseguir fechar (algumas janelas não permitem), redirecionar
+      setTimeout(function() {
+        window.location.href = 'https://gaveblue.com';
+      }, 100);
+    }
 
     // Função para processar data de forma inteligente
     function processarDataInteligente(valorData) {
@@ -1342,7 +1628,7 @@
       localStorage.setItem('modeloRecibo', modeloAtual);
     }
 
-    // Carregar prefer����ncia do modelo ao iniciar
+    // Carregar preferência do modelo ao iniciar
     window.addEventListener('DOMContentLoaded', function() {
       const modeloSalvo = localStorage.getItem('modeloRecibo');
       if (modeloSalvo === 'simplificado') {
@@ -1450,7 +1736,7 @@
       document.getElementById('popup-confirmacao').classList.remove('hidden');
     }
 
-    // Fun��ão para fechar confirmação
+    // Função para fechar confirmação
     function fecharConfirmacao() {
       document.getElementById('popup-confirmacao').classList.add('hidden');
     }
@@ -1676,7 +1962,7 @@
       if (valor === '') {
         input.value = '';
         const recibo = input.closest('.recibo');
-        const campoQuantia = recibo.querySelector('.campoQuantia') || recibo.querySelector('#campoQuantia');
+        const campoQuantia = recibo.querySelector('.campoQuantia') || recibo.querySelector('#campoQuantia') || recibo.querySelector('.quantia-simples') || recibo.querySelector('#quantia-simples');
         if (campoQuantia) {
           campoQuantia.value = '';
         }
@@ -1689,7 +1975,7 @@
       input.value = 'R$ ' + reais.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       
       const recibo = input.closest('.recibo');
-      const campoQuantia = recibo.querySelector('.campoQuantia') || recibo.querySelector('#campoQuantia');
+      const campoQuantia = recibo.querySelector('.campoQuantia') || recibo.querySelector('#campoQuantia') || recibo.querySelector('.quantia-simples') || recibo.querySelector('#quantia-simples');
       if (campoQuantia && reais > 0) {
         const extenso = numeroParaExtenso(reais);
         campoQuantia.value = extenso.toUpperCase();
@@ -1766,7 +2052,14 @@
       document.getElementById('valor-simples').value = '';
       document.getElementById('quantia-simples').value = '';
       document.getElementById('nome-principal').value = '';
-      document.getElementById('assinaturaNomeSimples').textContent = '';
+      
+      // Desmarcar checkboxes
+      document.querySelectorAll('.checkbox-recibo').forEach(cb => {
+        cb.checked = false;
+      });
+      document.querySelectorAll('.recibo').forEach(r => {
+        r.classList.remove('selecionado');
+      });
       
       document.getElementById('recibos-gerados').innerHTML = '';
       atualizarContador();
@@ -1816,7 +2109,6 @@
               if (row.Recebedor || row.Emitente) {
                 const nomeInput = document.getElementById('nome-principal');
                 nomeInput.value = row.Recebedor || row.Emitente || '';
-                atualizarLinhaAssinaturaSimples();
               }
             } else {
               // Preencher recibo padrão principal
@@ -1930,6 +2222,12 @@
               atualizarAssinaturaDireto(this);
             };
           }
+
+          // Aplicar zoom atual ao recibo importado
+          const escala = zoomAtual / 100;
+          novoRecibo.style.transform = `scale(${escala})`;
+          novoRecibo.style.transformOrigin = 'top center';
+          novoRecibo.style.marginBottom = `${40 * escala}px`;
 
           container.appendChild(novoRecibo);
         });
@@ -2090,5 +2388,5 @@
       applyConfig(window.elementSdk.config || defaultConfig);
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ab89da8b27100f1',t:'MTc2NTMyNjQ0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ac06ee4f6e03e73',t:'MTc2NTQwODQxMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
