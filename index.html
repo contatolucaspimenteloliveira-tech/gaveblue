@@ -1,8 +1,6 @@
 <!doctype html>
 <html lang="pt-BR">
  <head>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2575550675720837"
-     crossorigin="anonymous"></script>
   <meta charset="UTF-8">
   <title>Portal de Gestão Gaveblue</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Tailwind CSS CDN -->
@@ -229,7 +227,7 @@
    <footer class="w-full border-t border-slate-800/50 backdrop-blur-sm relative z-10">
     <div class="max-w-6xl mx-auto w-full px-6 py-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-slate-400"><span class="font-medium">© <span id="year-span"></span> gaveblue.com - Todos os direitos reservados.</span>
     </div>
-   </footer><!-- Popup 1: Atualização WeRecibos 1.0.1 (aparece primeiro) -->
+   </footer><!-- Popup 1: Atualização WeRecibos 1.0.2 (aparece primeiro) -->
    <div id="maintenance-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);">
     <div class="custom-scrollbar relative w-full max-w-3xl rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 sm:p-8 shadow-2xl shadow-emerald-500/20 animate-scale-in max-h-[90vh] overflow-y-auto"><!-- Botão X para fechar --> <button id="close-maintenance-x-btn" type="button" class="close-btn-x focus-outline" aria-label="Fechar atualização">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -238,39 +236,62 @@
       <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/50"><span class="text-3xl">🔧</span>
       </div>
      </div><!-- Título -->
-     <h2 class="text-center text-2xl sm:text-3xl font-bold text-white mb-2">Atualização 1.0.1 – Aperfeiçoamentos de Interface e Funcionalidade</h2><!-- Descrição -->
-     <p class="text-center text-slate-300 mb-6 leading-relaxed">A versão 1.0.1 do <strong class="text-white">WeRecibos</strong> introduz um conjunto de aprimoramentos estruturais e visuais que elevam a eficiência operacional e a experiência do usuário no Gerador de Recibos.</p><!-- Novidades desta versão -->
+     <h2 class="text-center text-2xl sm:text-3xl font-bold text-white mb-2">🔧 Atualização 1.0.2 – Aperfeiçoamentos de Interface e Funcionalidade</h2><!-- Descrição -->
+     <p class="text-center text-slate-300 mb-6 leading-relaxed">A versão 1.0.2 do <strong class="text-white">WeRecibos</strong> chega mais inteligente, estável e refinada. Esta atualização traz avanços estruturais e visuais que elevam a eficiência operacional e aprimoram significativamente a experiência do usuário na criação e gestão de recibos.</p><!-- Aviso Importante -->
+     <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 mb-6">
+      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">⚠️</span>
+       <h3 class="text-lg font-bold text-white">Aviso Importante</h3>
+      </div>
+      <div class="space-y-3 text-sm text-slate-300">
+       <p>Ainda não foi corrigido o erro que, ao imprimir apenas 1 recibo, gera uma página em branco adicional.</p>
+       <p>Enquanto finalizamos essa correção, orientamos os usuários que desejam evitar problemas a selecionar na impressão a opção:</p>
+       <div class="rounded-lg border border-amber-500/20 bg-slate-800/50 p-3 mt-2">
+        <p class="text-amber-300 font-semibold text-center">👉 "Personalizar &gt; Apenas páginas ímpares"</p>
+       </div>
+       <p class="text-center">Assim, somente a p��gina correta será impressa.</p>
+      </div>
+     </div><!-- Novidades desta versão -->
      <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-5 mb-6">
       <div class="flex items-center gap-2 mb-4"><span class="text-2xl">✔</span>
        <h3 class="text-lg font-bold text-white">Novidades desta versão</h3>
       </div>
       <div class="space-y-3 text-sm text-slate-300">
        <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Redesenho do layout de botões</strong> – Reestruturação completa da disposição e estilo dos botões, proporcionando maior clareza visual, acessibilidade e fluidez na navegação.</p>
+        <p><strong class="text-white">Redesenho completo do layout de botões</strong> – Interface reorganizada, mais limpa, acessível e intuitiva, garantindo navegação mais fluida.</p>
        </div>
        <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Implementação do Modo Claro/Escuro</strong> – Inclusão de alternância dinâmica entre temas, permitindo adaptação às condições de uso e oferecendo uma experiência visual mais confortável e personalizável.</p>
+        <p><strong class="text-white">Layout responsivo otimizado para impressão</strong> – Ajustes aplicados automaticamente no momento da impressão, aprimorando margens, proporções e fidelidade visual do recibo final.</p>
        </div>
        <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Barra de navegação ocultável</strong> – O usuário pode ocultar a barra inferior para ampliar a área de trabalho e manter uma visualização mais limpa e focada durante a criação dos recibos.</p>
+        <p><strong class="text-white">Botão de ajuda aprimorado</strong> – Agora exibe claramente o modelo oficial da planilha necessária para importar dados, reduzindo erros e facilitando o uso do recurso.</p>
        </div>
        <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Layout responsivo otimizado para impressão</strong> – Ajustes automáticos aplicados exclusivamente no momento da impressão garantem melhor distribuição dos elementos, margens adequadas e maior fidelidade no resultado final.</p>
+        <p><strong class="text-white">Conversão inteligente de datas</strong> – Aceita qualquer formato — números do Excel, dd/mm/aaaa, dd-mm-aaaa, aaaa-mm-dd — e converte tudo automaticamente para o padrão brasileiro.</p>
        </div>
        <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Botão de ajuda aprimorado</strong> – O módulo de apoio ao usuário foi atualizado para apresentar de forma clara o modelo padrão de planilha necessário para importação de dados, reduzindo erros e facilitando o uso do recurso.</p>
+        <p><strong class="text-white">Conversão inteligente de valores monetários</strong> – Reconhece entradas como: 1500 • 1.500 • 1.500,00 • R$ 1.500,00 • 1,500.00 e converte tudo para o padrão brasileiro com valor por extenso.</p>
        </div>
        <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Conversão inteligente de datas</strong> – O sistema agora aceita datas em qualquer formato: números do Excel, dd/mm/aaaa, dd-mm-aaaa, aaaa-mm-dd, e converte automaticamente para o padrão brasileiro.</p>
+        <p><strong class="text-white">Seleção múltipla de recibos</strong> – Permite ações em lote, ampliando velocidade e produtividade no gerenciamento.</p>
        </div>
        <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Conversão inteligente de valores monetários</strong> – Aceita valores em múltiplos formatos: "1500", "1.500", "1.500,00", "R$ 1.500,00", "1,500.00" e converte automaticamente para o formato brasileiro com extenso.</p>
+        <p><strong class="text-white">Seleção de recibos com camada de segurança</strong> – Evita exclusões acidentais, garantindo mais controle durante a remoção.</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">���</span>
+        <p><strong class="text-white">Botão "+" para adicionar novos recibos em branco</strong> – Facilita o preenchimento manual direto pela interface.</p>
        </div>
        <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Confirmação de exclusão</strong> – Implementação de camada adicional de segurança para evitar remoções acidentais.</p>
+        <p><strong class="text-white">Botão de Zoom</strong> – Amplia ou reduz a visualização permitindo enxergar vários recibos ao mesmo tempo ou focar em detalhes específicos.</p>
        </div>
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Seleção múltipla de recibos</strong> – Permitirá ações em lote para maior produtividade.</p>
+      </div>
+     </div><!-- Correções de Erros -->
+     <div class="rounded-xl border border-blue-500/30 bg-blue-500/10 p-5 mb-6">
+      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">🛠</span>
+       <h3 class="text-lg font-bold text-white">Correções de Erros</h3>
+      </div>
+      <div class="space-y-3 text-sm text-slate-300">
+       <div class="flex items-start gap-3"><span class="text-blue-400 mt-1 flex-shrink-0">•</span>
+        <p>Corrigido o problema de visualização opaca ao gerar múltiplos recibos e enviá-los para impressão. Agora todos seguem o mesmo padrão de qualidade do recibo principal.</p>
        </div>
       </div>
      </div><!-- Próximas melhorias previstas -->
@@ -280,13 +301,10 @@
       </div>
       <div class="space-y-3 text-sm text-slate-300">
        <div class="flex items-start gap-3"><span class="text-sky-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Histórico de recibos recentes</strong> – Possibilitará acesso rápido aos últimos documentos gerados, agilizando revisões e duplicações.</p>
+        <p><strong class="text-white">Download direto do recibo em PDF</strong> – Possibilitará salvar recibos diretamente no formato PDF sem necessidade de impressão.</p>
        </div>
        <div class="flex items-start gap-3"><span class="text-sky-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Revisão dos botões de exclusão</strong> – Maior controle e previsibilidade nas operações de remoção de dados.</p>
-       </div>
-       <div class="flex items-start gap-3"><span class="text-sky-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Aprimoramento do botão "Voltar"</strong> – Comportamento mais consistente, oferecendo navegação mais intuitiva e redução de erros operacionais.</p>
+        <p><strong class="text-white">Revisão completa dos botões de exclusão</strong> – Oferecendo maior previsibilidade e segurança ao remover itens.</p>
        </div>
       </div>
      </div><!-- Botão Continuar --> <button id="close-maintenance-btn" type="button" class="focus-outline w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-400 hover:to-emerald-500 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5"> Continuar </button>
@@ -353,6 +371,14 @@
         <div class="flex-1">
          <p class="text-xs font-semibold text-slate-50">WhatsApp</p>
          <p class="text-[10px] text-slate-300">Atendimento rápido</p>
+        </div></a> <!-- Instagram --> <a href="https://instagram.com/gaveblue" target="_blank" rel="noopener noreferrer" class="focus-outline flex items-center gap-3 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2.5 text-left transition-all hover:border-pink-400 hover:bg-slate-700">
+        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500">
+         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewbox="0 0 24 24" class="w-5 h-5 text-white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+         </svg>
+        </div>
+        <div class="flex-1">
+         <p class="text-xs font-semibold text-slate-50">Instagram</p>
+         <p class="text-[10px] text-slate-300">@gaveblue</p>
         </div></a> <!-- E-mail --> <a href="mailto:suporte@gaveblue.com?subject=Suporte%20-%20Plataforma%20Gaveblue" class="focus-outline flex items-center gap-3 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2.5 text-left transition-all hover:border-sky-400 hover:bg-slate-700">
         <div class="flex h-8 w-8 items-center justify-center rounded-full bg-sky-500">
          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
@@ -672,5 +698,5 @@
       });
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a9324929443c6c1',t:'MTc2NDkzMzUwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9acd8ef9f7aa830c',t:'MTc2NTU0NjAzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
