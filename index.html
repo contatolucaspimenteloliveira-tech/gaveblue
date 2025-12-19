@@ -1,96 +1,783 @@
-<!DOCTYPE html><html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Em Manutenção</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<!doctype html>
+<html lang="pt-BR">
+ <head>
+  <meta charset="UTF-8">
+  <title>Portal de Gestão Gaveblue</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script><!-- Canva SDKs -->
+  <script src="/_sdk/element_sdk.js"></script>
   <style>
-    * {
+    body {
       box-sizing: border-box;
-    }body {
-  margin: 0;
-  height: 100vh;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: radial-gradient(circle at top, #111827, #020617);
-  color: #f8fafc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+    }
 
-.container {
-  max-width: 560px;
-  width: 90%;
-  text-align: center;
-  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-  backdrop-filter: blur(16px);
-  border-radius: 24px;
-  padding: 56px 40px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
-}
+    /* Garantir altura total em iframe sem usar unidades de viewport */
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
 
-.logo {
-  width: 96px;
-  height: auto;
-  margin-bottom: 24px;
-  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.4));
-}
+    .app-wrapper {
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+    }
 
-.icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-}
+    /* Foco visível para acessibilidade */
+    .focus-outline:focus-visible {
+      outline: 3px solid rgba(255, 255, 255, 0.9);
+      outline-offset: 2px;
+    }
 
-h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 0 0 12px;
-}
+    /* Garantir fundo escuro com animação */
+    #app-root {
+      background: linear-gradient(45deg, #0a1628, #1a3a5c, #0f2847, #2a4a6c, #0a1628, #1a3a5c, #0f2847, #1a3a5c);
+      background-size: 800% 800%;
+      animation: gradientShift 20s ease-in-out infinite;
+    }
 
-p {
-  font-size: 1rem;
-  color: #cbd5f5;
-  margin: 0 0 28px;
-  line-height: 1.6;
-}
+    @keyframes gradientShift {
+      0% {
+        background-position: 0% 50%;
+      }
+      25% {
+        background-position: 100% 50%;
+      }
+      50% {
+        background-position: 100% 100%;
+      }
+      75% {
+        background-position: 0% 100%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
 
-.status {
-  display: inline-block;
-  padding: 12px 22px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(56,189,248,0.25), rgba(14,165,233,0.15));
-  color: #7dd3fc;
-  font-weight: 600;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
-}
+    /* Animação de hover nos cards */
+    .card-hover {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
 
-footer {
-  margin-top: 32px;
-  font-size: 0.8rem;
-  color: #94a3b8;
-}
+    .card-hover::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.5s ease;
+    }
 
-@media (max-width: 480px) {
-  h1 {
-    font-size: 1.6rem;
-  }
-}
+    .card-hover:hover::before {
+      left: 100%;
+    }
 
+    .card-hover:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Animação do popup de manutenção */
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .animate-scale-in {
+      animation: scaleIn 0.3s ease-out;
+    }
+
+    #maintenance-overlay, #warning-overlay {
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    /* Personalização da barra de rolagem */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #10b981, #059669);
+      border-radius: 10px;
+      transition: background 0.3s ease;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #34d399, #10b981);
+    }
+
+    /* Botão de fechar (X) */
+    .close-btn-x {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 50%;
+      color: #ef4444;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+
+    .close-btn-x:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.5);
+      transform: scale(1.1);
+    }
+
+    .close-btn-x svg {
+      width: 18px;
+      height: 18px;
+    }
   </style>
-</head>
-<body>
-  <div class="container">
-    <img src="favicon.png" alt="GaveBlue" class="logo" />
-    <div class="icon">⚙️</div>
-    <h1>Manutenção em andamento</h1>
-    <p>
-      Estamos trabalhando em melhorias estratégicas para elevar o padrão da nossa plataforma.<br>Em breve, uma nova experiência estará disponível.
-    </p>
-    <div class="status">Manutenção em andamento</div>
-    <footer>
-      © gaveblue.com • Todos os direitos reservados
-    </footer>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body style="background: #0f172a;">
+  <div id="app-root" class="app-wrapper text-slate-50 flex flex-col relative overflow-hidden"><!-- Efeitos de fundo modernos -->
+   <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-0 left-0 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl"></div>
+   </div>
+   <header class="w-full relative z-10 backdrop-blur-sm">
+    <nav class="max-w-6xl mx-auto w-full flex items-center justify-between px-6 py-1">
+     <div class="flex items-center"><img src="https://i.imgur.com/Zih5jH8.png" alt="Gaveblue" class="h-10 sm:h-12 md:h-14 w-auto" onerror="this.style.display='block'; this.alt='Logo Gaveblue';">
+     </div>
+     <div class="flex items-center gap-3"><a href="https://gaveblue.com/login" target="_blank" rel="noopener noreferrer" class="focus-outline px-5 py-2.5 text-sm font-medium text-slate-300 hover:text-white transition-all rounded-lg hover:bg-white/5"> Entrar </a> <a href="https://gaveblue.com/cadastro" target="_blank" rel="noopener noreferrer" class="focus-outline px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-400 hover:to-emerald-500 transition-all shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5"> Cadastre-se </a>
+     </div>
+    </nav>
+   </header>
+   <main class="flex-1 w-full relative z-10 flex items-center">
+    <section class="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4">
+     <div class="flex flex-col items-center text-center"><!-- Texto principal -->
+      <div class="space-y-4 sm:space-y-5 max-w-4xl w-full">
+       <div class="space-y-3">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/10 to-sky-500/10 border border-emerald-500/20 backdrop-blur-sm"><span class="relative flex h-2 w-2"> <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span> <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span> </span> <span class="text-xs font-medium text-emerald-300">Plataforma em evolução</span>
+        </div>
+        <h1 id="hero-title" class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">Central moderna para simplificar a sua gestão</h1>
+        <p id="hero-subtitle" class="text-base sm:text-lg md:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">Acesse um sistema desenvolvido especialmente para você, reunindo em um só lugar módulos financeiros, gestão de frotas e geração de documentos essenciais. Tudo pensado para oferecer praticidade, rapidez e mais eficiência no dia a dia do seu negócio.</p>
+       </div><!-- Botões de sistemas -->
+       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-5 max-w-3xl mx-auto w-full" aria-label="Sistemas de gestão disponíveis"><!-- WeRecibos - ATIVO --> <a id="btn-werecibos" href="https://gaveblue.com/recibos" target="_blank" rel="noopener noreferrer" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border border-purple-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-purple-500/70 hover:shadow-xl hover:shadow-purple-500/20">
+         <div class="flex flex-col gap-1 flex-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white"> WeRecibos </span> <span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Geração e gestão de recibos profissionais </span>
+         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/20 text-purple-400 group-hover:scale-110 transition-transform flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg></span> </a> <!-- WeFrotas - PREMIUM --> <button id="btn-wefrotas" type="button" class="premium-btn focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border-2 border-amber-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-amber-500/70 hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer card-hover">
+         <div class="absolute top-3 right-3"><span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gradient-to-r from-amber-400 to-yellow-500 border border-amber-500/30 text-[10px] font-bold text-white shadow-lg shadow-amber-500/50">
+           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+           </svg> PREMIUM </span>
+         </div>
+         <div class="flex flex-col gap-1 flex-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white"> WeFrotas </span> <span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Gestão completa de frotas, veículos e operações logísticas </span>
+         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 text-amber-400 group-hover:scale-110 transition-transform flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+          </svg></span> </button> <!-- WeFinance - PREMIUM --> <button id="btn-wefinance" type="button" class="premium-btn focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border-2 border-amber-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-amber-500/70 hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer card-hover">
+         <div class="absolute top-3 right-3"><span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gradient-to-r from-amber-400 to-yellow-500 border border-amber-500/30 text-[10px] font-bold text-white shadow-lg shadow-amber-500/50">
+           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+           </svg> PREMIUM </span>
+         </div>
+         <div class="flex flex-col gap-1 flex-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white"> WeFinance </span> <span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Visão financeira unificada, indicadores e fluxo de caixa </span>
+         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 text-amber-400 group-hover:scale-110 transition-transform flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+          </svg></span> </button> <!-- WeFiscal - PREMIUM --> <button id="btn-dev2" type="button" class="premium-btn focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border-2 border-amber-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-amber-500/70 hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer card-hover">
+         <div class="absolute top-3 right-3"><span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gradient-to-r from-amber-400 to-yellow-500 border border-amber-500/30 text-[10px] font-bold text-white shadow-lg shadow-amber-500/50">
+           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+           </svg> PREMIUM </span>
+         </div>
+         <div class="flex flex-col gap-1 flex-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white"> WeFiscal </span> <span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Gestão fiscal e tributária </span>
+         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 text-amber-400 group-hover:scale-110 transition-transform flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg></span> </button>
+       </div><!-- Aviso sobre módulos em dev -->
+       <div class="flex justify-center w-full">
+        <div class="inline-flex items-center gap-3 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/25 to-orange-500/25 backdrop-blur-sm px-5 py-3 text-sm text-amber-200"><span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-amber-300 text-sm font-bold flex-shrink-0"> ⚠️ </span> <span>Todos os módulos estão em desenvolvimento e serão liberados em breve</span>
+        </div>
+       </div>
+      </div>
+     </div>
+    </section>
+   </main>
+   <footer class="w-full border-t border-slate-800/50 backdrop-blur-sm relative z-10">
+    <div class="max-w-6xl mx-auto w-full px-6 py-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-slate-400"><span class="font-medium">© <span id="year-span"></span> gaveblue.com - Todos os direitos reservados.</span>
+    </div>
+   </footer><!-- Popup 1: Atualização WeRecibos 1.0.2 (aparece primeiro) -->
+   <div id="maintenance-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);">
+    <div class="custom-scrollbar relative w-full max-w-3xl rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 sm:p-8 shadow-2xl shadow-emerald-500/20 animate-scale-in max-h-[90vh] overflow-y-auto"><!-- Botão X para fechar --> <button id="close-maintenance-x-btn" type="button" class="close-btn-x focus-outline" aria-label="Fechar atualização">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg></button> <!-- Ícone de Atualização -->
+     <div class="flex justify-center mb-4">
+      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/50"><span class="text-3xl">🔧</span>
+      </div>
+     </div><!-- Título -->
+     <h2 class="text-center text-2xl sm:text-3xl font-bold text-white mb-2">🔧 Atualização 1.0.2 – Aperfeiçoamentos de Interface e Funcionalidade</h2><!-- Descrição -->
+     <p class="text-center text-slate-300 mb-6 leading-relaxed">A versão 1.0.2 do <strong class="text-white">WeRecibos</strong> chega mais inteligente, estável e refinada. Esta atualização traz avanços estruturais e visuais que elevam a eficiência operacional e aprimoram significativamente a experiência do usuário na criação e gestão de recibos.</p><!-- Aviso Importante -->
+     <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 mb-6">
+      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">⚠️</span>
+       <h3 class="text-lg font-bold text-white">Aviso Importante</h3>
+      </div>
+      <div class="space-y-3 text-sm text-slate-300">
+       <p>Ainda não foi corrigido o erro que, ao imprimir apenas 1 recibo, gera uma página em branco adicional.</p>
+       <p>Enquanto finalizamos essa correção, orientamos os usuários que desejam evitar problemas a selecionar na impressão a opção:</p>
+       <div class="rounded-lg border border-amber-500/20 bg-slate-800/50 p-3 mt-2">
+        <p class="text-amber-300 font-semibold text-center">👉 "Personalizar &gt; Apenas páginas ímpares"</p>
+       </div>
+       <p class="text-center">Assim, somente a p��gina correta será impressa.</p>
+      </div>
+     </div><!-- Novidades desta versão -->
+     <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-5 mb-6">
+      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">✔</span>
+       <h3 class="text-lg font-bold text-white">Novidades desta versão</h3>
+      </div>
+      <div class="space-y-3 text-sm text-slate-300">
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">��</span>
+        <p><strong class="text-white">Redesenho completo do layout de botões</strong> – Interface reorganizada, mais limpa, acessível e intuitiva, garantindo navegação mais fluida.</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
+        <p><strong class="text-white">Layout responsivo otimizado para impressão</strong> – Ajustes aplicados automaticamente no momento da impressão, aprimorando margens, proporções e fidelidade visual do recibo final.</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
+        <p><strong class="text-white">Botão de ajuda aprimorado</strong> – Agora exibe claramente o modelo oficial da planilha necessária para importar dados, reduzindo erros e facilitando o uso do recurso.</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
+        <p><strong class="text-white">Conversão inteligente de datas</strong> – Aceita qualquer formato — números do Excel, dd/mm/aaaa, dd-mm-aaaa, aaaa-mm-dd — e converte tudo automaticamente para o padrão brasileiro.</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
+        <p><strong class="text-white">Conversão inteligente de valores monetários</strong> – Reconhece entradas como: 1500 • 1.500 • 1.500,00 • R$ 1.500,00 • 1,500.00 e converte tudo para o padrão brasileiro com valor por extenso.</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
+        <p><strong class="text-white">Seleção múltipla de recibos</strong> – Permite ações em lote, ampliando velocidade e produtividade no gerenciamento.</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
+        <p><strong class="text-white">Seleção de recibos com camada de segurança</strong> – Evita exclusões acidentais, garantindo mais controle durante a remoção.</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">���</span>
+        <p><strong class="text-white">Botão "+" para adicionar novos recibos em branco</strong> – Facilita o preenchimento manual direto pela interface.</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
+        <p><strong class="text-white">Botão de Zoom</strong> – Amplia ou reduz a visualização permitindo enxergar vários recibos ao mesmo tempo ou focar em detalhes específicos.</p>
+       </div>
+      </div>
+     </div><!-- Correções de Erros -->
+     <div class="rounded-xl border border-blue-500/30 bg-blue-500/10 p-5 mb-6">
+      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">🛠</span>
+       <h3 class="text-lg font-bold text-white">Correções de Erros</h3>
+      </div>
+      <div class="space-y-3 text-sm text-slate-300">
+       <div class="flex items-start gap-3"><span class="text-blue-400 mt-1 flex-shrink-0">•</span>
+        <p>Corrigido o problema de visualização opaca ao gerar múltiplos recibos e enviá-los para impressão. Agora todos seguem o mesmo padrão de qualidade do recibo principal.</p>
+       </div>
+      </div>
+     </div><!-- Próximas melhorias previstas -->
+     <div class="rounded-xl border border-sky-500/30 bg-sky-500/10 p-5 mb-6">
+      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">🔮</span>
+       <h3 class="text-lg font-bold text-white">Próximas melhorias previstas</h3>
+      </div>
+      <div class="space-y-3 text-sm text-slate-300">
+       <div class="flex items-start gap-3"><span class="text-sky-400 mt-1 flex-shrink-0">•</span>
+        <p><strong class="text-white">Download direto do recibo em PDF</strong> – Possibilitará salvar recibos diretamente no formato PDF sem necessidade de impressão.</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-sky-400 mt-1 flex-shrink-0">•</span>
+        <p><strong class="text-white">Revisão completa dos botões de exclusão</strong> – Oferecendo maior previsibilidade e segurança ao remover itens.</p>
+       </div>
+      </div>
+     </div><!-- Botão Continuar --> <button id="close-maintenance-btn" type="button" class="focus-outline w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-400 hover:to-emerald-500 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5"> Continuar </button>
+    </div>
+   </div><!-- Popup 2: Aviso de Manutenção (aparece depois) -->
+   <div id="warning-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); display: none;">
+    <div class="custom-scrollbar relative w-full max-w-2xl rounded-2xl border border-amber-500/30 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 sm:p-8 shadow-2xl shadow-amber-500/20 animate-scale-in max-h-[90vh] overflow-y-auto"><!-- Ícone de Aviso -->
+     <div class="flex justify-center mb-4">
+      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/50">
+       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+       </svg>
+      </div>
+     </div><!-- Título -->
+     <h2 class="text-center text-2xl sm:text-3xl font-bold text-white mb-2">Aviso Importante</h2><!-- Subtítulo -->
+     <div class="flex items-center justify-center gap-2 mb-4">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30"><span class="relative flex h-2 w-2"> <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span> <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span> </span> <span class="text-sm font-semibold text-amber-300">Atualização 1.0.2 (2026)</span>
+      </div>
+     </div><!-- Descri����ão -->
+     <p class="text-center text-slate-300 mb-6 leading-relaxed text-base">O sistema está passando por uma manutenção geral para implementação de grandes novidades e melhorias. Por isso, algumas funções estão indisponíveis no momento.</p><!-- Período de Indisponibilidade -->
+     <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 mb-6">
+      <div class="flex items-center gap-3 mb-5">
+       <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/20 to-amber-600/20">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-amber-400"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+        </svg>
+       </div>
+       <h3 class="text-lg font-bold text-white">Período de Indisponibilidade</h3>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+       <div class="rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm p-4">
+        <div class="flex items-center gap-2 mb-2">
+         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-emerald-400"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+         </svg>
+         <p class="text-amber-400 font-semibold text-sm">Início</p>
+        </div>
+        <p class="text-white text-lg font-bold">01/12 às 09:00h</p>
+       </div>
+       <div class="rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm p-4">
+        <div class="flex items-center gap-2 mb-2">
+         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-red-400"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" />
+         </svg>
+         <p class="text-amber-400 font-semibold text-sm">Término</p>
+        </div>
+        <p class="text-white text-lg font-bold">18/12 às 00:00h</p>
+       </div>
+      </div>
+      <div class="rounded-lg border border-amber-500/20 bg-slate-800/30 p-4">
+       <p class="text-slate-300 text-sm text-center leading-relaxed">Durante este período, alguns dos nossos serviços estarão temporariamente indisponíveis. Agradecemos sua compreensão! 🙏</p>
+      </div>
+     </div><!-- Botão Entendi --> <button id="close-warning-btn" type="button" class="focus-outline w-full rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-amber-500/30 transition-all hover:from-amber-400 hover:to-amber-500 hover:shadow-xl hover:shadow-amber-500/40 hover:-translate-y-0.5"> Entendi </button>
+    </div>
+   </div><!-- Popup Premium -->
+   <div id="premium-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); display: none;">
+    <div class="custom-scrollbar relative w-full max-w-2xl rounded-2xl border border-amber-500/40 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 sm:p-8 shadow-2xl shadow-amber-500/30 animate-scale-in max-h-[90vh] overflow-y-auto"><!-- Botão X para fechar --> <button id="close-premium-x-btn" type="button" class="close-btn-x focus-outline" aria-label="Fechar">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg></button> <!-- Ícone Premium -->
+     <div class="flex justify-center mb-4">
+      <div class="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 shadow-lg shadow-amber-500/50">
+       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-10 h-10 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+       </svg>
+      </div>
+     </div><!-- Título -->
+     <h2 class="text-center text-2xl sm:text-3xl font-bold text-white mb-3">🔒 Funcionalidade Premium</h2><!-- Descrição -->
+     <p class="text-center text-slate-300 mb-6 leading-relaxed text-base">Esta é uma funcionalidade exclusiva para assinantes Premium. Faça login ou cadastre-se para ter acesso completo a todos os recursos da plataforma.</p><!-- Box de Benefícios -->
+     <div class="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 p-5 mb-6">
+      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">✨</span>
+       <h3 class="text-lg font-bold text-white">O que você ganha com Premium</h3>
+      </div>
+      <div class="space-y-3 text-sm text-slate-300">
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">✓</span>
+        <p><strong class="text-white">WeFrotas</strong> – Gestão completa de frotas e veículos</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">✓</span>
+        <p><strong class="text-white">WeFinance</strong> – Controle financeiro com indicadores em tempo real</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">✓</span>
+        <p><strong class="text-white">WeFiscal</strong> – Gestão fiscal e tributária simplificada</p>
+       </div>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">✓</span>
+        <p><strong class="text-white">Suporte prioritário</strong> e atualizações exclusivas</p>
+       </div>
+      </div>
+     </div><!-- Planos e Preços -->
+     <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 mb-6">
+      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">💳</span>
+       <h3 class="text-lg font-bold text-white">Planos Especiais</h3>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><!-- Plano Mensal -->
+       <div class="rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm p-5">
+        <p class="text-amber-400 font-semibold text-sm mb-2">MENSAL</p>
+        <div class="mb-3">
+         <div class="flex items-baseline gap-2 mb-1"><span class="text-3xl font-bold text-white">R$ 59,90</span> <span class="text-sm text-slate-400">/mês</span>
+         </div>
+         <div class="flex items-center gap-2"><span class="text-xs text-slate-500 line-through">De R$ 199,00</span> <span class="inline-flex px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-bold text-red-400">-70%</span>
+         </div>
+        </div>
+        <p class="text-xs text-slate-400">Cobrança mensal recorrente</p>
+       </div><!-- Plano Anual -->
+       <div class="rounded-xl border-2 border-emerald-500/50 bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 backdrop-blur-sm p-5 relative">
+        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2"><span class="inline-flex px-3 py-1 rounded-full bg-emerald-500 text-xs font-bold text-white shadow-lg">MAIS VANTAJOSO</span>
+        </div>
+        <p class="text-emerald-400 font-semibold text-sm mb-2 mt-2">ANUAL</p>
+        <div class="mb-3">
+         <div class="flex items-baseline gap-2 mb-1"><span class="text-3xl font-bold text-white">R$ 499,00</span> <span class="text-sm text-slate-400">/ano</span>
+         </div>
+         <div class="flex items-center gap-2"><span class="text-xs text-slate-500 line-through">De R$ 2.300,00</span> <span class="inline-flex px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-bold text-red-400">-78%</span>
+         </div>
+        </div>
+        <p class="text-xs text-emerald-400 font-semibold">Economia de R$ 219 no ano!</p>
+       </div>
+      </div><!-- Aviso Promoção -->
+      <div class="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+       <p class="text-xs text-red-300 text-center font-semibold">⚡ Promoção por tempo limitado! Garanta já seu desconto.</p>
+      </div>
+     </div><!-- Botões de Ação -->
+     <div class="space-y-3"><!-- Botão Teste Grátis --> <a href="https://gaveblue.com/cadastro" target="_blank" rel="noopener noreferrer" class="focus-outline w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-4 text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-400 hover:to-emerald-500 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5"> <span>🎁</span> <span>TESTE GRÁTIS POR 14 DIAS</span> </a> <!-- Botão Já tenho conta --> <a href="https://gaveblue.com/login" target="_blank" rel="noopener noreferrer" class="focus-outline w-full inline-flex items-center justify-center rounded-xl border-2 border-slate-600 bg-slate-700/50 px-6 py-3 text-sm font-semibold text-slate-200 transition-all hover:bg-slate-700 hover:border-slate-500"> Já tenho conta </a>
+     </div>
+    </div>
+   </div><!-- Botão de Suporte Flutuante -->
+   <div class="fixed bottom-20 right-6 z-50"><button id="support-btn" type="button" class="focus-outline flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 transition-all hover:bg-emerald-400 hover:scale-110 hover:shadow-xl" aria-label="Abrir menu de suporte">
+     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+     </svg></button> <!-- Menu de Suporte -->
+    <div id="support-menu" class="absolute bottom-20 right-0 w-64 rounded-xl border border-slate-700 bg-slate-800 shadow-2xl transition-all origin-bottom-right scale-0 opacity-0" style="display: none;">
+     <div class="p-4">
+      <h3 class="text-sm font-semibold text-slate-50 mb-1">Precisa de ajuda?</h3>
+      <p class="text-xs text-slate-300 mb-3">Entre em contato com nosso suporte</p>
+      <div class="space-y-2"><!-- WhatsApp --> <a href="https://api.whatsapp.com/send/?phone=.&amp;text=Ol%C3%A1%2C+tenho+uma+sugest%C3%A3o+para+o+Gerador+de+Recibos&amp;type=phone_number&amp;app_absent=0" target="_blank" rel="noopener noreferrer" class="focus-outline flex items-center gap-3 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2.5 text-left transition-all hover:border-emerald-400 hover:bg-slate-700">
+        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500">
+         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewbox="0 0 24 24" class="w-5 h-5 text-white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+         </svg>
+        </div>
+        <div class="flex-1">
+         <p class="text-xs font-semibold text-slate-50">WhatsApp</p>
+         <p class="text-[10px] text-slate-300">Atendimento rápido</p>
+        </div></a> <!-- Instagram --> <a href="https://instagram.com/gaveblue" target="_blank" rel="noopener noreferrer" class="focus-outline flex items-center gap-3 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2.5 text-left transition-all hover:border-pink-400 hover:bg-slate-700">
+        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500">
+         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewbox="0 0 24 24" class="w-5 h-5 text-white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+         </svg>
+        </div>
+        <div class="flex-1">
+         <p class="text-xs font-semibold text-slate-50">Instagram</p>
+         <p class="text-[10px] text-slate-300">@gaveblue</p>
+        </div></a> <!-- E-mail --> <a href="mailto:suporte@gaveblue.com?subject=Suporte%20-%20Plataforma%20Gaveblue" class="focus-outline flex items-center gap-3 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2.5 text-left transition-all hover:border-sky-400 hover:bg-slate-700">
+        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-sky-500">
+         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+         </svg>
+        </div>
+        <div class="flex-1">
+         <p class="text-xs font-semibold text-slate-50">E-mail</p>
+         <p class="text-[10px] text-slate-300">suporte@gaveblue.com</p>
+        </div></a>
+      </div><button id="close-support-btn" type="button" class="focus-outline mt-3 w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-xs text-slate-300 transition-all hover:bg-slate-700 hover:text-slate-50"> Fechar </button>
+     </div>
+    </div>
+   </div>
   </div>
-</body>
+  <script>
+    // Config padrão para edição via Canva
+    const defaultConfig = {
+      hero_title: "Central moderna para simplificar a sua gestão",
+      hero_subtitle: "Acesse um sistema desenvolvido especialmente para você, reunindo em um só lugar módulos financeiros, gestão de frotas e geração de documentos essenciais. Tudo pensado para oferecer praticidade, rapidez e mais eficiência no dia a dia do seu negócio.",
+      cta_wefrotas_label: "WeFrotas",
+      cta_wefinance_label: "WeFinance",
+      cta_werecibos_label: "WeRecibos",
+      cta_dev2_label: "WeFiscal",
+      footer_text: "",
+      // Cores (até 5)
+      background_color: "#0f172a",      // BACKGROUND - slate-950
+      surface_color: "#1e293b",         // SECONDARY_SURFACE - card/base
+      text_color: "#f1f5f9",            // TEXT - slate-100
+      primary_action_color: "#10b981",  // PRIMARY_ACTION - emerald-500
+      secondary_action_color: "#0ea5e9",// SECONDARY_ACTION - sky-500
+      // Tipografia
+      font_family: "Inter",
+      font_size: 14
+    };
+
+    // Atualiza o ano no rodapé
+    (function setYear() {
+      const yearSpan = document.getElementById("year-span");
+      if (yearSpan) {
+        const now = new Date();
+        yearSpan.textContent = now.getFullYear();
+      }
+    })();
+
+    // Função de aplicação de config
+    async function applyConfig(config) {
+      const effective = Object.assign({}, defaultConfig, config || {});
+      const baseFont = effective.font_family || defaultConfig.font_family;
+      const baseSize = Number(effective.font_size || defaultConfig.font_size) || 14;
+      const fullFont = baseFont + ", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+      // Elementos de texto
+      const heroTitleEl = document.getElementById("hero-title");
+      const heroSubtitleEl = document.getElementById("hero-subtitle");
+      const btnWeFrotasEl = document.getElementById("btn-wefrotas");
+      const btnWeFinanceEl = document.getElementById("btn-wefinance");
+      const btnWeRecibosEl = document.getElementById("btn-werecibos");
+      const btnDev2El = document.getElementById("btn-dev2");
+      const footerTextEl = document.getElementById("footer-text");
+      const appRoot = document.getElementById("app-root");
+
+      // Texto editável
+      if (heroTitleEl) {
+        heroTitleEl.textContent = effective.hero_title || defaultConfig.hero_title;
+      }
+      if (heroSubtitleEl) {
+        heroSubtitleEl.textContent = effective.hero_subtitle || defaultConfig.hero_subtitle;
+      }
+      if (btnWeFrotasEl) {
+        const labelSpan = btnWeFrotasEl.querySelector("span.text-sm");
+        if (labelSpan) {
+          labelSpan.textContent = effective.cta_wefrotas_label || defaultConfig.cta_wefrotas_label;
+        }
+      }
+      if (btnWeFinanceEl) {
+        const labelSpan = btnWeFinanceEl.querySelector("span.text-sm");
+        if (labelSpan) {
+          labelSpan.textContent = effective.cta_wefinance_label || defaultConfig.cta_wefinance_label;
+        }
+      }
+      if (btnWeRecibosEl) {
+        const labelSpan = btnWeRecibosEl.querySelector("span.text-sm");
+        if (labelSpan) {
+          labelSpan.textContent = effective.cta_werecibos_label || defaultConfig.cta_werecibos_label;
+        }
+      }
+      if (btnDev2El) {
+        const labelSpan = btnDev2El.querySelector("span.text-sm");
+        if (labelSpan) {
+          labelSpan.textContent = effective.cta_dev2_label || defaultConfig.cta_dev2_label;
+        }
+      }
+      if (footerTextEl) {
+        footerTextEl.textContent = effective.footer_text || defaultConfig.footer_text;
+      }
+
+      // Aplicar cores
+      if (appRoot) {
+        appRoot.style.background = `linear-gradient(135deg, ${effective.background_color} 0%, ${effective.surface_color} 50%, ${effective.background_color} 100%)`;
+        appRoot.style.color = effective.text_color || defaultConfig.text_color;
+      }
+
+      // Botões principais
+      if (btnWeFrotasEl) {
+        btnWeFrotasEl.style.backgroundColor = (effective.primary_action_color || defaultConfig.primary_action_color) + "33";
+        btnWeFrotasEl.style.borderColor = (effective.primary_action_color || defaultConfig.primary_action_color) + "80";
+      }
+      if (btnWeFinanceEl) {
+        btnWeFinanceEl.style.backgroundColor = (effective.secondary_action_color || defaultConfig.secondary_action_color) + "33";
+        btnWeFinanceEl.style.borderColor = (effective.secondary_action_color || defaultConfig.secondary_action_color) + "80";
+      }
+
+      // Tipografia global
+      document.body.style.fontFamily = fullFont;
+      document.body.style.fontSize = baseSize + "px";
+
+      // Escala de texto
+      if (heroTitleEl) {
+        heroTitleEl.style.fontSize = (baseSize * 2) + "px";
+      }
+      if (heroSubtitleEl) {
+        heroSubtitleEl.style.fontSize = (baseSize * 1) + "px";
+      }
+      if (footerTextEl) {
+        footerTextEl.style.fontSize = (baseSize * 0.8) + "px";
+      }
+      const navBrand = document.getElementById("brand-title");
+      if (navBrand) {
+        navBrand.style.fontSize = (baseSize * 0.95) + "px";
+      }
+      [btnWeFrotasEl, btnWeFinanceEl, btnWeRecibosEl, btnDev2El].forEach(function(el) {
+        if (!el) return;
+        const labelSpan = el.querySelector("span.text-sm");
+        const descSpan = el.querySelector("span.text-[11px]");
+        if (labelSpan) labelSpan.style.fontSize = (baseSize * 0.9) + "px";
+        if (descSpan) descSpan.style.fontSize = (baseSize * 0.75) + "px";
+      });
+    }
+
+    // Inicializar Element SDK, se disponível
+    (function initElementSdk() {
+      if (!window.elementSdk) {
+        // Sem SDK (por exemplo, preview fora do Canva) — aplica apenas default
+        applyConfig(defaultConfig);
+        return;
+      }
+
+      window.elementSdk.init({
+        defaultConfig: defaultConfig,
+        onConfigChange: async function(config) {
+          await applyConfig(config);
+        },
+        mapToCapabilities: function(config) {
+          const cfg = config || defaultConfig;
+
+          const recolorables = [
+            {
+              get: function() { return cfg.background_color || defaultConfig.background_color; },
+              set: function(value) {
+                cfg.background_color = value;
+                window.elementSdk.setConfig({ background_color: value });
+              }
+            },
+            {
+              get: function() { return cfg.surface_color || defaultConfig.surface_color; },
+              set: function(value) {
+                cfg.surface_color = value;
+                window.elementSdk.setConfig({ surface_color: value });
+              }
+            },
+            {
+              get: function() { return cfg.text_color || defaultConfig.text_color; },
+              set: function(value) {
+                cfg.text_color = value;
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            },
+            {
+              get: function() { return cfg.primary_action_color || defaultConfig.primary_action_color; },
+              set: function(value) {
+                cfg.primary_action_color = value;
+                window.elementSdk.setConfig({ primary_action_color: value });
+              }
+            },
+            {
+              get: function() { return cfg.secondary_action_color || defaultConfig.secondary_action_color; },
+              set: function(value) {
+                cfg.secondary_action_color = value;
+                window.elementSdk.setConfig({ secondary_action_color: value });
+              }
+            }
+          ];
+
+          const fontEditable = {
+            get: function() { return cfg.font_family || defaultConfig.font_family; },
+            set: function(value) {
+              cfg.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          };
+
+          const fontSizeable = {
+            get: function() { return cfg.font_size || defaultConfig.font_size; },
+            set: function(value) {
+              cfg.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          };
+
+          return {
+            recolorables: recolorables,
+            borderables: [],
+            fontEditable: fontEditable,
+            fontSizeable: fontSizeable
+          };
+        },
+        mapToEditPanelValues: function(config) {
+          const cfg = Object.assign({}, defaultConfig, config || {});
+          return new Map([
+            ["hero_title", cfg.hero_title],
+            ["hero_subtitle", cfg.hero_subtitle],
+            ["cta_wefrotas_label", cfg.cta_wefrotas_label],
+            ["cta_wefinance_label", cfg.cta_wefinance_label],
+            ["cta_werecibos_label", cfg.cta_werecibos_label],
+            ["cta_dev2_label", cfg.cta_dev2_label],
+            ["footer_text", cfg.footer_text]
+          ]);
+        }
+      });
+    })();
+
+    // Funcionalidade do popup de atualização
+    (function initPopups() {
+      const maintenanceOverlay = document.getElementById("maintenance-overlay");
+      const closeMaintenanceBtn = document.getElementById("close-maintenance-btn");
+      const closeMaintenanceXBtn = document.getElementById("close-maintenance-x-btn");
+
+      if (!maintenanceOverlay || !closeMaintenanceBtn) return;
+
+      // Função para fechar popup de atualização
+      function closeMaintenance() {
+        maintenanceOverlay.style.opacity = "0";
+        maintenanceOverlay.style.transform = "scale(0.95)";
+        setTimeout(function() {
+          maintenanceOverlay.style.display = "none";
+        }, 300);
+      }
+
+      // Botão "Continuar" do popup de atualização
+      closeMaintenanceBtn.addEventListener("click", closeMaintenance);
+
+      // Botão X do popup de atualização
+      if (closeMaintenanceXBtn) {
+        closeMaintenanceXBtn.addEventListener("click", closeMaintenance);
+      }
+    })();
+
+    // Funcionalidade do popup premium
+    (function initPremiumPopup() {
+      const premiumOverlay = document.getElementById("premium-overlay");
+      const closePremiumXBtn = document.getElementById("close-premium-x-btn");
+      const premiumButtons = document.querySelectorAll(".premium-btn");
+
+      if (!premiumOverlay) return;
+
+      function openPremiumPopup() {
+        premiumOverlay.style.display = "flex";
+        setTimeout(function() {
+          premiumOverlay.style.opacity = "1";
+        }, 10);
+      }
+
+      function closePremiumPopup() {
+        premiumOverlay.style.opacity = "0";
+        setTimeout(function() {
+          premiumOverlay.style.display = "none";
+        }, 300);
+      }
+
+      // Adicionar evento de clique em todos os botões premium
+      premiumButtons.forEach(function(btn) {
+        btn.addEventListener("click", openPremiumPopup);
+      });
+
+      // Botão X para fechar
+      if (closePremiumXBtn) {
+        closePremiumXBtn.addEventListener("click", closePremiumPopup);
+      }
+
+      // Fechar ao clicar fora do popup
+      premiumOverlay.addEventListener("click", function(e) {
+        if (e.target === premiumOverlay) {
+          closePremiumPopup();
+        }
+      });
+    })();
+
+    // Funcionalidade do botão de suporte
+    (function initSupportButton() {
+      const supportBtn = document.getElementById("support-btn");
+      const supportMenu = document.getElementById("support-menu");
+      const closeBtn = document.getElementById("close-support-btn");
+
+      if (!supportBtn || !supportMenu || !closeBtn) return;
+
+      function openMenu() {
+        supportMenu.style.display = "block";
+        setTimeout(function() {
+          supportMenu.style.transform = "scale(1)";
+          supportMenu.style.opacity = "1";
+        }, 10);
+      }
+
+      function closeMenu() {
+        supportMenu.style.transform = "scale(0)";
+        supportMenu.style.opacity = "0";
+        setTimeout(function() {
+          supportMenu.style.display = "none";
+        }, 200);
+      }
+
+      supportBtn.addEventListener("click", function() {
+        if (supportMenu.style.display === "none" || !supportMenu.style.display) {
+          openMenu();
+        } else {
+          closeMenu();
+        }
+      });
+
+      closeBtn.addEventListener("click", closeMenu);
+
+      // Fechar ao clicar fora
+      document.addEventListener("click", function(e) {
+        if (!supportBtn.contains(e.target) && !supportMenu.contains(e.target)) {
+          closeMenu();
+        }
+      });
+    })();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b03793091b14585',t:'MTc2NjExMTM3OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
