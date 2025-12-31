@@ -1028,38 +1028,51 @@
         display: none !important;
       }
       .recibo {
-        box-shadow: none;
+        box-shadow: none !important;
         page-break-after: always;
         page-break-inside: avoid;
         margin: 20px auto;
         width: 100%;
         max-width: 700px;
-        border: 2px solid #000 !important;
+        border: none !important;
+        border-radius: 0 !important;
         padding: 30px;
         background-color: white !important;
+        transform: none !important;
       }
       .recibo.selecionado {
-        border: 2px solid #000 !important;
+        border: none !important;
         box-shadow: none !important;
       }
+      .recibo:last-child {
+        page-break-after: avoid !important;
+        margin-bottom: 0 !important;
+      }
+      #recibos-gerados {
+        page-break-after: avoid !important;
+      }
       #recibos-gerados .recibo:last-child {
-        page-break-after: auto;
+        page-break-after: avoid !important;
+        margin-bottom: 0 !important;
+      }
+      #recibos-gerados:empty + * {
+        page-break-before: avoid !important;
       }
       .linha, input, textarea, .assinatura-nome {
         color: #000 !important;
       }
       input, textarea {
-        border-bottom: 1px solid #000 !important;
+        border-bottom: 0.5px solid #999 !important;
       }
       .assinatura-linha {
-        border-bottom: 1px solid #000 !important;
+        border-bottom: 0.5px solid #999 !important;
       }
       .titulo {
         color: #000 !important;
       }
       .valor-topo input {
-        border: 2px solid #000 !important;
-        background-color: #f0f0f0 !important;
+        border: 1px solid #999 !important;
+        background-color: #f9f9f9 !important;
         color: #000 !important;
       }
     }
@@ -1068,18 +1081,20 @@
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
   <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
  </head>
- <body>
-  <header class="sr-only">
-   <h1>Gerador de Recibos</h1>
-  </header><!-- Popup de Aviso -->
+ <body><!-- Popup de Aviso -->
   <div class="popup-overlay" id="popup-aviso">
    <div class="popup-content popup-moderno">
     <div class="popup-icon">
      <svg width="64" height="64" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /> <polyline points="22 4 12 14.01 9 11.01"></polyline>
      </svg>
     </div>
-    <h2>Bem-vindo ao Gerador de Recibos</h2>
-    <p>Informamos que o gerador de recibos encontra-se plenamente operacional, porém ainda em fase de testes. O modelo simplificado no modo alternar recibos foi implementado a pedido de cliente. Caso deseje contribuir com sugestões de aperfeiçoamento, clique no botão verde e envie sua mensagem.</p><button class="popup-btn" onclick="fecharPopup()">Começar a usar</button>
+    <h2>WeRecibos v1.0.2</h2>
+    <p><strong>🎉 Atualização 1.0.2 disponível!</strong><br><br>
+      ✨ Interface redesenhada com layout responsivo otimizado<br>
+      🔢 Conversão inteligente de datas e valores monetários<br>
+      ✅ Seleção múltipla de recibos com segurança aprimorada<br>
+      🔍 Controle de zoom para melhor visualização<br><br>
+      ⚠️ <strong>Aviso:</strong> Ao imprimir apenas 1 recibo, pode aparecer uma página em branco. Para evitar, selecione na impressão: <strong>"Personalizar &gt; Apenas páginas ímpares"</strong></p><button class="popup-btn" onclick="fecharPopup()">Começar a usar</button>
    </div>
   </div><!-- Popup de Confirmação de Limpeza -->
   <div class="popup-overlay hidden" id="popup-confirmacao">
@@ -1172,7 +1187,7 @@
   </div>
   <main><!-- Contador de recibos -->
    <div class="status-contador" id="status-contador">
-    📋 <span id="contador-numero">0</span> recibos gerados
+    �� <span id="contador-numero">0</span> recibos gerados
    </div><!-- Toast de sucesso -->
    <div class="toast" id="toast-sucesso">
     ✅ Recibos importados com sucesso!
@@ -1459,7 +1474,7 @@
       
       atualizarContador();
       
-      // Scroll suave até o novo recibo
+      // Scroll suave at�� o novo recibo
       setTimeout(() => {
         novoRecibo.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
@@ -2388,5 +2403,5 @@
       applyConfig(window.elementSdk.config || defaultConfig);
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ac06ee4f6e03e73',t:'MTc2NTQwODQxMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b662d8702085e0f',t:'MTc2NzE0NjM2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
