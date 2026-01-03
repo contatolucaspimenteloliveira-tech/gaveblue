@@ -470,10 +470,16 @@
      <div>
       <h1 id="app-title" class="text-3xl font-bold gradient-text">WeFrotas</h1>
       <p id="company-name" class="text-sm text-gray-600 font-medium mt-1">Gestão de Frotas</p>
-     </div><!-- Toast Container -->
-     <div id="header-toast-container" class="flex flex-col items-end gap-3"></div>
+     </div>
     </div>
-   </header><!-- Nav Tabs -->
+   </header><!-- Toast Container (Fixed Position) -->
+   <div id="header-toast-container" class="fixed top-6 right-6 z-50 flex flex-col items-end gap-3 pointer-events-none">
+    <style>
+        #header-toast-container .toast {
+          pointer-events: auto;
+        }
+      </style>
+   </div><!-- Nav Tabs -->
    <nav class="glass-header px-6 py-3 sticky top-[88px] z-30 overflow-x-auto">
     <div class="flex gap-2 items-center"><button class="tab-button w-12 h-12 flex items-center justify-center transition-all tab-active" onclick="showTab('dashboard')" title="Dashboard">
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect> <rect x="14" y="3" width="7" height="7"></rect> <rect x="14" y="14" width="7" height="7"></rect> <rect x="3" y="14" width="7" height="7"></rect>
@@ -3339,5 +3345,5 @@
 
     document.addEventListener('DOMContentLoaded', initializeApp);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b85b04096060316',t:'MTc2NzQ3Njc4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b85b295b3220316',t:'MTc2NzQ3Njg3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
