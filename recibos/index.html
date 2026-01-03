@@ -1081,7 +1081,25 @@
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
   <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
  </head>
- <body><!-- Popup de Confirmação de Limpeza -->
+ <body><!-- Popup de Feliz Ano Novo -->
+  <div class="popup-overlay" id="popup-ano-novo">
+   <div class="popup-content popup-moderno" style="max-width: 600px;"><button class="popup-close" onclick="fecharAnoNovo()">×</button>
+    <div class="popup-icon" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); animation: iconPulse 2s ease-in-out infinite;">
+     <svg width="48" height="48" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle> <polyline points="12 6 12 12 16 14"></polyline>
+     </svg>
+    </div>
+    <h2 style="font-size: 32px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">🎉 FELIZ ANO NOVO! 🎊</h2>
+    <p style="font-size: 18px; line-height: 1.8; margin-bottom: 25px;">Que 2026 seja um ano repleto de <strong>sucesso</strong>, <strong>prosperidade</strong> e <strong>realizações</strong>!</p>
+    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 20px; border-radius: 15px; border-left: 4px solid #3b82f6; margin-bottom: 25px;">
+     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+      <svg width="28" height="28" viewbox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+      </svg>
+      <h3 style="font-size: 20px; color: #1e40af; margin: 0; font-weight: bold;">✨ Nova Atualização!</h3>
+     </div>
+     <p style="font-size: 16px; color: #1e40af; line-height: 1.7; margin: 0;">Agora o campo <strong>DATA</strong> é preenchido automaticamente com a data atual! 📅<br><span style="font-size: 14px; color: #3b82f6;">Você pode personalizar quando quiser, mas não precisa mais digitar toda vez!</span></p>
+    </div><button class="popup-btn" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); font-size: 18px; padding: 14px 40px;" onclick="fecharAnoNovo()"> 🚀 Começar 2026! </button>
+   </div>
+  </div><!-- Popup de Confirmação de Limpeza -->
   <div class="popup-overlay hidden" id="popup-confirmacao">
    <div class="popup-content popup-confirmacao-content">
     <div class="popup-header-vermelho">
@@ -1673,6 +1691,29 @@
 
 
 
+    // Função para fechar popup de Ano Novo
+    function fecharAnoNovo() {
+      const popup = document.getElementById('popup-ano-novo');
+      popup.style.opacity = '0';
+      popup.style.transition = 'opacity 0.3s ease';
+      setTimeout(() => {
+        popup.classList.add('hidden');
+        popup.style.opacity = '1';
+      }, 300);
+      // Salvar que já viu o popup
+      localStorage.setItem('popupAnoNovo2026', 'visto');
+    }
+
+    // Mostrar popup de Ano Novo automaticamente
+    window.addEventListener('DOMContentLoaded', function() {
+      const jaViu = localStorage.getItem('popupAnoNovo2026');
+      if (!jaViu) {
+        setTimeout(() => {
+          document.getElementById('popup-ano-novo').classList.remove('hidden');
+        }, 1000);
+      }
+    });
+
     // Função para abrir ajuda
     function abrirAjuda() {
       document.getElementById('popup-ajuda').classList.remove('hidden');
@@ -1716,7 +1757,7 @@
       const dados = [
         ['Valor', 'Recebedor', 'Referencia', 'Descricao', 'Emitente', 'CPFCNPJ', 'Data'],
         ['R$ 1.500,00', 'João Silva', 'Serviços de consultoria', 'Projeto X - Fase 1', 'Maria Santos', '123.456.789-00', '15/01/2024'],
-        ['R$ 2.300,00', 'Pedro Costa', 'Manutenção predial', 'Reparo hidráulico', 'José Oliveira', '987.654.321-00', '20/01/2024']
+        ['R$ 2.300,00', 'Pedro Costa', 'Manutenção predial', 'Reparo hidr��ulico', 'José Oliveira', '987.654.321-00', '20/01/2024']
       ];
 
       // Criar workbook
@@ -2416,5 +2457,5 @@
       applyConfig(window.elementSdk.config || defaultConfig);
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b7f84f622248dd8',t:'MTc2NzQxMjA5NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b7fadeac4bfc6c1',t:'MTc2NzQxMzc3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
