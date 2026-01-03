@@ -171,7 +171,7 @@
     </nav>
    </header>
    <main class="flex-1 w-full relative z-10 flex items-center">
-    <section class="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+    <section class="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
      <div class="flex flex-col items-center text-center"><!-- Texto principal -->
       <div class="space-y-5 sm:space-y-6 max-w-4xl w-full">
        <div class="space-y-3">
@@ -296,7 +296,7 @@
        </svg>
       </div>
      </div><!-- Título -->
-     <h2 class="text-center text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2 sm:mb-3">🔒 Funcionalidade Premium</h2><!-- Descrição -->
+     <h2 class="text-center text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2 sm:mb-3">���� Funcionalidade Premium</h2><!-- Descrição -->
      <p class="text-center text-slate-300 mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base px-2">Esta é uma funcionalidade exclusiva para assinantes Premium. Faça login ou cadastre-se para ter acesso completo a todos os recursos da plataforma.</p><!-- Box de Benefícios -->
      <div class="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 p-4 sm:p-5 mb-4 sm:mb-6">
       <div class="flex items-center gap-2 mb-3 sm:mb-4"><span class="text-xl sm:text-2xl">✨</span>
@@ -316,7 +316,7 @@
         <p><strong class="text-white">Suporte prioritário</strong> e atualizações exclusivas</p>
        </div>
       </div>
-     </div><!-- Planos e Preços -->
+     </div><!-- Planos e Pre��os -->
      <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 sm:p-5 mb-4 sm:mb-6">
       <div class="flex items-center gap-2 mb-3 sm:mb-4"><span class="text-xl sm:text-2xl">💳</span>
        <h3 class="text-base sm:text-lg font-bold text-white">Planos Especiais</h3>
@@ -369,7 +369,7 @@
        </div>
       </div>
      </div><!-- Botões de Ação -->
-     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><!-- Botão Teste Grátis --> <a href="https://gaveblue.com/cadastro" target="_blank" rel="noopener noreferrer" class="focus-outline inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-400 hover:to-emerald-500 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5"> <span>🎁</span> <span>TESTE GRÁTIS 30 DIAS</span> </a> <!-- Botão Já tenho conta --> <a href="https://gaveblue.com/login" target="_blank" rel="noopener noreferrer" class="focus-outline inline-flex items-center justify-center rounded-xl border-2 border-slate-600 bg-slate-700/50 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold text-slate-200 transition-all hover:bg-slate-700 hover:border-slate-500"> Já tenho conta </a>
+     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><!-- Botão Teste Grátis --> <a href="https://gaveblue.com/cadastro" target="_blank" rel="noopener noreferrer" class="focus-outline inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-400 hover:to-emerald-500 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5"> <span>��</span> <span>TESTE GRÁTIS 30 DIAS</span> </a> <!-- Botão Já tenho conta --> <a href="https://gaveblue.com/login" target="_blank" rel="noopener noreferrer" class="focus-outline inline-flex items-center justify-center rounded-xl border-2 border-slate-600 bg-slate-700/50 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold text-slate-200 transition-all hover:bg-slate-700 hover:border-slate-500"> Já tenho conta </a>
      </div>
     </div>
    </div>
@@ -679,7 +679,7 @@
         card.addEventListener("click", function() {
           const planType = card.getAttribute("data-plan");
           const cadastroUrl = "https://gaveblue.com/cadastro?plan=" + planType;
-          window.open(cadastroUrl, "_blank", "noopener,noreferrer");
+          window.location.href = cadastroUrl;
         });
       });
     })();
@@ -767,22 +767,9 @@
       });
     })();
 
-    // Fechar a janela ao clicar em links externos
-    (function closeOnNavigation() {
-      // Selecionar todos os links e botões que abrem URLs externas
-      const externalLinks = document.querySelectorAll('a[target="_blank"], .plan-card');
-      
-      externalLinks.forEach(function(link) {
-        link.addEventListener("click", function() {
-          // Aguardar um pequeno delay para garantir que o link foi aberto
-          setTimeout(function() {
-            window.close();
-          }, 100);
-        });
-      });
-    })();
+
 
 
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b82e116d344a42d',t:'MTc2NzQ0NzMyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b82ec6676fd0316',t:'MTc2NzQ0Nzc4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
