@@ -1081,22 +1081,7 @@
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
   <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
  </head>
- <body><!-- Popup de Aviso -->
-  <div class="popup-overlay" id="popup-aviso">
-   <div class="popup-content popup-moderno">
-    <div class="popup-icon">
-     <svg width="64" height="64" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /> <polyline points="22 4 12 14.01 9 11.01"></polyline>
-     </svg>
-    </div>
-    <h2>WeRecibos v1.0.2</h2>
-    <p><strong>🎉 Atualização 1.0.2 disponível!</strong><br><br>
-      ✨ Interface redesenhada com layout responsivo otimizado<br>
-      🔢 Conversão inteligente de datas e valores monetários<br>
-      ✅ Seleção múltipla de recibos com segurança aprimorada<br>
-      🔍 Controle de zoom para melhor visualização<br><br>
-      ⚠️ <strong>Aviso:</strong> Ao imprimir apenas 1 recibo, pode aparecer uma página em branco. Para evitar, selecione na impressão: <strong>"Personalizar &gt; Apenas páginas ímpares"</strong></p><button class="popup-btn" onclick="fecharPopup()">Começar a usar</button>
-   </div>
-  </div><!-- Popup de Confirmação de Limpeza -->
+ <body><!-- Popup de Confirmação de Limpeza -->
   <div class="popup-overlay hidden" id="popup-confirmacao">
    <div class="popup-content popup-confirmacao-content">
     <div class="popup-header-vermelho">
@@ -1219,7 +1204,7 @@
     <div class="linha-horizontal">
      <div class="campo-pequeno"><label for="cpfcnpj">CPF/CNPJ:</label> <input type="text" id="cpfcnpj" aria-label="CPF ou CNPJ do emitente">
      </div>
-     <div class="campo-pequeno"><label for="data">Data:</label> <input type="text" id="data" placeholder="dd/mm/aaaa" aria-label="Data do recibo">
+     <div class="campo-pequeno"><label for="data">Data:</label> <input type="text" id="data" aria-label="Data do recibo">
      </div>
     </div>
     <div class="linha">
@@ -1278,7 +1263,7 @@
       CPF/CNPJ: <input type="text" class="cpfcnpj">
      </div>
      <div class="campo-pequeno">
-      Data: <input type="text" class="data" placeholder="dd/mm/aaaa">
+      Data: <input type="text" class="data">
      </div>
     </div>
     <div class="linha">
@@ -1453,6 +1438,12 @@
       if (modeloAtual === 'simplificado') {
         novoRecibo.querySelector('.valor').oninput = function() { formatarMoeda(this); };
       } else {
+        // Preencher data automaticamente no novo recibo
+        const dataInput = novoRecibo.querySelector('.data');
+        if (dataInput) {
+          dataInput.value = obterDataFormatada();
+        }
+        
         novoRecibo.querySelector('.valor').oninput = function() { formatarMoeda(this); };
         novoRecibo.querySelector('.cpfcnpj').oninput = function() { 
           formatarCpfCnpj(this); 
@@ -1493,30 +1484,37 @@
 
     // Função para processar data de forma inteligente
     function processarDataInteligente(valorData) {
-      if (!valorData) return '';
+      if (!valorData) return obterDataFormatada();
+      
+      const meses = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
       
       // Se for número (data serial do Excel)
       if (typeof valorData === 'number') {
         const dataExcel = XLSX.SSF.parse_date_code(valorData);
         const dia = String(dataExcel.d).padStart(2, '0');
-        const mes = String(dataExcel.m).padStart(2, '0');
+        const mes = meses[dataExcel.m - 1];
         const ano = dataExcel.y;
-        return `${dia}/${mes}/${ano}`;
+        return `${dia} DE ${mes} DE ${ano}`;
       }
       
       // Se for string, tentar converter
       const valorStr = String(valorData).trim();
       
-      // Se já estiver no formato dd/mm/aaaa, retornar direto
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(valorStr)) {
-        return valorStr;
+      // Se já estiver no formato DD DE MÊS DE AAAA, retornar direto
+      if (/^\d{2} DE [A-ZÇÃÁÉÍÓÚ]+ DE \d{4}$/.test(valorStr.toUpperCase())) {
+        return valorStr.toUpperCase();
       }
       
       // Tentar converter formatos comuns
       let data = null;
       
+      // Formato: dd/mm/aaaa
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(valorStr)) {
+        const partes = valorStr.split('/');
+        data = new Date(partes[2], partes[1] - 1, partes[0]);
+      }
       // Formato: dd-mm-aaaa ou dd.mm.aaaa
-      if (/^\d{2}[-\.]\d{2}[-\.]\d{4}$/.test(valorStr)) {
+      else if (/^\d{2}[-\.]\d{2}[-\.]\d{4}$/.test(valorStr)) {
         const partes = valorStr.split(/[-\.]/);
         data = new Date(partes[2], partes[1] - 1, partes[0]);
       }
@@ -1536,16 +1534,16 @@
         data = new Date(valorStr);
       }
       
-      // Se conseguiu converter, formatar para dd/mm/aaaa
+      // Se conseguiu converter, formatar para DD DE MÊS DE AAAA
       if (data && !isNaN(data.getTime())) {
         const dia = String(data.getDate()).padStart(2, '0');
-        const mes = String(data.getMonth() + 1).padStart(2, '0');
+        const mes = meses[data.getMonth()];
         const ano = data.getFullYear();
-        return `${dia}/${mes}/${ano}`;
+        return `${dia} DE ${mes} DE ${ano}`;
       }
       
-      // Se não conseguiu converter, retornar o valor original
-      return valorStr;
+      // Se não conseguiu converter, retornar data atual
+      return obterDataFormatada();
     }
 
     // Função para processar valor monetário de forma inteligente
@@ -1673,10 +1671,7 @@
       }
     });
 
-    // Função para fechar popup
-    function fecharPopup() {
-      document.getElementById('popup-aviso').classList.add('hidden');
-    }
+
 
     // Função para abrir ajuda
     function abrirAjuda() {
@@ -2280,6 +2275,24 @@
       }
     }
 
+    // Função para obter data formatada
+    function obterDataFormatada() {
+      const meses = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+      const hoje = new Date();
+      const dia = String(hoje.getDate()).padStart(2, '0');
+      const mes = meses[hoje.getMonth()];
+      const ano = hoje.getFullYear();
+      return `${dia} DE ${mes} DE ${ano}`;
+    }
+
+    // Preencher data automaticamente no recibo principal ao carregar
+    window.addEventListener('DOMContentLoaded', function() {
+      const dataInput = document.getElementById('data');
+      if (dataInput && !dataInput.value) {
+        dataInput.value = obterDataFormatada();
+      }
+    });
+
     // Eventos do recibo principal
     document.getElementById('valor').oninput = function() { formatarMoeda(this); };
     document.getElementById('cpfcnpj').oninput = function() { 
@@ -2403,5 +2416,5 @@
       applyConfig(window.elementSdk.config || defaultConfig);
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b662d8702085e0f',t:'MTc2NzE0NjM2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b7f84f622248dd8',t:'MTc2NzQxMjA5NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
