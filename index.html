@@ -99,7 +99,7 @@
       animation: scaleIn 0.3s ease-out;
     }
 
-    #maintenance-overlay, #warning-overlay {
+    #premium-overlay {
       transition: opacity 0.3s ease, transform 0.3s ease;
     }
 
@@ -222,202 +222,120 @@
      </div>
     </section>
    </main>
-   <footer class="w-full border-t border-slate-800/50 backdrop-blur-sm relative z-10">
-    <div class="max-w-6xl mx-auto w-full px-6 py-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-slate-400"><span class="font-medium">© <span id="year-span"></span> gaveblue.com - Todos os direitos reservados.</span>
-    </div>
-   </footer><!-- Popup 1: Atualização WeRecibos 1.0.2 (aparece primeiro) -->
-   <div id="maintenance-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);">
-    <div class="custom-scrollbar relative w-full max-w-3xl rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 sm:p-8 shadow-2xl shadow-emerald-500/20 animate-scale-in max-h-[90vh] overflow-y-auto"><!-- Botão X para fechar --> <button id="close-maintenance-x-btn" type="button" class="close-btn-x focus-outline" aria-label="Fechar atualização">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-      </svg></button> <!-- Ícone de Atualização -->
-     <div class="flex justify-center mb-4">
-      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/50"><span class="text-3xl">🔧</span>
-      </div>
-     </div><!-- Título -->
-     <h2 class="text-center text-2xl sm:text-3xl font-bold text-white mb-2">🔧 Atualização 1.0.2 – Aperfeiçoamentos de Interface e Funcionalidade</h2><!-- Descrição -->
-     <p class="text-center text-slate-300 mb-6 leading-relaxed">A versão 1.0.2 do <strong class="text-white">WeRecibos</strong> chega mais inteligente, estável e refinada. Esta atualização traz avanços estruturais e visuais que elevam a eficiência operacional e aprimoram significativamente a experiência do usuário na criação e gestão de recibos.</p><!-- Aviso Importante -->
-     <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 mb-6">
-      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">⚠️</span>
-       <h3 class="text-lg font-bold text-white">Aviso Importante</h3>
-      </div>
-      <div class="space-y-3 text-sm text-slate-300">
-       <p>Ainda não foi corrigido o erro que, ao imprimir apenas 1 recibo, gera uma página em branco adicional.</p>
-       <p>Enquanto finalizamos essa correção, orientamos os usuários que desejam evitar problemas a selecionar na impressão a opção:</p>
-       <div class="rounded-lg border border-amber-500/20 bg-slate-800/50 p-3 mt-2">
-        <p class="text-amber-300 font-semibold text-center">👉 "Personalizar &gt; Apenas páginas ímpares"</p>
-       </div>
-       <p class="text-center">Assim, somente a p��gina correta será impressa.</p>
-      </div>
-     </div><!-- Novidades desta versão -->
-     <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-5 mb-6">
-      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">✔</span>
-       <h3 class="text-lg font-bold text-white">Novidades desta versão</h3>
-      </div>
-      <div class="space-y-3 text-sm text-slate-300">
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">��</span>
-        <p><strong class="text-white">Redesenho completo do layout de botões</strong> – Interface reorganizada, mais limpa, acessível e intuitiva, garantindo navegação mais fluida.</p>
-       </div>
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Layout responsivo otimizado para impressão</strong> – Ajustes aplicados automaticamente no momento da impressão, aprimorando margens, proporções e fidelidade visual do recibo final.</p>
-       </div>
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Botão de ajuda aprimorado</strong> – Agora exibe claramente o modelo oficial da planilha necessária para importar dados, reduzindo erros e facilitando o uso do recurso.</p>
-       </div>
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Conversão inteligente de datas</strong> – Aceita qualquer formato — números do Excel, dd/mm/aaaa, dd-mm-aaaa, aaaa-mm-dd — e converte tudo automaticamente para o padrão brasileiro.</p>
-       </div>
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Conversão inteligente de valores monetários</strong> – Reconhece entradas como: 1500 • 1.500 • 1.500,00 • R$ 1.500,00 • 1,500.00 e converte tudo para o padrão brasileiro com valor por extenso.</p>
-       </div>
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Seleção múltipla de recibos</strong> – Permite ações em lote, ampliando velocidade e produtividade no gerenciamento.</p>
-       </div>
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Seleção de recibos com camada de segurança</strong> – Evita exclusões acidentais, garantindo mais controle durante a remoção.</p>
-       </div>
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">���</span>
-        <p><strong class="text-white">Botão "+" para adicionar novos recibos em branco</strong> – Facilita o preenchimento manual direto pela interface.</p>
-       </div>
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Botão de Zoom</strong> – Amplia ou reduz a visualização permitindo enxergar vários recibos ao mesmo tempo ou focar em detalhes específicos.</p>
-       </div>
-      </div>
-     </div><!-- Correções de Erros -->
-     <div class="rounded-xl border border-blue-500/30 bg-blue-500/10 p-5 mb-6">
-      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">🛠</span>
-       <h3 class="text-lg font-bold text-white">Correções de Erros</h3>
-      </div>
-      <div class="space-y-3 text-sm text-slate-300">
-       <div class="flex items-start gap-3"><span class="text-blue-400 mt-1 flex-shrink-0">•</span>
-        <p>Corrigido o problema de visualização opaca ao gerar múltiplos recibos e enviá-los para impressão. Agora todos seguem o mesmo padrão de qualidade do recibo principal.</p>
-       </div>
-      </div>
-     </div><!-- Próximas melhorias previstas -->
-     <div class="rounded-xl border border-sky-500/30 bg-sky-500/10 p-5 mb-6">
-      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">🔮</span>
-       <h3 class="text-lg font-bold text-white">Próximas melhorias previstas</h3>
-      </div>
-      <div class="space-y-3 text-sm text-slate-300">
-       <div class="flex items-start gap-3"><span class="text-sky-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Download direto do recibo em PDF</strong> – Possibilitará salvar recibos diretamente no formato PDF sem necessidade de impressão.</p>
-       </div>
-       <div class="flex items-start gap-3"><span class="text-sky-400 mt-1 flex-shrink-0">•</span>
-        <p><strong class="text-white">Revisão completa dos botões de exclusão</strong> – Oferecendo maior previsibilidade e segurança ao remover itens.</p>
-       </div>
-      </div>
-     </div><!-- Botão Continuar --> <button id="close-maintenance-btn" type="button" class="focus-outline w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-400 hover:to-emerald-500 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5"> Continuar </button>
-    </div>
-   </div><!-- Popup 2: Aviso de Manutenção (aparece depois) -->
-   <div id="warning-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); display: none;">
-    <div class="custom-scrollbar relative w-full max-w-2xl rounded-2xl border border-amber-500/30 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 sm:p-8 shadow-2xl shadow-amber-500/20 animate-scale-in max-h-[90vh] overflow-y-auto"><!-- Ícone de Aviso -->
-     <div class="flex justify-center mb-4">
-      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/50">
-       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-       </svg>
-      </div>
-     </div><!-- Título -->
-     <h2 class="text-center text-2xl sm:text-3xl font-bold text-white mb-2">Aviso Importante</h2><!-- Subtítulo -->
-     <div class="flex items-center justify-center gap-2 mb-4">
-      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30"><span class="relative flex h-2 w-2"> <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span> <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span> </span> <span class="text-sm font-semibold text-amber-300">Atualização 1.0.2 (2026)</span>
-      </div>
-     </div><!-- Descri����ão -->
-     <p class="text-center text-slate-300 mb-6 leading-relaxed text-base">O sistema está passando por uma manutenção geral para implementação de grandes novidades e melhorias. Por isso, algumas funções estão indisponíveis no momento.</p><!-- Período de Indisponibilidade -->
-     <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 mb-6">
-      <div class="flex items-center gap-3 mb-5">
-       <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/20 to-amber-600/20">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-amber-400"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-        </svg>
-       </div>
-       <h3 class="text-lg font-bold text-white">Período de Indisponibilidade</h3>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-       <div class="rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm p-4">
-        <div class="flex items-center gap-2 mb-2">
-         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-emerald-400"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
-         </svg>
-         <p class="text-amber-400 font-semibold text-sm">Início</p>
+   <footer class="w-full relative z-10"><!-- Faixa de Promoção -->
+    <div class="w-full bg-gradient-to-r from-red-600 via-red-500 to-red-600 border-t-2 border-red-400/50 backdrop-blur-sm">
+     <div class="max-w-6xl mx-auto w-full px-4 sm:px-6 py-3 sm:py-4">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4"><!-- Texto da Promoção -->
+       <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-center sm:text-left">
+        <div class="flex items-center gap-2"><span class="text-2xl sm:text-3xl animate-pulse">🔥</span>
+         <div>
+          <p class="text-white font-bold text-sm sm:text-base leading-tight">PROMOÇÃO RELÂMPAGO</p>
+          <p class="text-red-100 text-xs sm:text-sm">60% OFF nos 3 primeiros meses | 88% OFF no plano anual</p>
+         </div>
         </div>
-        <p class="text-white text-lg font-bold">01/12 às 09:00h</p>
-       </div>
-       <div class="rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm p-4">
-        <div class="flex items-center gap-2 mb-2">
-         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-red-400"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" />
+       </div><!-- Timer e Botão -->
+       <div class="flex items-center gap-3 sm:gap-4"><!-- Mini Timer -->
+        <div class="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 border border-white/20">
+         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3 sm:w-4 sm:h-4 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
          </svg>
-         <p class="text-amber-400 font-semibold text-sm">Término</p>
-        </div>
-        <p class="text-white text-lg font-bold">18/12 às 00:00h</p>
+         <div class="flex items-center gap-1"><span id="footer-timer-minutes" class="text-white font-bold text-sm sm:text-base">05</span> <span class="text-white text-xs">:</span> <span id="footer-timer-seconds" class="text-white font-bold text-sm sm:text-base">00</span>
+         </div>
+        </div><!-- Botão CTA --> <a href="https://gaveblue.com/cadastro" target="_blank" rel="noopener noreferrer" class="focus-outline inline-flex items-center gap-1.5 sm:gap-2 rounded-lg bg-white px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-red-600 shadow-lg transition-all hover:bg-red-50 hover:scale-105"> <span>APROVEITAR</span>
+         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-3 h-3 sm:w-4 sm:h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+         </svg></a>
        </div>
       </div>
-      <div class="rounded-lg border border-amber-500/20 bg-slate-800/30 p-4">
-       <p class="text-slate-300 text-sm text-center leading-relaxed">Durante este período, alguns dos nossos serviços estarão temporariamente indisponíveis. Agradecemos sua compreensão! 🙏</p>
-      </div>
-     </div><!-- Botão Entendi --> <button id="close-warning-btn" type="button" class="focus-outline w-full rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-amber-500/30 transition-all hover:from-amber-400 hover:to-amber-500 hover:shadow-xl hover:shadow-amber-500/40 hover:-translate-y-0.5"> Entendi </button>
+     </div>
+    </div><!-- Rodapé Principal -->
+    <div class="w-full border-t border-slate-800/50 backdrop-blur-sm bg-slate-900/50">
+     <div class="max-w-6xl mx-auto w-full px-6 py-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-slate-400"><span class="font-medium">© <span id="year-span"></span> gaveblue.com - Todos os direitos reservados.</span>
+     </div>
     </div>
-   </div><!-- Popup Premium -->
-   <div id="premium-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); display: none;">
-    <div class="custom-scrollbar relative w-full max-w-2xl rounded-2xl border border-amber-500/40 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 sm:p-8 shadow-2xl shadow-amber-500/30 animate-scale-in max-h-[90vh] overflow-y-auto"><!-- Botão X para fechar --> <button id="close-premium-x-btn" type="button" class="close-btn-x focus-outline" aria-label="Fechar">
+   </footer><!-- Popup Premium -->
+   <div id="premium-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4" style="background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); display: none;">
+    <div class="custom-scrollbar relative w-full max-w-5xl rounded-xl sm:rounded-2xl border border-amber-500/40 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-4 sm:p-6 lg:p-8 shadow-2xl shadow-amber-500/30 animate-scale-in max-h-[95vh] overflow-y-auto"><!-- Botão X para fechar --> <button id="close-premium-x-btn" type="button" class="close-btn-x focus-outline" aria-label="Fechar">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
       </svg></button> <!-- Ícone Premium -->
-     <div class="flex justify-center mb-4">
-      <div class="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 shadow-lg shadow-amber-500/50">
-       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-10 h-10 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+     <div class="flex justify-center mb-3 sm:mb-4">
+      <div class="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 shadow-lg shadow-amber-500/50">
+       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8 sm:w-10 sm:h-10 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
        </svg>
       </div>
      </div><!-- Título -->
-     <h2 class="text-center text-2xl sm:text-3xl font-bold text-white mb-3">🔒 Funcionalidade Premium</h2><!-- Descrição -->
-     <p class="text-center text-slate-300 mb-6 leading-relaxed text-base">Esta é uma funcionalidade exclusiva para assinantes Premium. Faça login ou cadastre-se para ter acesso completo a todos os recursos da plataforma.</p><!-- Box de Benefícios -->
-     <div class="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 p-5 mb-6">
-      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">✨</span>
-       <h3 class="text-lg font-bold text-white">O que você ganha com Premium</h3>
+     <h2 class="text-center text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2 sm:mb-3">🔒 Funcionalidade Premium</h2><!-- Descrição -->
+     <p class="text-center text-slate-300 mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base px-2">Esta é uma funcionalidade exclusiva para assinantes Premium. Faça login ou cadastre-se para ter acesso completo a todos os recursos da plataforma.</p><!-- Box de Benefícios -->
+     <div class="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 p-4 sm:p-5 mb-4 sm:mb-6">
+      <div class="flex items-center gap-2 mb-3 sm:mb-4"><span class="text-xl sm:text-2xl">✨</span>
+       <h3 class="text-base sm:text-lg font-bold text-white">O que você ganha com Premium</h3>
       </div>
-      <div class="space-y-3 text-sm text-slate-300">
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">✓</span>
+      <div class="space-y-2 sm:space-y-3 text-xs sm:text-sm text-slate-300">
+       <div class="flex items-start gap-2 sm:gap-3"><span class="text-emerald-400 mt-0.5 sm:mt-1 flex-shrink-0">✓</span>
         <p><strong class="text-white">WeFrotas</strong> – Gestão completa de frotas e veículos</p>
        </div>
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">✓</span>
+       <div class="flex items-start gap-2 sm:gap-3"><span class="text-emerald-400 mt-0.5 sm:mt-1 flex-shrink-0">✓</span>
         <p><strong class="text-white">WeFinance</strong> – Controle financeiro com indicadores em tempo real</p>
        </div>
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">✓</span>
+       <div class="flex items-start gap-2 sm:gap-3"><span class="text-emerald-400 mt-0.5 sm:mt-1 flex-shrink-0">✓</span>
         <p><strong class="text-white">WeFiscal</strong> – Gestão fiscal e tributária simplificada</p>
        </div>
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0">✓</span>
+       <div class="flex items-start gap-2 sm:gap-3"><span class="text-emerald-400 mt-0.5 sm:mt-1 flex-shrink-0">✓</span>
         <p><strong class="text-white">Suporte prioritário</strong> e atualizações exclusivas</p>
        </div>
       </div>
      </div><!-- Planos e Preços -->
-     <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 mb-6">
-      <div class="flex items-center gap-2 mb-4"><span class="text-2xl">💳</span>
-       <h3 class="text-lg font-bold text-white">Planos Especiais</h3>
+     <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 sm:p-5 mb-4 sm:mb-6">
+      <div class="flex items-center gap-2 mb-3 sm:mb-4"><span class="text-xl sm:text-2xl">💳</span>
+       <h3 class="text-base sm:text-lg font-bold text-white">Planos Especiais</h3>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><!-- Plano Mensal -->
-       <div class="rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm p-5">
-        <p class="text-amber-400 font-semibold text-sm mb-2">MENSAL</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5"><!-- Plano Mensal --> <button type="button" class="plan-card focus-outline rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm p-4 sm:p-5 text-left transition-all hover:border-amber-500/60 hover:shadow-lg hover:shadow-amber-500/20 hover:-translate-y-1 cursor-pointer" data-plan="mensal"> <p class="text-amber-400 font-semibold text-xs sm:text-sm mb-2">MENSAL</p>
         <div class="mb-3">
-         <div class="flex items-baseline gap-2 mb-1"><span class="text-3xl font-bold text-white">R$ 59,90</span> <span class="text-sm text-slate-400">/mês</span>
+         <div class="flex items-baseline gap-2 mb-1"><span id="price-mensal" class="text-2xl sm:text-3xl font-bold text-white">R$ 59,90</span> <span class="text-xs sm:text-sm text-slate-400">/mês</span>
          </div>
-         <div class="flex items-center gap-2"><span class="text-xs text-slate-500 line-through">De R$ 199,00</span> <span class="inline-flex px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-bold text-red-400">-70%</span>
+         <div class="flex items-center gap-2 flex-wrap"><span id="original-price-mensal" class="text-xs text-slate-500 line-through">De R$ 149,00</span> <span id="discount-badge-mensal" class="inline-flex px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-bold text-red-400">-60% OFF</span>
          </div>
         </div>
-        <p class="text-xs text-slate-400">Cobrança mensal recorrente</p>
-       </div><!-- Plano Anual -->
-       <div class="rounded-xl border-2 border-emerald-500/50 bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 backdrop-blur-sm p-5 relative">
-        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2"><span class="inline-flex px-3 py-1 rounded-full bg-emerald-500 text-xs font-bold text-white shadow-lg">MAIS VANTAJOSO</span>
-        </div>
-        <p class="text-emerald-400 font-semibold text-sm mb-2 mt-2">ANUAL</p>
+        <div class="mb-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2">
+         <p class="text-[10px] sm:text-xs text-emerald-300 font-semibold">🎁 60% OFF nos 3 primeiros meses</p>
+        </div><p class="text-xs text-slate-400 mb-3">Cobrança mensal recorrente</p>
+        <div class="flex items-center justify-center gap-2 rounded-lg bg-amber-500/20 border border-amber-500/40 py-2 sm:py-2.5 text-amber-300 font-semibold text-xs sm:text-sm"><span>Escolher Plano</span>
+         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3 sm:w-4 sm:h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+         </svg>
+        </div></button> <!-- Plano Anual --> <button type="button" class="plan-card focus-outline rounded-xl border-2 border-emerald-500/50 bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 backdrop-blur-sm p-4 sm:p-5 relative text-left transition-all hover:border-emerald-500/70 hover:shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-1 cursor-pointer" data-plan="anual">
+        <div class="absolute -top-2 sm:-top-3 left-1/2 transform -translate-x-1/2"><span class="inline-flex px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-emerald-500 text-[10px] sm:text-xs font-bold text-white shadow-lg">MAIS VANTAJOSO</span>
+        </div><p class="text-emerald-400 font-semibold text-xs sm:text-sm mb-2 mt-2">ANUAL</p>
         <div class="mb-3">
-         <div class="flex items-baseline gap-2 mb-1"><span class="text-3xl font-bold text-white">R$ 499,00</span> <span class="text-sm text-slate-400">/ano</span>
+         <div class="flex items-baseline gap-2 mb-1"><span id="price-anual" class="text-2xl sm:text-3xl font-bold text-white">R$ 299,00</span> <span class="text-xs sm:text-sm text-slate-400">/ano</span>
          </div>
-         <div class="flex items-center gap-2"><span class="text-xs text-slate-500 line-through">De R$ 2.300,00</span> <span class="inline-flex px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-bold text-red-400">-78%</span>
+         <div class="flex items-center gap-2 flex-wrap"><span id="original-price-anual" class="text-xs text-slate-500 line-through">De R$ 2.499,00</span> <span id="discount-badge-anual" class="inline-flex px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-bold text-red-400">-88% OFF</span>
          </div>
         </div>
-        <p class="text-xs text-emerald-400 font-semibold">Economia de R$ 219 no ano!</p>
+        <div class="mb-3 rounded-lg bg-emerald-500/20 border border-emerald-500/40 p-2">
+         <p class="text-[10px] sm:text-xs text-emerald-200 font-bold">🔥 88% de desconto no primeiro ano!</p>
+        </div><p id="savings-text-anual" class="text-xs text-emerald-400 font-semibold mb-3">Economia de R$ 420 no ano!</p>
+        <div class="flex items-center justify-center gap-2 rounded-lg bg-emerald-500/30 border border-emerald-500/50 py-2 sm:py-2.5 text-emerald-200 font-semibold text-xs sm:text-sm"><span>Escolher Plano</span>
+         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3 sm:w-4 sm:h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+         </svg>
+        </div></button>
+      </div><!-- Aviso Promoção com Timer -->
+      <div class="mt-4 sm:mt-5 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+       <div class="flex items-center justify-center gap-2 mb-2">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3 sm:w-4 sm:h-4 text-red-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p class="text-[10px] sm:text-xs text-red-300 font-semibold">⚡ Oferta expira em:</p>
        </div>
-      </div><!-- Aviso Promoção -->
-      <div class="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
-       <p class="text-xs text-red-300 text-center font-semibold">⚡ Promoção por tempo limitado! Garanta já seu desconto.</p>
+       <div class="flex items-center justify-center gap-2 sm:gap-3">
+        <div class="flex flex-col items-center">
+         <div class="bg-slate-900/80 border border-red-500/40 rounded-lg px-2 sm:px-3 py-1 sm:py-2 min-w-[40px] sm:min-w-[50px]"><span id="timer-minutes" class="text-xl sm:text-2xl font-bold text-red-300">05</span>
+         </div><span class="text-[9px] sm:text-[10px] text-slate-400 mt-1">MIN</span>
+        </div><span class="text-xl sm:text-2xl font-bold text-red-400">:</span>
+        <div class="flex flex-col items-center">
+         <div class="bg-slate-900/80 border border-red-500/40 rounded-lg px-2 sm:px-3 py-1 sm:py-2 min-w-[40px] sm:min-w-[50px]"><span id="timer-seconds" class="text-xl sm:text-2xl font-bold text-red-300">00</span>
+         </div><span class="text-[9px] sm:text-[10px] text-slate-400 mt-1">SEG</span>
+        </div>
+       </div>
       </div>
      </div><!-- Botões de Ação -->
-     <div class="space-y-3"><!-- Botão Teste Grátis --> <a href="https://gaveblue.com/cadastro" target="_blank" rel="noopener noreferrer" class="focus-outline w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-4 text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-400 hover:to-emerald-500 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5"> <span>🎁</span> <span>TESTE GRÁTIS POR 14 DIAS</span> </a> <!-- Botão Já tenho conta --> <a href="https://gaveblue.com/login" target="_blank" rel="noopener noreferrer" class="focus-outline w-full inline-flex items-center justify-center rounded-xl border-2 border-slate-600 bg-slate-700/50 px-6 py-3 text-sm font-semibold text-slate-200 transition-all hover:bg-slate-700 hover:border-slate-500"> Já tenho conta </a>
+     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><!-- Botão Teste Grátis --> <a href="https://gaveblue.com/cadastro" target="_blank" rel="noopener noreferrer" class="focus-outline inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-400 hover:to-emerald-500 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5"> <span>🎁</span> <span>TESTE GRÁTIS 30 DIAS</span> </a> <!-- Botão Já tenho conta --> <a href="https://gaveblue.com/login" target="_blank" rel="noopener noreferrer" class="focus-outline inline-flex items-center justify-center rounded-xl border-2 border-slate-600 bg-slate-700/50 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold text-slate-200 transition-all hover:bg-slate-700 hover:border-slate-500"> Já tenho conta </a>
      </div>
     </div>
    </div><!-- Botão de Suporte Flutuante -->
@@ -675,30 +593,106 @@
       });
     })();
 
-    // Funcionalidade do popup de atualização
-    (function initPopups() {
-      const maintenanceOverlay = document.getElementById("maintenance-overlay");
-      const closeMaintenanceBtn = document.getElementById("close-maintenance-btn");
-      const closeMaintenanceXBtn = document.getElementById("close-maintenance-x-btn");
+    // Funcionalidade do popup de manutenção
+    (function initPromoTimer() {
+      const timerMinutes = document.getElementById("timer-minutes");
+      const timerSeconds = document.getElementById("timer-seconds");
+      const footerTimerMinutes = document.getElementById("footer-timer-minutes");
+      const footerTimerSeconds = document.getElementById("footer-timer-seconds");
+      const priceMensal = document.getElementById("price-mensal");
+      const priceAnual = document.getElementById("price-anual");
+      const originalPriceMensal = document.getElementById("original-price-mensal");
+      const originalPriceAnual = document.getElementById("original-price-anual");
+      const discountBadgeMensal = document.getElementById("discount-badge-mensal");
+      const discountBadgeAnual = document.getElementById("discount-badge-anual");
+      const savingsTextAnual = document.getElementById("savings-text-anual");
 
-      if (!maintenanceOverlay || !closeMaintenanceBtn) return;
+      if (!timerMinutes || !timerSeconds) return;
 
-      // Função para fechar popup de atualização
-      function closeMaintenance() {
-        maintenanceOverlay.style.opacity = "0";
-        maintenanceOverlay.style.transform = "scale(0.95)";
-        setTimeout(function() {
-          maintenanceOverlay.style.display = "none";
-        }, 300);
+      // Preços
+      const PROMO_PRICE_MENSAL = "R$ 59,90";
+      const PROMO_PRICE_ANUAL = "R$ 299,00";
+      const ORIGINAL_PRICE_MENSAL = "R$ 149,00";
+      const ORIGINAL_PRICE_ANUAL = "R$ 2.499,00";
+      const PROMO_SAVINGS = "Economia de R$ 420 no ano!";
+      const ORIGINAL_SAVINGS = "Economia de R$ 1.290 no ano!";
+
+      // 5 minutos em segundos
+      let timeLeft = 5 * 60;
+
+      function updateDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        
+        const minutesStr = String(minutes).padStart(2, "0");
+        const secondsStr = String(seconds).padStart(2, "0");
+        
+        // Atualizar timer do popup
+        timerMinutes.textContent = minutesStr;
+        timerSeconds.textContent = secondsStr;
+        
+        // Atualizar timer do rodapé
+        if (footerTimerMinutes) footerTimerMinutes.textContent = minutesStr;
+        if (footerTimerSeconds) footerTimerSeconds.textContent = secondsStr;
       }
 
-      // Botão "Continuar" do popup de atualização
-      closeMaintenanceBtn.addEventListener("click", closeMaintenance);
+      function revertToPrices() {
+        // Voltar aos preços originais
+        if (priceMensal) priceMensal.textContent = ORIGINAL_PRICE_MENSAL;
+        if (priceAnual) priceAnual.textContent = ORIGINAL_PRICE_ANUAL;
+        
+        // Esconder os preços "De R$..." e badges de desconto
+        if (originalPriceMensal) originalPriceMensal.style.display = "none";
+        if (originalPriceAnual) originalPriceAnual.style.display = "none";
+        if (discountBadgeMensal) discountBadgeMensal.style.display = "none";
+        if (discountBadgeAnual) discountBadgeAnual.style.display = "none";
+        
+        // Atualizar texto de economia
+        if (savingsTextAnual) savingsTextAnual.textContent = ORIGINAL_SAVINGS;
 
-      // Botão X do popup de atualização
-      if (closeMaintenanceXBtn) {
-        closeMaintenanceXBtn.addEventListener("click", closeMaintenance);
+        // Mudar a cor do timer para indicar expiração
+        timerMinutes.classList.add("text-slate-500");
+        timerSeconds.classList.add("text-slate-500");
+        timerMinutes.classList.remove("text-red-300");
+        timerSeconds.classList.remove("text-red-300");
+        
+        if (footerTimerMinutes) {
+          footerTimerMinutes.classList.add("text-slate-400");
+          footerTimerMinutes.classList.remove("text-white");
+        }
+        if (footerTimerSeconds) {
+          footerTimerSeconds.classList.add("text-slate-400");
+          footerTimerSeconds.classList.remove("text-white");
+        }
       }
+
+      const countdown = setInterval(function() {
+        timeLeft--;
+        updateDisplay();
+
+        if (timeLeft <= 0) {
+          clearInterval(countdown);
+          revertToPrices();
+        }
+      }, 1000);
+
+      // Inicializar display
+      updateDisplay();
+    })();
+
+    // Funcionalidade dos planos premium
+    (function initPlanSelection() {
+      const planCards = document.querySelectorAll(".plan-card");
+
+      if (planCards.length === 0) return;
+
+      planCards.forEach(function(card) {
+        card.addEventListener("click", function() {
+          const planType = card.getAttribute("data-plan");
+          const cadastroUrl = "https://gaveblue.com/cadastro?plan=" + planType;
+          window.open(cadastroUrl, "_blank", "noopener,noreferrer");
+        });
+      });
     })();
 
     // Funcionalidade do popup premium
@@ -783,5 +777,5 @@
       });
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b0385cfc4ea5e0f',t:'MTc2NjExMTg5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b7fe4d5210d00f1',t:'MTc2NzQxNjAyMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
