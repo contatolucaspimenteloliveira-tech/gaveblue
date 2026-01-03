@@ -470,17 +470,9 @@
      <div>
       <h1 id="app-title" class="text-3xl font-bold gradient-text">WeFrotas</h1>
       <p id="company-name" class="text-sm text-gray-600 font-medium mt-1">Gestão de Frotas</p>
-     </div>
-     <div class="summary-card text-center px-6 py-3">
-      <div class="text-xs text-gray-500 font-semibold uppercase tracking-wide">
-       Total de Registros
-      </div>
-      <div id="total-records" class="text-2xl font-bold gradient-text mt-1">
-       0
-      </div>
-     </div>
-    </div><!-- Toast Container -->
-    <div id="header-toast-container" class="fixed top-24 right-6 z-50 space-y-3"></div>
+     </div><!-- Toast Container -->
+     <div id="header-toast-container" class="flex flex-col items-end gap-3"></div>
+    </div>
    </header><!-- Nav Tabs -->
    <nav class="glass-header px-6 py-3 sticky top-[88px] z-30 overflow-x-auto">
     <div class="flex gap-2 items-center"><button class="tab-button w-12 h-12 flex items-center justify-center transition-all tab-active" onclick="showTab('dashboard')" title="Dashboard">
@@ -499,9 +491,9 @@
       </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('motoristas')" title="Motoristas">
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /> <circle cx="12" cy="7" r="4"></circle>
       </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('fornecedores')" title="Fornecedores">
-      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /> <polyline points="9 22 9 12 15 12 15 22"></polyline>
-      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="openConfigModal()" title="Configurações">
-      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect> <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="toggleDarkMode()" id="dark-mode-btn" title="Alternar Modo Escuro/Claro">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
       </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="openHelpModal()" title="Ajuda">
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle> <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /> <line x1="12" y1="17" x2="12.01" y2="17"></line>
       </svg></button>
@@ -535,7 +527,7 @@
        </div>
        <div class="summary-card">
         <div class="icon-circle mx-auto mb-4">
-         📋
+         ����
         </div>
         <div class="text-xs text-gray-500 font-bold uppercase tracking-wide text-center">
          Ordens Abertas
@@ -816,6 +808,228 @@
          <div class="font-bold text-gray-900 text-lg group-hover:gradient-text transition-all">
           Cadastrar Fornecedor
          </div></button>
+       </div>
+      </div>
+     </div>
+    </div><!-- Configura����es Content -->
+    <div id="configuracoes-content" class="tab-content">
+     <div class="space-y-6">
+      <div class="card-modern p-8">
+       <h2 class="text-2xl font-bold text-gray-900 mb-8">⚙️ Configurações do Sistema</h2><!-- Personalização -->
+       <div class="mb-8">
+        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">🎨</span> Personalização</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+         <div><label class="block text-sm font-semibold text-gray-700 mb-2">Título do Sistema</label> <input type="text" id="config-app-title" class="modern-input w-full" placeholder="WeFrotas">
+         </div>
+         <div><label class="block text-sm font-semibold text-gray-700 mb-2">Nome da Empresa</label> <input type="text" id="config-company-name" class="modern-input w-full" placeholder="Gestão de Frotas">
+         </div>
+        </div>
+       </div><!-- Aparência -->
+       <div class="mb-8 pb-8 border-b border-gray-200">
+        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">🌙</span> Aparência</h3>
+        <div class="summary-card p-5">
+         <div class="flex items-center justify-between">
+          <div>
+           <div class="font-bold text-gray-900">
+            Modo Escuro
+           </div>
+           <div class="text-sm text-gray-600 mt-1">
+            Ativar tema escuro para reduzir o brilho da tela
+           </div>
+          </div>
+          <div class="dark-mode-toggle" id="dark-mode-toggle-config" onclick="toggleDarkModeInConfig()">
+           <div class="dark-mode-toggle-circle"></div>
+          </div>
+         </div>
+        </div>
+       </div><!-- Notificações -->
+       <div class="mb-8 pb-8 border-b border-gray-200">
+        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">🔔</span> Notificações</h3>
+        <div class="space-y-4">
+         <div class="summary-card p-5">
+          <div class="flex items-center justify-between">
+           <div>
+            <div class="font-bold text-gray-900">
+             Alertas de Vencimento
+            </div>
+            <div class="text-sm text-gray-600 mt-1">
+             Notificar sobre contas próximas do vencimento
+            </div>
+           </div><input type="checkbox" id="config-alert-vencimento" class="modern-checkbox">
+          </div>
+         </div>
+         <div class="summary-card p-5">
+          <div class="flex items-center justify-between">
+           <div class="flex-1">
+            <div class="font-bold text-gray-900">
+             Antecedência do Alerta
+            </div>
+            <div class="text-sm text-gray-600 mt-1">
+             Quantos dias antes do vencimento alertar
+            </div>
+           </div><select id="config-dias-alerta" class="modern-input w-32"> <option value="3">3 dias</option> <option value="5">5 dias</option> <option value="7" selected>7 dias</option> <option value="10">10 dias</option> <option value="15">15 dias</option> <option value="30">30 dias</option> </select>
+          </div>
+         </div>
+         <div class="summary-card p-5">
+          <div class="flex items-center justify-between">
+           <div>
+            <div class="font-bold text-gray-900">
+             Som nas Notificações
+            </div>
+            <div class="text-sm text-gray-600 mt-1">
+             Reproduzir som ao exibir notificações
+            </div>
+           </div><input type="checkbox" id="config-sound-notification" class="modern-checkbox">
+          </div>
+         </div>
+        </div>
+       </div><!-- Ordem de Serviço -->
+       <div class="mb-8 pb-8 border-b border-gray-200">
+        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">📋</span> Ordens de Serviço</h3>
+        <div class="space-y-4">
+         <div class="summary-card p-5">
+          <div class="flex items-center justify-between">
+           <div>
+            <div class="font-bold text-gray-900">
+             Auto-fechamento de OS
+            </div>
+            <div class="text-sm text-gray-600 mt-1">
+             Fechar automaticamente ordens após período sem atividade
+            </div>
+           </div><input type="checkbox" id="config-auto-close-os" class="modern-checkbox">
+          </div>
+         </div>
+         <div class="summary-card p-5">
+          <div class="flex items-center justify-between">
+           <div class="flex-1">
+            <div class="font-bold text-gray-900">
+             Dias para Auto-fechamento
+            </div>
+            <div class="text-sm text-gray-600 mt-1">
+             Período de inatividade antes do fechamento automático
+            </div>
+           </div><select id="config-dias-auto-close" class="modern-input w-32"> <option value="15">15 dias</option> <option value="30" selected>30 dias</option> <option value="45">45 dias</option> <option value="60">60 dias</option> <option value="90">90 dias</option> </select>
+          </div>
+         </div>
+        </div>
+       </div><!-- Financeiro -->
+       <div class="mb-8 pb-8 border-b border-gray-200">
+        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">💰</span> Financeiro</h3>
+        <div class="space-y-4">
+         <div class="summary-card p-5">
+          <div class="flex items-center justify-between">
+           <div class="flex-1">
+            <div class="font-bold text-gray-900">
+             Moeda
+            </div>
+            <div class="text-sm text-gray-600 mt-1">
+             Formato de exibição de valores monetários
+            </div>
+           </div><select id="config-currency" class="modern-input w-32"> <option value="BRL" selected>R$ (BRL)</option> <option value="USD">$ (USD)</option> <option value="EUR">��� (EUR)</option> </select>
+          </div>
+         </div>
+         <div class="summary-card p-5">
+          <div class="flex items-center justify-between">
+           <div>
+            <div class="font-bold text-gray-900">
+             Permitir Contas Negativas
+            </div>
+            <div class="text-sm text-gray-600 mt-1">
+             Permitir valores negativos em lançamentos
+            </div>
+           </div><input type="checkbox" id="config-allow-negative" class="modern-checkbox">
+          </div>
+         </div>
+        </div>
+       </div><!-- Backup e Dados -->
+       <div class="mb-8 pb-8 border-b border-gray-200">
+        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">💾</span> Backup e Dados</h3>
+        <div class="space-y-4">
+         <div class="summary-card p-5">
+          <div class="flex items-center justify-between">
+           <div>
+            <div class="font-bold text-gray-900">
+             Backup Automático
+            </div>
+            <div class="text-sm text-gray-600 mt-1">
+             Criar backup automático dos dados periodicamente
+            </div>
+           </div><input type="checkbox" id="config-auto-backup" class="modern-checkbox" checked>
+          </div>
+         </div>
+         <div class="grid grid-cols-1 md:grid-cols-2 gap-4"><button onclick="exportAllData()" class="summary-card p-5 text-center hover:shadow-lg transition-all cursor-pointer">
+           <div class="text-4xl mb-3">
+            📥
+           </div>
+           <div class="font-bold text-gray-900">
+            Exportar Todos os Dados
+           </div>
+           <div class="text-sm text-gray-600 mt-1">
+            Fazer download completo em JSON
+           </div></button> <button onclick="importData()" class="summary-card p-5 text-center hover:shadow-lg transition-all cursor-pointer">
+           <div class="text-4xl mb-3">
+            📤
+           </div>
+           <div class="font-bold text-gray-900">
+            Importar Dados
+           </div>
+           <div class="text-sm text-gray-600 mt-1">
+            Restaurar backup anterior
+           </div></button>
+         </div>
+        </div>
+       </div><!-- Sistema -->
+       <div class="mb-8">
+        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">⚡</span> Sistema</h3>
+        <div class="space-y-4">
+         <div class="summary-card p-5" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+           <div>
+            <div class="text-sm text-gray-600 font-semibold">
+             Total de Registros
+            </div>
+            <div id="config-total-records" class="text-2xl font-bold gradient-text mt-1">
+             0
+            </div>
+           </div>
+           <div>
+            <div class="text-sm text-gray-600 font-semibold">
+             Veículos
+            </div>
+            <div id="config-total-vehicles" class="text-2xl font-bold gradient-text mt-1">
+             0
+            </div>
+           </div>
+           <div>
+            <div class="text-sm text-gray-600 font-semibold">
+             Motoristas
+            </div>
+            <div id="config-total-drivers" class="text-2xl font-bold gradient-text mt-1">
+             0
+            </div>
+           </div>
+           <div>
+            <div class="text-sm text-gray-600 font-semibold">
+             Ordens de Serviço
+            </div>
+            <div id="config-total-orders" class="text-2xl font-bold gradient-text mt-1">
+             0
+            </div>
+           </div>
+          </div>
+         </div><button onclick="clearAllData()" class="summary-card p-5 w-full text-center hover:shadow-lg transition-all cursor-pointer" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%); border: 1.5px solid rgba(239, 68, 68, 0.2);">
+          <div class="text-4xl mb-3">
+           ����️
+          </div>
+          <div class="font-bold text-red-700">
+           Limpar Todos os Dados
+          </div>
+          <div class="text-sm text-red-600 mt-1">
+           ⚠️ Ação irreversível - todos os dados serão apagados
+          </div></button>
+        </div>
+       </div><!-- Botões de Ação -->
+       <div class="flex justify-end gap-3 pt-6 border-t border-gray-200"><button onclick="resetConfigurations()" class="modern-button-secondary"> Restaurar Padrões </button> <button onclick="saveConfigurations()" class="modern-button"> Salvar Configurações </button>
        </div>
       </div>
      </div>
@@ -1225,62 +1439,6 @@
       currentEditingRecord = null;
     }
 
-    function openConfigModal() {
-      document.getElementById('modal-title').textContent = 'Configurações do Sistema';
-      document.getElementById('modal-content').innerHTML = `
-        <form id="config-form" class="space-y-5">
-          <div class="space-y-5">
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Título do Sistema</label>
-              <input type="text" id="config-app-title" value="${window.elementSdk?.config?.app_title || defaultConfig.app_title}" class="modern-input w-full" placeholder="WeFrotas">
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Nome da Empresa</label>
-              <input type="text" id="config-company-name" value="${window.elementSdk?.config?.company_name || defaultConfig.company_name}" class="modern-input w-full" placeholder="Gestão de Frotas">
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-3">Modo Escuro</label>
-              <div class="flex items-center gap-3">
-                <div class="dark-mode-toggle ${(window.elementSdk?.config?.dark_mode || defaultConfig.dark_mode) ? 'active' : ''}" id="dark-mode-toggle-config" onclick="toggleDarkModeConfig()">
-                  <div class="dark-mode-toggle-circle"></div>
-                </div>
-                <span class="text-sm text-gray-600 font-medium">Ativar tema escuro</span>
-              </div>
-            </div>
-          </div>
-          <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
-            <button type="button" onclick="closeModal()" class="modern-button-secondary">
-              Cancelar
-            </button>
-            <button type="submit" class="modern-button">
-              Salvar Configurações
-            </button>
-          </div>
-        </form>
-      `;
-      
-      document.getElementById('modal-overlay').classList.remove('hidden');
-      document.getElementById('modal-overlay').classList.add('flex');
-
-      document.getElementById('config-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const toggle = document.getElementById('dark-mode-toggle-config');
-        const newConfig = {
-          app_title: document.getElementById('config-app-title').value,
-          company_name: document.getElementById('config-company-name').value,
-          dark_mode: toggle.classList.contains('active')
-        };
-
-        if (window.elementSdk) {
-          await window.elementSdk.setConfig(newConfig);
-        }
-        
-        showToast('Configurações salvas!');
-        closeModal();
-      });
-    }
-
     function openHelpModal() {
       document.getElementById('modal-title').textContent = '💡 Guia Completo do Sistema';
       document.getElementById('modal-content').innerHTML = `
@@ -1297,7 +1455,7 @@
 
           <!-- Navegação -->
           <div class="card-modern p-6">
-            <h4 class="text-lg font-bold text-gray-900 mb-4">🧭 Barra de Navegação</h4>
+            <h4 class="text-lg font-bold text-gray-900 mb-4">�� Barra de Navegação</h4>
             <div class="space-y-3">
               <div class="flex items-center gap-3 p-3 summary-card">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1510,9 +1668,150 @@
       document.getElementById('modal-overlay').classList.add('flex');
     }
 
-    function toggleDarkModeConfig() {
-      const toggle = document.getElementById('dark-mode-toggle-config');
-      toggle.classList.toggle('active');
+    function toggleDarkMode() {
+      const isDark = document.body.classList.toggle('dark-mode');
+      localStorage.setItem('wefrotas_dark_mode', isDark);
+      
+      const btn = document.getElementById('dark-mode-btn');
+      if (isDark) {
+        // Ícone de sol para modo escuro
+        btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+        showToast('Modo escuro ativado! 🌙');
+      } else {
+        // Ícone de lua para modo claro
+        btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+        showToast('Modo claro ativado! ☀️');
+      }
+    }
+
+    function loadConfigurations() {
+      const config = window.elementSdk?.config || defaultConfig;
+      const settings = JSON.parse(localStorage.getItem('wefrotas_settings') || '{}');
+      
+      // Personalização
+      document.getElementById('config-app-title').value = config.app_title || defaultConfig.app_title;
+      document.getElementById('config-company-name').value = config.company_name || defaultConfig.company_name;
+      
+      // Aparência
+      const darkModeToggle = document.getElementById('dark-mode-toggle-config');
+      if (config.dark_mode) {
+        darkModeToggle.classList.add('active');
+      } else {
+        darkModeToggle.classList.remove('active');
+      }
+      
+      // Notificações
+      document.getElementById('config-alert-vencimento').checked = settings.alert_vencimento !== false;
+      document.getElementById('config-dias-alerta').value = settings.dias_alerta || '7';
+      document.getElementById('config-sound-notification').checked = settings.sound_notification || false;
+      
+      // Ordem de Serviço
+      document.getElementById('config-auto-close-os').checked = settings.auto_close_os || false;
+      document.getElementById('config-dias-auto-close').value = settings.dias_auto_close || '30';
+      
+      // Financeiro
+      document.getElementById('config-currency').value = settings.currency || 'BRL';
+      document.getElementById('config-allow-negative').checked = settings.allow_negative || false;
+      
+      // Backup
+      document.getElementById('config-auto-backup').checked = settings.auto_backup !== false;
+      
+      // Sistema
+      document.getElementById('config-total-records').textContent = allData.length;
+      document.getElementById('config-total-vehicles').textContent = allData.filter(i => i.type === 'vehicle').length;
+      document.getElementById('config-total-drivers').textContent = allData.filter(i => i.type === 'driver').length;
+      document.getElementById('config-total-orders').textContent = allData.filter(i => i.type === 'order').length;
+    }
+
+    async function saveConfigurations() {
+      const settings = {
+        alert_vencimento: document.getElementById('config-alert-vencimento').checked,
+        dias_alerta: document.getElementById('config-dias-alerta').value,
+        sound_notification: document.getElementById('config-sound-notification').checked,
+        auto_close_os: document.getElementById('config-auto-close-os').checked,
+        dias_auto_close: document.getElementById('config-dias-auto-close').value,
+        currency: document.getElementById('config-currency').value,
+        allow_negative: document.getElementById('config-allow-negative').checked,
+        auto_backup: document.getElementById('config-auto-backup').checked
+      };
+      
+      localStorage.setItem('wefrotas_settings', JSON.stringify(settings));
+      
+      const newConfig = {
+        app_title: document.getElementById('config-app-title').value,
+        company_name: document.getElementById('config-company-name').value,
+        dark_mode: document.getElementById('dark-mode-toggle-config').classList.contains('active')
+      };
+
+      if (window.elementSdk) {
+        await window.elementSdk.setConfig(newConfig);
+      }
+      
+      showToast('Configurações salvas com sucesso!');
+    }
+
+    function resetConfigurations() {
+      if (confirm('Tem certeza que deseja restaurar as configurações padrão?')) {
+        localStorage.removeItem('wefrotas_settings');
+        
+        if (window.elementSdk) {
+          window.elementSdk.setConfig(defaultConfig);
+        }
+        
+        loadConfigurations();
+        showToast('Configurações restauradas!');
+      }
+    }
+
+    function exportAllData() {
+      const dataStr = JSON.stringify(allData, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wefrotas-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      showToast('Backup exportado com sucesso!');
+    }
+
+    function importData() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const importedData = JSON.parse(event.target.result);
+            if (Array.isArray(importedData)) {
+              allData = importedData;
+              saveToLocalStorage();
+              updateUI();
+              showToast(`${importedData.length} registros importados com sucesso!`);
+            } else {
+              showToast('Arquivo inválido!', 'error');
+            }
+          } catch (error) {
+            showToast('Erro ao importar dados: ' + error.message, 'error');
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    function clearAllData() {
+      if (confirm('⚠️ ATENÇÃO: Esta ação irá apagar TODOS os dados do sistema de forma IRREVERSÍVEL.\n\nTem certeza que deseja continuar?')) {
+        if (confirm('ÚLTIMA CONFIRMAÇÃO: Todos os veículos, motoristas, ordens de serviço, lançamentos e contas serão excluídos permanentemente. Confirma?')) {
+          allData = [];
+          saveToLocalStorage();
+          updateUI();
+          showToast('Todos os dados foram apagados!');
+        }
+      }
     }
 
     function showCadastroForm(type) {
@@ -1902,7 +2201,7 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Observações de Fechamento</label>
-            <textarea id="close-obs" rows="3" class="modern-input w-full" placeholder="Observações sobre o fechamento da OS..."></textarea>
+            <textarea id="close-obs" rows="3" class="modern-input w-full" placeholder="Observa��ões sobre o fechamento da OS..."></textarea>
           </div>
           <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
             <button type="button" onclick="closeModal()" class="modern-button-secondary">
@@ -2952,7 +3251,7 @@
       } else {
         lancamentosContainer.innerHTML = recentLancamentos.map(l => {
           const veiculo = allData.find(v => v.type === 'vehicle' && v.id === l.veiculo_id);
-          const icon = l.tipo_lancamento === 'abastecimento' ? '⛽' : '💸';
+          const icon = l.tipo_lancamento === 'abastecimento' ? '⛽' : '����';
           return `
             <div class="summary-card p-4">
               <div class="flex items-center gap-3">
@@ -3004,7 +3303,17 @@
     async function initializeApp() {
       // Load data from localStorage
       loadFromLocalStorage();
-      updateUI();
+      
+      // Load dark mode preference
+      const savedDarkMode = localStorage.getItem('wefrotas_dark_mode') === 'true';
+      if (savedDarkMode) {
+        document.body.classList.add('dark-mode');
+        const btn = document.getElementById('dark-mode-btn');
+        if (btn) {
+          btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+        }
+      }
+      
 
       if (window.elementSdk) {
         window.elementSdk.init({
@@ -3030,5 +3339,5 @@
 
     document.addEventListener('DOMContentLoaded', initializeApp);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b8599d1d4f0c6c1',t:'MTc2NzQ3NTg2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b85b04096060316',t:'MTc2NzQ3Njc4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
