@@ -3,880 +3,2185 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GAVEBLUE - WEFROTAS - COVRE E CIA LTDA</title>
-
-  <!-- SDK placeholders (preserve your original SDK includes) -->
+  <title>WeFrotas - Gestão de Frotas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="/_sdk/data_sdk.js"></script>
   <script src="/_sdk/element_sdk.js"></script>
-
-  <!-- Tailwind CDN (keeps UI familiar) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
   <style>
-    /* --- Reused and improved styles from original file --- */
-    body { box-sizing: border-box; }
+    body {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+
+    /* One UI & iOS Design System */
+    .card-modern {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px) saturate(180%);
+      border: 0.5px solid rgba(0, 0, 0, 0.06);
+      border-radius: 20px;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-modern:hover {
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+    }
+
+    .glass-header {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(40px) saturate(180%);
+      border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+    }
+
     .tab-active {
-        border-bottom: 2px solid #3b82f6;
-        color: #3b82f6;
-        background-color: #eff6ff;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white !important;
+      border-radius: 16px;
+      font-weight: 600;
+      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
     }
-    .loading { opacity: 0.6; pointer-events: none; }
-    .status-aberta { background-color: #dcfce7; color: #166534; }
-    .status-andamento { background-color: #fef3c7; color: #92400e; }
-    .status-fechada { background-color: #fee2e2; color: #991b1b; }
 
-    .tab-content { transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out; }
-    .tab-content.hidden { opacity: 0; transform: translateY(10px); pointer-events: none; height:0; }
-    .tab-content:not(.hidden) { opacity: 1; transform: translateY(0); }
+    .tab-button {
+      border-radius: 16px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-    #modal-overlay { backdrop-filter: blur(8px); transition: all 0.3s ease-in-out; }
-    #modal-overlay.hidden { opacity: 0; visibility: hidden; }
-    #modal-overlay:not(.hidden) { opacity: 1; visibility: visible; }
+    .tab-button:hover:not(.tab-active) {
+      background: rgba(102, 126, 234, 0.08);
+    }
 
-    #modal-overlay > div { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; transform: scale(0.95) translateY(-20px); }
-    #modal-overlay:not(.hidden) > div { transform: scale(1) translateY(0); }
-
-    .hover-lift { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
-    .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-
-    button, .cursor-pointer { transition: all 0.2s ease-in-out; }
-
-    /* Date input / form niceties (kept from original) */
-    .date-input-container { position: relative; display: inline-block; width: 100%; }
-    .date-input {
-      width: 100%;
-      padding: 12px 16px;
-      padding-right: 48px;
-      border: 2px solid #e5e7eb;
+    .status-aberta {
+      background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+      color: white;
       border-radius: 12px;
+      padding: 6px 14px;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(253, 160, 133, 0.3);
+    }
+
+    .status-andamento {
+      background: linear-gradient(135deg, #a8edea 0%, #667eea 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 6px 14px;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .status-fechada {
+      background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 6px 14px;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(132, 250, 176, 0.3);
+    }
+
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(12px) saturate(180%);
+    }
+
+    .modal-content-wrapper {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(40px) saturate(180%);
+      border-radius: 28px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      border: 0.5px solid rgba(255, 255, 255, 0.6);
+    }
+
+    .toast {
+      animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(40px) saturate(180%);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+      border: 0.5px solid rgba(0, 0, 0, 0.06);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(120%) scale(0.9);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .modern-input {
+      background: rgba(245, 247, 250, 0.8);
+      border: 1.5px solid rgba(0, 0, 0, 0.06);
+      border-radius: 14px;
+      padding: 12px 16px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 15px;
+    }
+
+    .modern-input:focus {
+      outline: none;
+      background: rgba(255, 255, 255, 0.95);
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    .modern-button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 14px;
+      padding: 12px 24px;
+      color: white;
+      font-weight: 600;
+      font-size: 15px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    }
+
+    .modern-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    }
+
+    .modern-button:active {
+      transform: translateY(0);
+    }
+
+    .modern-button-secondary {
+      background: rgba(0, 0, 0, 0.04);
+      border: 1.5px solid rgba(0, 0, 0, 0.08);
+      border-radius: 14px;
+      padding: 12px 24px;
+      color: #333;
+      font-weight: 600;
+      font-size: 15px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .modern-button-secondary:hover {
+      background: rgba(0, 0, 0, 0.08);
+      transform: translateY(-2px);
+    }
+
+    /* Estilização de campos de data */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.3s;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+      opacity: 1;
+    }
+
+    .badge-new {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+      color: white;
+      font-size: 10px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 700;
+      margin-left: 6px;
+      box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+      letter-spacing: 0.5px;
+    }
+
+    .badge-numero-os {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+      letter-spacing: 0.5px;
+    }
+
+    .modern-checkbox {
+      width: 20px;
+      height: 20px;
+      border-radius: 7px;
+      border: 2px solid #667eea;
+      appearance: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .modern-checkbox:checked {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-color: #667eea;
+    }
+
+    .modern-checkbox:checked::after {
+      content: "✓";
+      position: absolute;
+      color: white;
       font-size: 14px;
-      font-weight: 500;
-      color: #374151;
-      background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-      transition: all 0.3s ease;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      font-weight: bold;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
-    .date-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
 
-    /* Toast */
-    #global-toast {
-      position: fixed;
-      right: 20px;
-      top: 20px;
-      z-index: 60;
+    .loading-spinner {
+      border: 3px solid rgba(102, 126, 234, 0.2);
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 1.5rem;
+      height: 1.5rem;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .tab-content {
       display: none;
-      min-width: 200px;
+      animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    #global-toast.show { display: block; animation: toast-in 0.25s ease-out; }
-    @keyframes toast-in { from { transform: translateX(20px); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
 
-    /* small responsiveness */
-    @media (max-width:640px) {
-      .date-input { padding: 14px 16px; font-size: 16px; }
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .icon-circle {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-modern:hover .icon-circle {
+      transform: scale(1.1) rotate(5deg);
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+    }
+
+    .summary-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(20px) saturate(180%);
+      border: 0.5px solid rgba(0, 0, 0, 0.06);
+      border-radius: 18px;
+      padding: 20px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .summary-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(102, 126, 234, 0.3);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(102, 126, 234, 0.5);
+    }
+
+    /* Dark Mode Styles */
+    body.dark-mode {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+    }
+
+    body.dark-mode .card-modern {
+      background: rgba(30, 30, 46, 0.85);
+      border: 0.5px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    body.dark-mode .card-modern:hover {
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    body.dark-mode .glass-header {
+      background: rgba(30, 30, 46, 0.85);
+      backdrop-filter: blur(40px) saturate(180%);
+      border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+    }
+
+    body.dark-mode .modern-input {
+      background: rgba(50, 50, 70, 0.8);
+      border: 1.5px solid rgba(255, 255, 255, 0.1);
+      color: #e0e0e0;
+    }
+
+    body.dark-mode .modern-input:focus {
+      background: rgba(60, 60, 80, 0.95);
+      border-color: #667eea;
+      color: #ffffff;
+    }
+
+    body.dark-mode .modern-input::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    body.dark-mode .modern-button-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      color: #e0e0e0;
+    }
+
+    body.dark-mode .modern-button-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    body.dark-mode .modal-backdrop {
+      background: rgba(0, 0, 0, 0.8);
+    }
+
+    body.dark-mode .modal-content-wrapper {
+      background: rgba(30, 30, 46, 0.98);
+      border: 0.5px solid rgba(255, 255, 255, 0.15);
+    }
+
+    body.dark-mode .summary-card {
+      background: rgba(40, 40, 60, 0.9);
+      border: 0.5px solid rgba(255, 255, 255, 0.1);
+    }
+
+    body.dark-mode .toast {
+      background: rgba(30, 30, 46, 0.98);
+      border: 0.5px solid rgba(255, 255, 255, 0.1);
+    }
+
+    body.dark-mode .text-gray-900 {
+      color: #e0e0e0 !important;
+    }
+
+    body.dark-mode .text-gray-800 {
+      color: #d0d0d0 !important;
+    }
+
+    body.dark-mode .text-gray-700 {
+      color: #b0b0b0 !important;
+    }
+
+    body.dark-mode .text-gray-600 {
+      color: #a0a0a0 !important;
+    }
+
+    body.dark-mode .text-gray-500 {
+      color: #909090 !important;
+    }
+
+    body.dark-mode .text-gray-400 {
+      color: #808080 !important;
+    }
+
+    body.dark-mode ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    body.dark-mode ::-webkit-scrollbar-thumb {
+      background: rgba(102, 126, 234, 0.5);
+    }
+
+    body.dark-mode ::-webkit-scrollbar-thumb:hover {
+      background: rgba(102, 126, 234, 0.7);
+    }
+
+    .dark-mode-toggle {
+      width: 60px;
+      height: 32px;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 16px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1.5px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .dark-mode-toggle.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-color: #667eea;
+    }
+
+    .dark-mode-toggle-circle {
+      width: 24px;
+      height: 24px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .dark-mode-toggle.active .dark-mode-toggle-circle {
+      left: 31px;
     }
   </style>
-
   <style>@view-transition { navigation: auto; }</style>
  </head>
-
- <body class="h-full bg-gray-50 font-sans">
-  <div class="min-h-full">
-   <!-- Header -->
-   <header class="bg-white shadow-sm border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-     <div class="flex justify-between items-center py-4">
-      <div>
-       <h1 id="system-title" class="text-2xl font-bold text-blue-900">gaveblue - wefrotas</h1>
-       <p id="company-name" class="text-lg text-blue-700 font-semibold">Sistema Integrado de Gestão de Frotas</p>
+ <body class="h-full" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+  <div id="app-container" class="h-full w-full flex flex-col overflow-auto"><!-- Header -->
+   <header class="glass-header px-6 py-5 sticky top-0 z-40">
+    <div class="flex items-center justify-between">
+     <div>
+      <h1 id="app-title" class="text-3xl font-bold gradient-text">WeFrotas</h1>
+      <p id="company-name" class="text-sm text-gray-600 font-medium mt-1">Gestão de Frotas</p>
+     </div>
+     <div class="summary-card text-center px-6 py-3">
+      <div class="text-xs text-gray-500 font-semibold uppercase tracking-wide">
+       Total de Registros
       </div>
-      <div id="header-toast-container" class="flex-1 max-w-md mx-4"></div>
+      <div id="total-records" class="text-2xl font-bold gradient-text mt-1">
+       0
+      </div>
      </div>
+    </div><!-- Toast Container -->
+    <div id="header-toast-container" class="fixed top-24 right-6 z-50 space-y-3"></div>
+   </header><!-- Nav Tabs -->
+   <nav class="glass-header px-6 py-3 sticky top-[88px] z-30 overflow-x-auto">
+    <div class="flex gap-2 items-center"><button class="tab-button w-12 h-12 flex items-center justify-center transition-all tab-active" onclick="showTab('dashboard')" title="Dashboard">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect> <rect x="14" y="3" width="7" height="7"></rect> <rect x="14" y="14" width="7" height="7"></rect> <rect x="3" y="14" width="7" height="7"></rect>
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('orders')" title="Ordens de Serviço">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path> <polyline points="14 2 14 8 20 8"></polyline> <line x1="9" y1="15" x2="15" y2="15"></line> <line x1="9" y1="18" x2="15" y2="18"></line> <line x1="9" y1="12" x2="12" y2="12"></line>
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('lancamentos')" title="Lan��amentos">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line> <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('contas')" title="Contas a Pagar">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line> <line x1="18" y1="20" x2="18" y2="4"></line> <line x1="6" y1="20" x2="6" y2="16"></line>
+      </svg></button>
+     <div class="w-px h-8 bg-gray-300 mx-1"></div><button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('cadastros')" title="Cadastros">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="openConfigModal()" title="Configurações">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('veiculos')" title="Veículos">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect> <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon> <circle cx="5.5" cy="18.5" r="2.5"></circle> <circle cx="18.5" cy="18.5" r="2.5"></circle>
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('motoristas')" title="Motoristas">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path> <circle cx="12" cy="7" r="4"></circle>
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('fornecedores')" title="Fornecedores">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path> <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg></button>
     </div>
-   </header>
-
-   <!-- Navigation Tabs -->
-   <nav class="bg-white border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-     <div id="tabs" class="flex space-x-1 overflow-x-auto">
-       <button onclick="showTab('vehicles')" id="tab-vehicles" class="tab-active py-3 px-4 text-sm font-medium whitespace-nowrap rounded-t-lg">VEÍCULOS</button>
-       <button onclick="showTab('drivers')" id="tab-drivers" class="py-3 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap rounded-t-lg">MOTORISTAS</button>
-       <button onclick="showTab('orders')" id="tab-orders" class="py-3 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap rounded-t-lg">OS</button>
-       <button onclick="showTab('lancamentos')" id="tab-lancamentos" class="py-3 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap rounded-t-lg">LANÇAMENTOS</button>
-       <button onclick="showTab('contas')" id="tab-contas" class="py-3 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap rounded-t-lg relative">CONTAS A PAGAR <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg animate-pulse">NOVO</span></button>
-       <button onclick="showTab('cadastros')" id="tab-cadastros" class="py-3 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap rounded-t-lg">CADASTROS</button>
-     </div>
-    </div>
-   </nav>
-
-   <!-- Main Content -->
-   <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-    <!-- Contas a Pagar Tab -->
-    <div id="contas-content" class="tab-content hidden">
-     <div class="bg-white rounded-lg shadow p-6 mb-6">
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-       <h3 class="text-lg font-semibold text-gray-900 flex items-center">Contas a Pagar</h3>
-       <div class="flex flex-wrap items-center gap-3">
-         <select id="contas-filter-status" onchange="updateContasList()" class="px-3 py-2 border border-gray-300 rounded-md">
-           <option value="all">Todas</option>
-           <option value="open">Aberta</option>
-           <option value="paid">Paga</option>
-         </select>
-         <button onclick="exportContas()" class="px-3 py-2 bg-green-600 text-white rounded-md">Exportar</button>
+   </nav><!-- Main Content -->
+   <main class="flex-1 p-6 overflow-auto"><!-- Dashboard Content -->
+    <div id="dashboard-content" class="tab-content active">
+     <div class="space-y-6"><!-- Header -->
+      <div class="card-modern p-8 text-center">
+       <h2 class="text-3xl font-bold gradient-text mb-2">Painel de Controle</h2>
+       <p class="text-gray-600 font-medium">Visão geral da sua frota</p>
+      </div><!-- Main Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+       <div class="summary-card">
+        <div class="icon-circle mx-auto mb-4">
+         🚗
+        </div>
+        <div class="text-xs text-gray-500 font-bold uppercase tracking-wide text-center">
+         Veículos
+        </div>
+        <div id="dashboard-veiculos" class="text-4xl font-bold gradient-text text-center mt-2">
+         0
+        </div>
+       </div>
+       <div class="summary-card">
+        <div class="icon-circle mx-auto mb-4">
+         👤
+        </div>
+        <div class="text-xs text-gray-500 font-bold uppercase tracking-wide text-center">
+         Motoristas
+        </div>
+        <div id="dashboard-motoristas" class="text-4xl font-bold gradient-text text-center mt-2">
+         0
+        </div>
+       </div>
+       <div class="summary-card">
+        <div class="icon-circle mx-auto mb-4">
+         📋
+        </div>
+        <div class="text-xs text-gray-500 font-bold uppercase tracking-wide text-center">
+         Ordens Abertas
+        </div>
+        <div id="dashboard-ordens" class="text-4xl font-bold gradient-text text-center mt-2">
+         0
+        </div>
+       </div>
+       <div class="summary-card">
+        <div class="icon-circle mx-auto mb-4">
+         💰
+        </div>
+        <div class="text-xs text-gray-500 font-bold uppercase tracking-wide text-center">
+         Contas Pendentes
+        </div>
+        <div id="dashboard-contas" class="text-4xl font-bold gradient-text text-center mt-2">
+         0
+        </div>
+       </div>
+      </div><!-- Financial Summary -->
+      <div class="card-modern p-8">
+       <h3 class="text-2xl font-bold text-gray-900 mb-6">Resumo Financeiro</h3>
+       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="summary-card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%); border: 1.5px solid rgba(239, 68, 68, 0.2);">
+         <div class="text-sm text-red-700 font-bold uppercase tracking-wide">
+          Total a Pagar
+         </div>
+         <div id="dashboard-total-pagar" class="text-3xl font-bold text-red-700 mt-3">
+          R$ 0,00
+         </div>
+        </div>
+        <div class="summary-card" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%); border: 1.5px solid rgba(245, 158, 11, 0.2);">
+         <div class="text-sm text-yellow-700 font-bold uppercase tracking-wide">
+          Contas Vencidas
+         </div>
+         <div id="dashboard-vencidas" class="text-3xl font-bold text-yellow-700 mt-3">
+          R$ 0,00
+         </div>
+        </div>
+        <div class="summary-card" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.1) 100%); border: 1.5px solid rgba(34, 197, 94, 0.2);">
+         <div class="text-sm text-green-700 font-bold uppercase tracking-wide">
+          Total Pago
+         </div>
+         <div id="dashboard-pago" class="text-3xl font-bold text-green-700 mt-3">
+          R$ 0,00
+         </div>
+        </div>
+       </div>
+      </div><!-- Recent Activity -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><!-- Recent Orders -->
+       <div class="card-modern p-8">
+        <h3 class="text-xl font-bold text-gray-900 mb-5">Últimas Ordens de Serviço</h3>
+        <div id="dashboard-recent-orders" class="space-y-3">
+         <div class="text-center py-8 text-gray-500 text-sm">
+          Nenhuma ordem registrada
+         </div>
+        </div>
+       </div><!-- Recent Lancamentos -->
+       <div class="card-modern p-8">
+        <h3 class="text-xl font-bold text-gray-900 mb-5">Últimos Lançamentos</h3>
+        <div id="dashboard-recent-lancamentos" class="space-y-3">
+         <div class="text-center py-8 text-gray-500 text-sm">
+          Nenhum lançamento registrado
+         </div>
+        </div>
        </div>
       </div>
-      <div id="contas-summary" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"></div>
-      <div id="contas-selection-info" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-       <div class="flex justify-between items-center">
-        <p class="text-blue-800 text-sm"><span id="contas-selection-count">0 contas selecionadas</span> - <span id="contas-selection-total">R$ 0,00</span></p>
-        <button id="pay-selected-btn" onclick="paySelectedContas()" class="bg-blue-600 text-white px-3 py-2 rounded-md">Pagar Selecionadas</button>
+     </div>
+    </div><!-- Veículos Content -->
+    <div id="veiculos-content" class="tab-content">
+     <div class="card-modern p-8">
+      <div class="mb-8">
+       <h2 class="text-2xl font-bold text-gray-900">Lista de Veículos</h2>
+       <p class="text-sm text-gray-600 font-medium mt-2">Acesse a aba <strong>Cadastros</strong> para adicionar novos veículos</p>
+      </div>
+      <div id="vehicles-list" class="space-y-4">
+       <div class="text-center py-16 text-gray-500">
+        Nenhum veículo cadastrado. Acesse a aba <strong>Cadastros</strong> para começar.
        </div>
+      </div>
+     </div>
+    </div><!-- Motoristas Content -->
+    <div id="motoristas-content" class="tab-content">
+     <div class="card-modern p-8">
+      <div class="mb-8">
+       <h2 class="text-2xl font-bold text-gray-900">Lista de Motoristas</h2>
+       <p class="text-sm text-gray-600 font-medium mt-2">Acesse a aba <strong>Cadastros</strong> para adicionar novos motoristas</p>
+      </div>
+      <div id="drivers-list" class="space-y-4">
+       <div class="text-center py-16 text-gray-500">
+        Nenhum motorista cadastrado. Acesse a aba <strong>Cadastros</strong> para começar.
+       </div>
+      </div>
+     </div>
+    </div><!-- Orders Content -->
+    <div id="orders-content" class="tab-content">
+     <div class="card-modern p-8">
+      <div class="flex items-center justify-between mb-8">
+       <h2 class="text-2xl font-bold text-gray-900">Ordens de Serviço</h2>
+       <div class="flex gap-3"><button onclick="printSelectedOrder()" class="modern-button-secondary w-12 h-12 flex items-center justify-center p-0" title="Imprimir OS">
+         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline> <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path> <rect x="6" y="14" width="12" height="8"></rect>
+         </svg></button> <button onclick="exportSelectedOrder()" class="modern-button-secondary w-12 h-12 flex items-center justify-center p-0" title="Exportar">
+         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path> <polyline points="7 10 12 15 17 10"></polyline> <line x1="12" y1="15" x2="12" y2="3"></line>
+         </svg></button> <button onclick="showCadastroForm('order')" class="modern-button w-12 h-12 flex items-center justify-center p-0" title="Nova Ordem de Serviço">
+         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
+         </svg></button>
+       </div>
+      </div><!-- Filtros OS -->
+      <div class="mb-6 card-modern p-5" style="background: rgba(255, 255, 255, 0.6);">
+       <div class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-[120px]"><label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Nº da OS</label> <input type="text" id="filter-order-numero" class="modern-input w-full" placeholder="Ex: 0001">
+        </div>
+        <div class="flex-1 min-w-[150px]"><label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Data Inicial</label> <input type="date" id="filter-order-start-date" class="modern-input w-full">
+        </div>
+        <div class="flex-1 min-w-[150px]"><label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Data Final</label> <input type="date" id="filter-order-end-date" class="modern-input w-full">
+        </div>
+        <div class="flex-1 min-w-[150px]"><label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Status</label> <select id="filter-order-status" class="modern-input w-full"> <option value="">Todos os Status</option> <option value="aberta">Aberta</option> <option value="andamento">Em Andamento</option> <option value="fechada">Fechada</option> </select>
+        </div>
+        <div class="flex-1 min-w-[150px]"><label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Ordenação</label> <select id="order-sort" class="modern-input w-full"> <option value="newest">Mais Recentes</option> <option value="oldest">Mais Antigas</option> </select>
+        </div><button onclick="applyOrderFilters()" class="modern-button w-12 h-12 flex items-center justify-center p-0" title="Aplicar Filtros">
+         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+         </svg></button> <button onclick="clearOrderFilters()" class="modern-button-secondary w-12 h-12 flex items-center justify-center p-0" title="Limpar Filtros">
+         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line> <line x1="6" y1="6" x2="18" y2="18"></line>
+         </svg></button>
+       </div>
+      </div><!-- Selection Info -->
+      <div id="selection-info" class="mb-6 flex items-center gap-3 px-2"><span id="orders-selected-count" class="text-sm font-semibold text-gray-700">0 selecionadas</span> <button onclick="deleteSelectedOrders()" id="btn-delete-selected" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Excluir Selecionadas">
+        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg></button> <button onclick="editSelectedOrder()" id="btn-edit-selected" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Editar Ordem Selecionada">
+        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path> <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg></button>
+      </div>
+      <div id="orders-list" class="space-y-4">
+       <div class="text-center py-16 text-gray-500">
+        Nenhuma ordem de serviço cadastrada.
+       </div>
+      </div>
+     </div>
+    </div><!-- Lançamentos Content -->
+    <div id="lancamentos-content" class="tab-content">
+     <div class="card-modern p-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-8">Central de Lançamentos</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"><!-- Abastecimento Card -->
+       <div class="card-modern p-6 hover:shadow-2xl transition-all cursor-pointer" style="background: linear-gradient(135deg, rgba(132, 250, 176, 0.1) 0%, rgba(143, 211, 244, 0.1) 100%);" onclick="showLancamentoPopup('fueling')">
+        <div class="flex items-center gap-4 mb-4">
+         <div class="icon-circle">
+          ⛽
+         </div>
+         <div>
+          <h3 class="text-lg font-bold text-gray-900">Abastecimento</h3>
+          <p class="text-sm text-gray-600 font-medium">Registrar abastecimento de veículo</p>
+         </div>
+        </div><button class="w-12 h-12 modern-button flex items-center justify-center p-0 ml-auto" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);" title="Novo Abastecimento">
+         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
+         </svg></button>
+       </div><!-- Despesa Card -->
+       <div class="card-modern p-6 hover:shadow-2xl transition-all cursor-pointer" style="background: linear-gradient(135deg, rgba(246, 211, 101, 0.1) 0%, rgba(253, 160, 133, 0.1) 100%);" onclick="showLancamentoPopup('expense')">
+        <div class="flex items-center gap-4 mb-4">
+         <div class="icon-circle">
+          💸
+         </div>
+         <div>
+          <h3 class="text-lg font-bold text-gray-900">Despesa</h3>
+          <p class="text-sm text-gray-600 font-medium">Registrar despesa da frota</p>
+         </div>
+        </div><button class="w-12 h-12 modern-button flex items-center justify-center p-0 ml-auto" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);" title="Nova Despesa">
+         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
+         </svg></button>
+       </div>
+      </div>
+      <h3 class="text-xl font-bold text-gray-900 mb-5">Todos os Lançamentos</h3>
+      <div id="all-lancamentos-list" class="space-y-4">
+       <div class="text-center py-16 text-gray-500">
+        Nenhum lançamento registrado.
+       </div>
+      </div>
+     </div>
+    </div><!-- Contas Content -->
+    <div id="contas-content" class="tab-content">
+     <div class="card-modern p-8">
+      <div class="flex items-center justify-between mb-8">
+       <h2 class="text-2xl font-bold text-gray-900">Contas a Pagar</h2><button onclick="exportContas()" class="modern-button-secondary w-12 h-12 flex items-center justify-center p-0" title="Exportar Contas">
+        <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path> <polyline points="7 10 12 15 17 10"></polyline> <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg></button>
+      </div><!-- Filtros Contas -->
+      <div class="mb-6 card-modern p-5" style="background: rgba(255, 255, 255, 0.6);">
+       <div class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-[150px]"><label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Status</label> <select id="filter-contas-status" class="modern-input w-full"> <option value="">Todas as Contas</option> <option value="pendente">Pendentes</option> <option value="pago">Pagas</option> <option value="vencidas">Vencidas</option> </select>
+        </div>
+        <div class="flex-1 min-w-[150px]"><label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Vencimento Inicial</label> <input type="date" id="filter-contas-start-date" class="modern-input w-full">
+        </div>
+        <div class="flex-1 min-w-[150px]"><label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Vencimento Final</label> <input type="date" id="filter-contas-end-date" class="modern-input w-full">
+        </div><button onclick="applyContasFilters()" class="modern-button w-12 h-12 flex items-center justify-center p-0" title="Aplicar Filtros">
+         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+         </svg></button> <button onclick="clearContasFilters()" class="modern-button-secondary w-12 h-12 flex items-center justify-center p-0" title="Limpar Filtros">
+         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line> <line x1="6" y1="6" x2="18" y2="18"></line>
+         </svg></button>
+       </div>
+      </div><!-- Resumo de Contas -->
+      <div id="contas-summary" class="mb-8 grid grid-cols-3 gap-5">
+       <div class="summary-card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%); border: 1.5px solid rgba(239, 68, 68, 0.2);">
+        <div class="text-xs text-red-700 font-bold uppercase tracking-wide">
+         A Vencer
+        </div>
+        <div id="contas-a-vencer" class="text-3xl font-bold text-red-700 mt-2">
+         R$ 0,00
+        </div>
+       </div>
+       <div class="summary-card" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%); border: 1.5px solid rgba(245, 158, 11, 0.2);">
+        <div class="text-xs text-yellow-700 font-bold uppercase tracking-wide">
+         Vencidas
+        </div>
+        <div id="contas-vencidas" class="text-3xl font-bold text-yellow-700 mt-2">
+         R$ 0,00
+        </div>
+       </div>
+       <div class="summary-card" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.1) 100%); border: 1.5px solid rgba(34, 197, 94, 0.2);">
+        <div class="text-xs text-green-700 font-bold uppercase tracking-wide">
+         Pagas
+        </div>
+        <div id="contas-pagas" class="text-3xl font-bold text-green-700 mt-2">
+         R$ 0,00
+        </div>
+       </div>
+      </div><!-- Contas Selection Info -->
+      <div id="contas-selection-info" class="mb-6 flex items-center gap-4 px-2"><span id="contas-selected-count" class="text-sm font-semibold text-gray-700">0 selecionadas</span> <span id="contas-selected-total" class="text-sm font-bold gradient-text">R$ 0,00</span> <button onclick="paySelectedContas()" id="btn-pay-selected" class="modern-button w-12 h-12 flex items-center justify-center p-0 disabled:opacity-50 disabled:cursor-not-allowed" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);" disabled title="Pagar Selecionadas">
+        <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline>
+        </svg></button>
       </div>
       <div id="contas-list" class="space-y-4">
-       <div class="text-center py-8 text-gray-500">Nenhuma conta encontrada</div>
+       <div class="text-center py-16 text-gray-500">
+        Nenhuma conta cadastrada.
+       </div>
       </div>
      </div>
-    </div>
-
-    <!-- Cadastros Tab -->
-    <div id="cadastros-content" class="tab-content hidden">
-     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-6">
-      <div class="text-center mb-10">
-       <h3 class="text-3xl font-bold text-gray-900 mb-3">Central de Cadastros</h3>
-       <p class="text-gray-600 text-lg">Escolha o que deseja cadastrar no sistema</p>
+    </div><!-- Fornecedores Content -->
+    <div id="fornecedores-content" class="tab-content">
+     <div class="card-modern p-8">
+      <div class="mb-8">
+       <h2 class="text-2xl font-bold text-gray-900">Lista de Fornecedores</h2>
+       <p class="text-sm text-gray-600 font-medium mt-2">Acesse a aba <strong>Cadastros</strong> para adicionar novos fornecedores</p>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-       <div onclick="showCadastroForm('vehicle')" class="group cursor-pointer bg-white border-2 border-gray-200 rounded-2xl p-8 hover:border-green-400 hover:shadow-xl transition-all duration-300">
-        <div class="text-center">
-         <div class="mb-6 p-4 bg-green-50 rounded-full w-20 h-20 mx-auto flex items-center justify-center">
-          <svg class="w-10 h-10 text-green-600" fill="currentColor" viewBox="0 0 24 24"><path d="M5 11h14v6H5zM4 6h2l1-2h10l1 2h2v5H4z"/></svg>
+      <div id="fornecedores-list" class="space-y-4">
+       <div class="text-center py-16 text-gray-500">
+        Nenhum fornecedor cadastrado. Acesse a aba <strong>Cadastros</strong> para começar.
+       </div>
+      </div>
+     </div>
+    </div><!-- Cadastros Content -->
+    <div id="cadastros-content" class="tab-content">
+     <div class="space-y-6">
+      <div class="card-modern p-8">
+       <h2 class="text-2xl font-bold text-gray-900 mb-8">Central de Cadastros</h2>
+       <div class="grid grid-cols-1 md:grid-cols-3 gap-6"><button onclick="showCadastroForm('vehicle')" class="card-modern p-8 text-center transition-all hover:shadow-2xl group">
+         <div class="icon-circle mx-auto mb-4">
+          🚗
          </div>
-         <h4 class="text-xl font-bold text-gray-900 mb-3">VEÍCULO</h4>
-         <p class="text-gray-600">Adicionar novo veículo à frota</p>
-        </div>
-       </div>
-
-       <div onclick="showCadastroForm('driver')" class="group cursor-pointer bg-white border-2 border-gray-200 rounded-2xl p-8 hover:border-purple-400 hover:shadow-xl transition-all duration-300">
-        <div class="text-center">
-         <div class="mb-6 p-4 bg-purple-50 rounded-full w-20 h-20 mx-auto flex items-center justify-center">
-          <svg class="w-10 h-10 text-purple-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20v-1a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v1z"/></svg>
+         <div class="font-bold text-gray-900 text-lg group-hover:gradient-text transition-all">
+          Cadastrar Veículo
+         </div></button> <button onclick="showCadastroForm('driver')" class="card-modern p-8 text-center transition-all hover:shadow-2xl group">
+         <div class="icon-circle mx-auto mb-4">
+          👤
          </div>
-         <h4 class="text-xl font-bold text-gray-900 mb-3">MOTORISTA</h4>
-         <p class="text-gray-600">Cadastrar novo motorista</p>
-        </div>
-       </div>
-
-       <div onclick="showCadastroForm('supplier')" class="group cursor-pointer bg-white border-2 border-gray-200 rounded-2xl p-8 hover:border-indigo-400 hover:shadow-xl transition-all duration-300">
-        <div class="text-center">
-         <div class="mb-6 p-4 bg-indigo-50 rounded-full w-20 h-20 mx-auto flex items-center justify-center">
-          <svg class="w-10 h-10 text-indigo-600" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg>
+         <div class="font-bold text-gray-900 text-lg group-hover:gradient-text transition-all">
+          Cadastrar Motorista
+         </div></button> <button onclick="showCadastroForm('supplier')" class="card-modern p-8 text-center transition-all hover:shadow-2xl group">
+         <div class="icon-circle mx-auto mb-4">
+          🏢
          </div>
-         <h4 class="text-xl font-bold text-gray-900 mb-3">FORNECEDOR</h4>
-         <p class="text-gray-600">Cadastrar postos, oficinas, autopeças e outros fornecedores</p>
-        </div>
+         <div class="font-bold text-gray-900 text-lg group-hover:gradient-text transition-all">
+          Cadastrar Fornecedor
+         </div></button>
        </div>
       </div>
      </div>
-
-     <div class="bg-white rounded-lg shadow p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Fornecedores Cadastrados</h3>
-      <div id="suppliers-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-       <div class="text-center py-8 text-gray-500">Nenhum fornecedor cadastrado</div>
-      </div>
-     </div>
     </div>
-
-    <!-- Orders Tab -->
-    <div id="orders-content" class="tab-content hidden">
-     <div class="bg-white rounded-lg shadow p-6">
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-       <h3 class="text-lg font-semibold text-gray-900">Ordens de Serviço</h3>
-       <div class="flex flex-wrap items-center gap-3">
-        <button onclick="showCadastroForm('order')" class="bg-green-600 text-white px-4 py-2 rounded-md">Nova OS</button>
-        <button id="edit-order-btn" onclick="editSelectedOrder()" disabled class="bg-blue-600 text-white px-4 py-2 rounded-md">Editar</button>
-        <button id="delete-orders-btn" onclick="deleteSelectedOrders()" disabled class="bg-red-600 text-white px-4 py-2 rounded-md">Excluir</button>
-        <select id="order-filter" onchange="updateOrdersList()" class="px-3 py-2 border border-gray-300 rounded-md">
-          <option value="all">Todas</option>
-          <option value="open">Abertas</option>
-          <option value="closed">Fechadas</option>
-        </select>
-
-        <div class="date-input-container w-44">
-          <input type="date" id="order-date-start" onchange="updateOrdersList()" placeholder="Data inicial" class="date-input text-sm">
-        </div>
-        <div class="date-input-container w-44">
-          <input type="date" id="order-date-end" onchange="updateOrdersList()" placeholder="Data final" class="date-input text-sm">
-        </div>
-       </div>
-      </div>
-
-      <div id="selection-info" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-       <p class="text-blue-800 text-sm"><span id="selection-count">0 OS selecionadas</span></p>
-      </div>
-
-      <div id="orders-list" class="space-y-4">
-       <div class="text-center py-8 text-gray-500">Nenhuma ordem de serviço cadastrada</div>
-      </div>
+   </main><!-- Modal Overlay -->
+   <div id="modal-overlay" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
+    <div class="modal-content-wrapper max-w-2xl w-full mx-6 max-h-[90%] overflow-auto">
+     <div class="sticky top-0 glass-header px-8 py-5 flex items-center justify-between">
+      <h3 id="modal-title" class="text-xl font-bold gradient-text"></h3><button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-all hover:rotate-90" style="transition: transform 0.3s;">×</button>
      </div>
+     <div id="modal-content" class="p-8"></div>
     </div>
-
-    <!-- Vehicles Tab (default visible) -->
-    <div id="vehicles-content" class="tab-content">
-     <div class="bg-white rounded-lg shadow p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Veículos Cadastrados</h3>
-      <div id="vehicles-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-       <div class="text-center py-8 text-gray-500">Nenhum veículo cadastrado</div>
-      </div>
-     </div>
-    </div>
-
-    <!-- Drivers Tab -->
-    <div id="drivers-content" class="tab-content hidden">
-     <div class="bg-white rounded-lg shadow p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Motoristas Cadastrados</h3>
-      <div id="drivers-list" class="space-y-4">
-       <div class="text-center py-8 text-gray-500">Nenhum motorista cadastrado</div>
-      </div>
-     </div>
-    </div>
-
-    <!-- Lancamentos Tab -->
-    <div id="lancamentos-content" class="tab-content hidden">
-     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-6">
-      <div class="text-center mb-10">
-       <h3 class="text-3xl font-bold text-gray-900 mb-3">Central de Lançamentos</h3>
-       <p class="text-gray-600 text-lg">Registre despesas e abastecimentos</p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-       <div onclick="showLancamentoPopup('despesas')" class="group cursor-pointer bg-white border-2 border-gray-200 rounded-2xl p-8 hover:border-red-400 hover:shadow-xl transition-all duration-300">
-        <div class="text-center">
-         <div class="mb-6 p-4 bg-red-50 rounded-full w-20 h-20 mx-auto flex items-center justify-center">
-          <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 6h18M8 6v12"/></svg>
-         </div>
-         <h4 class="text-xl font-bold text-gray-900 mb-3">DESPESAS</h4>
-         <p class="text-gray-600">Registrar pedágios, manutenções, multas e outras despesas</p>
-        </div>
-       </div>
-
-       <div onclick="showLancamentoPopup('abastecimentos')" class="group cursor-pointer bg-white border-2 border-gray-200 rounded-2xl p-8 hover:border-blue-400 hover:shadow-xl transition-all duration-300">
-        <div class="text-center">
-         <div class="mb-6 p-4 bg-blue-50 rounded-full w-20 h-20 mx-auto flex items-center justify-center">
-          <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 12h18M12 3v18"/></svg>
-         </div>
-         <h4 class="text-xl font-bold text-gray-900 mb-3">ABASTECIMENTOS</h4>
-         <p class="text-gray-600">Registrar abastecimentos de combustível da frota</p>
-        </div>
-       </div>
-      </div>
-     </div>
-
-     <div class="bg-white rounded-lg shadow p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Todos os Lançamentos</h3>
-      <div id="all-lancamentos-list" class="space-y-4">
-       <div class="text-center py-8 text-gray-500">Nenhum lançamento registrado</div>
-      </div>
-     </div>
-    </div>
-   </main>
-  </div>
-
-  <!-- Modal Overlay Global -->
-  <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-   <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-    <div class="flex justify-between items-center p-6 border-b">
-     <h3 id="modal-title" class="text-xl font-semibold text-gray-900"></h3>
-     <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
-    </div>
-    <div id="modal-content" class="p-6"><!-- Conteúdo será inserido aqui dinamicamente --></div>
    </div>
   </div>
-
-  <!-- Toast container -->
-  <div id="global-toast" class="bg-white px-4 py-3 rounded shadow"></div>
-
-  <!-- Scripts (application logic) -->
   <script>
-    // --- Global state ---
+    // Global State
     let allData = [];
-    let isInitialized = false;
+    let selectedOrders = new Set();
+    let selectedContas = new Set();
+    let currentEditingRecord = null;
 
-    // Default config for Element SDK
     const defaultConfig = {
-      system_title: "gaveblue - wefrotas",
-      company_name: "Sistema Integrado de Gestão de Frotas"
+      app_title: "WeFrotas",
+      company_name: "Gestão de Frotas",
+      dark_mode: false
     };
 
-    // Data handler for Data SDK
-    const dataHandler = {
-      onDataChanged(data) {
-        console.log('📊 Dados atualizados:', data.length, 'registros');
-        allData = Array.isArray(data) ? data.slice() : [];
-        updateUI();
-      }
+    // Form Configurations
+    const formConfigs = {
+      vehicle: `
+        <form id="dynamic-form" class="space-y-5">
+          <div class="grid grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Placa*</label>
+              <input type="text" id="dynamic-vehicle-placa" required class="modern-input w-full" placeholder="ABC-1234">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Modelo*</label>
+              <input type="text" id="dynamic-vehicle-modelo" required class="modern-input w-full" placeholder="Fiat Uno">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Ano*</label>
+              <input type="number" id="dynamic-vehicle-ano" required class="modern-input w-full" placeholder="2020">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Cor*</label>
+              <input type="text" id="dynamic-vehicle-cor" required class="modern-input w-full" placeholder="Branco">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Chassi</label>
+              <input type="text" id="dynamic-vehicle-chassi" class="modern-input w-full" placeholder="9BWZZZ377VT004251">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">RENAVAM</label>
+              <input type="text" id="dynamic-vehicle-renavam" class="modern-input w-full" placeholder="00000000000">
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeModal()" class="modern-button-secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="modern-button flex items-center gap-2">
+              <span id="submit-text">Salvar</span>
+              <div id="submit-loading" class="hidden loading-spinner"></div>
+            </button>
+          </div>
+        </form>
+      `,
+      driver: `
+        <form id="dynamic-form" class="space-y-5">
+          <div class="grid grid-cols-2 gap-5">
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Nome Completo*</label>
+              <input type="text" id="dynamic-driver-nome" required class="modern-input w-full" placeholder="João Silva">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">CPF*</label>
+              <input type="text" id="dynamic-driver-cpf" required class="modern-input w-full" placeholder="000.000.000-00">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">CNH*</label>
+              <input type="text" id="dynamic-driver-cnh" required class="modern-input w-full" placeholder="00000000000">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Categoria CNH*</label>
+              <select id="dynamic-driver-categoria_cnh" required class="modern-input w-full">
+                <option value="">Selecione</option>
+                <option value="A">A - Motocicletas</option>
+                <option value="B">B - Veículos até 3.500kg</option>
+                <option value="AB">AB - Moto + Carro</option>
+                <option value="C">C - Veículos acima de 3.500kg</option>
+                <option value="D">D - Transporte de Passageiros</option>
+                <option value="E">E - Veículos com reboque</option>
+                <option value="AC">AC - A + C</option>
+                <option value="AD">AD - A + D</option>
+                <option value="AE">AE - A + E</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Telefone*</label>
+              <input type="tel" id="dynamic-driver-telefone" required class="modern-input w-full" placeholder="(00) 00000-0000">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">E-mail</label>
+              <input type="email" id="dynamic-driver-email" class="modern-input w-full" placeholder="joao@email.com">
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeModal()" class="modern-button-secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="modern-button flex items-center gap-2">
+              <span id="submit-text">Salvar</span>
+              <div id="submit-loading" class="hidden loading-spinner"></div>
+            </button>
+          </div>
+        </form>
+      `,
+      order: `
+        <form id="dynamic-form" class="space-y-5">
+          <div class="grid grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Veículo*</label>
+              <select id="dynamic-order-veiculo_id" required class="modern-input w-full">
+                <option value="">Selecione um veículo</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Motorista</label>
+              <select id="dynamic-order-motorista_id" class="modern-input w-full">
+                <option value="">Selecione um motorista</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Data Abertura*</label>
+              <input type="date" id="dynamic-order-data_abertura" required class="modern-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Data Fechamento</label>
+              <input type="date" id="dynamic-order-data_fechamento" class="modern-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Status*</label>
+              <select id="dynamic-order-status" required class="modern-input w-full">
+                <option value="aberta">Aberta</option>
+                <option value="andamento">Em Andamento</option>
+                <option value="fechada">Fechada</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">KM*</label>
+              <input type="number" id="dynamic-order-km" required class="modern-input w-full" placeholder="0">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Descrição*</label>
+              <textarea id="dynamic-order-descricao" required rows="3" class="modern-input w-full" placeholder="Descreva o serviço..."></textarea>
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeModal()" class="modern-button-secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="modern-button flex items-center gap-2">
+              <span id="submit-text">Salvar</span>
+              <div id="submit-loading" class="hidden loading-spinner"></div>
+            </button>
+          </div>
+        </form>
+      `,
+      supplier: `
+        <form id="dynamic-form" class="space-y-5">
+          <div class="grid grid-cols-2 gap-5">
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Razão Social*</label>
+              <input type="text" id="dynamic-supplier-razao_social" required class="modern-input w-full" placeholder="Empresa LTDA">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Categoria*</label>
+              <select id="dynamic-supplier-categoria" required class="modern-input w-full">
+                <option value="">Selecione</option>
+                <option value="posto">Posto de Gasolina</option>
+                <option value="oficina">Oficina Mecânica</option>
+                <option value="borracharia">Borracharia</option>
+                <option value="concessionaria">Concessionária</option>
+                <option value="autoeletrica">Auto Elétrica</option>
+                <option value="funilaria">Funilaria e Pintura</option>
+                <option value="lavagem">Lavagem e Estética</option>
+                <option value="pecas">Loja de Peças</option>
+                <option value="seguros">Seguradora</option>
+                <option value="outros">Outros</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">CNPJ*</label>
+              <input type="text" id="dynamic-supplier-cnpj" required class="modern-input w-full" placeholder="00.000.000/0000-00">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Telefone</label>
+              <input type="tel" id="dynamic-supplier-telefone" class="modern-input w-full" placeholder="(00) 0000-0000">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">E-mail</label>
+              <input type="email" id="dynamic-supplier-email" class="modern-input w-full" placeholder="contato@empresa.com">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Endereço</label>
+              <input type="text" id="dynamic-supplier-endereco" class="modern-input w-full" placeholder="Rua, número, bairro">
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeModal()" class="modern-button-secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="modern-button flex items-center gap-2">
+              <span id="submit-text">Salvar</span>
+              <div id="submit-loading" class="hidden loading-spinner"></div>
+            </button>
+          </div>
+        </form>
+      `,
+      fueling: `
+        <form id="dynamic-form" class="space-y-5">
+          <div class="text-center mb-6">
+            <div class="icon-circle mx-auto">⛽</div>
+          </div>
+          <div class="grid grid-cols-2 gap-5">
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Veículo*</label>
+              <select id="dynamic-fueling-veiculo_id" required class="modern-input w-full">
+                <option value="">Selecione um veículo</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Posto de Gasolina*</label>
+              <select id="dynamic-fueling-fornecedor_id" required class="modern-input w-full">
+                <option value="">Selecione um posto</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Descrição*</label>
+              <input type="text" id="dynamic-fueling-descricao" required class="modern-input w-full" placeholder="Ex: Abastecimento Posto Shell">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Litros*</label>
+              <input type="number" id="dynamic-fueling-litros" required step="0.01" class="modern-input w-full" placeholder="0.00">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Valor*</label>
+              <input type="number" id="dynamic-fueling-valor" required step="0.01" class="modern-input w-full" placeholder="0.00">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Nota Fiscal</label>
+              <input type="text" id="dynamic-fueling-nota_fiscal" class="modern-input w-full" placeholder="000000">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Data de Vencimento*</label>
+              <input type="date" id="dynamic-fueling-data_vencimento" required class="modern-input w-full">
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeModal()" class="modern-button-secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="modern-button flex items-center gap-2" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);">
+              <span id="submit-text">Salvar</span>
+              <div id="submit-loading" class="hidden loading-spinner"></div>
+            </button>
+          </div>
+        </form>
+      `,
+      expense: `
+        <form id="dynamic-form" class="space-y-5">
+          <div class="text-center mb-6">
+            <div class="icon-circle mx-auto">💸</div>
+          </div>
+          <div class="grid grid-cols-2 gap-5">
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Veículo*</label>
+              <select id="dynamic-expense-veiculo_id" required class="modern-input w-full">
+                <option value="">Selecione um veículo</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Fornecedor*</label>
+              <select id="dynamic-expense-fornecedor_id" required class="modern-input w-full">
+                <option value="">Selecione um fornecedor</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Descrição*</label>
+              <input type="text" id="dynamic-expense-descricao" required class="modern-input w-full" placeholder="Ex: Troca de óleo">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Valor*</label>
+              <input type="number" id="dynamic-expense-valor" required step="0.01" class="modern-input w-full" placeholder="0.00">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Nota Fiscal</label>
+              <input type="text" id="dynamic-expense-nota_fiscal" class="modern-input w-full" placeholder="000000">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Data de Vencimento*</label>
+              <input type="date" id="dynamic-expense-data_vencimento" required class="modern-input w-full">
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeModal()" class="modern-button-secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="modern-button flex items-center gap-2" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);">
+              <span id="submit-text">Salvar</span>
+              <div id="submit-loading" class="hidden loading-spinner"></div>
+            </button>
+          </div>
+        </form>
+      `
     };
 
-    // --- UI helpers ---
-    function showToast(message, type = 'info', duration = 3000) {
-      const container = document.getElementById('global-toast');
-      if (!container) { alert(message); return; }
-      container.textContent = message;
-      container.classList.add('show');
-      if (type === 'success') container.style.borderLeft = '6px solid #10B981';
-      else if (type === 'error') container.style.borderLeft = '6px solid #EF4444';
-      else container.style.borderLeft = '6px solid #3B82F6';
-      clearTimeout(container._toastTimer);
-      container._toastTimer = setTimeout(() => {
-        container.classList.remove('show');
-      }, duration);
+    // Utility Functions
+    function formatCurrency(value) {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
     }
 
+    function formatDate(dateString) {
+      if (!dateString) return '-';
+      return new Date(dateString).toLocaleDateString('pt-BR');
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('header-toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast bg-white border-l-4 ${type === 'success' ? 'border-green-500' : 'border-red-500'} rounded-lg shadow-lg p-4 flex items-center gap-3`;
+      toast.innerHTML = `
+        <span class="text-2xl">${type === 'success' ? '✓' : '✗'}</span>
+        <span class="text-sm text-gray-800">${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function getOrderNumber(order) {
+      const orders = allData.filter(item => item.type === 'order').sort((a, b) => {
+        return new Date(a.created_at) - new Date(b.created_at);
+      });
+      const index = orders.findIndex(o => o.__backendId === order.__backendId);
+      return String(index + 1).padStart(4, '0');
+    }
+
+    // Tab Navigation
+    function showTab(tabId) {
+      // Update tab buttons
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('tab-active');
+      });
+      event.target.closest('.tab-button').classList.add('tab-active');
+
+      // Update content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      
+      const targetContent = document.getElementById(`${tabId}-content`);
+      if (targetContent) {
+        targetContent.classList.add('active');
+      }
+
+      updateUI();
+    }
+
+    // Modal Functions
     function closeModal() {
-      const ov = document.getElementById('modal-overlay');
-      if (ov) ov.classList.add('hidden');
-      // Clear content to avoid duplicate listeners problems when observer attaches
-      // but do not remove form if you want to keep values during editing.
-      // document.getElementById('modal-content').innerHTML = '';
+      document.getElementById('modal-overlay').classList.remove('flex');
+      document.getElementById('modal-overlay').classList.add('hidden');
+      currentEditingRecord = null;
     }
 
-    function openModal(title, html) {
-      const overlay = document.getElementById('modal-overlay');
-      const titleEl = document.getElementById('modal-title');
-      const content = document.getElementById('modal-content');
-      if (titleEl) titleEl.textContent = title || '';
-      if (content) content.innerHTML = html || '';
-      if (overlay) overlay.classList.remove('hidden');
-      // Focus first input if present
-      setTimeout(() => {
-        const first = content.querySelector('input, textarea, select, button');
-        if (first) first.focus();
-      }, 50);
-    }
+    function openConfigModal() {
+      document.getElementById('modal-title').textContent = 'Configurações do Sistema';
+      document.getElementById('modal-content').innerHTML = `
+        <form id="config-form" class="space-y-5">
+          <div class="space-y-5">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Título do Sistema</label>
+              <input type="text" id="config-app-title" value="${window.elementSdk?.config?.app_title || defaultConfig.app_title}" class="modern-input w-full" placeholder="WeFrotas">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Nome da Empresa</label>
+              <input type="text" id="config-company-name" value="${window.elementSdk?.config?.company_name || defaultConfig.company_name}" class="modern-input w-full" placeholder="Gestão de Frotas">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">Modo Escuro</label>
+              <div class="flex items-center gap-3">
+                <div class="dark-mode-toggle ${(window.elementSdk?.config?.dark_mode || defaultConfig.dark_mode) ? 'active' : ''}" id="dark-mode-toggle-config" onclick="toggleDarkModeConfig()">
+                  <div class="dark-mode-toggle-circle"></div>
+                </div>
+                <span class="text-sm text-gray-600 font-medium">Ativar tema escuro</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeModal()" class="modern-button-secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="modern-button">
+              Salvar Configurações
+            </button>
+          </div>
+        </form>
+      `;
+      
+      document.getElementById('modal-overlay').classList.remove('hidden');
+      document.getElementById('modal-overlay').classList.add('flex');
 
-    // Basic UI rendering for lists
-    function updateUI() {
-      // Vehicles
-      const vlist = document.getElementById('vehicles-list');
-      const vehicles = allData.filter(i => i._type === 'vehicle');
-      if (vlist) {
-        if (!vehicles.length) {
-          vlist.innerHTML = '<div class="text-center py-8 text-gray-500">Nenhum veículo cadastrado</div>';
-        } else {
-          vlist.innerHTML = vehicles.map(v => {
-            return `<div class="bg-white rounded-lg p-4 shadow hover-lift">
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <div class="text-sm text-gray-500">${v.codigo || ''} ${v.placa ? '- ' + v.placa : ''}</div>
-                          <div class="font-semibold">${v.marca || ''} ${v.modelo || ''}</div>
-                          <div class="text-sm text-gray-500">${v.cor ? v.cor + ' • ' : ''}${v.odometro ? v.odometro + ' km' : ''}</div>
-                        </div>
-                        <div class="text-sm text-gray-400">${new Date(v.created_at).toLocaleString()}</div>
-                      </div>
-                    </div>`;
-          }).join('');
+      document.getElementById('config-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const toggle = document.getElementById('dark-mode-toggle-config');
+        const newConfig = {
+          app_title: document.getElementById('config-app-title').value,
+          company_name: document.getElementById('config-company-name').value,
+          dark_mode: toggle.classList.contains('active')
+        };
+
+        if (window.elementSdk) {
+          await window.elementSdk.setConfig(newConfig);
         }
-      }
-
-      // Drivers
-      const dlist = document.getElementById('drivers-list');
-      const drivers = allData.filter(i => i._type === 'driver');
-      if (dlist) {
-        if (!drivers.length) dlist.innerHTML = '<div class="text-center py-8 text-gray-500">Nenhum motorista cadastrado</div>';
-        else dlist.innerHTML = drivers.map(d => `<div class="bg-white rounded-lg p-4 shadow">${d.nome || '(sem nome)'}<div class="text-sm text-gray-500">${d.cpf || ''}</div></div>`).join('');
-      }
-
-      // Orders
-      const olist = document.getElementById('orders-list');
-      const orders = allData.filter(i => i._type === 'order');
-      if (olist) {
-        if (!orders.length) olist.innerHTML = '<div class="text-center py-8 text-gray-500">Nenhuma ordem de serviço cadastrada</div>';
-        else olist.innerHTML = orders.map(o => `<div class="bg-white rounded-lg p-4 shadow"><div class="font-semibold">${o.descricao || '(sem descrição)'}</div><div class="text-sm text-gray-500">${o.data_abertura || ''}</div></div>`).join('');
-      }
-
-      // Suppliers
-      const slist = document.getElementById('suppliers-list');
-      const suppliers = allData.filter(i => i._type === 'supplier');
-      if (slist) {
-        if (!suppliers.length) slist.innerHTML = '<div class="text-center py-8 text-gray-500">Nenhum fornecedor cadastrado</div>';
-        else slist.innerHTML = suppliers.map(s => `<div class="bg-white rounded-lg p-4 shadow">${s.name || '(sem nome)'}</div>`).join('');
-      }
-
-      // Lancamentos (expenses and fueling)
-      const allL = document.getElementById('all-lancamentos-list');
-      const lancs = allData.filter(i => i._type === 'expense' || i._type === 'fueling');
-      if (allL) {
-        if (!lancs.length) allL.innerHTML = '<div class="text-center py-8 text-gray-500">Nenhum lançamento registrado</div>';
-        else allL.innerHTML = lancs.map(l => `<div class="bg-white rounded-lg p-4 shadow">${l._type} • ${l.created_at ? new Date(l.created_at).toLocaleString() : ''} <div class="text-sm text-gray-500">${l.descricao || ''}${l.valor ? ' — R$ ' + l.valor : ''}</div></div>`).join('');
-      }
+        
+        showToast('Configurações salvas!');
+        closeModal();
+      });
     }
 
-    // --- Initialization ---
-    async function initializeApp() {
-      try {
-        console.log('🚀 Iniciando aplicação...');
-        // Set today's date defaults
-        const today = new Date().toISOString().split('T')[0];
-        const fuelingDataInput = document.getElementById('fueling-data');
-        const expenseDataInput = document.getElementById('expense-data');
-        if (fuelingDataInput) fuelingDataInput.value = today;
-        if (expenseDataInput) expenseDataInput.value = today;
-
-        // Init Data SDK (if present)
-        if (window.dataSdk && typeof window.dataSdk.init === 'function') {
-          const dataResult = await window.dataSdk.init(dataHandler);
-          if (dataResult && dataResult.isOk) {
-            console.log('✅ Data SDK inicializado');
-          } else {
-            console.warn('Data SDK init retornou:', dataResult);
-          }
-        }
-
-        // Init Element SDK (if present)
-        if (window.elementSdk && typeof window.elementSdk.init === 'function') {
-          window.elementSdk.init({
-            defaultConfig,
-            onConfigChange: (config) => {
-              const titleElement = document.getElementById('system-title');
-              const companyElement = document.getElementById('company-name');
-              if (titleElement) titleElement.textContent = config.system_title || defaultConfig.system_title;
-              if (companyElement) companyElement.textContent = config.company_name || defaultConfig.company_name;
-            },
-            mapToCapabilities: (config) => ({ recolorables: [], borderables: [], fontEditable: undefined, fontSizeable: undefined }),
-            mapToEditPanelValues: (config) => new Map([ ["system_title", config.system_title || defaultConfig.system_title], ["company_name", config.company_name || defaultConfig.company_name] ])
-          });
-          console.log('✅ Element SDK inicializado');
-        }
-
-        setupEventListeners();
-
-        // Load local storage initial data (if present)
-        if (window.gaveblueLocalStorage && typeof window.gaveblueLocalStorage.getAll === 'function') {
-          const local = window.gaveblueLocalStorage.getAll();
-          if (Array.isArray(local) && local.length) {
-            allData = local.slice();
-            if (typeof dataHandler.onDataChanged === 'function') dataHandler.onDataChanged(allData);
-          }
-        }
-
-        updateUI();
-        isInitialized = true;
-        console.log('🎉 Aplicação inicializada com sucesso!');
-      } catch (err) {
-        console.error('Erro na inicialização', err);
-        showToast('Erro ao inicializar o sistema', 'error');
-      }
+    function toggleDarkModeConfig() {
+      const toggle = document.getElementById('dark-mode-toggle-config');
+      toggle.classList.toggle('active');
     }
 
-    function setupEventListeners() {
-      console.log('🔗 Configurando event listeners...');
-      const orderFilter = document.getElementById('order-filter');
-      if (orderFilter) orderFilter.addEventListener('change', updateOrdersList);
-
-      const expenseForm = document.getElementById('expense-form');
-      if (expenseForm) expenseForm.addEventListener('submit', handleExpenseSubmit);
-
-      const fuelingForm = document.getElementById('fueling-form');
-      if (fuelingForm) fuelingForm.addEventListener('submit', handleFuelingSubmit);
-
-      console.log('✅ Event listeners configurados');
-    }
-
-    function updateOrdersList() { /* placeholder: filter is applied in updateUI which reads allData */ console.log('updateOrdersList called'); }
-
-    function updateContasList() { console.log('updateContasList called'); }
-
-    function exportContas() { showToast('Exportar não implementado (teste localStorage)', 'info'); }
-
-    function paySelectedContas() { showToast('Pagar selecionadas — placeholder', 'info'); }
-
-    function editSelectedOrder(){ showToast('Editar OS — placeholder', 'info'); }
-
-    function deleteSelectedOrders(){ showToast('Excluir OS — placeholder', 'info'); }
-
-    function exportSelectedOrder(){ showToast('Exportar OS — placeholder', 'info'); }
-
-    function showLancamentoPopup(type) {
-      if (type === 'despesas') showCadastroForm('expense');
-      else if (type === 'abastecimentos') showCadastroForm('fueling');
-      else showCadastroForm('expense');
-    }
-
-    // --- showCadastroForm: inject prebuilt forms into modal-content ---
     function showCadastroForm(type) {
-      const formConfigs = {
-        vehicle: {
-          title: 'Cadastrar Novo Veículo',
-          html: `
-            <form id="dynamic-vehicle-form" class="space-y-6">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block text-sm font-medium text-gray-700">Código da Frota *</label><input id="dynamic-vehicle-codigo" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Placa *</label><input id="dynamic-vehicle-placa" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Marca</label><input id="dynamic-vehicle-marca" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Modelo</label><input id="dynamic-vehicle-modelo" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Ano Fabricação</label><input id="dynamic-vehicle-ano" type="number" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Ano Modelo</label><input id="dynamic-vehicle-ano-modelo" type="number" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Cor</label><input id="dynamic-vehicle-cor" class="w-full px-3 py-2 border rounded" /></div>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block text-sm font-medium text-gray-700">Chassi</label><input id="dynamic-vehicle-chassi" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">RENAVAM</label><input id="dynamic-vehicle-renavam" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Odômetro Atual (km)</label><input id="dynamic-vehicle-odometro" type="number" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Combustível</label>
-                  <select id="dynamic-vehicle-combustivel" class="w-full px-3 py-2 border rounded">
-                    <option value="">Selecione</option><option>Gasolina</option><option>Etanol</option><option>Flex</option><option>Diesel</option><option>GNV</option>
-                  </select>
-                </div>
-                <div><label class="block text-sm font-medium text-gray-700">Categoria</label>
-                  <select id="dynamic-vehicle-categoria" class="w-full px-3 py-2 border rounded"><option value="">Selecione</option><option>Carro</option><option>Caminhão</option><option>Van</option><option>Moto</option><option>Ônibus</option></select>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Observações</label>
-                <textarea id="dynamic-vehicle-observacoes" rows="3" class="w-full px-3 py-2 border rounded"></textarea>
-              </div>
-
-              <div class="flex justify-end">
-                <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded">Cadastrar Veículo</button>
-              </div>
-            </form>
-          `
-        },
-
-        driver: {
-          title: 'Cadastrar Novo Motorista',
-          html: `
-            <form id="dynamic-driver-form" class="space-y-6">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block text-sm font-medium text-gray-700">Nome Completo *</label><input id="dynamic-driver-nome" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">CPF *</label><input id="dynamic-driver-cpf" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">RG</label><input id="dynamic-driver-rg" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Data de Nascimento</label><input id="dynamic-driver-nascimento" type="date" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Telefone</label><input id="dynamic-driver-telefone" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">E-mail</label><input id="dynamic-driver-email" type="email" class="w-full px-3 py-2 border rounded" /></div>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block text-sm font-medium text-gray-700">Endereço</label><input id="dynamic-driver-endereco" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Bairro</label><input id="dynamic-driver-bairro" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">CEP</label><input id="dynamic-driver-cep" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Cidade</label><input id="dynamic-driver-cidade" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Estado</label><select id="dynamic-driver-estado" class="w-full px-3 py-2 border rounded"><option value="">Selecione</option><option>SP</option><option>RJ</option><option>MG</option></select></div>
-              </div>
-
-              <div class="flex justify-end">
-                <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded">Cadastrar Motorista</button>
-              </div>
-            </form>
-          `
-        },
-
-        order: {
-          title: 'Nova Ordem de Serviço',
-          html: `
-            <form id="dynamic-order-form" class="space-y-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Descrição *</label>
-                <input id="dynamic-order-descricao" class="w-full px-3 py-2 border rounded" />
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block text-sm font-medium text-gray-700">Data de Abertura</label><input id="dynamic-order-data-abertura" type="date" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Previsão de Término</label><input id="dynamic-order-previsao-termino" type="date" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Prioridade</label><select id="dynamic-order-prioridade" class="w-full px-3 py-2 border rounded"><option>Normal</option><option>Alta</option><option>Urgente</option></select></div>
-                <div><label class="block text-sm font-medium text-gray-700">Responsável</label><input id="dynamic-order-responsavel" class="w-full px-3 py-2 border rounded" /></div>
-              </div>
-
-              <div><label class="block text-sm font-medium text-gray-700">Observações</label><textarea id="dynamic-order-observacoes" rows="3" class="w-full px-3 py-2 border rounded"></textarea></div>
-
-              <div class="flex justify-end">
-                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded">Criar Ordem de Serviço</button>
-              </div>
-            </form>
-          `
-        },
-
-        expense: {
-          title: 'Registrar Despesa',
-          html: `
-            <form id="dynamic-expense-form" class="space-y-6">
-              <div><label class="block text-sm font-medium text-gray-700">Ordem de Serviço</label><input id="expense-order" class="w-full px-3 py-2 border rounded" /></div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block text-sm font-medium text-gray-700">Tipo</label><select id="expense-tipo" class="w-full px-3 py-2 border rounded"><option>Manutenção</option><option>Multa</option></select></div>
-                <div><label class="block text-sm font-medium text-gray-700">Data</label><input id="expense-data" type="date" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Valor (R$)</label><input id="expense-valor" type="number" step="0.01" class="w-full px-3 py-2 border rounded" /></div>
-              </div>
-              <div><label class="block text-sm font-medium text-gray-700">Descrição</label><input id="expense-descricao" class="w-full px-3 py-2 border rounded" /></div>
-              <div class="flex justify-end"><button class="bg-red-600 text-white px-6 py-2 rounded" type="submit">Registrar Despesa</button></div>
-            </form>
-          `
-        },
-
-        fueling: {
-          title: 'Registrar Abastecimento',
-          html: `
-            <form id="dynamic-fueling-form" class="space-y-6">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block text-sm font-medium text-gray-700">Veículo</label><input id="fueling-vehicle" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Ordem de Serviço</label><input id="fueling-order" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Posto</label><input id="fueling-station" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Data</label><input id="fueling-data" type="date" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">KM Atual</label><input id="fueling-km" type="number" class="w-full px-3 py-2 border rounded" /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Litros</label><input id="fueling-litros" type="number" step="0.01" class="w-full px-3 py-2 border rounded" /></div>
-              </div>
-              <div><label class="block text-sm font-medium text-gray-700">Valor Total (R$)</label><input id="fueling-valor" type="number" step="0.01" class="w-full px-3 py-2 border rounded" /></div>
-              <div class="flex justify-end"><button class="bg-orange-600 text-white px-6 py-2 rounded" type="submit">Registrar Abastecimento</button></div>
-            </form>
-          `
-        },
-
-        supplier: {
-          title: 'Cadastrar Fornecedor',
-          html: `
-            <form id="dynamic-supplier-form" class="space-y-6">
-              <div><label class="block text-sm font-medium text-gray-700">Nome</label><input id="dynamic-supplier-name" class="w-full px-3 py-2 border rounded" /></div>
-              <div><label class="block text-sm font-medium text-gray-700">Tipo</label><input id="dynamic-supplier-type" class="w-full px-3 py-2 border rounded" /></div>
-              <div class="flex justify-end"><button class="bg-indigo-600 text-white px-6 py-2 rounded" type="submit">Cadastrar Fornecedor</button></div>
-            </form>
-          `
-        }
+      const titles = {
+        vehicle: currentEditingRecord ? 'Editar Veículo' : 'Novo Veículo',
+        driver: currentEditingRecord ? 'Editar Motorista' : 'Novo Motorista',
+        order: currentEditingRecord ? 'Editar Ordem de Serviço' : 'Nova Ordem de Serviço',
+        supplier: 'Novo Fornecedor',
+        fueling: 'Novo Abastecimento',
+        expense: 'Nova Despesa'
       };
 
-      const cfg = formConfigs[type] || formConfigs['vehicle'];
-      openModal(cfg.title, cfg.html);
-      // Observer-based auto-attach will bind handlers when form is inserted.
+      document.getElementById('modal-title').textContent = titles[type];
+      document.getElementById('modal-content').innerHTML = formConfigs[type];
+      document.getElementById('modal-overlay').classList.remove('hidden');
+      document.getElementById('modal-overlay').classList.add('flex');
+
+      updateSelects();
+
+      // Pre-fill form if editing
+      if (currentEditingRecord && currentEditingRecord.type === type) {
+        Object.keys(currentEditingRecord).forEach(key => {
+          const input = document.getElementById(`dynamic-${type}-${key}`);
+          if (input && key !== '__backendId' && key !== 'type' && key !== 'created_at') {
+            input.value = currentEditingRecord[key] || '';
+          }
+        });
+      }
+
+      // Set default date for order
+      if (type === 'order' && !currentEditingRecord) {
+        document.getElementById('dynamic-order-data_abertura').value = new Date().toISOString().split('T')[0];
+      }
+
+      // Setup form submit
+      document.getElementById('dynamic-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const submitText = document.getElementById('submit-text');
+        const submitLoading = document.getElementById('submit-loading');
+        
+        submitBtn.disabled = true;
+        submitText.classList.add('hidden');
+        submitLoading.classList.remove('hidden');
+
+        if (type === 'fueling') {
+          await handleFuelingSubmit(e);
+        } else if (type === 'expense') {
+          await handleExpenseSubmit(e);
+        } else {
+          await handleGenericSubmit(e, type);
+        }
+      });
     }
 
-    // --- Simple submit handlers for static forms if present in DOM ---
-    async function handleExpenseSubmit(e) {
-      e.preventDefault();
-      const record = { _type: 'expense', created_at: new Date().toISOString(), descricao: (document.getElementById('expense-descricao')?.value || ''), valor: (document.getElementById('expense-valor')?.value || '') };
-      if (window.gaveblueLocalStorage && window.gaveblueLocalStorage.saveRecordLocal) {
-        await window.gaveblueLocalStorage.saveRecordLocal(record);
+    function showLancamentoPopup(type) {
+      showCadastroForm(type);
+    }
+
+    // Form Handlers
+    async function handleGenericSubmit(e, type) {
+      const form = e.target;
+      const inputs = form.querySelectorAll('input, select, textarea');
+      const data = {
+        id: currentEditingRecord?.id || `${type}-${Date.now()}`,
+        type: type,
+        created_at: currentEditingRecord?.created_at || new Date().toISOString()
+      };
+
+      inputs.forEach(input => {
+        const fieldName = input.id.replace(`dynamic-${type}-`, '');
+        if (fieldName && input.id.startsWith(`dynamic-${type}-`)) {
+          if (input.type === 'number') {
+            data[fieldName] = input.value ? parseFloat(input.value) : null;
+          } else {
+            data[fieldName] = input.value;
+          }
+        }
+      });
+
+      const result = currentEditingRecord 
+        ? await window.dataSdk.update({ ...data, __backendId: currentEditingRecord.__backendId })
+        : await window.dataSdk.create(data);
+
+      if (result.isOk) {
+        showToast(currentEditingRecord ? 'Registro atualizado!' : 'Registro cadastrado!');
+        closeModal();
       } else {
-        allData.push(record); updateUI();
+        showToast('Erro ao salvar registro', 'error');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const submitText = document.getElementById('submit-text');
+        const submitLoading = document.getElementById('submit-loading');
+        submitBtn.disabled = false;
+        submitText.classList.remove('hidden');
+        submitLoading.classList.add('hidden');
       }
-      showToast('Despesa registrada', 'success');
-      closeModal();
     }
 
     async function handleFuelingSubmit(e) {
-      e.preventDefault();
-      const record = { _type: 'fueling', created_at: new Date().toISOString(), vehicle: (document.getElementById('fueling-vehicle')?.value || ''), litros: (document.getElementById('fueling-litros')?.value || ''), valor: (document.getElementById('fueling-valor')?.value || '') };
-      if (window.gaveblueLocalStorage && window.gaveblueLocalStorage.saveRecordLocal) {
-        await window.gaveblueLocalStorage.saveRecordLocal(record);
-      } else {
-        allData.push(record); updateUI();
-      }
-      showToast('Abastecimento registrado', 'success');
-      closeModal();
-    }
-
-    // Tab switching
-    function showTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('#tabs button').forEach(b => b.classList.remove('tab-active'));
-      const el = document.getElementById(tabId + '-content');
-      const btn = document.getElementById('tab-' + tabId);
-      if (el) el.classList.remove('hidden');
-      if (btn) btn.classList.add('tab-active');
-    }
-
-    // Launch initialization
-    document.addEventListener('DOMContentLoaded', () => {
-      // show default tab
-      showTab('vehicles');
-      initializeApp();
-    });
-  </script>
-
-  <!-- LocalStorage helper & MutationObserver: auto-attaches handlers to dynamic forms -->
-  <script>
-  (function () {
-    // Local storage key
-    const LS_KEY = 'gaveblue_local_data_v1';
-
-    function getLocalData() {
-      try { const raw = localStorage.getItem(LS_KEY); if (!raw) return []; return JSON.parse(raw); } catch (err) { console.error('Erro ao ler localStorage', err); return []; }
-    }
-
-    function setLocalData(arr) {
-      try { localStorage.setItem(LS_KEY, JSON.stringify(arr)); } catch (err) { console.error('Erro ao gravar localStorage', err); }
-    }
-
-    async function saveRecordLocal(record) {
-      const data = getLocalData();
-      data.push(record);
-      setLocalData(data);
-      try {
-        if (Array.isArray(window.allData)) window.allData.push(record);
-        else window.allData = getLocalData().slice();
-        if (window.dataHandler && typeof window.dataHandler.onDataChanged === 'function') {
-          try { window.dataHandler.onDataChanged(window.allData); } catch(e){ console.warn(e); }
-        }
-        console.log('✅ Registro salvo localmente', record);
-      } catch (err) {
-        console.error('Erro ao sincronizar allData', err);
-      }
-    }
-
-    function safeShowToast(msg, type) { if (typeof window.showToast === 'function') return window.showToast(msg, type); console.log('[toast]', type || 'info', msg); }
-    function safeCloseModal() { if (typeof window.closeModal === 'function') return window.closeModal(); const ov = document.getElementById('modal-overlay'); if (ov) ov.classList.add('hidden'); }
-
-    const attachedForms = new Set();
-
-    function attachForType(type) {
-      if (!type) return;
-      const formId = `dynamic-${type}-form`;
-      if (attachedForms.has(formId)) return;
-      const form = document.getElementById(formId);
-      if (!form) return;
-
-      console.log('🔌 Ligando handler para', formId);
-      const submitHandler = async (e) => {
-        e.preventDefault();
-        const now = new Date().toISOString();
-        let record = { _type: type, created_at: now };
-
-        try {
-          if (type === 'vehicle') {
-            record = Object.assign(record, {
-              codigo: (document.getElementById('dynamic-vehicle-codigo')?.value || '').trim(),
-              placa: (document.getElementById('dynamic-vehicle-placa')?.value || '').trim(),
-              marca: (document.getElementById('dynamic-vehicle-marca')?.value || '').trim(),
-              modelo: (document.getElementById('dynamic-vehicle-modelo')?.value || '').trim(),
-              ano_fabricacao: (document.getElementById('dynamic-vehicle-ano')?.value || '').trim(),
-              ano_modelo: (document.getElementById('dynamic-vehicle-ano-modelo')?.value || '').trim(),
-              cor: (document.getElementById('dynamic-vehicle-cor')?.value || '').trim(),
-              chassi: (document.getElementById('dynamic-vehicle-chassi')?.value || '').trim(),
-              renavam: (document.getElementById('dynamic-vehicle-renavam')?.value || '').trim(),
-              odometro: (document.getElementById('dynamic-vehicle-odometro')?.value || '').trim(),
-              combustivel: (document.getElementById('dynamic-vehicle-combustivel')?.value || '').trim(),
-              categoria: (document.getElementById('dynamic-vehicle-categoria')?.value || '').trim(),
-              observacoes: (document.getElementById('dynamic-vehicle-observacoes')?.value || '').trim()
-            });
-          } else if (type === 'driver') {
-            record = Object.assign(record, {
-              nome: (document.getElementById('dynamic-driver-nome')?.value || '').trim(),
-              cpf: (document.getElementById('dynamic-driver-cpf')?.value || '').trim(),
-              rg: (document.getElementById('dynamic-driver-rg')?.value || '').trim(),
-              nascimento: (document.getElementById('dynamic-driver-nascimento')?.value || '').trim(),
-              telefone: (document.getElementById('dynamic-driver-telefone')?.value || '').trim(),
-              email: (document.getElementById('dynamic-driver-email')?.value || '').trim(),
-              endereco: (document.getElementById('dynamic-driver-endereco')?.value || '').trim(),
-              bairro: (document.getElementById('dynamic-driver-bairro')?.value || '').trim(),
-              cep: (document.getElementById('dynamic-driver-cep')?.value || '').trim(),
-              cidade: (document.getElementById('dynamic-driver-cidade')?.value || '').trim(),
-              estado: (document.getElementById('dynamic-driver-estado')?.value || '').trim()
-            });
-          } else if (type === 'order') {
-            record = Object.assign(record, {
-              descricao: (document.getElementById('dynamic-order-descricao')?.value || '').trim(),
-              data_abertura: (document.getElementById('dynamic-order-data-abertura')?.value || '').trim(),
-              previsao_termino: (document.getElementById('dynamic-order-previsao-termino')?.value || '').trim(),
-              prioridade: (document.getElementById('dynamic-order-prioridade')?.value || '').trim(),
-              responsavel: (document.getElementById('dynamic-order-responsavel')?.value || '').trim(),
-              observacoes: (document.getElementById('dynamic-order-observacoes')?.value || '').trim()
-            });
-          } else if (type === 'expense') {
-            record = Object.assign(record, {
-              ordem: (document.getElementById('expense-order')?.value || '').trim(),
-              tipo: (document.getElementById('expense-tipo')?.value || '').trim(),
-              data: (document.getElementById('expense-data')?.value || '').trim(),
-              valor: (document.getElementById('expense-valor')?.value || '').trim(),
-              descricao: (document.getElementById('expense-descricao')?.value || '').trim()
-            });
-            record._type = 'expense';
-          } else if (type === 'fueling') {
-            record = Object.assign(record, {
-              vehicle: (document.getElementById('fueling-vehicle')?.value || '').trim(),
-              ordem: (document.getElementById('fueling-order')?.value || '').trim(),
-              station: (document.getElementById('fueling-station')?.value || '').trim(),
-              data: (document.getElementById('fueling-data')?.value || '').trim(),
-              km: (document.getElementById('fueling-km')?.value || '').trim(),
-              litros: (document.getElementById('fueling-litros')?.value || '').trim(),
-              valor: (document.getElementById('fueling-valor')?.value || '').trim()
-            });
-            record._type = 'fueling';
-          } else {
-            Array.from(form.elements).forEach(el => {
-              if (!el.name && !el.id) return;
-              const key = el.name || el.id;
-              if (el.type === 'checkbox') record[key] = !!el.checked;
-              else record[key] = el.value;
-            });
-          }
-
-          // save
-          if (window.gaveblueLocalStorage && typeof window.gaveblueLocalStorage.saveRecordLocal === 'function') {
-            await window.gaveblueLocalStorage.saveRecordLocal(record);
-          } else {
-            await saveRecordLocal(record);
-          }
-
-          safeShowToast((type[0] ? type[0].toUpperCase() + type.slice(1) : type) + ' cadastrado com sucesso', 'success');
-          safeCloseModal();
-        } catch (err) {
-          console.error('Erro ao submeter formulário', err);
-          safeShowToast('Erro ao salvar (ver console)', 'error');
-        }
+      const fornecedor_id = document.getElementById('dynamic-fueling-fornecedor_id').value;
+      const data_vencimento = document.getElementById('dynamic-fueling-data_vencimento').value;
+      const nota_fiscal = document.getElementById('dynamic-fueling-nota_fiscal').value;
+      
+      const data = {
+        id: `lancamento-${Date.now()}`,
+        type: 'lancamento',
+        tipo_lancamento: 'abastecimento',
+        veiculo_id: document.getElementById('dynamic-fueling-veiculo_id').value,
+        fornecedor_id: fornecedor_id,
+        descricao: document.getElementById('dynamic-fueling-descricao').value,
+        valor: parseFloat(document.getElementById('dynamic-fueling-valor').value),
+        litros: parseFloat(document.getElementById('dynamic-fueling-litros').value),
+        nota_fiscal: nota_fiscal,
+        data_vencimento: data_vencimento,
+        created_at: new Date().toISOString()
       };
 
-      form.addEventListener('submit', submitHandler);
-      attachedForms.add(formId);
+      const result = await window.dataSdk.create(data);
+
+      if (result.isOk) {
+        showToast('Abastecimento registrado!');
+        closeModal();
+        
+        // Create associated conta
+        const contaData = {
+          id: `conta-${Date.now()}`,
+          type: 'conta',
+          descricao: data.descricao,
+          valor: data.valor,
+          data_vencimento: data_vencimento,
+          nota_fiscal: nota_fiscal,
+          fornecedor_id: fornecedor_id,
+          lancamento_id: data.id,
+          pago: false,
+          created_at: new Date().toISOString()
+        };
+        await window.dataSdk.create(contaData);
+      } else {
+        showToast('Erro ao salvar abastecimento', 'error');
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const submitText = document.getElementById('submit-text');
+        const submitLoading = document.getElementById('submit-loading');
+        submitBtn.disabled = false;
+        submitText.classList.remove('hidden');
+        submitLoading.classList.add('hidden');
+      }
     }
 
-    function capitalize(s) { return (s && s[0] ? s[0].toUpperCase() + s.slice(1) : s); }
+    async function handleExpenseSubmit(e) {
+      const fornecedor_id = document.getElementById('dynamic-expense-fornecedor_id').value;
+      const data_vencimento = document.getElementById('dynamic-expense-data_vencimento').value;
+      const nota_fiscal = document.getElementById('dynamic-expense-nota_fiscal').value;
+      
+      const data = {
+        id: `lancamento-${Date.now()}`,
+        type: 'lancamento',
+        tipo_lancamento: 'despesa',
+        veiculo_id: document.getElementById('dynamic-expense-veiculo_id').value,
+        fornecedor_id: fornecedor_id,
+        descricao: document.getElementById('dynamic-expense-descricao').value,
+        valor: parseFloat(document.getElementById('dynamic-expense-valor').value),
+        nota_fiscal: nota_fiscal,
+        data_vencimento: data_vencimento,
+        created_at: new Date().toISOString()
+      };
 
-    function initModalObserver() {
-      const modalContent = document.getElementById('modal-content');
-      if (!modalContent) {
-        console.warn('modal-content não encontrado — observer não instalado');
+      const result = await window.dataSdk.create(data);
+
+      if (result.isOk) {
+        showToast('Despesa registrada!');
+        closeModal();
+        
+        // Create associated conta
+        const contaData = {
+          id: `conta-${Date.now()}`,
+          type: 'conta',
+          descricao: data.descricao,
+          valor: data.valor,
+          data_vencimento: data_vencimento,
+          nota_fiscal: nota_fiscal,
+          fornecedor_id: fornecedor_id,
+          lancamento_id: data.id,
+          pago: false,
+          created_at: new Date().toISOString()
+        };
+        await window.dataSdk.create(contaData);
+      } else {
+        showToast('Erro ao salvar despesa', 'error');
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const submitText = document.getElementById('submit-text');
+        const submitLoading = document.getElementById('submit-loading');
+        submitBtn.disabled = false;
+        submitText.classList.remove('hidden');
+        submitLoading.classList.add('hidden');
+      }
+    }
+
+    // Filter Functions
+    function getFilteredOrders() {
+      let filtered = allData.filter(item => item.type === 'order');
+      
+      const numero = document.getElementById('filter-order-numero').value.trim();
+      const startDate = document.getElementById('filter-order-start-date').value;
+      const endDate = document.getElementById('filter-order-end-date').value;
+      const status = document.getElementById('filter-order-status').value;
+      const sort = document.getElementById('order-sort').value;
+
+      if (numero) {
+        filtered = filtered.filter(order => getOrderNumber(order) === numero.padStart(4, '0'));
+      }
+      if (startDate) {
+        filtered = filtered.filter(order => order.data_abertura >= startDate);
+      }
+      if (endDate) {
+        filtered = filtered.filter(order => order.data_abertura <= endDate);
+      }
+      if (status) {
+        filtered = filtered.filter(order => order.status === status);
+      }
+
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.data_abertura);
+        const dateB = new Date(b.data_abertura);
+        return sort === 'newest' ? dateB - dateA : dateA - dateB;
+      });
+
+      return filtered;
+    }
+
+    function getFilteredContas() {
+      let filtered = allData.filter(item => item.type === 'conta');
+      const status = document.getElementById('filter-contas-status').value;
+      const startDate = document.getElementById('filter-contas-start-date').value;
+      const endDate = document.getElementById('filter-contas-end-date').value;
+      const hoje = new Date().toISOString().split('T')[0];
+
+      if (status === 'pendente') {
+        filtered = filtered.filter(c => !c.pago);
+      } else if (status === 'pago') {
+        filtered = filtered.filter(c => c.pago);
+      } else if (status === 'vencidas') {
+        filtered = filtered.filter(c => !c.pago && c.data_vencimento < hoje);
+      }
+
+      if (startDate) {
+        filtered = filtered.filter(c => c.data_vencimento >= startDate);
+      }
+      if (endDate) {
+        filtered = filtered.filter(c => c.data_vencimento <= endDate);
+      }
+
+      return filtered;
+    }
+
+    function applyOrderFilters() {
+      updateUI();
+      showToast('Filtros aplicados!');
+    }
+
+    function clearOrderFilters() {
+      document.getElementById('filter-order-numero').value = '';
+      document.getElementById('filter-order-start-date').value = '';
+      document.getElementById('filter-order-end-date').value = '';
+      document.getElementById('filter-order-status').value = '';
+      document.getElementById('order-sort').value = 'newest';
+      updateUI();
+      showToast('Filtros limpos!');
+    }
+
+    function applyContasFilters() {
+      updateUI();
+      showToast('Filtros aplicados!');
+    }
+
+    function clearContasFilters() {
+      document.getElementById('filter-contas-status').value = '';
+      document.getElementById('filter-contas-start-date').value = '';
+      document.getElementById('filter-contas-end-date').value = '';
+      updateUI();
+      showToast('Filtros limpos!');
+    }
+
+    // Order Actions
+    function editSelectedOrder() {
+      if (selectedOrders.size === 1) {
+        const id = Array.from(selectedOrders)[0];
+        currentEditingRecord = allData.find(item => item.__backendId === id);
+        if (currentEditingRecord) {
+          showCadastroForm('order');
+        }
+      }
+    }
+
+    async function deleteSelectedOrders() {
+      if (selectedOrders.size === 0) return;
+      
+      const btn = document.getElementById('btn-delete-selected');
+      const originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<div class="loading-spinner inline-block"></div>';
+
+      for (const id of selectedOrders) {
+        const order = allData.find(item => item.__backendId === id);
+        if (order) {
+          await window.dataSdk.delete(order);
+        }
+      }
+      
+      selectedOrders.clear();
+      showToast('Ordens excluídas!');
+    }
+
+    function exportSelectedOrder() {
+      const orders = getFilteredOrders();
+      const csv = 'Número,Data,Status,Veículo,Motorista,KM\n' + 
+        orders.map(order => {
+          const veiculo = allData.find(v => v.type === 'vehicle' && v.id === order.veiculo_id);
+          const motorista = allData.find(m => m.type === 'driver' && m.id === order.motorista_id);
+          return `${getOrderNumber(order)},${formatDate(order.data_abertura)},${order.status},${veiculo?.placa || '-'},${motorista?.nome || '-'},${order.km}`;
+        }).join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ordens-servico.csv';
+      a.click();
+      showToast('Ordens exportadas!');
+    }
+
+    function printSelectedOrder() {
+      if (selectedOrders.size !== 1) {
+        showToast('Selecione apenas uma ordem para imprimir', 'error');
         return;
       }
 
-      const observer = new MutationObserver((mutations) => {
-        for (const m of mutations) {
-          if (m.type === 'childList' && m.addedNodes.length) {
-            m.addedNodes.forEach(node => {
-              if (node.nodeType !== 1) return;
-              if (node.tagName === 'FORM') {
-                const id = node.id || '';
-                if (id.startsWith('dynamic-') && id.endsWith('-form')) {
-                  const type = id.replace(/^dynamic-/, '').replace(/-form$/, '');
-                  attachForType(type);
-                }
-              }
-              if (node.querySelectorAll) {
-                node.querySelectorAll('form[id^="dynamic-"]').forEach(f => {
-                  const id = f.id; const type = id.replace(/^dynamic-/, '').replace(/-form$/, '');
-                  attachForType(type);
-                });
-              }
-            });
-          }
-        }
-      });
+      const orderId = Array.from(selectedOrders)[0];
+      const order = allData.find(item => item.__backendId === orderId);
+      if (!order) return;
 
-      observer.observe(modalContent, { childList: true, subtree: true });
+      const veiculo = allData.find(v => v.type === 'vehicle' && v.id === order.veiculo_id);
+      const motorista = allData.find(m => m.type === 'driver' && m.id === order.motorista_id);
+      const numeroOS = getOrderNumber(order);
+      
+      const lancamentos = allData.filter(l => l.type === 'lancamento' && l.veiculo_id === order.veiculo_id);
+      
+      const contas = allData.filter(c => 
+        c.type === 'conta' && 
+        lancamentos.some(l => l.id === c.lancamento_id)
+      );
 
-      // Bind existing forms (if any)
-      modalContent.querySelectorAll && modalContent.querySelectorAll('form[id^="dynamic-"]').forEach(f => {
-        const id = f.id; const type = id.replace(/^dynamic-/, '').replace(/-form$/, '');
-        attachForType(type);
-      });
+      const totalContas = contas.reduce((sum, c) => sum + (c.valor || 0), 0);
 
-      console.log('🔍 Modal MutationObserver ativo para attach de formulários dinâmicos');
+      const contasHTML = contas.map(c => {
+        const fornecedor = allData.find(f => f.type === 'supplier' && f.id === c.fornecedor_id);
+        return `
+          <tr>
+            <td>${formatDate(c.data_vencimento)}</td>
+            <td>${fornecedor ? fornecedor.razao_social : '-'}</td>
+            <td>${c.nota_fiscal || '-'}</td>
+            <td>${c.descricao}</td>
+            <td style="text-align: right;">${formatCurrency(c.valor)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write('<!DOCTYPE html><html><head><title>Ordem de Servico ' + numeroOS + '</title>');
+      printWindow.document.write('<style>@page{size:A4;margin:2cm}body{font-family:Arial,sans-serif;font-size:12px;line-height:1.4;color:#000;max-width:21cm;margin:0 auto;padding:20px}.header{text-align:center;border-bottom:3px solid #667eea;padding-bottom:20px;margin-bottom:30px}.header h1{margin:0;font-size:28px;color:#667eea}.header .os-number{font-size:24px;font-weight:bold;color:#333;margin-top:10px}.section{margin-bottom:25px}.section-title{font-size:14px;font-weight:bold;color:#667eea;border-bottom:2px solid #e0e0e0;padding-bottom:5px;margin-bottom:12px}.info-row{display:flex;margin-bottom:8px}.info-label{font-weight:bold;min-width:150px;color:#555}.info-value{color:#000}table{width:100%;border-collapse:collapse;margin-top:15px}th{background:#667eea;color:white;padding:10px;text-align:left;font-weight:bold;font-size:11px}td{padding:8px;border-bottom:1px solid #e0e0e0;font-size:11px}.total-row{font-weight:bold;background:#f5f7fa;border-top:2px solid #667eea}.signature-area{margin-top:60px;padding-top:20px;border-top:2px solid #e0e0e0}.signature-line{margin-top:50px;border-top:2px solid #000;width:300px;text-align:center;padding-top:5px}.status-badge{display:inline-block;padding:4px 12px;border-radius:8px;font-weight:bold;font-size:11px;text-transform:uppercase}.status-aberta{background:#fda085;color:white}.status-andamento{background:#667eea;color:white}.status-fechada{background:#84fab0;color:white}@media print{body{padding:0}.no-print{display:none}}</style></head><body>');
+      printWindow.document.write('<div class="header"><h1>WeFrotas</h1><div class="os-number">ORDEM DE SERVICO N ' + numeroOS + '</div></div>');
+      printWindow.document.write('<div class="section"><div class="section-title">Informacoes Gerais</div><div class="info-row"><div class="info-label">Status:</div><div class="info-value"><span class="status-badge status-' + order.status + '">' + order.status + '</span></div></div>');
+      printWindow.document.write('<div class="info-row"><div class="info-label">Data de Abertura:</div><div class="info-value">' + formatDate(order.data_abertura) + '</div></div>');
+      if (order.data_fechamento) {
+        printWindow.document.write('<div class="info-row"><div class="info-label">Data de Fechamento:</div><div class="info-value">' + formatDate(order.data_fechamento) + '</div></div>');
+      }
+      printWindow.document.write('</div>');
+      printWindow.document.write('<div class="section"><div class="section-title">Veiculo e Motorista</div>');
+      printWindow.document.write('<div class="info-row"><div class="info-label">Veiculo:</div><div class="info-value">' + (veiculo ? veiculo.placa + ' - ' + veiculo.modelo + ' ' + veiculo.ano : '-') + '</div></div>');
+      printWindow.document.write('<div class="info-row"><div class="info-label">Motorista:</div><div class="info-value">' + (motorista ? motorista.nome : '-') + '</div></div>');
+      printWindow.document.write('<div class="info-row"><div class="info-label">Quilometragem:</div><div class="info-value">' + order.km + ' km</div></div></div>');
+      printWindow.document.write('<div class="section"><div class="section-title">Descricao do Servico</div><div class="info-value">' + order.descricao + '</div></div>');
+      if (contas.length > 0) {
+        printWindow.document.write('<div class="section"><div class="section-title">Lancamentos e Pagamentos</div><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Nota Fiscal</th><th>Descricao</th><th style="text-align:right;">Valor</th></tr></thead><tbody>');
+        printWindow.document.write(contasHTML);
+        printWindow.document.write('<tr class="total-row"><td colspan="4" style="text-align:right;">TOTAL</td><td style="text-align:right;">' + formatCurrency(totalContas) + '</td></tr></tbody></table></div>');
+      }
+      printWindow.document.write('<div class="signature-area"><div class="section-title">Autorizacao</div><p>Eu autorizo a execucao dos servicos descritos nesta ordem de servico:</p><div class="signature-line"><div>Assinatura do Autorizador</div></div></div>');
+      printWindow.document.write('<script>window.onload=function(){window.print()}<\/script></body></html>');
+      printWindow.document.close();
     }
 
-    // Expose API
-    window.gaveblueLocalStorage = {
-      getAll: getLocalData,
-      clearAll: function() { localStorage.removeItem(LS_KEY); window.allData = []; if (window.dataHandler && typeof window.dataHandler.onDataChanged === 'function') window.dataHandler.onDataChanged([]); },
-      saveRecordLocal
+    // Conta Actions
+    async function paySelectedContas() {
+      if (selectedContas.size === 0) return;
+      
+      const btn = document.getElementById('btn-pay-selected');
+      const originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<div class="loading-spinner inline-block"></div>';
+
+      for (const id of selectedContas) {
+        const conta = allData.find(item => item.__backendId === id);
+        if (conta) {
+          await window.dataSdk.update({
+            ...conta,
+            pago: true,
+            data_pagamento: new Date().toISOString().split('T')[0]
+          });
+        }
+      }
+      
+      selectedContas.clear();
+      showToast('Contas pagas!');
+    }
+
+    function exportContas() {
+      const contas = getFilteredContas();
+      const csv = 'Descrição,Valor,Vencimento,Status\n' + 
+        contas.map(c => `${c.descricao},${c.valor},${formatDate(c.data_vencimento)},${c.pago ? 'Pago' : 'Pendente'}`).join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'contas-pagar.csv';
+      a.click();
+      showToast('Contas exportadas!');
+    }
+
+    // Render Functions
+    function renderVehicles() {
+      const container = document.getElementById('vehicles-list');
+      const vehicles = allData.filter(item => item.type === 'vehicle');
+
+      if (vehicles.length === 0) {
+        container.innerHTML = '<div class="text-center py-16 text-gray-500 font-medium">Nenhum veículo cadastrado. Acesse a aba <strong>Cadastros</strong> para começar.</div>';
+        return;
+      }
+
+      container.innerHTML = vehicles.map(v => `
+        <div class="card-modern p-5 flex items-center justify-between transition-all">
+          <div class="flex items-center gap-5">
+            <div class="icon-circle">🚗</div>
+            <div>
+              <div class="font-bold text-gray-900 text-lg">${v.placa}</div>
+              <div class="text-sm text-gray-600 font-medium mt-1">${v.modelo} - ${v.ano}</div>
+              <div class="text-xs text-gray-500 mt-1">Chassi: ${v.chassi || '-'}</div>
+            </div>
+          </div>
+          <div class="text-right summary-card px-5 py-3">
+            <div class="text-xs text-gray-500 font-semibold uppercase">Cor</div>
+            <div class="text-sm font-bold text-gray-900 mt-1">${v.cor}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderDrivers() {
+      const container = document.getElementById('drivers-list');
+      const drivers = allData.filter(item => item.type === 'driver');
+
+      if (drivers.length === 0) {
+        container.innerHTML = '<div class="text-center py-16 text-gray-500 font-medium">Nenhum motorista cadastrado. Acesse a aba <strong>Cadastros</strong> para começar.</div>';
+        return;
+      }
+
+      container.innerHTML = drivers.map(m => `
+        <div class="card-modern p-5 flex items-center justify-between transition-all">
+          <div class="flex items-center gap-5">
+            <div class="icon-circle">👤</div>
+            <div>
+              <div class="font-bold text-gray-900 text-lg">${m.nome}</div>
+              <div class="text-sm text-gray-600 font-medium mt-1">CPF: ${m.cpf}</div>
+              <div class="text-xs text-gray-500 mt-1">CNH: ${m.cnh} - Categoria ${m.categoria_cnh}</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm text-gray-700 font-semibold">${m.telefone}</div>
+            <div class="text-xs text-gray-500 mt-1">${m.email || '-'}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderOrders() {
+      const container = document.getElementById('orders-list');
+      const orders = getFilteredOrders();
+
+      if (orders.length === 0) {
+        container.innerHTML = '<div class="text-center py-16 text-gray-500 font-medium">Nenhuma ordem de serviço encontrada.</div>';
+        return;
+      }
+
+      container.innerHTML = orders.map(order => {
+        const veiculo = allData.find(v => v.type === 'vehicle' && v.id === order.veiculo_id);
+        const motorista = allData.find(m => m.type === 'driver' && m.id === order.motorista_id);
+        const numeroOS = getOrderNumber(order);
+        
+        return `
+          <div class="card-modern p-5">
+            <div class="flex items-start gap-4">
+              <input type="checkbox" class="order-checkbox modern-checkbox mt-1" data-id="${order.__backendId}" ${selectedOrders.has(order.__backendId) ? 'checked' : ''}>
+              <div class="flex-1">
+                <div class="flex items-start justify-between mb-3">
+                  <div class="flex items-center gap-3">
+                    <span class="badge-numero-os">OS Nº ${numeroOS}</span>
+                    <span class="status-${order.status}">${order.status.toUpperCase()}</span>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-xs text-gray-500 font-semibold mt-1">${order.km} km</div>
+                  </div>
+                </div>
+                <div class="font-bold text-gray-900 text-lg mb-3">${order.descricao}</div>
+                <div class="grid grid-cols-2 gap-3 text-sm summary-card p-4">
+                  <div>
+                    <span class="text-gray-500 font-semibold">Veículo:</span>
+                    <span class="text-gray-900 font-bold ml-1">${veiculo ? veiculo.placa : '-'}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-500 font-semibold">Motorista:</span>
+                    <span class="text-gray-900 font-bold ml-1">${motorista ? motorista.nome : '-'}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-500 font-semibold">Abertura:</span>
+                    <span class="text-gray-900 font-bold ml-1">${formatDate(order.data_abertura)}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-500 font-semibold">Fechamento:</span>
+                    <span class="text-gray-900 font-bold ml-1">${formatDate(order.data_fechamento)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Attach checkbox listeners
+      document.querySelectorAll('.order-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            selectedOrders.add(e.target.dataset.id);
+          } else {
+            selectedOrders.delete(e.target.dataset.id);
+          }
+          updateOrderSelection();
+        });
+      });
+    }
+
+    function updateOrderSelection() {
+      document.getElementById('orders-selected-count').textContent = `${selectedOrders.size} selecionadas`;
+      document.getElementById('btn-delete-selected').disabled = selectedOrders.size === 0;
+      document.getElementById('btn-edit-selected').disabled = selectedOrders.size !== 1;
+    }
+
+    function renderLancamentos() {
+      const container = document.getElementById('all-lancamentos-list');
+      const lancamentos = allData.filter(item => item.type === 'lancamento');
+
+      if (lancamentos.length === 0) {
+        container.innerHTML = '<div class="text-center py-16 text-gray-500 font-medium">Nenhum lançamento registrado.</div>';
+        return;
+      }
+
+      container.innerHTML = lancamentos.map(l => {
+        const veiculo = allData.find(v => v.type === 'vehicle' && v.id === l.veiculo_id);
+        const fornecedor = allData.find(f => f.type === 'supplier' && f.id === l.fornecedor_id);
+        const icon = l.tipo_lancamento === 'abastecimento' ? '⛽' : '💸';
+        const colorGradient = l.tipo_lancamento === 'abastecimento' ? 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)' : 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)';
+        
+        return `
+          <div class="card-modern p-5">
+            <div class="flex items-start gap-5">
+              <div class="icon-circle">${icon}</div>
+              <div class="flex-1">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <div class="font-bold text-gray-900 text-lg">${l.descricao}</div>
+                    <div class="text-sm text-gray-600 font-medium mt-2">
+                      Veículo: <span class="font-bold text-gray-900">${veiculo ? veiculo.placa : '-'}</span>
+                    </div>
+                    <div class="text-sm text-gray-600 mt-1">
+                      Fornecedor: <span class="font-bold text-gray-900">${fornecedor ? fornecedor.razao_social : '-'}</span>
+                    </div>
+                    ${l.tipo_lancamento === 'abastecimento' ? `
+                      <div class="text-sm text-gray-600 font-semibold mt-1">${l.litros || 0} litros</div>
+                    ` : ''}
+                    ${l.nota_fiscal ? `
+                      <div class="text-xs text-gray-500 mt-1">NF: ${l.nota_fiscal}</div>
+                    ` : ''}
+                    <div class="text-xs text-gray-500 mt-1">Vencimento: ${formatDate(l.data_vencimento)}</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-2xl font-bold" style="background: ${colorGradient}; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${formatCurrency(l.valor)}</div>
+                    <div class="text-xs text-gray-500 font-semibold mt-1">${formatDate(l.created_at)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderContas() {
+      const container = document.getElementById('contas-list');
+      const contas = getFilteredContas();
+
+      if (contas.length === 0) {
+        container.innerHTML = '<div class="text-center py-16 text-gray-500 font-medium">Nenhuma conta encontrada.</div>';
+        return;
+      }
+
+      const hoje = new Date().toISOString().split('T')[0];
+
+      container.innerHTML = contas.map(c => {
+        const vencida = !c.pago && c.data_vencimento < hoje;
+        let statusStyle = '';
+        if (c.pago) {
+          statusStyle = 'background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.15) 100%); border: 1.5px solid rgba(34, 197, 94, 0.3);';
+        } else if (vencida) {
+          statusStyle = 'background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%); border: 1.5px solid rgba(239, 68, 68, 0.3);';
+        } else {
+          statusStyle = 'background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.15) 100%); border: 1.5px solid rgba(245, 158, 11, 0.3);';
+        }
+        
+        return `
+          <div class="card-modern p-5" style="${statusStyle}">
+            <div class="flex items-start gap-4">
+              ${!c.pago ? `<input type="checkbox" class="conta-checkbox modern-checkbox mt-1" data-id="${c.__backendId}" ${selectedContas.has(c.__backendId) ? 'checked' : ''}>` : '<div class="w-5"></div>'}
+              <div class="flex-1">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <div class="font-bold text-gray-900 text-lg">${c.descricao}</div>
+                    <div class="text-sm text-gray-700 font-semibold mt-2">
+                      Vencimento: <span class="font-bold">${formatDate(c.data_vencimento)}</span>
+                      ${vencida ? ' <span class="text-red-600 font-bold">⚠️ VENCIDA</span>' : ''}
+                    </div>
+                    ${c.pago ? `<div class="text-sm text-green-700 font-bold mt-1">✓ Pago em ${formatDate(c.data_pagamento)}</div>` : ''}
+                  </div>
+                  <div class="text-right">
+                    <div class="text-2xl font-bold gradient-text">${formatCurrency(c.valor)}</div>
+                    ${c.pago ? '<div class="text-xs text-green-700 font-bold mt-1">PAGO</div>' : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Attach checkbox listeners
+      document.querySelectorAll('.conta-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            selectedContas.add(e.target.dataset.id);
+          } else {
+            selectedContas.delete(e.target.dataset.id);
+          }
+          updateContasSelection();
+        });
+      });
+
+      updateContasSummary();
+    }
+
+    function updateContasSelection() {
+      const total = Array.from(selectedContas).reduce((sum, id) => {
+        const conta = allData.find(c => c.__backendId === id);
+        return sum + (conta ? conta.valor : 0);
+      }, 0);
+
+      document.getElementById('contas-selected-count').textContent = `${selectedContas.size} selecionadas`;
+      document.getElementById('contas-selected-total').textContent = formatCurrency(total);
+      document.getElementById('btn-pay-selected').disabled = selectedContas.size === 0;
+    }
+
+    function updateContasSummary() {
+      const contas = allData.filter(item => item.type === 'conta');
+      const hoje = new Date().toISOString().split('T')[0];
+
+      const aVencer = contas.filter(c => !c.pago && c.data_vencimento >= hoje).reduce((sum, c) => sum + c.valor, 0);
+      const vencidas = contas.filter(c => !c.pago && c.data_vencimento < hoje).reduce((sum, c) => sum + c.valor, 0);
+      const pagas = contas.filter(c => c.pago).reduce((sum, c) => sum + c.valor, 0);
+
+      document.getElementById('contas-a-vencer').textContent = formatCurrency(aVencer);
+      document.getElementById('contas-vencidas').textContent = formatCurrency(vencidas);
+      document.getElementById('contas-pagas').textContent = formatCurrency(pagas);
+    }
+
+    function renderSuppliers() {
+      const container = document.getElementById('fornecedores-list');
+      const suppliers = allData.filter(item => item.type === 'supplier');
+
+      if (suppliers.length === 0) {
+        container.innerHTML = '<div class="text-center py-16 text-gray-500 font-medium">Nenhum fornecedor cadastrado. Acesse a aba <strong>Cadastros</strong> para começar.</div>';
+        return;
+      }
+
+      container.innerHTML = suppliers.map(f => `
+        <div class="card-modern p-5 flex items-center justify-between transition-all">
+          <div class="flex items-center gap-5">
+            <div class="icon-circle">🏢</div>
+            <div>
+              <div class="flex items-center gap-3">
+                <div class="font-bold text-gray-900 text-lg">${f.razao_social}</div>
+                <span class="text-xs px-3 py-1 rounded-full font-bold" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%); color: #667eea;">${getCategoriaLabel(f.categoria)}</span>
+              </div>
+              <div class="text-sm text-gray-600 font-medium mt-1">CNPJ: ${f.cnpj}</div>
+              ${f.endereco ? `<div class="text-xs text-gray-500 mt-1">${f.endereco}</div>` : ''}
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm text-gray-700 font-semibold">${f.telefone || '-'}</div>
+            <div class="text-xs text-gray-500 mt-1">${f.email || '-'}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updateSelects() {
+      const vehicles = allData.filter(item => item.type === 'vehicle');
+      const drivers = allData.filter(item => item.type === 'driver');
+      const suppliers = allData.filter(item => item.type === 'supplier');
+      const postos = suppliers.filter(s => s.categoria === 'posto');
+
+      const vehicleSelects = document.querySelectorAll('select[id*="veiculo_id"]');
+      vehicleSelects.forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Selecione um veículo</option>' + 
+          vehicles.map(v => `<option value="${v.id}" ${currentValue === v.id ? 'selected' : ''}>${v.placa} - ${v.modelo}</option>`).join('');
+      });
+
+      const driverSelects = document.querySelectorAll('select[id*="motorista_id"]');
+      driverSelects.forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Selecione um motorista</option>' + 
+          drivers.map(m => `<option value="${m.id}" ${currentValue === m.id ? 'selected' : ''}>${m.nome}</option>`).join('');
+      });
+
+      // Fornecedor selects (all suppliers)
+      const fornecedorSelects = document.querySelectorAll('select[id*="fornecedor_id"]:not([id*="fueling"])');
+      fornecedorSelects.forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Selecione um fornecedor</option>' + 
+          suppliers.map(s => `<option value="${s.id}" ${currentValue === s.id ? 'selected' : ''}>${s.razao_social} (${getCategoriaLabel(s.categoria)})</option>`).join('');
+      });
+
+      // Posto selects (only gas stations for fueling)
+      const postoSelects = document.querySelectorAll('select[id*="fueling-fornecedor_id"]');
+      postoSelects.forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Selecione um posto</option>' + 
+          postos.map(p => `<option value="${p.id}" ${currentValue === p.id ? 'selected' : ''}>${p.razao_social}</option>`).join('');
+      });
+    }
+
+    function getCategoriaLabel(categoria) {
+      const labels = {
+        'posto': 'Posto',
+        'oficina': 'Oficina',
+        'borracharia': 'Borracharia',
+        'concessionaria': 'Concessão',
+        'autoeletrica': 'Auto Elétrica',
+        'funilaria': 'Funilaria',
+        'lavagem': 'Lavagem',
+        'pecas': 'Peças',
+        'seguros': 'Seguros',
+        'outros': 'Outros'
+      };
+      return labels[categoria] || categoria;
+    }
+
+    function updateUI() {
+      const activeTab = document.querySelector('.tab-content.active');
+      if (!activeTab) return;
+
+      const tabId = activeTab.id.replace('-content', '');
+      
+      if (tabId === 'dashboard') renderDashboard();
+      if (tabId === 'veiculos') renderVehicles();
+      if (tabId === 'motoristas') renderDrivers();
+      if (tabId === 'fornecedores') renderSuppliers();
+      if (tabId === 'orders') renderOrders();
+      if (tabId === 'lancamentos') renderLancamentos();
+      if (tabId === 'contas') renderContas();
+      if (tabId === 'cadastros') updateSelects();
+
+      document.getElementById('total-records').textContent = allData.length;
+    }
+
+    function renderDashboard() {
+      const veiculos = allData.filter(item => item.type === 'vehicle').length;
+      const motoristas = allData.filter(item => item.type === 'driver').length;
+      const ordensAbertas = allData.filter(item => item.type === 'order' && item.status !== 'fechada').length;
+      
+      const contas = allData.filter(item => item.type === 'conta');
+      const hoje = new Date().toISOString().split('T')[0];
+      const contasPendentes = contas.filter(c => !c.pago).length;
+      const totalPagar = contas.filter(c => !c.pago).reduce((sum, c) => sum + c.valor, 0);
+      const vencidas = contas.filter(c => !c.pago && c.data_vencimento < hoje).reduce((sum, c) => sum + c.valor, 0);
+      const pago = contas.filter(c => c.pago).reduce((sum, c) => sum + c.valor, 0);
+
+      document.getElementById('dashboard-veiculos').textContent = veiculos;
+      document.getElementById('dashboard-motoristas').textContent = motoristas;
+      document.getElementById('dashboard-ordens').textContent = ordensAbertas;
+      document.getElementById('dashboard-contas').textContent = contasPendentes;
+      document.getElementById('dashboard-total-pagar').textContent = formatCurrency(totalPagar);
+      document.getElementById('dashboard-vencidas').textContent = formatCurrency(vencidas);
+      document.getElementById('dashboard-pago').textContent = formatCurrency(pago);
+
+      // Recent Orders
+      const recentOrders = allData.filter(item => item.type === 'order').slice(-5).reverse();
+      const ordersContainer = document.getElementById('dashboard-recent-orders');
+      if (recentOrders.length === 0) {
+        ordersContainer.innerHTML = '<div class="text-center py-8 text-gray-500 text-sm">Nenhuma ordem registrada</div>';
+      } else {
+        ordersContainer.innerHTML = recentOrders.map(order => {
+          const veiculo = allData.find(v => v.type === 'vehicle' && v.id === order.veiculo_id);
+          const numeroOS = getOrderNumber(order);
+          return `
+            <div class="summary-card p-4">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="badge-numero-os text-xs">OS ${numeroOS}</span>
+                  </div>
+                  <div class="text-sm font-bold text-gray-900">${order.descricao.substring(0, 30)}${order.descricao.length > 30 ? '...' : ''}</div>
+                  <div class="text-xs text-gray-600 mt-1">${veiculo ? veiculo.placa : '-'}</div>
+                </div>
+                <div class="text-right">
+                  <span class="status-${order.status} text-xs mt-1 inline-block">${order.status.toUpperCase()}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Recent Lancamentos
+      const recentLancamentos = allData.filter(item => item.type === 'lancamento').slice(-5).reverse();
+      const lancamentosContainer = document.getElementById('dashboard-recent-lancamentos');
+      if (recentLancamentos.length === 0) {
+        lancamentosContainer.innerHTML = '<div class="text-center py-8 text-gray-500 text-sm">Nenhum lançamento registrado</div>';
+      } else {
+        lancamentosContainer.innerHTML = recentLancamentos.map(l => {
+          const veiculo = allData.find(v => v.type === 'vehicle' && v.id === l.veiculo_id);
+          const icon = l.tipo_lancamento === 'abastecimento' ? '⛽' : '💸';
+          return `
+            <div class="summary-card p-4">
+              <div class="flex items-center gap-3">
+                <div class="text-2xl">${icon}</div>
+                <div class="flex-1">
+                  <div class="text-sm font-bold text-gray-900">${l.descricao.substring(0, 30)}${l.descricao.length > 30 ? '...' : ''}</div>
+                  <div class="text-xs text-gray-600 mt-1">${veiculo ? veiculo.placa : '-'}</div>
+                </div>
+                <div class="text-sm font-bold gradient-text">${formatCurrency(l.valor)}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // Event Listeners Setup
+    function setupEventListeners() {
+      // Filter listeners - removed auto-update on date change
+      document.getElementById('filter-order-status').addEventListener('change', applyOrderFilters);
+      document.getElementById('order-sort').addEventListener('change', applyOrderFilters);
+      
+      document.getElementById('filter-contas-status').addEventListener('change', applyContasFilters);
+
+      // Modal close on backdrop
+      document.getElementById('modal-overlay').addEventListener('click', (e) => {
+        if (e.target.id === 'modal-overlay') closeModal();
+      });
+    }
+
+    // Data Handler
+    const dataHandler = {
+      onDataChanged(data) {
+        allData = data;
+        updateUI();
+        updateSelects();
+      }
     };
 
-    if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(initModalObserver, 0);
-    else document.addEventListener('DOMContentLoaded', initModalObserver);
-  })();
+    // Element SDK
+    async function onConfigChange(config) {
+      const appTitle = config.app_title || defaultConfig.app_title;
+      const companyName = config.company_name || defaultConfig.company_name;
+      const darkMode = config.dark_mode !== undefined ? config.dark_mode : defaultConfig.dark_mode;
+
+      document.getElementById('app-title').textContent = appTitle;
+      document.getElementById('company-name').textContent = companyName;
+
+      // Apply dark mode
+      if (darkMode) {
+        document.body.classList.add('dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+      }
+    }
+
+    // Initialize App
+    async function initializeApp() {
+      const sdkResult = await window.dataSdk.init(dataHandler);
+      if (!sdkResult.isOk) {
+        showToast('Erro ao inicializar dados', 'error');
+        return;
+      }
+
+      if (window.elementSdk) {
+        window.elementSdk.init({
+          defaultConfig,
+          onConfigChange,
+          mapToCapabilities: () => ({
+            recolorables: [],
+            borderables: [],
+            fontEditable: undefined,
+            fontSizeable: undefined
+          }),
+          mapToEditPanelValues: (config) => new Map([
+            ["app_title", config.app_title || defaultConfig.app_title],
+            ["company_name", config.company_name || defaultConfig.company_name]
+          ])
+        });
+
+        await onConfigChange(window.elementSdk.config);
+      }
+
+      setupEventListeners();
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeApp);
   </script>
- </body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b8555ba858ac6c1',t:'MTc2NzQ3MzA3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
