@@ -891,6 +891,27 @@
       box-shadow: 0 5px 15px rgba(59, 130, 246, 0.5);
     }
 
+    .notificacoes-btn {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .notificacoes-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(245, 158, 11, 0.5);
+    }
+
     .toggle-footer-btn {
       position: fixed;
       bottom: 90px;
@@ -950,7 +971,7 @@
     }
 
     @media (max-width: 768px) {
-      .whatsapp-btn, .help-btn, .modelo-toggle-btn-footer {
+      .whatsapp-btn, .help-btn, .modelo-toggle-btn-footer, .notificacoes-btn {
         width: 42px;
         height: 42px;
         padding: 10px;
@@ -1081,58 +1102,7 @@
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
   <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
  </head>
- <body><!-- Popup de Feliz Ano Novo -->
-  <div class="popup-overlay hidden" id="popup-ano-novo">
-   <div class="popup-content popup-moderno" style="max-width: 600px;"><button class="popup-close" onclick="fecharAnoNovo()">×</button>
-    <div class="popup-icon" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); animation: iconPulse 2s ease-in-out infinite;">
-     <svg width="48" height="48" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle> <polyline points="12 6 12 12 16 14"></polyline>
-     </svg>
-    </div>
-    <h2 style="font-size: 32px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">🎉 FELIZ ANO NOVO! 🎊</h2>
-    <p style="font-size: 18px; line-height: 1.8; margin-bottom: 25px;">Que 2026 seja um ano repleto de <strong>sucesso</strong>, <strong>prosperidade</strong> e <strong>realizações</strong>!</p>
-    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 20px; border-radius: 15px; border-left: 4px solid #3b82f6; margin-bottom: 25px;">
-     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-      <svg width="28" height="28" viewbox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-      </svg>
-      <h3 style="font-size: 20px; color: #1e40af; margin: 0; font-weight: bold;">✨ Nova Atualização!</h3>
-     </div>
-     <p style="font-size: 16px; color: #1e40af; line-height: 1.7; margin: 0;">Agora o campo <strong>DATA</strong> é preenchido automaticamente com a data atual! 📅<br><span style="font-size: 14px; color: #3b82f6;">Você pode personalizar quando quiser, mas não precisa mais digitar toda vez!</span></p>
-    </div><button class="popup-btn" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); font-size: 18px; padding: 14px 40px;" onclick="fecharAnoNovo()"> 🚀 Começar 2026! </button>
-   </div>
-  </div><!-- Popup de Atualização 15 de Janeiro -->
-  <div class="popup-overlay" id="popup-atualizacao-jan">
-   <div class="popup-content popup-moderno" style="max-width: 650px;"><button class="popup-close" onclick="fecharAtualizacaoJan()">×</button>
-    <div class="popup-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); animation: iconPulse 2s ease-in-out infinite;">
-     <svg width="48" height="48" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-     </svg>
-    </div>
-    <h2 style="font-size: 28px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">✨ NOVA ATUALIZAÇÃO - 15/01/2026</h2>
-    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 20px; border-radius: 15px; border-left: 4px solid #10b981; margin-bottom: 20px; text-align: left;">
-     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-      <svg width="28" height="28" viewbox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /> <circle cx="9" cy="7" r="4"></circle> <path d="M23 21v-2a4 4 0 0 0-3-3.87" /> <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-      <h3 style="font-size: 20px; color: #065f46; margin: 0; font-weight: bold;">🎯 Cadastro de Emitente e Recebedor</h3>
-     </div>
-     <p style="font-size: 16px; color: #065f46; line-height: 1.7; margin: 0;">O sistema permitirá o <strong>cadastro de emitente e recebedor</strong> para facilitar e agilizar os preenchimentos manuais individuais!</p>
-    </div>
-    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 20px; border-radius: 15px; border-left: 4px solid #f59e0b; margin-bottom: 20px; text-align: left;">
-     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-      <svg width="28" height="28" viewbox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect> <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-      </svg>
-      <h3 style="font-size: 20px; color: #92400e; margin: 0; font-weight: bold;">🔒 Privacidade Garantida</h3>
-     </div>
-     <p style="font-size: 16px; color: #92400e; line-height: 1.7; margin: 0;">Os dados <strong>NÃO serão armazenados no site</strong>, e sim no <strong>localStorage do seu computador</strong>, garantindo acesso exclusivo e privado!</p>
-    </div>
-    <div style="background: linear-gradient(135deg, #fae8ff 0%, #f3e8ff 100%); padding: 20px; border-radius: 15px; border-left: 4px solid #8b5cf6; margin-bottom: 25px; text-align: left;">
-     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-      <svg width="28" height="28" viewbox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /> <path d="M2 17l10 5 10-5" /> <path d="M2 12l10 5 10-5" />
-      </svg>
-      <h3 style="font-size: 20px; color: #6b21a8; margin: 0; font-weight: bold;">⚡ Versão Premium</h3>
-     </div>
-     <p style="font-size: 16px; color: #6b21a8; line-height: 1.7; margin: 0;">Para ter acesso ao <strong>sistema com banco de dados conectado</strong> entre vários usuários, será necessário fazer <strong>upgrade para a versão premium</strong>! 🚀</p>
-    </div><button class="popup-btn" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); font-size: 18px; padding: 14px 40px;" onclick="fecharAtualizacaoJan()"> 🎉 Entendi, Vamos Lá! </button>
-   </div>
-  </div><!-- Popup de Confirmação de Limpeza -->
+ <body><!-- Popup de Confirmação de Limpeza -->
   <div class="popup-overlay hidden" id="popup-confirmacao">
    <div class="popup-content popup-confirmacao-content">
     <div class="popup-header-vermelho">
@@ -1146,6 +1116,49 @@
      <p>Tem certeza que deseja excluir todos os dados selecionados? Esta ação não poderá ser desfeita.</p>
      <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;"><button class="popup-btn" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);" onclick="fecharConfirmacao()">Cancelar</button> <button class="popup-btn" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);" onclick="confirmarLimpeza()">Sim, Excluir Tudo</button>
      </div>
+    </div>
+   </div>
+  </div><!-- Popup de Notificações -->
+  <div class="popup-overlay hidden" id="popup-notificacoes">
+   <div class="popup-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto;"><button class="popup-close" onclick="fecharNotificacoes()">×</button>
+    <div style="text-align: center; margin-bottom: 30px;">
+     <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; animation: iconPulse 2s ease-in-out infinite;">
+      <svg width="48" height="48" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /> <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      </svg>
+     </div>
+     <h2 style="color: #1f2937; font-size: 28px; margin: 0;">🔔 Notificações e Novidades</h2>
+    </div><!-- Notificação 1: Ano Novo -->
+    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 20px; border-radius: 15px; border-left: 4px solid #f59e0b; margin-bottom: 20px; cursor: pointer; transition: transform 0.2s;" onclick="abrirNotificacaoAnoNovo()">
+     <div style="display: flex; align-items: flex-start; gap: 15px;">
+      <div style="background: white; padding: 10px; border-radius: 50%; flex-shrink: 0;">
+       <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle> <polyline points="12 6 12 12 16 14"></polyline>
+       </svg>
+      </div>
+      <div style="flex: 1;">
+       <h3 style="color: #92400e; font-size: 18px; margin: 0 0 8px 0; font-weight: bold;">🎉 FELIZ ANO NOVO 2026!</h3>
+       <p style="color: #92400e; font-size: 14px; line-height: 1.6; margin: 0;">Mensagem especial de boas-vindas ao ano novo + novidade do campo DATA automático!</p>
+       <div style="color: #d97706; font-size: 12px; margin-top: 8px; font-weight: 600;">
+        Clique para ler mais →
+       </div>
+      </div>
+     </div>
+    </div><!-- Notificação 2: Atualização Janeiro -->
+    <div style="background: linear-gradient(135deg, #fae8ff 0%, #f3e8ff 100%); padding: 20px; border-radius: 15px; border-left: 4px solid #8b5cf6; margin-bottom: 20px; cursor: pointer; transition: transform 0.2s;" onclick="abrirNotificacaoAtualizacao()">
+     <div style="display: flex; align-items: flex-start; gap: 15px;">
+      <div style="background: white; padding: 10px; border-radius: 50%; flex-shrink: 0;">
+       <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+       </svg>
+      </div>
+      <div style="flex: 1;">
+       <h3 style="color: #6b21a8; font-size: 18px; margin: 0 0 8px 0; font-weight: bold;">✨ ATUALIZAÇÃO - 15/01/2026</h3>
+       <p style="color: #6b21a8; font-size: 14px; line-height: 1.6; margin: 0;">Cadastro de Emitente/Recebedor + Privacidade Garantida + Versão Premium</p>
+       <div style="color: #7c3aed; font-size: 12px; margin-top: 8px; font-weight: 600;">
+        Clique para ler mais →
+       </div>
+      </div>
+     </div>
+    </div>
+    <div style="text-align: center; padding-top: 20px; border-top: 2px solid #e5e7eb;"><button class="popup-btn" onclick="fecharNotificacoes()">Fechar</button>
     </div>
    </div>
   </div><!-- Popup de Confirmação de Exclusão de Selecionados -->
@@ -1370,7 +1383,9 @@
      <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle> <line x1="21" y1="21" x2="16.65" y2="16.65"></line> <line x1="11" y1="8" x2="11" y2="14"></line> <line x1="8" y1="11" x2="14" y2="11"></line>
      </svg></button> <button class="help-btn" onclick="abrirAjuda()" data-tooltip="Ajuda">
      <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle> <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /> <line x1="12" y1="17" x2="12.01" y2="17"></line>
-     </svg></button>
+     </svg></button> <button class="notificacoes-btn" onclick="abrirNotificacoes()" data-tooltip="Notificações" style="position: relative;">
+     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /> <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+     </svg><span id="badge-notificacao" style="display: none; position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center;">2</span> </button>
    </div><a href="https://wa.me/5527988790381?text=Olá,%20tenho%20uma%20sugestão%20para%20o%20Gerador%20de%20Recibos" target="_blank" rel="noopener noreferrer" class="whatsapp-btn btn-icon" data-tooltip="Sugestões WhatsApp">
     <svg width="24" height="24" viewbox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
     </svg></a> <input type="file" id="excelFile" accept=".xlsx, .xls" style="display: none" onchange="importarExcel(event)">
@@ -1750,24 +1765,60 @@
       localStorage.setItem('popupAtualizacaoJan2026', 'visto');
     }
 
-    // Mostrar popup de atualização de janeiro automaticamente
+    // Função para abrir central de notificações
+    function abrirNotificacoes() {
+      document.getElementById('popup-notificacoes').classList.remove('hidden');
+      // Esconder badge ao abrir
+      const badge = document.getElementById('badge-notificacao');
+      badge.style.display = 'none';
+      localStorage.setItem('notificacoesLidas', 'true');
+    }
+
+    // Função para fechar central de notificações
+    function fecharNotificacoes() {
+      document.getElementById('popup-notificacoes').classList.add('hidden');
+    }
+
+    // Função para abrir notificação de Ano Novo
+    function abrirNotificacaoAnoNovo() {
+      fecharNotificacoes();
+      document.getElementById('popup-ano-novo').classList.remove('hidden');
+    }
+
+    // Função para abrir notificação de Atualização
+    function abrirNotificacaoAtualizacao() {
+      fecharNotificacoes();
+      document.getElementById('popup-atualizacao-jan').classList.remove('hidden');
+    }
+
+    // Mostrar badge de notificação se houver notificações não lidas
     window.addEventListener('DOMContentLoaded', function() {
-      const jaViuAnoNovo = localStorage.getItem('popupAnoNovo2026');
-      const jaViuAtualizacao = localStorage.getItem('popupAtualizacaoJan2026');
+      const notificacoesLidas = localStorage.getItem('notificacoesLidas');
+      const badge = document.getElementById('badge-notificacao');
       
-      // Se não viu o popup de ano novo, mostrar ele primeiro
-      if (!jaViuAnoNovo) {
-        setTimeout(() => {
-          document.getElementById('popup-ano-novo').classList.remove('hidden');
-        }, 1000);
-      }
-      // Se já viu o de ano novo mas não viu o de atualização, mostrar o de atualização
-      else if (!jaViuAtualizacao) {
-        setTimeout(() => {
-          document.getElementById('popup-atualizacao-jan').classList.remove('hidden');
-        }, 1000);
+      if (!notificacoesLidas) {
+        badge.style.display = 'flex';
       }
     });
+
+    // Mostrar popup de atualiza��ão de janeiro automaticamente (comentado - agora está no botão de notificações)
+    // window.addEventListener('DOMContentLoaded', function() {
+    //   const jaViuAnoNovo = localStorage.getItem('popupAnoNovo2026');
+    //   const jaViuAtualizacao = localStorage.getItem('popupAtualizacaoJan2026');
+    //   
+    //   // Se não viu o popup de ano novo, mostrar ele primeiro
+    //   if (!jaViuAnoNovo) {
+    //     setTimeout(() => {
+    //       document.getElementById('popup-ano-novo').classList.remove('hidden');
+    //     }, 1000);
+    //   }
+    //   // Se já viu o de ano novo mas não viu o de atualização, mostrar o de atualização
+    //   else if (!jaViuAtualizacao) {
+    //     setTimeout(() => {
+    //       document.getElementById('popup-atualizacao-jan').classList.remove('hidden');
+    //     }, 1000);
+    //   }
+    // });
 
     // Função para abrir ajuda
     function abrirAjuda() {
@@ -2512,5 +2563,5 @@
       applyConfig(window.elementSdk.config || defaultConfig);
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b7fbd3556b3a5e7',t:'MTc2NzQxNDM5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b7fcc6f2478a5e7',t:'MTc2NzQxNTAyMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
