@@ -494,24 +494,22 @@
       </svg></button>
      <div class="w-px h-8 bg-gray-300 mx-1"></div><button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('cadastros')" title="Cadastros">
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
-      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="openConfigModal()" title="Configurações">
-      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
       </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('veiculos')" title="Veículos">
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect> <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon> <circle cx="5.5" cy="18.5" r="2.5"></circle> <circle cx="18.5" cy="18.5" r="2.5"></circle>
       </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('motoristas')" title="Motoristas">
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /> <circle cx="12" cy="7" r="4"></circle>
       </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('fornecedores')" title="Fornecedores">
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /> <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="openConfigModal()" title="Configurações">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="openHelpModal()" title="Ajuda">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle> <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /> <line x1="12" y1="17" x2="12.01" y2="17"></line>
       </svg></button>
     </div>
    </nav><!-- Main Content -->
    <main class="flex-1 p-6 overflow-auto"><!-- Dashboard Content -->
     <div id="dashboard-content" class="tab-content active">
-     <div class="space-y-6"><!-- Header -->
-      <div class="card-modern p-8 text-center">
-       <h2 class="text-3xl font-bold gradient-text mb-2">Painel de Controle</h2>
-       <p class="text-gray-600 font-medium">Visão geral da sua frota</p>
-      </div><!-- Main Stats -->
+     <div class="space-y-6"><!-- Main Stats -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
        <div class="summary-card">
         <div class="icon-circle mx-auto mb-4">
@@ -707,14 +705,6 @@
          <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
          </svg></button>
        </div>
-      </div><!-- Ações de Lançamentos -->
-      <div class="mb-6 flex items-center gap-3 px-2"><span id="lancamentos-selected-count" class="text-sm font-semibold text-gray-700">0 selecionados</span> <button onclick="editSelectedLancamento()" id="btn-edit-lancamento" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Editar Lançamento">
-        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-        </svg></button> <button onclick="deleteSelectedLancamentos()" id="btn-delete-lancamento" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Excluir Selecionados">
-        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        </svg></button> <button onclick="agruparLancamentos()" id="btn-agrupar-lancamento" class="modern-button-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2" disabled title="Agrupar em Uma Conta">
-        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /> <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline> <line x1="12" y1="22.08" x2="12" y2="12"></line>
-        </svg><span>Agrupar</span> </button>
       </div>
       <h3 class="text-xl font-bold text-gray-900 mb-5">Todos os Lançamentos</h3>
       <div id="all-lancamentos-list" class="space-y-4">
@@ -771,11 +761,17 @@
         </div>
        </div>
       </div><!-- Contas Selection Info -->
-      <div id="contas-selection-info" class="mb-6 flex items-center gap-4 px-2"><span id="contas-selected-count" class="text-sm font-semibold text-gray-700">0 selecionadas</span> <span id="contas-selected-total" class="text-sm font-bold gradient-text">R$ 0,00</span> <button onclick="paySelectedContas()" id="btn-pay-selected" class="modern-button w-12 h-12 flex items-center justify-center p-0 disabled:opacity-50 disabled:cursor-not-allowed" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);" disabled title="Pagar Selecionadas">
-        <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline>
-        </svg></button> <button onclick="renegociarConta()" id="btn-renegociar" class="modern-button-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2" disabled title="Renegociar Vencimento">
+      <div id="contas-selection-info" class="mb-6 flex items-center gap-3 px-2"><span id="contas-selected-count" class="text-sm font-semibold text-gray-700">0 selecionadas</span> <span id="contas-selected-total" class="text-sm font-bold gradient-text">R$ 0,00</span> <button onclick="editSelectedConta()" id="btn-edit-conta" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Editar Conta">
+        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg></button> <button onclick="deleteSelectedContas()" id="btn-delete-conta" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Excluir Selecionadas">
+        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        </svg></button> <button onclick="agruparContas()" id="btn-agrupar-conta" class="w-10 h-10 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Agrupar em Uma Conta">
+        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /> <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline> <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg></button> <button onclick="paySelectedContas()" id="btn-pay-selected" class="w-10 h-10 flex items-center justify-center rounded-xl text-green-600 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Dar Baixa">
+        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline>
+        </svg></button> <button onclick="renegociarConta()" id="btn-renegociar" class="w-10 h-10 flex items-center justify-center rounded-xl text-orange-600 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Renegociar Vencimento">
         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-        </svg><span>Renegociar</span> </button>
+        </svg></button>
       </div>
       <div id="contas-list" class="space-y-4">
        <div class="text-center py-16 text-gray-500">
@@ -803,7 +799,7 @@
        <h2 class="text-2xl font-bold text-gray-900 mb-8">Central de Cadastros</h2>
        <div class="grid grid-cols-1 md:grid-cols-3 gap-6"><button onclick="showCadastroForm('vehicle')" class="card-modern p-8 text-center transition-all hover:shadow-2xl group">
          <div class="icon-circle mx-auto mb-4">
-          🚗
+          ����
          </div>
          <div class="font-bold text-gray-900 text-lg group-hover:gradient-text transition-all">
           Cadastrar Veículo
@@ -963,8 +959,8 @@
         <form id="dynamic-form" class="space-y-5">
           <div class="grid grid-cols-2 gap-5">
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Veículo*</label>
-              <select id="dynamic-order-veiculo_id" required class="modern-input w-full">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Veículo</label>
+              <select id="dynamic-order-veiculo_id" class="modern-input w-full">
                 <option value="">Selecione um veículo</option>
               </select>
             </div>
@@ -991,8 +987,8 @@
               </select>
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">KM*</label>
-              <input type="number" id="dynamic-order-km" required class="modern-input w-full" placeholder="0">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">KM</label>
+              <input type="number" id="dynamic-order-km" class="modern-input w-full" placeholder="0">
             </div>
             <div class="col-span-2">
               <label class="block text-sm font-semibold text-gray-700 mb-2">Descrição*</label>
@@ -1283,6 +1279,235 @@
         showToast('Configurações salvas!');
         closeModal();
       });
+    }
+
+    function openHelpModal() {
+      document.getElementById('modal-title').textContent = '💡 Guia Completo do Sistema';
+      document.getElementById('modal-content').innerHTML = `
+        <div class="space-y-6" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
+          
+          <!-- Visão Geral -->
+          <div class="card-modern p-6" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
+            <h4 class="text-lg font-bold gradient-text mb-3">🎯 Visão Geral</h4>
+            <p class="text-sm text-gray-700 leading-relaxed">
+              O WeFrotas é um sistema completo de gestão de frotas que permite controlar veículos, motoristas, 
+              ordens de serviço, lançamentos (abastecimentos e despesas) e contas a pagar. Tudo em um só lugar!
+            </p>
+          </div>
+
+          <!-- Navegação -->
+          <div class="card-modern p-6">
+            <h4 class="text-lg font-bold text-gray-900 mb-4">🧭 Barra de Navegação</h4>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3 p-3 summary-card">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <div>
+                  <div class="text-sm font-bold text-gray-900">Dashboard</div>
+                  <div class="text-xs text-gray-600">Visão geral com estatísticas, resumo financeiro e atividades recentes</div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 summary-card">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <div>
+                  <div class="text-sm font-bold text-gray-900">Ordens de Serviço</div>
+                  <div class="text-xs text-gray-600">Gerencie ordens de serviço (OS) dos veículos com filtros e status</div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 summary-card">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="1" x2="12" y2="23"></line>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                <div>
+                  <div class="text-sm font-bold text-gray-900">Lançamentos</div>
+                  <div class="text-xs text-gray-600">Registre abastecimentos ⛽ e despesas 💸 da frota</div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 summary-card">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="20" x2="12" y2="10"></line>
+                  <line x1="18" y1="20" x2="18" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="16"></line>
+                </svg>
+                <div>
+                  <div class="text-sm font-bold text-gray-900">Contas a Pagar</div>
+                  <div class="text-xs text-gray-600">Controle financeiro completo: pendentes, vencidas e pagas</div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 summary-card">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <div>
+                  <div class="text-sm font-bold text-gray-900">Cadastros</div>
+                  <div class="text-xs text-gray-600">Central para cadastrar novos veículos 🚗, motoristas 👤 e fornecedores 🏢</div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 summary-card">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="1" y="3" width="15" height="13"></rect>
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                  <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                  <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                </svg>
+                <div>
+                  <div class="text-sm font-bold text-gray-900">Veículos</div>
+                  <div class="text-xs text-gray-600">Lista completa de todos os veículos cadastrados</div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 summary-card">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <div>
+                  <div class="text-sm font-bold text-gray-900">Motoristas</div>
+                  <div class="text-xs text-gray-600">Lista completa de todos os motoristas cadastrados</div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 summary-card">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <div>
+                  <div class="text-sm font-bold text-gray-900">Fornecedores</div>
+                  <div class="text-xs text-gray-600">Lista de fornecedores (postos, oficinas, etc.)</div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 summary-card">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                </svg>
+                <div>
+                  <div class="text-sm font-bold text-gray-900">Configurações</div>
+                  <div class="text-xs text-gray-600">Personalize o título do sistema e ative modo escuro</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Funcionalidades Principais -->
+          <div class="card-modern p-6">
+            <h4 class="text-lg font-bold text-gray-900 mb-4">⚡ Funcionalidades Principais</h4>
+            
+            <div class="space-y-4">
+              <div class="summary-card p-4">
+                <h5 class="font-bold text-gray-900 mb-2">📋 Ordens de Serviço</h5>
+                <ul class="text-sm text-gray-700 space-y-1 ml-4 list-disc">
+                  <li><strong>Criar OS:</strong> Clique no botão + para criar uma nova ordem</li>
+                  <li><strong>Status:</strong> Aberta (⚠��� amarelo), Em Andamento (🔵 azul), Fechada (✅ verde)</li>
+                  <li><strong>Filtros:</strong> Filtre por número, data, status e ordenação</li>
+                  <li><strong>Seleção múltipla:</strong> Use os checkboxes para selecionar ordens</li>
+                  <li><strong>Editar:</strong> Selecione apenas 1 OS e clique no ícone de edição ✏️</li>
+                  <li><strong>Excluir:</strong> Selecione e clique no ícone da lixeira 🗑️</li>
+                  <li><strong>Imprimir:</strong> Selecione 1 OS e clique no ícone de impressora 🖨️</li>
+                  <li><strong>Exportar:</strong> Clique no ícone de download ⬇️ para exportar CSV</li>
+                </ul>
+              </div>
+
+              <div class="summary-card p-4">
+                <h5 class="font-bold text-gray-900 mb-2">💰 Lançamentos</h5>
+                <ul class="text-sm text-gray-700 space-y-1 ml-4 list-disc">
+                  <li><strong>Abastecimento ⛽:</strong> Registre combustível, litros, posto e valor</li>
+                  <li><strong>Despesa 💸:</strong> Registre manutenções, peças e outros custos</li>
+                  <li><strong>Alocar em OS:</strong> Vincule lançamentos a ordens de serviço específicas</li>
+                  <li><strong>Nota Fiscal:</strong> Registre o número da NF para cada lançamento</li>
+                  <li><strong>Contas automáticas:</strong> Ao criar um lançamento, uma conta a pagar é gerada automaticamente</li>
+                </ul>
+              </div>
+
+              <div class="summary-card p-4">
+                <h5 class="font-bold text-gray-900 mb-2">💳 Contas a Pagar</h5>
+                <ul class="text-sm text-gray-700 space-y-1 ml-4 list-disc">
+                  <li><strong>Status:</strong> Pendentes (⏳), Vencidas (⚠️ vermelho), Pagas (✓ verde)</li>
+                  <li><strong>Dar Baixa ✓:</strong> Selecione contas e clique em ✓ para marcar como pagas</li>
+                  <li><strong>Editar ✏️:</strong> Selecione 1 conta para editar valor, vencimento ou fornecedor</li>
+                  <li><strong>Renegociar 🔄:</strong> Altere a data de vencimento de uma conta</li>
+                  <li><strong>Agrupar 📦:</strong> Selecione 2+ contas para unir em uma única conta</li>
+                  <li><strong>Excluir 🗑️:</strong> Exclua contas pendentes (contas pagas não podem ser excluídas)</li>
+                  <li><strong>Resumo visual:</strong> Veja totais de contas a vencer, vencidas e pagas</li>
+                </ul>
+              </div>
+
+              <div class="summary-card p-4">
+                <h5 class="font-bold text-gray-900 mb-2">🚗 Cadastros</h5>
+                <ul class="text-sm text-gray-700 space-y-1 ml-4 list-disc">
+                  <li><strong>Veículos:</strong> Placa, modelo, ano, cor, chassi e RENAVAM</li>
+                  <li><strong>Motoristas:</strong> Nome, CPF, CNH, categoria, telefone e e-mail</li>
+                  <li><strong>Fornecedores:</strong> Razão social, CNPJ, categoria (posto, oficina, etc.)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status e Indicadores -->
+          <div class="card-modern p-6">
+            <h4 class="text-lg font-bold text-gray-900 mb-4">🎨 Status e Indicadores</h4>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <span class="status-aberta">ABERTA</span>
+                <span class="text-sm text-gray-700">Ordem de serviço iniciada</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="status-andamento">EM ANDAMENTO</span>
+                <span class="text-sm text-gray-700">Ordem em execução</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="status-fechada">FECHADA</span>
+                <span class="text-sm text-gray-700">Ordem concluída</span>
+              </div>
+              <div class="flex items-center gap-3 mt-4">
+                <div class="text-2xl">⛽</div>
+                <span class="text-sm text-gray-700">Abastecimento</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="text-2xl">💸</div>
+                <span class="text-sm text-gray-700">Despesa</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dicas -->
+          <div class="card-modern p-6" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.1) 100%); border: 1.5px solid rgba(34, 197, 94, 0.2);">
+            <h4 class="text-lg font-bold text-green-800 mb-3">💡 Dicas Importantes</h4>
+            <ul class="text-sm text-green-900 space-y-2 ml-4 list-disc">
+              <li>Sempre cadastre veículos, motoristas e fornecedores <strong>antes</strong> de criar ordens de serviço</li>
+              <li>Use filtros para encontrar informações rapidamente</li>
+              <li>A impressão de OS gera um PDF profissional com todos os dados</li>
+              <li>Agrupar contas facilita o pagamento de múltiplas despesas de uma vez</li>
+              <li>Lançamentos vinculados a OS aparecem na impressão da ordem</li>
+              <li>O Dashboard oferece uma visão rápida de toda a operação</li>
+            </ul>
+          </div>
+
+          <div class="flex justify-end pt-4 border-t border-gray-200">
+            <button onclick="closeModal()" class="modern-button">
+              Entendi!
+            </button>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('modal-overlay').classList.remove('hidden');
+      document.getElementById('modal-overlay').classList.add('flex');
     }
 
     function toggleDarkModeConfig() {
@@ -1648,59 +1873,380 @@
       }
     }
 
-    // Lancamento Actions
-    function editSelectedLancamento() {
-      if (selectedLancamentos.size === 1) {
-        const id = Array.from(selectedLancamentos)[0];
-        currentEditingRecord = allData.find(item => item.__backendId === id);
-        if (currentEditingRecord) {
-          const type = currentEditingRecord.tipo_lancamento === 'abastecimento' ? 'fueling' : 'expense';
-          showCadastroForm(type);
-        }
+    function editOrderDirect(orderId) {
+      currentEditingRecord = allData.find(item => item.__backendId === orderId);
+      if (currentEditingRecord) {
+        showCadastroForm('order');
       }
     }
 
-    async function deleteSelectedLancamentos() {
-      if (selectedLancamentos.size === 0) return;
+    function closeOrderDirect(orderId) {
+      const order = allData.find(item => item.__backendId === orderId);
+      if (!order) return;
+
+      document.getElementById('modal-title').textContent = 'Fechar Ordem de Serviço';
+      document.getElementById('modal-content').innerHTML = `
+        <form id="close-order-form" class="space-y-5">
+          <div class="summary-card p-5 mb-5" style="background: linear-gradient(135deg, rgba(132, 250, 176, 0.1) 0%, rgba(143, 211, 244, 0.1) 100%); border: 1.5px solid rgba(132, 250, 176, 0.3);">
+            <div class="text-sm text-gray-600 font-semibold">Ordem de Serviço</div>
+            <div class="text-xl font-bold text-gray-900 mt-2">OS Nº ${getOrderNumber(order)}</div>
+            <div class="text-sm text-gray-700 mt-2">${order.descricao}</div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Data de Fechamento*</label>
+            <input type="date" id="close-date" required class="modern-input w-full" value="${new Date().toISOString().split('T')[0]}">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">KM Final</label>
+            <input type="number" id="close-km" class="modern-input w-full" placeholder="${order.km || '0'}" value="${order.km || ''}">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Observações de Fechamento</label>
+            <textarea id="close-obs" rows="3" class="modern-input w-full" placeholder="Observações sobre o fechamento da OS..."></textarea>
+          </div>
+          <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeModal()" class="modern-button-secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="modern-button" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);">
+              Fechar Ordem
+            </button>
+          </div>
+        </form>
+      `;
       
-      for (const id of selectedLancamentos) {
-        const lancamento = allData.find(item => item.__backendId === id);
-        if (lancamento) {
-          // Remove lancamento
-          const lancIndex = allData.findIndex(item => item.__backendId === id);
-          if (lancIndex !== -1) {
-            allData.splice(lancIndex, 1);
+      document.getElementById('modal-overlay').classList.remove('hidden');
+      document.getElementById('modal-overlay').classList.add('flex');
+
+      document.getElementById('close-order-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const index = allData.findIndex(item => item.__backendId === orderId);
+        if (index !== -1) {
+          allData[index].status = 'fechada';
+          allData[index].data_fechamento = document.getElementById('close-date').value;
+          const kmFinal = document.getElementById('close-km').value;
+          if (kmFinal) {
+            allData[index].km = parseFloat(kmFinal);
           }
+          const obs = document.getElementById('close-obs').value;
+          if (obs) {
+            allData[index].observacoes_fechamento = obs;
+          }
+
+          saveToLocalStorage();
+          updateUI();
           
-          // Remove associated conta
-          const contaIndex = allData.findIndex(c => c.type === 'conta' && c.lancamento_id === lancamento.id);
-          if (contaIndex !== -1) {
-            allData.splice(contaIndex, 1);
+          showToast('Ordem de serviço fechada com sucesso!');
+          closeModal();
+        }
+      });
+    }
+
+    function reopenOrderDirect(orderId) {
+      const order = allData.find(item => item.__backendId === orderId);
+      if (!order) return;
+
+      document.getElementById('modal-title').textContent = 'Reabrir Ordem de Serviço';
+      document.getElementById('modal-content').innerHTML = `
+        <form id="reopen-order-form" class="space-y-5">
+          <div class="summary-card p-5 mb-5" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%); border: 1.5px solid rgba(245, 158, 11, 0.3);">
+            <div class="text-sm text-gray-600 font-semibold">Ordem de Serviço</div>
+            <div class="text-xl font-bold text-gray-900 mt-2">OS Nº ${getOrderNumber(order)}</div>
+            <div class="text-sm text-gray-700 mt-2">${order.descricao}</div>
+          </div>
+          <div class="summary-card p-4 text-center">
+            <p class="text-sm text-gray-700">Deseja reabrir esta ordem de serviço? O status será alterado para <strong>Em Andamento</strong>.</p>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Motivo da Reabertura</label>
+            <textarea id="reopen-obs" rows="3" class="modern-input w-full" placeholder="Descreva o motivo da reabertura..."></textarea>
+          </div>
+          <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeModal()" class="modern-button-secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="modern-button" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);">
+              Reabrir Ordem
+            </button>
+          </div>
+        </form>
+      `;
+      
+      document.getElementById('modal-overlay').classList.remove('hidden');
+      document.getElementById('modal-overlay').classList.add('flex');
+
+      document.getElementById('reopen-order-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const index = allData.findIndex(item => item.__backendId === orderId);
+        if (index !== -1) {
+          allData[index].status = 'andamento';
+          allData[index].data_fechamento = '';
+          const obs = document.getElementById('reopen-obs').value;
+          if (obs) {
+            allData[index].observacoes_reabertura = obs;
           }
+
+          saveToLocalStorage();
+          updateUI();
+          
+          showToast('Ordem de serviço reaberta!');
+          closeModal();
+        }
+      });
+    }
+
+    function printOrderDirect(orderId) {
+      const order = allData.find(item => item.__backendId === orderId);
+      if (!order) return;
+
+      const veiculo = allData.find(v => v.type === 'vehicle' && v.id === order.veiculo_id);
+      const motorista = allData.find(m => m.type === 'driver' && m.id === order.motorista_id);
+      const numeroOS = getOrderNumber(order);
+      
+      const lancamentos = allData.filter(l => l.type === 'lancamento' && l.ordem_id === order.id);
+      
+      const contas = allData.filter(c => 
+        c.type === 'conta' && 
+        lancamentos.some(l => l.id === c.lancamento_id)
+      );
+
+      const totalContas = contas.reduce((sum, c) => sum + (c.valor || 0), 0);
+
+      const contasHTML = contas.map(c => {
+        const fornecedor = allData.find(f => f.type === 'supplier' && f.id === c.fornecedor_id);
+        return `
+          <tr>
+            <td>${formatDate(c.data_vencimento)}</td>
+            <td>${fornecedor ? fornecedor.razao_social : '-'}</td>
+            <td>${c.nota_fiscal || '-'}</td>
+            <td>${c.descricao}</td>
+            <td style="text-align: right;">${formatCurrency(c.valor)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write('<!DOCTYPE html><html><head><title>Ordem de Servico ' + numeroOS + '</title>');
+      printWindow.document.write('<style>@page{size:A4;margin:2cm}body{font-family:Arial,sans-serif;font-size:12px;line-height:1.4;color:#000;max-width:21cm;margin:0 auto;padding:20px}.header{text-align:center;border-bottom:3px solid #667eea;padding-bottom:20px;margin-bottom:30px}.header h1{margin:0;font-size:28px;color:#667eea}.header .os-number{font-size:24px;font-weight:bold;color:#333;margin-top:10px}.section{margin-bottom:25px}.section-title{font-size:14px;font-weight:bold;color:#667eea;border-bottom:2px solid #e0e0e0;padding-bottom:5px;margin-bottom:12px}.info-row{display:flex;margin-bottom:8px}.info-label{font-weight:bold;min-width:150px;color:#555}.info-value{color:#000}table{width:100%;border-collapse:collapse;margin-top:15px}th{background:#667eea;color:white;padding:10px;text-align:left;font-weight:bold;font-size:11px}td{padding:8px;border-bottom:1px solid #e0e0e0;font-size:11px}.total-row{font-weight:bold;background:#f5f7fa;border-top:2px solid #667eea}.signature-area{margin-top:60px;padding-top:20px;border-top:2px solid #e0e0e0}.signature-line{margin-top:50px;border-top:2px solid #000;width:300px;text-align:center;padding-top:5px}.status-badge{display:inline-block;padding:4px 12px;border-radius:8px;font-weight:bold;font-size:11px;text-transform:uppercase}.status-aberta{background:#fda085;color:white}.status-andamento{background:#667eea;color:white}.status-fechada{background:#84fab0;color:white}@media print{body{padding:0}.no-print{display:none}}</style></head><body>');
+      printWindow.document.write('<div class="header"><h1>WeFrotas</h1><div class="os-number">ORDEM DE SERVICO N ' + numeroOS + '</div></div>');
+      printWindow.document.write('<div class="section"><div class="section-title">Informacoes Gerais</div><div class="info-row"><div class="info-label">Status:</div><div class="info-value"><span class="status-badge status-' + order.status + '">' + order.status + '</span></div></div>');
+      printWindow.document.write('<div class="info-row"><div class="info-label">Data de Abertura:</div><div class="info-value">' + formatDate(order.data_abertura) + '</div></div>');
+      if (order.data_fechamento) {
+        printWindow.document.write('<div class="info-row"><div class="info-label">Data de Fechamento:</div><div class="info-value">' + formatDate(order.data_fechamento) + '</div></div>');
+      }
+      printWindow.document.write('</div>');
+      printWindow.document.write('<div class="section"><div class="section-title">Veiculo e Motorista</div>');
+      printWindow.document.write('<div class="info-row"><div class="info-label">Veiculo:</div><div class="info-value">' + (veiculo ? veiculo.placa + ' - ' + veiculo.modelo + ' ' + veiculo.ano : '-') + '</div></div>');
+      printWindow.document.write('<div class="info-row"><div class="info-label">Motorista:</div><div class="info-value">' + (motorista ? motorista.nome : '-') + '</div></div>');
+      if (order.km) {
+        printWindow.document.write('<div class="info-row"><div class="info-label">Quilometragem:</div><div class="info-value">' + order.km + ' km</div></div>');
+      }
+      printWindow.document.write('</div>');
+      printWindow.document.write('<div class="section"><div class="section-title">Descricao do Servico</div><div class="info-value">' + order.descricao + '</div></div>');
+      if (contas.length > 0) {
+        printWindow.document.write('<div class="section"><div class="section-title">Lancamentos e Pagamentos</div><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Nota Fiscal</th><th>Descricao</th><th style="text-align:right;">Valor</th></tr></thead><tbody>');
+        printWindow.document.write(contasHTML);
+        printWindow.document.write('<tr class="total-row"><td colspan="4" style="text-align:right;">TOTAL</td><td style="text-align:right;">' + formatCurrency(totalContas) + '</td></tr></tbody></table></div>');
+      }
+      printWindow.document.write('<div class="signature-area"><div class="signature-line" style="margin: 0 auto;"><div>AUTORIZADOR</div></div></div>');
+      printWindow.document.write('<script>window.onload=function(){window.print()}<\/script></body></html>');
+      printWindow.document.close();
+
+      showToast('PDF gerado com sucesso!');
+    }
+
+    // Conta Actions
+    async function paySelectedContas() {
+      if (selectedContas.size === 0) return;
+      
+      const total = Array.from(selectedContas).reduce((sum, id) => {
+        const conta = allData.find(c => c.__backendId === id);
+        return sum + (conta ? conta.valor : 0);
+      }, 0);
+
+      document.getElementById('modal-title').textContent = 'Confirmar Baixa de Contas';
+      document.getElementById('modal-content').innerHTML = `
+        <form id="baixa-form" class="space-y-5">
+          <div class="summary-card p-5 mb-5" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.1) 100%); border: 1.5px solid rgba(34, 197, 94, 0.2);">
+            <div class="text-sm text-green-700 font-semibold">Total de Contas Selecionadas</div>
+            <div class="text-4xl font-bold text-green-700 mt-2">${selectedContas.size}</div>
+            <div class="text-2xl font-bold text-green-700 mt-3">${formatCurrency(total)}</div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Data da Baixa*</label>
+            <input type="date" id="data-baixa" required class="modern-input w-full" value="${new Date().toISOString().split('T')[0]}">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Observações</label>
+            <textarea id="observacoes-baixa" rows="3" class="modern-input w-full" placeholder="Observações sobre a baixa..."></textarea>
+          </div>
+          <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeModal()" class="modern-button-secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="modern-button" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);">
+              Confirmar Baixa
+            </button>
+          </div>
+        </form>
+      `;
+      
+      document.getElementById('modal-overlay').classList.remove('hidden');
+      document.getElementById('modal-overlay').classList.add('flex');
+
+      document.getElementById('baixa-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const dataBaixa = document.getElementById('data-baixa').value;
+        const obs = document.getElementById('observacoes-baixa').value;
+
+        for (const id of selectedContas) {
+          const index = allData.findIndex(item => item.__backendId === id);
+          if (index !== -1) {
+            allData[index].pago = true;
+            allData[index].data_pagamento = dataBaixa;
+            if (obs) {
+              allData[index].observacoes_baixa = obs;
+            }
+          }
+        }
+        
+        saveToLocalStorage();
+        selectedContas.clear();
+        updateUI();
+        
+        showToast('Baixa realizada com sucesso!');
+        closeModal();
+      });
+    }
+
+    async function deleteSelectedContas() {
+      if (selectedContas.size === 0) return;
+      
+      for (const id of selectedContas) {
+        const conta = allData.find(c => c.__backendId === id);
+        if (conta && conta.pago) {
+          showToast('Não é possível excluir contas já pagas', 'error');
+          return;
+        }
+      }
+
+      for (const id of selectedContas) {
+        const index = allData.findIndex(item => item.__backendId === id);
+        if (index !== -1) {
+          allData.splice(index, 1);
         }
       }
       
       saveToLocalStorage();
-      selectedLancamentos.clear();
+      selectedContas.clear();
       updateUI();
-      showToast('Lançamentos excluídos!');
+      showToast('Contas excluídas!');
     }
 
-    async function agruparLancamentos() {
-      if (selectedLancamentos.size < 2) {
-        showToast('Selecione pelo menos 2 lançamentos para agrupar', 'error');
+    async function editSelectedConta() {
+      if (selectedContas.size !== 1) {
+        showToast('Selecione apenas uma conta para editar', 'error');
         return;
       }
 
-      const lancamentos = Array.from(selectedLancamentos).map(id => 
+      const contaId = Array.from(selectedContas)[0];
+      const conta = allData.find(item => item.__backendId === contaId);
+      if (!conta) return;
+
+      if (conta.pago) {
+        showToast('Não é possível editar uma conta já paga', 'error');
+        return;
+      }
+
+      const fornecedores = allData.filter(item => item.type === 'supplier');
+
+      document.getElementById('modal-title').textContent = 'Editar Conta';
+      document.getElementById('modal-content').innerHTML = `
+        <form id="edit-conta-form" class="space-y-5">
+          <div class="col-span-2">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Descrição*</label>
+            <input type="text" id="edit-descricao" required class="modern-input w-full" value="${conta.descricao}">
+          </div>
+          <div class="grid grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Valor*</label>
+              <input type="number" id="edit-valor" required step="0.01" class="modern-input w-full" value="${conta.valor}">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Data de Vencimento*</label>
+              <input type="date" id="edit-vencimento" required class="modern-input w-full" value="${conta.data_vencimento}">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Fornecedor*</label>
+            <select id="edit-fornecedor" required class="modern-input w-full">
+              <option value="">Selecione um fornecedor</option>
+              ${fornecedores.map(f => `<option value="${f.id}" ${conta.fornecedor_id === f.id ? 'selected' : ''}>${f.razao_social}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Nota Fiscal</label>
+            <input type="text" id="edit-nota-fiscal" class="modern-input w-full" value="${conta.nota_fiscal || ''}">
+          </div>
+          <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeModal()" class="modern-button-secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="modern-button">
+              Salvar Alterações
+            </button>
+          </div>
+        </form>
+      `;
+      
+      document.getElementById('modal-overlay').classList.remove('hidden');
+      document.getElementById('modal-overlay').classList.add('flex');
+
+      document.getElementById('edit-conta-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const index = allData.findIndex(item => item.__backendId === contaId);
+        if (index !== -1) {
+          allData[index].descricao = document.getElementById('edit-descricao').value;
+          allData[index].valor = parseFloat(document.getElementById('edit-valor').value);
+          allData[index].data_vencimento = document.getElementById('edit-vencimento').value;
+          allData[index].fornecedor_id = document.getElementById('edit-fornecedor').value;
+          allData[index].nota_fiscal = document.getElementById('edit-nota-fiscal').value;
+
+          saveToLocalStorage();
+          selectedContas.clear();
+          updateUI();
+          
+          showToast('Conta atualizada com sucesso!');
+          closeModal();
+        }
+      });
+    }
+
+    async function agruparContas() {
+      if (selectedContas.size < 2) {
+        showToast('Selecione pelo menos 2 contas para agrupar', 'error');
+        return;
+      }
+
+      const contas = Array.from(selectedContas).map(id => 
         allData.find(item => item.__backendId === id)
       ).filter(Boolean);
 
-      const totalValor = lancamentos.reduce((sum, l) => sum + l.valor, 0);
-      const descricoes = lancamentos.map(l => l.descricao).join(' + ');
+      // Check if any conta is already paid
+      if (contas.some(c => c.pago)) {
+        showToast('Não é possível agrupar contas já pagas', 'error');
+        return;
+      }
+
+      const totalValor = contas.reduce((sum, c) => sum + c.valor, 0);
+      const descricoes = contas.map(c => c.descricao).join(' + ');
       
       // Get latest vencimento
-      const vencimentos = lancamentos.map(l => l.data_vencimento).sort().reverse();
+      const vencimentos = contas.map(c => c.data_vencimento).sort().reverse();
       const latestVencimento = vencimentos[0];
 
       // Create grouped conta
@@ -1712,8 +2258,8 @@
         valor: totalValor,
         data_vencimento: latestVencimento,
         nota_fiscal: `AGR-${Date.now()}`,
-        fornecedor_id: lancamentos[0].fornecedor_id,
-        lancamento_ids: lancamentos.map(l => l.id),
+        fornecedor_id: contas[0].fornecedor_id,
+        conta_ids: contas.map(c => c.id),
         pago: false,
         agrupada: true,
         created_at: new Date().toISOString()
@@ -1722,27 +2268,19 @@
       allData.push(contaAgrupada);
 
       // Remove individual contas
-      for (const lanc of lancamentos) {
-        const contaIndex = allData.findIndex(c => c.type === 'conta' && c.lancamento_id === lanc.id);
-        if (contaIndex !== -1) {
-          allData.splice(contaIndex, 1);
+      for (const conta of contas) {
+        const index = allData.findIndex(c => c.__backendId === conta.__backendId);
+        if (index !== -1) {
+          allData.splice(index, 1);
         }
       }
 
       saveToLocalStorage();
-      selectedLancamentos.clear();
+      selectedContas.clear();
       updateUI();
-      showToast(`${lancamentos.length} lançamentos agrupados em uma única conta!`);
+      showToast(`${contas.length} contas agrupadas em uma única conta!`);
     }
 
-    function updateLancamentosSelection() {
-      document.getElementById('lancamentos-selected-count').textContent = `${selectedLancamentos.size} selecionados`;
-      document.getElementById('btn-edit-lancamento').disabled = selectedLancamentos.size !== 1;
-      document.getElementById('btn-delete-lancamento').disabled = selectedLancamentos.size === 0;
-      document.getElementById('btn-agrupar-lancamento').disabled = selectedLancamentos.size < 2;
-    }
-
-    // Conta Actions
     async function renegociarConta() {
       if (selectedContas.size !== 1) {
         showToast('Selecione apenas uma conta para renegociar', 'error');
@@ -2026,8 +2564,34 @@
                     <span class="badge-numero-os">OS Nº ${numeroOS}</span>
                     <span class="status-${order.status}">${order.status.toUpperCase()}</span>
                   </div>
-                  <div class="text-right">
-                    <div class="text-xs text-gray-500 font-semibold mt-1">${order.km} km</div>
+                  <div class="flex items-center gap-2">
+                    ${order.km ? `<div class="text-xs text-gray-500 font-semibold">${order.km} km</div>` : ''}
+                    <button onclick="editOrderDirect('${order.__backendId}')" class="w-9 h-9 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 transition-all" title="Editar OS">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                    </button>
+                    ${order.status !== 'fechada' ? `
+                      <button onclick="closeOrderDirect('${order.__backendId}')" class="w-9 h-9 flex items-center justify-center rounded-xl text-green-600 hover:bg-green-50 transition-all" title="Fechar OS">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </button>
+                    ` : `
+                      <button onclick="reopenOrderDirect('${order.__backendId}')" class="w-9 h-9 flex items-center justify-center rounded-xl text-orange-600 hover:bg-orange-50 transition-all" title="Reabrir OS">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                        </svg>
+                      </button>
+                    `}
+                    <button onclick="printOrderDirect('${order.__backendId}')" class="w-9 h-9 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 transition-all" title="Salvar PDF">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                      </svg>
+                    </button>
                   </div>
                 </div>
                 <div class="font-bold text-gray-900 text-lg mb-3">${order.descricao}</div>
@@ -2087,13 +2651,12 @@
         const veiculo = allData.find(v => v.type === 'vehicle' && v.id === l.veiculo_id);
         const fornecedor = allData.find(f => f.type === 'supplier' && f.id === l.fornecedor_id);
         const ordem = l.ordem_id ? allData.find(o => o.type === 'order' && o.id === l.ordem_id) : null;
-        const icon = l.tipo_lancamento === 'abastecimento' ? '⛽' : '💸';
+        const icon = l.tipo_lancamento === 'abastecimento' ? '���' : '💸';
         const colorGradient = l.tipo_lancamento === 'abastecimento' ? 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)' : 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)';
         
         return `
           <div class="card-modern p-5">
             <div class="flex items-start gap-4">
-              <input type="checkbox" class="lancamento-checkbox modern-checkbox mt-1" data-id="${l.__backendId}" ${selectedLancamentos.has(l.__backendId) ? 'checked' : ''}>
               <div class="icon-circle">${icon}</div>
               <div class="flex-1">
                 <div class="flex items-start justify-between">
@@ -2124,18 +2687,6 @@
           </div>
         `;
       }).join('');
-
-      // Attach checkbox listeners
-      document.querySelectorAll('.lancamento-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', (e) => {
-          if (e.target.checked) {
-            selectedLancamentos.add(e.target.dataset.id);
-          } else {
-            selectedLancamentos.delete(e.target.dataset.id);
-          }
-          updateLancamentosSelection();
-        });
-      });
     }
 
     function renderContas() {
@@ -2210,6 +2761,9 @@
       document.getElementById('contas-selected-total').textContent = formatCurrency(total);
       document.getElementById('btn-pay-selected').disabled = selectedContas.size === 0;
       document.getElementById('btn-renegociar').disabled = selectedContas.size !== 1;
+      document.getElementById('btn-edit-conta').disabled = selectedContas.size !== 1;
+      document.getElementById('btn-delete-conta').disabled = selectedContas.size === 0;
+      document.getElementById('btn-agrupar-conta').disabled = selectedContas.size < 2;
     }
 
     function updateContasSummary() {
@@ -2476,5 +3030,5 @@
 
     document.addEventListener('DOMContentLoaded', initializeApp);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b857347634d00f1',t:'MTc2NzQ3NDI4NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b8599d1d4f0c6c1',t:'MTc2NzQ3NTg2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
