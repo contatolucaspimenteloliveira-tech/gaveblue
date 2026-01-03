@@ -1082,7 +1082,7 @@
   <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
  </head>
  <body><!-- Popup de Feliz Ano Novo -->
-  <div class="popup-overlay" id="popup-ano-novo">
+  <div class="popup-overlay hidden" id="popup-ano-novo">
    <div class="popup-content popup-moderno" style="max-width: 600px;"><button class="popup-close" onclick="fecharAnoNovo()">×</button>
     <div class="popup-icon" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); animation: iconPulse 2s ease-in-out infinite;">
      <svg width="48" height="48" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle> <polyline points="12 6 12 12 16 14"></polyline>
@@ -1098,6 +1098,39 @@
      </div>
      <p style="font-size: 16px; color: #1e40af; line-height: 1.7; margin: 0;">Agora o campo <strong>DATA</strong> é preenchido automaticamente com a data atual! 📅<br><span style="font-size: 14px; color: #3b82f6;">Você pode personalizar quando quiser, mas não precisa mais digitar toda vez!</span></p>
     </div><button class="popup-btn" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); font-size: 18px; padding: 14px 40px;" onclick="fecharAnoNovo()"> 🚀 Começar 2026! </button>
+   </div>
+  </div><!-- Popup de Atualização 15 de Janeiro -->
+  <div class="popup-overlay" id="popup-atualizacao-jan">
+   <div class="popup-content popup-moderno" style="max-width: 650px;"><button class="popup-close" onclick="fecharAtualizacaoJan()">×</button>
+    <div class="popup-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); animation: iconPulse 2s ease-in-out infinite;">
+     <svg width="48" height="48" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+     </svg>
+    </div>
+    <h2 style="font-size: 28px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">✨ NOVA ATUALIZAÇÃO - 15/01/2026</h2>
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 20px; border-radius: 15px; border-left: 4px solid #10b981; margin-bottom: 20px; text-align: left;">
+     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+      <svg width="28" height="28" viewbox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /> <circle cx="9" cy="7" r="4"></circle> <path d="M23 21v-2a4 4 0 0 0-3-3.87" /> <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+      <h3 style="font-size: 20px; color: #065f46; margin: 0; font-weight: bold;">🎯 Cadastro de Emitente e Recebedor</h3>
+     </div>
+     <p style="font-size: 16px; color: #065f46; line-height: 1.7; margin: 0;">O sistema permitirá o <strong>cadastro de emitente e recebedor</strong> para facilitar e agilizar os preenchimentos manuais individuais!</p>
+    </div>
+    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 20px; border-radius: 15px; border-left: 4px solid #f59e0b; margin-bottom: 20px; text-align: left;">
+     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+      <svg width="28" height="28" viewbox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect> <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+      <h3 style="font-size: 20px; color: #92400e; margin: 0; font-weight: bold;">🔒 Privacidade Garantida</h3>
+     </div>
+     <p style="font-size: 16px; color: #92400e; line-height: 1.7; margin: 0;">Os dados <strong>NÃO serão armazenados no site</strong>, e sim no <strong>localStorage do seu computador</strong>, garantindo acesso exclusivo e privado!</p>
+    </div>
+    <div style="background: linear-gradient(135deg, #fae8ff 0%, #f3e8ff 100%); padding: 20px; border-radius: 15px; border-left: 4px solid #8b5cf6; margin-bottom: 25px; text-align: left;">
+     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+      <svg width="28" height="28" viewbox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /> <path d="M2 17l10 5 10-5" /> <path d="M2 12l10 5 10-5" />
+      </svg>
+      <h3 style="font-size: 20px; color: #6b21a8; margin: 0; font-weight: bold;">⚡ Versão Premium</h3>
+     </div>
+     <p style="font-size: 16px; color: #6b21a8; line-height: 1.7; margin: 0;">Para ter acesso ao <strong>sistema com banco de dados conectado</strong> entre vários usuários, será necessário fazer <strong>upgrade para a versão premium</strong>! 🚀</p>
+    </div><button class="popup-btn" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); font-size: 18px; padding: 14px 40px;" onclick="fecharAtualizacaoJan()"> 🎉 Entendi, Vamos Lá! </button>
    </div>
   </div><!-- Popup de Confirmação de Limpeza -->
   <div class="popup-overlay hidden" id="popup-confirmacao">
@@ -1190,7 +1223,7 @@
   </div>
   <main><!-- Contador de recibos -->
    <div class="status-contador" id="status-contador">
-    �� <span id="contador-numero">0</span> recibos gerados
+    📄 <span id="contador-numero">0</span> recibos gerados
    </div><!-- Toast de sucesso -->
    <div class="toast" id="toast-sucesso">
     ✅ Recibos importados com sucesso!
@@ -1213,7 +1246,7 @@
     </div>
     <div class="linha"><label for="campoQuantia">a quantia de</label> <textarea id="campoQuantia" readonly aria-label="Valor por extenso"></textarea>
     </div>
-    <div class="linha"><label for="referencia">Referente a</label> <input type="text" id="referencia" aria-label="Refer��ncia do pagamento">
+    <div class="linha"><label for="referencia">Referente a</label> <input type="text" id="referencia" aria-label="Referência do pagamento">
     </div>
     <div class="linha"><input type="text" id="descricao" aria-label="Descrição adicional">
     </div>
@@ -1483,7 +1516,7 @@
       
       atualizarContador();
       
-      // Scroll suave at�� o novo recibo
+      // Scroll suave até o novo recibo
       setTimeout(() => {
         novoRecibo.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
@@ -1704,12 +1737,34 @@
       localStorage.setItem('popupAnoNovo2026', 'visto');
     }
 
-    // Mostrar popup de Ano Novo automaticamente
+    // Função para fechar popup de atualização de janeiro
+    function fecharAtualizacaoJan() {
+      const popup = document.getElementById('popup-atualizacao-jan');
+      popup.style.opacity = '0';
+      popup.style.transition = 'opacity 0.3s ease';
+      setTimeout(() => {
+        popup.classList.add('hidden');
+        popup.style.opacity = '1';
+      }, 300);
+      // Salvar que já viu o popup
+      localStorage.setItem('popupAtualizacaoJan2026', 'visto');
+    }
+
+    // Mostrar popup de atualização de janeiro automaticamente
     window.addEventListener('DOMContentLoaded', function() {
-      const jaViu = localStorage.getItem('popupAnoNovo2026');
-      if (!jaViu) {
+      const jaViuAnoNovo = localStorage.getItem('popupAnoNovo2026');
+      const jaViuAtualizacao = localStorage.getItem('popupAtualizacaoJan2026');
+      
+      // Se não viu o popup de ano novo, mostrar ele primeiro
+      if (!jaViuAnoNovo) {
         setTimeout(() => {
           document.getElementById('popup-ano-novo').classList.remove('hidden');
+        }, 1000);
+      }
+      // Se já viu o de ano novo mas não viu o de atualização, mostrar o de atualização
+      else if (!jaViuAtualizacao) {
+        setTimeout(() => {
+          document.getElementById('popup-atualizacao-jan').classList.remove('hidden');
         }, 1000);
       }
     });
@@ -1757,7 +1812,7 @@
       const dados = [
         ['Valor', 'Recebedor', 'Referencia', 'Descricao', 'Emitente', 'CPFCNPJ', 'Data'],
         ['R$ 1.500,00', 'João Silva', 'Serviços de consultoria', 'Projeto X - Fase 1', 'Maria Santos', '123.456.789-00', '15/01/2024'],
-        ['R$ 2.300,00', 'Pedro Costa', 'Manutenção predial', 'Reparo hidr��ulico', 'José Oliveira', '987.654.321-00', '20/01/2024']
+        ['R$ 2.300,00', 'Pedro Costa', 'Manutenção predial', 'Reparo hidráulico', 'José Oliveira', '987.654.321-00', '20/01/2024']
       ];
 
       // Criar workbook
@@ -2457,5 +2512,5 @@
       applyConfig(window.elementSdk.config || defaultConfig);
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b7fadeac4bfc6c1',t:'MTc2NzQxMzc3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b7fbd3556b3a5e7',t:'MTc2NzQxNDM5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
