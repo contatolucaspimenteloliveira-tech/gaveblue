@@ -1,1300 +1,916 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full">
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Assistente de Cadastro - Sistema de Gestão de Frotas</title>
+  <title>GaveBlue Premium - Cadastro de Assinatura</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
   <style>
     body {
       box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
       margin: 0;
       padding: 0;
+    }
+    .form-wrapper {
       height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
-      overflow: hidden;
-    }
-    html {
-      height: 100%;
-    }
-    .app-container {
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-    .chat-container {
-      flex: 1;
+      width: 100%;
       overflow-y: auto;
-      scroll-behavior: smooth;
-      padding-bottom: env(safe-area-inset-bottom);
+      transition: background-color 0.3s ease;
     }
-    .chat-container::-webkit-scrollbar {
-      width: 4px;
+    .step-slide-in {
+      animation: slideInRight 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
-    .chat-container::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 10px;
+    .step-slide-out {
+      animation: slideOutLeft 0.3s cubic-bezier(0.55, 0.085, 0.68, 0.53);
     }
-    .chat-container::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 10px;
-      border: 2px solid transparent;
-      background-clip: content-box;
-    }
-    .chat-container::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.3);
-      background-clip: content-box;
-    }
-    .header-fixed {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-    }
-    .input-fixed {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 20;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-    @media (max-width: 768px) {
-      .chat-container {
-        padding-bottom: 120px;
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(40px);
       }
-      .header-fixed {
-        padding: 12px 16px;
-      }
-      .input-fixed {
-        padding: 12px 16px;
-        padding-bottom: calc(12px + env(safe-area-inset-bottom));
-      }
-      .chat-messages-mobile {
-        padding: 12px 16px;
-      }
-      .mobile-avatar {
-        width: 32px;
-        height: 32px;
-      }
-      .mobile-message {
-        max-width: calc(100vw - 80px);
-        padding: 12px 16px;
-        font-size: 14px;
-        line-height: 1.4;
-      }
-      .mobile-title {
-        font-size: 18px;
-      }
-      .mobile-subtitle {
-        font-size: 12px;
-      }
-      .mobile-button {
-        padding: 12px 16px;
-        font-size: 14px;
-        min-height: 44px;
-      }
-      .mobile-input {
-        padding: 12px 16px;
-        font-size: 16px;
-        min-height: 44px;
+      to {
+        opacity: 1;
+        transform: translateX(0);
       }
     }
-    .typing-indicator {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 0;
-    }
-    .typing-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      animation: typing 1.6s infinite ease-in-out;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-    }
-    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-    .typing-dot:nth-child(3) { animation-delay: 0s; }
-    @keyframes typing {
-      0%, 80%, 100% { 
-        transform: scale(0.8) translateY(0); 
-        opacity: 0.6; 
+    @keyframes slideOutLeft {
+      from {
+        opacity: 1;
+        transform: translateX(0);
       }
-      40% { 
-        transform: scale(1.1) translateY(-8px); 
-        opacity: 1; 
+      to {
+        opacity: 0;
+        transform: translateX(-40px);
       }
     }
-    .message-enter {
-      animation: messageSlide 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    .progress-bar {
+      transition: width 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
-    @keyframes messageSlide {
-      from { 
-        opacity: 0; 
-        transform: translateY(24px) scale(0.95); 
-      }
-      to { 
-        opacity: 1; 
-        transform: translateY(0) scale(1); 
-      }
-    }
-    .glass-effect {
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-    }
-    .bot-avatar {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
-      border: 2px solid rgba(255, 255, 255, 0.1);
-    }
-    .user-avatar {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      box-shadow: 0 8px 32px rgba(245, 87, 108, 0.3);
-      border: 2px solid rgba(255, 255, 255, 0.1);
-    }
-    .modern-button {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
-    .modern-button:hover {
-      background: rgba(255, 255, 255, 0.15);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
-    .modern-input {
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+    .theme-toggle {
       transition: all 0.3s ease;
     }
-    .modern-input:focus {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(102, 126, 234, 0.5);
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    .oneui-input:focus {
+      transform: translateY(-2px);
+    }
+    .oneui-button:hover {
+      transform: scale(1.02);
+    }
+    .oneui-button:active {
+      transform: scale(0.98);
+    }
+    select option {
+      background-color: #1a2942;
+      color: #ffffff;
+      padding: 10px;
     }
   </style>
   <style>@view-transition { navigation: auto; }</style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
-  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
  </head>
- <body class="min-h-full">
-  <div id="app" class="min-h-full"></div><!-- Formulário invisível para envio via Web3Forms -->
-  <form id="invisibleForm" action="https://api.web3forms.com/submit" method="POST" style="display:none;"><input type="hidden" name="access_key" value="3d63fe0c-224b-41c8-9c8a-874feabd403d"> <input type="hidden" name="subject" value="Novo cadastro recebido via Assistente GaveBlue"> <input type="hidden" name="from_name" value="Assistente GaveBlue">
-  </form>
+ <body class="h-full">
+  <div id="app" class="form-wrapper"></div>
   <script>
-    const config = {
-      background_color: "#0f172a",
-      surface_color: "#1e293b",
-      text_color: "#f1f5f9",
+    const defaultConfig = {
+      background_color: "#0a1628",
+      surface_color: "#1a2942",
+      text_color: "#ffffff",
       primary_action_color: "#3b82f6",
-      secondary_action_color: "#64748b",
-      font_family: "Inter",
+      secondary_action_color: "#94a3b8",
+      font_family: "One UI Sans",
       font_size: 16,
-      form_title: "Assistente de Cadastro",
-      warning_message: "Estamos em fase de testes, por isso seu cadastro será analisado individualmente. Se quiser apoiar este projeto, fique à vontade para contribuir através da nossa chave PIX:",
-      pix_key: "financeiro@gaveblue.com",
-      success_message: "Cadastro enviado com sucesso! Entraremos em contato em breve."
+      form_title: "GaveBlue Premium",
+      submit_button_text: "Confirmar Cadastro"
     };
 
-    const lightTheme = {
-      background_color: "#f8fafc",
-      surface_color: "#ffffff",
-      text_color: "#1e293b",
-      primary_action_color: "#3b82f6",
-      secondary_action_color: "#64748b"
-    };
+    let config = { ...defaultConfig };
+    let currentStep = 0;
+    let formData = {};
+    let stepStatus = {};
 
-    const darkTheme = {
-      background_color: "#0f172a",
-      surface_color: "#1e293b",
-      text_color: "#f1f5f9",
-      primary_action_color: "#3b82f6",
-      secondary_action_color: "#64748b"
-    };
-
-    let isDarkMode = true;
-    let chatStep = 0;
-    let userData = {};
-    let isTyping = false;
-
-    const questions = [
-      { key: 'tipo_pessoa', question: 'Olá! 👋 Sou o assistente da GaveBlue. Que bom que você deseja ter um sistema de gestão de frotas eficiente e totalmente intuitivo! Vamos iniciar seu cadastro? Você deseja que seu contrato seja em nome de pessoa física ou jurídica?', type: 'select', options: ['Pessoa Física', 'Pessoa Jurídica'] },
-      { key: 'nome_completo', question: 'Perfeito! Agora me diga seu nome completo:', type: 'text', validation: 'fullname' },
-      { key: 'documento', question: '', type: 'text', validation: 'document' }, // Pergunta será definida dinamicamente
-      { key: 'email', question: 'Qual é o seu e-mail?', type: 'email', validation: 'email' },
-      { key: 'telefone', question: 'E seu telefone para contato?', type: 'tel', validation: 'phone' },
-      { key: 'quantidade_veiculos', question: 'Quantos veículos você possui na sua frota?', type: 'select', options: ['1-5 veículos', '6-10 veículos', '11-20 veículos', '21-50 veículos', 'Mais de 50 veículos'] },
-      { key: 'melhor_data_pagamento', question: 'Qual seria a melhor data do mês para pagamento?', type: 'select', options: ['Dia 5', 'Dia 10', 'Dia 15', 'Dia 20', 'Dia 25', 'Dia 30', 'Último dia útil'] },
-      { key: 'melhor_horario_contato', question: 'Qual o melhor horário para entrarmos em contato?', type: 'select', options: ['Manhã (8h às 12h)', 'Tarde (12h às 18h)', 'Noite (18h às 22h)', 'Qualquer horário'] },
-      { key: 'nome_usuario', question: 'Escolha um nome de usuário para acessar o sistema:', type: 'text', validation: 'username' },
-      { key: 'senha', question: 'Por último, crie uma senha segura (mínimo 6 caracteres):', type: 'password', validation: 'password' },
-      { key: 'confirmar_senha', question: 'Confirme sua senha:', type: 'password', validation: 'confirm_password' }
+    const steps = [
+      {
+        title: "Informações Pessoais",
+        subtitle: "Nos conte um pouco sobre você",
+        fields: [
+          { id: "tipo_pessoa", label: "Tipo de Pessoa", type: "select", options: ["Pessoa Física", "Pessoa Jurídica"], required: true },
+          { id: "nome_completo", label: "Nome Completo", type: "text", placeholder: "Digite seu nome completo", required: true },
+          { id: "documento", label: "CPF/CNPJ", type: "text", placeholder: "Digite seu documento", required: true }
+        ]
+      },
+      {
+        title: "Contato",
+        subtitle: "Como podemos falar com você?",
+        fields: [
+          { id: "email", label: "E-mail", type: "email", placeholder: "seu@email.com", required: true },
+          { id: "telefone", label: "Telefone", type: "tel", placeholder: "(11) 99999-9999", required: true },
+          { id: "melhor_horario_contato", label: "Melhor Horário para Contato", type: "select", options: ["Manhã (8h às 12h)", "Tarde (12h às 18h)", "Noite (18h às 22h)", "Qualquer horário"], required: true }
+        ]
+      },
+      {
+        title: "Sobre seu Negócio",
+        subtitle: "Conte-nos mais sobre sua empresa",
+        fields: [
+          { id: "tipo_negocio", label: "Tipo de Negócio", type: "select", options: ["Gestão de Frotas", "Transportadora", "Logística", "E-commerce", "Varejo", "Serviços", "Indústria", "Outros"], required: true },
+          { id: "tamanho_empresa", label: "Tamanho da Empresa", type: "select", options: ["Autônomo/MEI", "Pequena (até 10 funcionários)", "Média (11-50 funcionários)", "Grande (51-200 funcionários)", "Corporativo (mais de 200)"], required: true }
+        ]
+      },
+      {
+        title: "Plano e Pagamento",
+        subtitle: "Escolha o melhor plano para você",
+        isPlanSelection: true,
+        fields: [
+          { id: "melhor_data_pagamento", label: "Melhor Data de Vencimento", type: "select", options: ["Dia 5", "Dia 10", "Dia 15", "Dia 20", "Dia 25", "Dia 30", "Último dia útil"], required: true }
+        ]
+      },
+      {
+        title: "Acesso ao Sistema",
+        subtitle: "Crie suas credenciais de acesso",
+        canSkip: true,
+        fields: [
+          { id: "nome_usuario", label: "Nome de Usuário", type: "text", placeholder: "escolha_um_usuario", required: false },
+          { id: "senha", label: "Senha", type: "password", placeholder: "Mínimo 6 caracteres", required: false, minlength: 6 },
+          { id: "confirmar_senha", label: "Confirmar Senha", type: "password", placeholder: "Digite a senha novamente", required: false, minlength: 6 }
+        ]
+      },
+      {
+        title: "Revisão Final",
+        subtitle: "Confira seus dados antes de finalizar",
+        isReview: true
+      },
+      {
+        title: "Analisando Cadastro",
+        subtitle: "Estamos validando suas informações",
+        isLoading: true
+      },
+      {
+        title: "Cadastro em Análise",
+        subtitle: "Recebemos suas informações",
+        isConfirmation: true
+      }
     ];
 
-
-
-    function validateInput(value, type, tipoPessoa = null) {
-      switch (type) {
-        case 'fullname':
-          if (value.length < 5) return 'Nome completo deve ter pelo menos 5 caracteres.';
-          if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(value)) return 'Nome deve conter apenas letras.';
-          if (value.split(' ').length < 2) return 'Digite nome e sobrenome.';
-          break;
-        
-        case 'email':
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(value)) return 'Por favor, digite um e-mail válido.';
-          break;
-        
-        case 'phone':
-          const phoneRegex = /^\(?[1-9]{2}\)?\s?9?\d{4}-?\d{4}$/;
-          if (!phoneRegex.test(value.replace(/\s/g, ''))) return 'Digite um telefone válido (ex: 11999999999).';
-          break;
-        
-        case 'document':
-          if (tipoPessoa === 'Pessoa Física') {
-            const cpf = value.replace(/\D/g, '');
-            if (cpf.length !== 11) return 'CPF deve ter 11 d��gitos.';
-            if (/^(\d)\1{10}$/.test(cpf)) return 'CPF inválido.';
-          } else if (tipoPessoa === 'Pessoa Jurídica') {
-            const cnpj = value.replace(/\D/g, '');
-            if (cnpj.length !== 14) return 'CNPJ deve ter 14 dígitos.';
-          }
-          break;
-        
-        case 'username':
-          if (value.length < 3) return 'Nome de usuário deve ter pelo menos 3 caracteres.';
-          if (!/^[a-zA-Z0-9_]+$/.test(value)) return 'Use apenas letras, números e underscore.';
-          break;
-        
-        case 'password':
-          if (value.length < 6) return 'Senha deve ter pelo menos 6 caracteres.';
-          break;
-        
-        case 'confirm_password':
-          if (value !== userData.senha) return 'As senhas não coincidem. Digite novamente.';
-          break;
-      }
-      return null;
-    }
-
-    function getSmartResponse(question, answer) {
-      const responses = {
-        'tipo_pessoa': `Entendi, ${answer}! 📄`,
-        'nome_completo': `Prazer em conhecê-lo, ${answer.split(' ')[0]}! 😊`,
-        'documento': `Documento registrado! ✅`,
-        'email': `E-mail confirmado! 📧`,
-        'telefone': `Telefone salvo! 📱`,
-        'quantidade_veiculos': `${answer}, ótimo tamanho de frota! 🚗`,
-        'melhor_data_pagamento': `${answer} anotado! 📅`,
-        'melhor_horario_contato': `${answer}, perfeito! ⏰`,
-        'nome_usuario': `Nome de usuário "${answer}" disponível! 👤`,
-        'senha': `Senha segura criada! 🔒`,
-        'confirmar_senha': `Senha confirmada com sucesso! ✅`
-      };
-      return responses[question] || 'Perfeito! ✅';
-    }
-
-    function initializeApp() {
-      renderApp();
-      applyConfig(config);
-      startChat();
-    }
-
-    function toggleTheme() {
-      isDarkMode = !isDarkMode;
-      const themeColors = isDarkMode ? darkTheme : lightTheme;
-      
-      // Atualizar configuração
-      Object.assign(config, themeColors);
-      applyConfig(config);
-      updateThemeButton();
-    }
-
-    function updateThemeButton() {
-      const themeIcon = document.getElementById('theme-icon');
-      const themeText = document.getElementById('theme-text');
-      const themeButton = document.getElementById('theme-toggle');
-      
-      if (isDarkMode) {
-        // Ícone de lua para modo escuro - cor branca
-        themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
-        themeText.textContent = 'Escuro';
-        themeText.style.color = 'white';
-        themeButton.style.color = 'white';
-      } else {
-        // Ícone de sol para modo claro - cor escura
-        themeIcon.innerHTML = '<path d="M12 3V4M12 20V21M4 12H3M6.31412 6.31412L5.5 5.5M17.6859 6.31412L18.5 5.5M6.31412 17.69L5.5 18.5M17.6859 17.69L18.5 18.5M21 12H20M16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12Z" stroke="#1e293b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
-        themeText.textContent = 'Claro';
-        themeText.style.color = '#1e293b';
-        themeButton.style.color = '#1e293b';
-      }
-    }
-
-    function applyConfig(cfg) {
+    function renderForm() {
       const app = document.getElementById('app');
-      const customFont = cfg.font_family;
+      const customFont = config.font_family || defaultConfig.font_family;
       const baseFontStack = 'system-ui, -apple-system, sans-serif';
-      const baseSize = cfg.font_size;
-      
-      app.style.backgroundColor = cfg.background_color;
+      const baseSize = config.font_size || defaultConfig.font_size;
+      const step = steps[currentStep];
+
+      app.style.backgroundColor = config.background_color || defaultConfig.background_color;
       app.style.fontFamily = `${customFont}, ${baseFontStack}`;
+      app.style.color = config.text_color || defaultConfig.text_color;
 
-      const title = document.getElementById('chat-title');
-      if (title) {
-        title.textContent = cfg.form_title;
-        title.style.color = cfg.text_color;
-        title.style.fontSize = `${baseSize * 1.5}px`;
-        title.style.fontFamily = `${customFont}, ${baseFontStack}`;
-      }
-
-      const subtitle = document.getElementById('subtitle');
-      if (subtitle) {
-        subtitle.style.color = cfg.text_color;
-        subtitle.style.fontSize = `${baseSize * 0.875}px`;
-        subtitle.style.fontFamily = `${customFont}, ${baseFontStack}`;
-      }
-
-      const messages = document.querySelectorAll('.bot-message, .user-message');
-      messages.forEach(msg => {
-        msg.style.fontSize = `${baseSize}px`;
-        msg.style.fontFamily = `${customFont}, ${baseFontStack}`;
-        if (msg.classList.contains('bot-message')) {
-          msg.style.backgroundColor = cfg.surface_color;
-          msg.style.color = cfg.text_color;
-        } else {
-          msg.style.backgroundColor = cfg.primary_action_color;
-          msg.style.color = '#ffffff';
-        }
-      });
-
-      const input = document.getElementById('user-input');
-      if (input) {
-        input.style.backgroundColor = cfg.surface_color;
-        input.style.color = cfg.text_color;
-        input.style.borderColor = cfg.secondary_action_color;
-        input.style.fontSize = `${baseSize}px`;
-        input.style.fontFamily = `${customFont}, ${baseFontStack}`;
-      }
-
-      const sendBtn = document.getElementById('send-btn');
-      if (sendBtn) {
-        sendBtn.style.backgroundColor = cfg.primary_action_color;
-        sendBtn.style.fontSize = `${baseSize}px`;
-        sendBtn.style.fontFamily = `${customFont}, ${baseFontStack}`;
-      }
-
-      const optionButtons = document.querySelectorAll('.option-btn');
-      optionButtons.forEach(btn => {
-        btn.style.backgroundColor = cfg.surface_color;
-        btn.style.color = cfg.text_color;
-        btn.style.borderColor = cfg.secondary_action_color;
-        btn.style.fontSize = `${baseSize * 0.875}px`;
-        btn.style.fontFamily = `${customFont}, ${baseFontStack}`;
-      });
-    }
-
-    function renderApp() {
-      const app = document.getElementById('app');
       app.innerHTML = `
-        <div class="app-container max-w-4xl mx-auto">
-          <!-- Header Fixo -->
-          <div class="header-fixed flex-shrink-0 p-6 md:p-6 glass-effect border-b border-white/10">
-            <div class="flex items-center gap-3 md:gap-4">
-              <div class="w-10 h-10 md:w-12 md:h-12 mobile-avatar rounded-2xl flex items-center justify-center bot-avatar">
-                <svg width="20" height="20" class="md:w-6 md:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="6" y="6" width="12" height="10" rx="2" fill="white" fill-opacity="0.9"/>
-                  <circle cx="9" cy="10" r="1.5" fill="#667eea"/>
-                  <circle cx="15" cy="10" r="1.5" fill="#667eea"/>
-                  <path d="M10 13H14" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
-                  <rect x="11" y="2" width="2" height="4" rx="1" fill="white" fill-opacity="0.8"/>
-                  <rect x="4" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
-                  <rect x="17" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
-                  <rect x="8" y="16" width="8" height="3" rx="1.5" fill="white" fill-opacity="0.6"/>
-                </svg>
+        <div class="min-h-full flex flex-col py-4 px-4">
+          
+          <!-- Header -->
+          <div class="max-w-2xl w-full mx-auto mb-4" style="position: sticky; top: 0; background-color: ${config.background_color}; z-index: 10; padding-top: 16px; padding-bottom: 8px;">
+            <div class="mb-3">
+              <h1 class="font-bold" style="color: ${config.text_color}; font-size: ${baseSize * 1.5}px; font-family: ${customFont}, ${baseFontStack}; font-weight: 700;">
+                ${config.form_title || defaultConfig.form_title}
+              </h1>
+              <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.85}px; margin-top: 2px;">
+                Cadastro de Assinatura Premium
+              </p>
+            </div>
+
+            <!-- Indicador de Etapas -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 8px;">
+              ${steps.map((s, idx) => {
+                let iconContent = '';
+                let bgColor = '';
+                let iconColor = '';
+                let animation = '';
+                let cssClass = '';
+                
+                if (stepStatus[idx] === 'success') {
+                  iconContent = '✓';
+                  bgColor = '#10b981';
+                  iconColor = 'white';
+                  if (idx === currentStep - 1) {
+                    cssClass = 'success-icon';
+                  }
+                } else if (stepStatus[idx] === 'error') {
+                  iconContent = '✕';
+                  bgColor = '#ef4444';
+                  iconColor = 'white';
+                  if (idx === currentStep) {
+                    cssClass = 'error-icon';
+                  }
+                } else if (stepStatus[idx] === 'warning') {
+                  iconContent = '⚠';
+                  bgColor = '#fbbf24';
+                  iconColor = 'white';
+                } else if (idx === currentStep) {
+                  iconContent = '⟳';
+                  bgColor = '#fbbf24';
+                  iconColor = 'white';
+                  animation = 'spin 2s linear infinite';
+                } else if (idx < currentStep) {
+                  iconContent = '✓';
+                  bgColor = config.primary_action_color;
+                  iconColor = 'white';
+                } else {
+                  iconContent = '';
+                  bgColor = 'rgba(255, 255, 255, 0.1)';
+                  iconColor = config.secondary_action_color;
+                }
+                
+                return `
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                  <div style="width: 100%; height: 2px; background-color: ${idx <= currentStep ? config.primary_action_color : 'rgba(255, 255, 255, 0.1)'}; border-radius: 2px; transition: all 0.3s;"></div>
+                  <div class="${cssClass}" style="width: 28px; height: 28px; border-radius: 14px; background: ${bgColor}; display: flex; align-items: center; justify-content: center; font-size: ${baseSize * 0.8}px; font-weight: 700; color: ${iconColor}; transition: all 0.3s; box-shadow: ${idx === currentStep ? `0 3px 10px ${bgColor}55` : 'none'}; animation: ${animation};">
+                    ${iconContent}
+                  </div>
+                </div>
+              `;
+              }).join('')}
+            </div>
+            <style>
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+              @keyframes checkmark {
+                0% { transform: scale(0.8); opacity: 0.5; }
+                50% { transform: scale(1.2); }
+                100% { transform: scale(1); opacity: 1; }
+              }
+              @keyframes errorShake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+              }
+              .success-icon { animation: checkmark 0.5s ease-out; }
+              .error-icon { animation: errorShake 0.4s ease-out; }
+            </style>
+            <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.8}px; margin-top: 8px; text-align: center;">
+              ${step.title}
+            </p>
+          </div>
+
+          <!-- Card Principal -->
+          <div class="max-w-2xl w-full mx-auto flex-1" style="display: flex; align-items: center;">
+            <div class="step-slide-in" style="background-color: ${config.surface_color}; padding: 20px; border-radius: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); height: 520px; width: 100%; overflow-y: auto;">
+              
+              <!-- Título da Etapa -->
+              <div style="text-align: center; margin-bottom: 16px;">
+                <h2 style="color: ${config.text_color}; font-size: ${baseSize * 1.3}px; font-weight: 700; margin-bottom: 4px; font-family: ${customFont}, ${baseFontStack};">
+                  ${step.title}
+                </h2>
+                <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.85}px;">
+                  ${step.subtitle}
+                </p>
               </div>
-              <div class="flex flex-col flex-1 min-w-0">
-                <h1 id="chat-title" class="font-semibold text-lg md:text-xl mobile-title tracking-tight truncate">Assistente de Cadastro</h1>
-                <p id="subtitle" class="text-xs md:text-sm mobile-subtitle mt-1 opacity-80 truncate">Sistema inteligente de cadastro</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button id="theme-toggle" class="flex items-center gap-1 md:gap-2 px-3 py-2 md:px-4 md:py-2 rounded-xl modern-button hover:scale-105 transition-all duration-300">
-                  <svg id="theme-icon" width="14" height="14" class="md:w-4 md:h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 3V4M12 20V21M4 12H3M6.31412 6.31412L5.5 5.5M17.6859 6.31412L18.5 5.5M6.31412 17.69L5.5 18.5M17.6859 17.69L18.5 18.5M21 12H20M16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span id="theme-text" class="text-xs font-medium hidden md:inline">Claro</span>
-                </button>
-              </div>
+
+              ${step.isPlanSelection ? `
+                <!-- Seleção de Planos -->
+                <form id="step-form" style="display: flex; flex-direction: column; gap: 14px;">
+                  
+                  <!-- Cards de Planos -->
+                  <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px;">
+                    
+                    <!-- Plano Mensal -->
+                    <div class="plan-card" data-plan="Premium Mensal - R$ 59,90/mês" style="background-color: rgba(255, 255, 255, 0.05); padding: 14px; border-radius: 14px; border: 2px solid ${formData.plano_escolhido === 'Premium Mensal - R$ 59,90/mês' ? config.primary_action_color : 'rgba(255, 255, 255, 0.1)'}; cursor: pointer; transition: all 0.2s; position: relative;">
+                      ${formData.plano_escolhido === 'Premium Mensal - R$ 59,90/mês' ? `<div style="position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 10px; background: ${config.primary_action_color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700;">✓</div>` : ''}
+                      <div style="position: absolute; top: -8px; right: 8px; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 3px 8px; border-radius: 8px; font-size: ${config.font_size * 0.65}px; font-weight: 700;">🎁 60% OFF</div>
+                      <h4 style="color: ${config.text_color}; font-size: ${config.font_size * 0.95}px; font-weight: 700; margin-bottom: 6px;">Mensal</h4>
+                      <p style="color: ${config.primary_action_color}; font-size: ${config.font_size * 1.3}px; font-weight: 700; margin-bottom: 4px;">R$ 59,90</p>
+                      <p style="color: ${config.secondary_action_color}; font-size: ${config.font_size * 0.75}px;">por mês</p>
+                      <p style="color: ${config.secondary_action_color}; font-size: ${config.font_size * 0.65}px; text-decoration: line-through; margin-top: 2px;">De R$ 149,00</p>
+                      <p style="color: #10b981; font-size: ${config.font_size * 0.7}px; margin-top: 4px; font-weight: 600;">60% OFF nos 3 primeiros meses</p>
+                    </div>
+
+                    <!-- Plano Anual - MAIS VANTAJOSO -->
+                    <div class="plan-card" data-plan="Premium Anual - R$ 299,00/ano" style="background: linear-gradient(135deg, ${config.primary_action_color}22, ${config.primary_action_color}11); padding: 14px; border-radius: 14px; border: 2px solid ${formData.plano_escolhido === 'Premium Anual - R$ 299,00/ano' ? config.primary_action_color : config.primary_action_color + '66'}; cursor: pointer; transition: all 0.2s; position: relative; box-shadow: 0 4px 12px ${config.primary_action_color}22;">
+                      ${formData.plano_escolhido === 'Premium Anual - R$ 299,00/ano' ? `<div style="position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 10px; background: ${config.primary_action_color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700;">✓</div>` : ''}
+                      <div style="position: absolute; top: -8px; right: 8px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 3px 8px; border-radius: 8px; font-size: ${config.font_size * 0.65}px; font-weight: 700;">🔥 88% OFF</div>
+                      <div style="position: absolute; top: 8px; left: 8px; background: ${config.primary_action_color}; color: white; padding: 2px 6px; border-radius: 6px; font-size: ${config.font_size * 0.65}px; font-weight: 700;">⭐ MAIS VANTAJOSO</div>
+                      <h4 style="color: ${config.text_color}; font-size: ${config.font_size * 0.95}px; font-weight: 700; margin-bottom: 6px; margin-top: 12px;">Anual</h4>
+                      <p style="color: ${config.primary_action_color}; font-size: ${config.font_size * 1.3}px; font-weight: 700; margin-bottom: 4px;">R$ 299,00</p>
+                      <p style="color: ${config.secondary_action_color}; font-size: ${config.font_size * 0.75}px;">por ano</p>
+                      <p style="color: ${config.secondary_action_color}; font-size: ${config.font_size * 0.65}px; text-decoration: line-through; margin-top: 2px;">De R$ 2.499,00</p>
+                      <p style="color: #ef4444; font-size: ${config.font_size * 0.7}px; margin-top: 4px; font-weight: 600;">Economia de R$ 420 no ano!</p>
+                    </div>
+
+                  </div>
+
+                  <!-- Data de Vencimento -->
+                  <div>
+                    <label for="melhor_data_pagamento" style="display: block; color: ${config.text_color}; font-size: ${config.font_size * 0.85}px; font-weight: 600; margin-bottom: 6px;">
+                      Melhor Data de Vencimento <span style="color: #ff4444;">*</span>
+                    </label>
+                    <select 
+                      id="melhor_data_pagamento" 
+                      name="melhor_data_pagamento" 
+                      required
+                      class="oneui-input" 
+                      style="width: 100%; padding: 12px 16px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.1); color: ${config.text_color}; font-size: ${config.font_size * 0.95}px; cursor: pointer; transition: all 0.2s; outline: none;">
+                      <option value="" style="background-color: #1a2942; color: #ffffff;">Selecione...</option>
+                      ${step.fields[0].options.map(opt => `<option value="${opt}" ${formData.melhor_data_pagamento === opt ? 'selected' : ''} style="background-color: #1a2942; color: #ffffff;">${opt}</option>`).join('')}
+                    </select>
+                  </div>
+
+                  <!-- Mensagem de Erro -->
+                  <div id="error-message" class="hidden" style="background-color: #ff444422; padding: 12px; border-radius: 12px; border-left: 4px solid #ff4444;">
+                    <p style="color: #ff6666; font-size: ${config.font_size * 0.85}px; font-weight: 600;">
+                      <span>❌</span> <span></span>
+                    </p>
+                  </div>
+
+                  <!-- Botões de Navegação -->
+                  <div style="display: flex; gap: 10px; margin-top: 8px;">
+                    <button type="button" id="prev-btn" class="oneui-button" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${config.font_size * 0.9}px; font-weight: 600; transition: all 0.2s; flex: 1;">
+                      ← Voltar
+                    </button>
+                    <button type="submit" id="next-btn" class="oneui-button" style="background: linear-gradient(135deg, ${config.primary_action_color}, ${config.primary_action_color}cc); color: white; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${config.font_size * 0.9}px; font-weight: 700; transition: all 0.2s; flex: 2; box-shadow: 0 4px 16px ${config.primary_action_color}44;">
+                      Continuar →
+                    </button>
+                  </div>
+                </form>
+              ` : step.isLoading ? `
+                <!-- Tela de Carregamento -->
+                <div style="text-align: center; padding: 40px 20px;">
+                  <div style="width: 60px; height: 60px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: ${config.primary_action_color}; border-radius: 30px; margin: 0 auto 24px; animation: spin 1s linear infinite;">
+                  </div>
+                  <h3 style="color: ${config.text_color}; font-size: ${baseSize * 1.2}px; font-weight: 700; margin-bottom: 10px;">
+                    Validando seus dados...
+                  </h3>
+                  <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.9}px; line-height: 1.6;">
+                    Aguarde enquanto verificamos suas informações
+                  </p>
+                </div>
+              ` : step.isConfirmation ? `
+                <!-- Tela de Confirmação Final -->
+                <div style="text-align: center; padding: 30px 20px;">
+                  <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 40px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 8px 32px rgba(251, 191, 36, 0.4); animation: pulse 2s infinite;">
+                    <span style="font-size: 44px;">⚠️</span>
+                  </div>
+                  <style>
+                    @keyframes pulse {
+                      0%, 100% { transform: scale(1); }
+                      50% { transform: scale(1.05); }
+                    }
+                  </style>
+                  
+                  <h3 style="color: #fbbf24; font-size: ${baseSize * 1.4}px; font-weight: 700; margin-bottom: 10px;">
+                    ⚠️ Não foi possível validar automaticamente
+                  </h3>
+                  
+                  <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.9}px; margin-bottom: 20px; line-height: 1.6;">
+                    Mas não se preocupe! Recebemos seu cadastro com sucesso 👍
+                  </p>
+                  
+                  <div style="background-color: rgba(255, 255, 255, 0.05); padding: 18px; border-radius: 16px; margin-bottom: 18px;">
+                    <p style="color: ${config.text_color}; font-size: ${baseSize * 0.95}px; margin-bottom: 10px; line-height: 1.6;">
+                      <strong>📧 Enviaremos a resposta para:</strong>
+                    </p>
+                    <p style="color: ${config.primary_action_color}; font-size: ${baseSize}px; font-weight: 600;">
+                      ${formData.email}
+                    </p>
+                  </div>
+                  
+                  <div style="background: linear-gradient(135deg, ${config.primary_action_color}15, ${config.primary_action_color}08); padding: 16px; border-radius: 16px; border-left: 4px solid ${config.primary_action_color};">
+                    <p style="color: ${config.text_color}; font-size: ${baseSize * 0.9}px; line-height: 1.6; margin-bottom: 10px;">
+                      <strong>👥 Nossa equipe irá analisar:</strong>
+                    </p>
+                    <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.85}px; line-height: 1.7;">
+                      ✓ Validação dos seus dados<br>
+                      ✓ Confirmação do cadastro<br>
+                      ✓ Instruções de pagamento<br>
+                      ✓ Credenciais de acesso ao sistema
+                    </p>
+                  </div>
+                  
+                  <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.8}px; margin-top: 18px;">
+                    Obrigado por escolher a GaveBlue! 💙
+                  </p>
+                </div>
+              ` : step.isReview ? `
+                <!-- Tela de Revisão -->
+                <form id="step-form">
+                  <div style="display: flex; flex-direction: column; gap: 10px;">
+                    
+                    <!-- Informações Pessoais -->
+                    <div style="background-color: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 14px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 style="color: ${config.text_color}; font-size: ${baseSize * 0.9}px; font-weight: 600;">
+                          Informações Pessoais
+                        </h3>
+                        <button type="button" class="edit-step-btn oneui-button" data-step="0" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 5px 10px; border-radius: 8px; border: none; cursor: pointer; font-size: ${baseSize * 0.75}px; font-weight: 600; transition: all 0.2s;">
+                          Editar
+                        </button>
+                      </div>
+                      <div style="display: flex; flex-direction: column; gap: 4px; font-size: ${baseSize * 0.8}px; color: ${config.secondary_action_color};">
+                        <p><strong style="color: ${config.text_color};">Tipo:</strong> ${formData.tipo_pessoa || '-'}</p>
+                        <p><strong style="color: ${config.text_color};">Nome:</strong> ${formData.nome_completo || '-'}</p>
+                        <p><strong style="color: ${config.text_color};">Documento:</strong> ${formData.documento || '-'}</p>
+                      </div>
+                    </div>
+
+                    <!-- Contato -->
+                    <div style="background-color: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 14px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 style="color: ${config.text_color}; font-size: ${baseSize * 0.9}px; font-weight: 600;">
+                          Contato
+                        </h3>
+                        <button type="button" class="edit-step-btn oneui-button" data-step="1" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 5px 10px; border-radius: 8px; border: none; cursor: pointer; font-size: ${baseSize * 0.75}px; font-weight: 600; transition: all 0.2s;">
+                          Editar
+                        </button>
+                      </div>
+                      <div style="display: flex; flex-direction: column; gap: 4px; font-size: ${baseSize * 0.8}px; color: ${config.secondary_action_color};">
+                        <p><strong style="color: ${config.text_color};">E-mail:</strong> ${formData.email || '-'}</p>
+                        <p><strong style="color: ${config.text_color};">Telefone:</strong> ${formData.telefone || '-'}</p>
+                        <p><strong style="color: ${config.text_color};">Horário:</strong> ${formData.melhor_horario_contato || '-'}</p>
+                      </div>
+                    </div>
+
+                    <!-- Negócio -->
+                    <div style="background-color: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 14px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 style="color: ${config.text_color}; font-size: ${baseSize * 0.9}px; font-weight: 600;">
+                          Seu Negócio
+                        </h3>
+                        <button type="button" class="edit-step-btn oneui-button" data-step="2" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 5px 10px; border-radius: 8px; border: none; cursor: pointer; font-size: ${baseSize * 0.75}px; font-weight: 600; transition: all 0.2s;">
+                          Editar
+                        </button>
+                      </div>
+                      <div style="display: flex; flex-direction: column; gap: 4px; font-size: ${baseSize * 0.8}px; color: ${config.secondary_action_color};">
+                        <p><strong style="color: ${config.text_color};">Tipo:</strong> ${formData.tipo_negocio || '-'}</p>
+                        <p><strong style="color: ${config.text_color};">Tamanho:</strong> ${formData.tamanho_empresa || '-'}</p>
+                      </div>
+                    </div>
+
+                    <!-- Plano -->
+                    <div style="background-color: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 14px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 style="color: ${config.text_color}; font-size: ${baseSize * 0.9}px; font-weight: 600;">
+                          Plano e Pagamento
+                        </h3>
+                        <button type="button" class="edit-step-btn oneui-button" data-step="3" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 5px 10px; border-radius: 8px; border: none; cursor: pointer; font-size: ${baseSize * 0.75}px; font-weight: 600; transition: all 0.2s;">
+                          Editar
+                        </button>
+                      </div>
+                      <div style="display: flex; flex-direction: column; gap: 4px; font-size: ${baseSize * 0.8}px; color: ${config.secondary_action_color};">
+                        <p><strong style="color: ${config.text_color};">Plano:</strong> ${formData.plano_escolhido || '-'}</p>
+                        <p><strong style="color: ${config.text_color};">Vencimento:</strong> ${formData.melhor_data_pagamento || '-'}</p>
+                      </div>
+                    </div>
+
+                    <!-- Acesso -->
+                    ${formData.nome_usuario || formData.senha ? `
+                    <div style="background-color: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 14px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 style="color: ${config.text_color}; font-size: ${baseSize * 0.9}px; font-weight: 600;">
+                          Acesso ao Sistema
+                        </h3>
+                        <button type="button" class="edit-step-btn oneui-button" data-step="4" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 5px 10px; border-radius: 8px; border: none; cursor: pointer; font-size: ${baseSize * 0.75}px; font-weight: 600; transition: all 0.2s;">
+                          Editar
+                        </button>
+                      </div>
+                      <div style="display: flex; flex-direction: column; gap: 4px; font-size: ${baseSize * 0.8}px; color: ${config.secondary_action_color};">
+                        <p><strong style="color: ${config.text_color};">Usuário:</strong> ${formData.nome_usuario || '-'}</p>
+                        <p><strong style="color: ${config.text_color};">Senha:</strong> ${'●'.repeat(formData.senha?.length || 0)}</p>
+                      </div>
+                    </div>
+                    ` : `
+                    <div style="background-color: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 14px; border-left: 4px solid ${config.secondary_action_color};">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <h3 style="color: ${config.text_color}; font-size: ${baseSize * 0.9}px; font-weight: 600;">
+                          Acesso ao Sistema
+                        </h3>
+                        <button type="button" class="edit-step-btn oneui-button" data-step="4" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 5px 10px; border-radius: 8px; border: none; cursor: pointer; font-size: ${baseSize * 0.75}px; font-weight: 600; transition: all 0.2s;">
+                          Adicionar
+                        </button>
+                      </div>
+                      <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.8}px;">
+                        Etapa pulada - Credenciais serão enviadas por e-mail
+                      </p>
+                    </div>
+                    `}
+
+                    <!-- Info PIX -->
+                    <div style="background: linear-gradient(135deg, ${config.primary_action_color}15, ${config.primary_action_color}08); padding: 12px; border-radius: 14px; border-left: 4px solid ${config.primary_action_color};">
+                      <p style="color: ${config.text_color}; font-size: ${baseSize * 0.85}px; font-weight: 600; margin-bottom: 4px;">
+                        💳 Informações de Pagamento
+                      </p>
+                      <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.8}px; margin-bottom: 4px;">
+                        Após confirmar, envie o pagamento via PIX:
+                      </p>
+                      <p style="color: ${config.primary_action_color}; font-size: ${baseSize * 0.9}px; font-weight: 600;">
+                        financeiro@gaveblue.com
+                      </p>
+                    </div>
+
+                  </div>
+
+                  <!-- Mensagem de Erro -->
+                  <div id="error-message" class="hidden" style="background-color: #ff444422; padding: 12px; border-radius: 12px; border-left: 4px solid #ff4444; margin-top: 14px;">
+                    <p style="color: #ff6666; font-size: ${baseSize * 0.85}px; font-weight: 600;">
+                      <span>❌</span> <span></span>
+                    </p>
+                  </div>
+
+                  <!-- Botões -->
+                  <div style="display: flex; gap: 10px; margin-top: 16px;">
+                    <button type="button" id="prev-btn" class="oneui-button" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 600; transition: all 0.2s; flex: 1;">
+                      ← Voltar
+                    </button>
+                    <button type="submit" id="next-btn" class="oneui-button" style="background: linear-gradient(135deg, ${config.primary_action_color}, ${config.primary_action_color}cc); color: white; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 700; transition: all 0.2s; flex: 2; box-shadow: 0 4px 16px ${config.primary_action_color}44;">
+                      ${config.submit_button_text || defaultConfig.submit_button_text}
+                    </button>
+                  </div>
+                </form>
+              ` : `
+                <!-- Formulário de Etapa -->
+                <form id="step-form" style="display: flex; flex-direction: column; gap: 12px;">
+                  ${step.fields.map(field => `
+                    <div>
+                      <label for="${field.id}" style="display: block; color: ${config.text_color}; font-size: ${baseSize * 0.85}px; font-weight: 600; margin-bottom: 6px;">
+                        ${field.label} ${field.required ? '<span style="color: #ff4444;">*</span>' : ''}
+                      </label>
+                      ${field.type === 'select' ? `
+                        <select 
+                          id="${field.id}" 
+                          name="${field.id}" 
+                          ${field.required ? 'required' : ''}
+                          class="oneui-input" 
+                          style="width: 100%; padding: 12px 16px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.1); color: ${config.text_color}; font-size: ${baseSize * 0.95}px; cursor: pointer; transition: all 0.2s; outline: none;">
+                          <option value="" style="background-color: #1a2942; color: #ffffff;">Selecione...</option>
+                          ${field.options.map(opt => `<option value="${opt}" ${formData[field.id] === opt ? 'selected' : ''} style="background-color: #1a2942; color: #ffffff;">${opt}</option>`).join('')}
+                        </select>
+                      ` : `
+                        <input 
+                          type="${field.type}" 
+                          id="${field.id}" 
+                          name="${field.id}" 
+                          ${field.required ? 'required' : ''}
+                          ${field.minlength ? `minlength="${field.minlength}"` : ''}
+                          placeholder="${field.placeholder || ''}"
+                          value="${formData[field.id] || ''}"
+                          class="oneui-input" 
+                          style="width: 100%; padding: 12px 16px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.1); color: ${config.text_color}; font-size: ${baseSize * 0.95}px; transition: all 0.2s; outline: none;">
+                      `}
+                    </div>
+                  `).join('')}
+
+                  <!-- Mensagem de Erro -->
+                  <div id="error-message" class="hidden" style="background-color: #ff444422; padding: 12px; border-radius: 12px; border-left: 4px solid #ff4444;">
+                    <p style="color: #ff6666; font-size: ${baseSize * 0.85}px; font-weight: 600;">
+                      <span>❌</span> <span></span>
+                    </p>
+                  </div>
+
+                  <!-- Botões de Navegação -->
+                  <div style="display: flex; gap: 10px; margin-top: 8px;">
+                    ${currentStep > 0 ? `
+                      <button type="button" id="prev-btn" class="oneui-button" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 600; transition: all 0.2s; flex: 1;">
+                        ← Voltar
+                      </button>
+                    ` : ''}
+                    <button type="submit" id="next-btn" class="oneui-button" style="background: linear-gradient(135deg, ${config.primary_action_color}, ${config.primary_action_color}cc); color: white; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 700; transition: all 0.2s; flex: 2; box-shadow: 0 4px 16px ${config.primary_action_color}44;">
+                      Continuar →
+                    </button>
+                    ${step.canSkip ? `
+                      <button type="button" id="skip-btn" class="oneui-button" style="background-color: transparent; border: 2px solid ${config.secondary_action_color}44; color: ${config.secondary_action_color}; padding: 12px 18px; border-radius: 12px; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 600; transition: all 0.2s; flex: 1;">
+                        Pular
+                      </button>
+                    ` : ''}
+                  </div>
+                </form>
+              `}
+
             </div>
           </div>
 
-          <!-- Chat Messages - Área com Scroll -->
-          <div id="chat-messages" class="chat-container p-4 md:p-4 chat-messages-mobile space-y-3">
-          </div>
-
-          <!-- Input Area Fixo -->
-          <div id="input-area" class="input-fixed p-4 md:p-6 glass-effect border-t border-white/10">
-            <div class="flex gap-2 md:gap-3">
-              <input 
-                type="text" 
-                id="user-input" 
-                placeholder="Digite sua resposta..." 
-                class="flex-1 px-4 py-3 md:px-5 md:py-4 mobile-input modern-input rounded-2xl focus:outline-none text-white placeholder-white/60"
-                style="display: none;"
-              >
-              <button 
-                id="send-btn" 
-                class="px-6 py-3 md:px-8 md:py-4 mobile-button text-white font-medium rounded-2xl modern-button hover:scale-105 transition-all duration-300"
-                style="display: none;"
-              >
-                <svg width="18" height="18" class="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="currentColor"/>
-                </svg>
-              </button>
-            </div>
-            <div id="options-container" class="flex flex-wrap gap-2 md:gap-3 mt-3 md:mt-4" style="display: none;">
-            </div>
-          </div>
         </div>
+
+        <!-- Formulário Web3Forms (oculto) -->
+        <form id="web3forms" action="https://api.web3forms.com/submit" method="POST" style="display:none;">
+          <input type="hidden" name="access_key" value="3d63fe0c-224b-41c8-9c8a-874feabd403d">
+          <input type="hidden" name="subject" value="🎯 Nova Assinatura GaveBlue Premium">
+          <input type="hidden" name="from_name" value="GaveBlue Premium - Sistema de Assinaturas">
+        </form>
       `;
 
-      const input = document.getElementById('user-input');
-      const sendBtn = document.getElementById('send-btn');
-      const themeToggle = document.getElementById('theme-toggle');
-      
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !isTyping) {
-          handleUserInput();
-        }
-      });
-      
-      sendBtn.addEventListener('click', handleUserInput);
-      themeToggle.addEventListener('click', toggleTheme);
-      
-      // Inicializar botão de tema
-      updateThemeButton();
+      setupHandlers();
     }
 
-    async function startChat() {
-      // Mostrar aviso inicial
-      const avisoInicial = `
-        <div class="rounded-lg p-3 border-l-4 mb-3" style="background-color: rgba(251, 191, 36, 0.1); border-color: #f59e0b;">
-          <div class="flex items-start gap-2">
-            <span class="text-sm">⚠️</span>
-            <div class="text-sm">
-              <p class="mb-1">Estamos em fase de testes, por isso seu cadastro será analisado individualmente.</p>
-              <p>PIX para apoiar: <strong>financeiro@gaveblue.com</strong></p>
-            </div>
-          </div>
-        </div>
-      `;
-      
-      await addBotMessageWithHTML(avisoInicial);
-      await addBotMessage("Bem-vindo ao sistema de cadastro da GaveBlue! 🚗");
-      setTimeout(() => {
-        askNextQuestion();
-      }, 1000);
-    }
+    function setupHandlers() {
+      const form = document.getElementById('step-form');
+      const prevBtn = document.getElementById('prev-btn');
+      const skipBtn = document.getElementById('skip-btn');
+      const errorMsg = document.getElementById('error-message');
+      const editButtons = document.querySelectorAll('.edit-step-btn');
 
-    async function addBotMessage(message) {
-      const chatMessages = document.getElementById('chat-messages');
-      
-      // Mostrar indicador de digitação
-      const typingDiv = document.createElement('div');
-      typingDiv.className = 'flex items-start gap-2 md:gap-3 message-enter';
-      typingDiv.innerHTML = `
-        <div class="w-8 h-8 md:w-10 md:h-10 mobile-avatar rounded-2xl flex items-center justify-center flex-shrink-0 bot-avatar">
-          <svg width="16" height="16" class="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="6" y="6" width="12" height="10" rx="2" fill="white" fill-opacity="0.9"/>
-            <circle cx="9" cy="10" r="1.5" fill="#667eea"/>
-            <circle cx="15" cy="10" r="1.5" fill="#667eea"/>
-            <path d="M10 13H14" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
-            <rect x="11" y="2" width="2" height="4" rx="1" fill="white" fill-opacity="0.8"/>
-            <rect x="4" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
-            <rect x="17" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
-            <rect x="8" y="16" width="8" height="3" rx="1.5" fill="white" fill-opacity="0.6"/>
-          </svg>
-        </div>
-        <div class="bot-message mobile-message max-w-xs md:max-w-md lg:max-w-lg px-4 py-3 md:px-5 md:py-4 rounded-3xl glass-effect">
-          <div class="typing-indicator">
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-          </div>
-        </div>
-      `;
-      
-      chatMessages.appendChild(typingDiv);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-      
-      // Simular tempo de digitação
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      
-      // Remover indicador e mostrar mensagem real
-      typingDiv.remove();
-      
-      const messageDiv = document.createElement('div');
-      messageDiv.className = 'flex items-start gap-2 md:gap-3 message-enter';
-      messageDiv.innerHTML = `
-        <div class="w-8 h-8 md:w-10 md:h-10 mobile-avatar rounded-2xl flex items-center justify-center flex-shrink-0 bot-avatar">
-          <svg width="16" height="16" class="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="6" y="6" width="12" height="10" rx="2" fill="white" fill-opacity="0.9"/>
-            <circle cx="9" cy="10" r="1.5" fill="#667eea"/>
-            <circle cx="15" cy="10" r="1.5" fill="#667eea"/>
-            <path d="M10 13H14" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
-            <rect x="11" y="2" width="2" height="4" rx="1" fill="white" fill-opacity="0.8"/>
-            <rect x="4" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
-            <rect x="17" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
-            <rect x="8" y="16" width="8" height="3" rx="1.5" fill="white" fill-opacity="0.6"/>
-          </svg>
-        </div>
-        <div class="bot-message mobile-message max-w-xs md:max-w-md lg:max-w-lg px-4 py-3 md:px-5 md:py-4 rounded-3xl glass-effect">
-          ${message}
-        </div>
-      `;
-      
-      chatMessages.appendChild(messageDiv);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-      
-      applyConfig(config);
-    }
-
-    function addUserMessage(message) {
-      const chatMessages = document.getElementById('chat-messages');
-      
-      const messageDiv = document.createElement('div');
-      messageDiv.className = 'flex items-end gap-2 md:gap-3 justify-end message-enter';
-      messageDiv.innerHTML = `
-        <div class="user-message mobile-message max-w-xs md:max-w-md lg:max-w-lg px-4 py-3 md:px-5 md:py-4 rounded-3xl text-white">
-          ${message}
-        </div>
-        <div class="w-8 h-8 md:w-10 md:h-10 mobile-avatar rounded-2xl flex items-center justify-center flex-shrink-0 user-avatar">
-          <svg width="16" height="16" class="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="white" fill-opacity="0.9"/>
-          </svg>
-        </div>
-      `;
-      
-      chatMessages.appendChild(messageDiv);
-      
-      // Smooth scroll to bottom
-      setTimeout(() => {
-        chatMessages.scrollTo({
-          top: chatMessages.scrollHeight,
-          behavior: 'smooth'
+      if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+          currentStep--;
+          renderForm();
         });
-      }, 50);
-      
-      applyConfig(config);
-    }
-
-    async function askNextQuestion() {
-      if (chatStep >= questions.length) {
-        await finishRegistration();
-        return;
       }
 
-      isTyping = true;
-      const question = questions[chatStep];
-      
-      // Definir pergunta dinâmica para documento
-      if (question.key === 'documento') {
-        if (userData.tipo_pessoa === 'Pessoa Física') {
-          question.question = 'Agora digite seu CPF:';
-        } else {
-          question.question = 'Agora digite seu CNPJ:';
-        }
+      if (skipBtn) {
+        skipBtn.addEventListener('click', () => {
+          const currentFields = steps[currentStep].fields;
+          if (currentFields) {
+            currentFields.forEach(field => {
+              delete formData[field.id];
+            });
+          }
+          
+          stepStatus[currentStep] = 'success';
+          currentStep++;
+          renderForm();
+        });
       }
-      
-      await addBotMessage(question.question);
-      
-      const input = document.getElementById('user-input');
-      const sendBtn = document.getElementById('send-btn');
-      const optionsContainer = document.getElementById('options-container');
-      
-      if (question.type === 'select') {
-        // Mostrar opções como botões
-        input.style.display = 'none';
-        sendBtn.style.display = 'none';
-        optionsContainer.style.display = 'flex';
-        
-        optionsContainer.innerHTML = question.options.map(option => 
-          `<button class="option-btn mobile-button px-4 py-3 md:px-6 md:py-3 modern-button rounded-2xl hover:scale-105 transition-all duration-300 text-white/90 font-medium text-sm md:text-base" data-value="${option}">
-            ${option}
-          </button>`
-        ).join('');
-        
-        applyConfig(config);
-        
-        // Adicionar event listeners aos botões
-        optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const value = btn.getAttribute('data-value');
-            handleAnswer(value);
+
+      editButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentStep = parseInt(btn.getAttribute('data-step'));
+          renderForm();
+        });
+      });
+
+      const inputs = document.querySelectorAll('.oneui-input');
+      inputs.forEach(input => {
+        input.addEventListener('focus', (e) => {
+          e.target.style.borderColor = config.primary_action_color;
+        });
+        input.addEventListener('blur', (e) => {
+          e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        });
+      });
+
+      // Interatividade dos cards de plano
+      const planCards = document.querySelectorAll('.plan-card');
+      planCards.forEach(card => {
+        card.addEventListener('click', () => {
+          const planName = card.getAttribute('data-plan');
+          formData.plano_escolhido = planName;
+          
+          // Atualiza visualmente todos os cards
+          planCards.forEach(c => {
+            const cPlan = c.getAttribute('data-plan');
+            if (cPlan === planName) {
+              c.style.borderColor = config.primary_action_color;
+              c.style.transform = 'scale(1.02)';
+            } else {
+              c.style.borderColor = cPlan.includes('Anual') ? config.primary_action_color + '66' : 'rgba(255, 255, 255, 0.1)';
+              c.style.transform = 'scale(1)';
+            }
           });
+          
+          // Re-renderiza para mostrar checkmark
+          renderForm();
         });
-      } else {
-        // Mostrar input de texto
-        input.style.display = 'block';
-        sendBtn.style.display = 'block';
-        optionsContainer.style.display = 'none';
-        
-        input.type = question.type;
-        input.focus();
-      }
-      
-      isTyping = false;
-    }
 
-    function handleUserInput() {
-      if (isTyping) return;
-      
-      const input = document.getElementById('user-input');
-      const value = input.value.trim();
-      
-      if (!value) return;
-      
-      handleAnswer(value);
-      input.value = '';
-    }
+        card.addEventListener('mouseenter', () => {
+          card.style.transform = 'scale(1.02)';
+          card.style.boxShadow = `0 6px 20px ${config.primary_action_color}33`;
+        });
 
-    async function handleAnswer(answer) {
-      const question = questions[chatStep];
-      
-      // Validar entrada se necessário
-      if (question.validation) {
-        const tipoPessoa = question.key === 'documento' ? userData.tipo_pessoa : null;
-        const validationError = validateInput(answer, question.validation, tipoPessoa);
-        
-        if (validationError) {
-          await addBotMessage(`❌ ${validationError} Tente novamente:`);
-          return; // Não avança para próxima pergunta
-        }
-      }
-      
-      userData[question.key] = answer;
-      
-      // Mostrar senha como asteriscos no chat
-      const displayAnswer = question.type === 'password' ? '*'.repeat(answer.length) : answer;
-      addUserMessage(displayAnswer);
-      
-      // Esconder inputs
-      document.getElementById('user-input').style.display = 'none';
-      document.getElementById('send-btn').style.display = 'none';
-      document.getElementById('options-container').style.display = 'none';
-      
-      // Resposta inteligente do bot
-      const smartResponse = getSmartResponse(question.key, answer);
-      await addBotMessage(smartResponse);
-      
-      chatStep++;
-      
-      // Pequena pausa antes da próxima pergunta
-      setTimeout(() => {
-        askNextQuestion();
-      }, 1000);
-    }
-
-    async function finishRegistration() {
-      isTyping = true;
-      await addBotMessage("Perfeito! Vamos revisar suas informações antes de finalizar:");
-
-      // Mostrar resumo dos dados
-      const resumo = `
-        <div class="space-y-2 text-sm">
-          <div><strong>📋 Tipo:</strong> ${userData.tipo_pessoa}</div>
-          <div><strong>👤 Nome:</strong> ${userData.nome_completo}</div>
-          <div><strong>📄 Documento:</strong> ${userData.documento}</div>
-          <div><strong>📧 E-mail:</strong> ${userData.email}</div>
-          <div><strong>📱 Telefone:</strong> ${userData.telefone}</div>
-          <div><strong>🚗 Frota:</strong> ${userData.quantidade_veiculos}</div>
-          <div><strong>📅 Pagamento:</strong> ${userData.melhor_data_pagamento}</div>
-          <div><strong>⏰ Contato:</strong> ${userData.melhor_horario_contato}</div>
-          <div><strong>👤 Usuário:</strong> ${userData.nome_usuario}</div>
-        </div>
-      `;
-
-      await addBotMessageWithHTML(resumo);
-      await addBotMessage("Todas as informações estão corretas?");
-
-      // Mostrar botões de confirmação
-      const input = document.getElementById('user-input');
-      const sendBtn = document.getElementById('send-btn');
-      const optionsContainer = document.getElementById('options-container');
-      
-      input.style.display = 'none';
-      sendBtn.style.display = 'none';
-      optionsContainer.style.display = 'flex';
-      
-      optionsContainer.innerHTML = `
-        <button class="option-btn px-8 py-4 rounded-2xl hover:scale-105 transition-all duration-300 text-white font-medium" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);" data-value="confirmar">
-          ✅ Sim, finalizar cadastro
-        </button>
-        <button class="option-btn px-8 py-4 rounded-2xl hover:scale-105 transition-all duration-300 text-white font-medium" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 8px 32px rgba(245, 158, 11, 0.3);" data-value="corrigir">
-          ✏️ Corrigir informação
-        </button>
-        <button class="option-btn px-8 py-4 rounded-2xl hover:scale-105 transition-all duration-300 text-white font-medium" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 8px 32px rgba(239, 68, 68, 0.3);" data-value="cancelar">
-          ❌ Cancelar cadastro
-        </button>
-      `;
-      
-      applyConfig(config);
-      
-      // Adicionar event listeners aos botões
-      optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const value = btn.getAttribute('data-value');
-          
-          // Esconder botões
-          optionsContainer.style.display = 'none';
-          
-          if (value === 'confirmar') {
-            addUserMessage("✅ Sim, finalizar cadastro");
-            await processRegistration();
-          } else if (value === 'corrigir') {
-            addUserMessage("✏️ Corrigir informação");
-            await showCorrectionOptions();
-          } else {
-            addUserMessage("❌ Cancelar cadastro");
-            await addBotMessage("Cadastro cancelado. Se desejar tentar novamente, recarregue a página. 😊");
+        card.addEventListener('mouseleave', () => {
+          if (card.getAttribute('data-plan') !== formData.plano_escolhido) {
+            card.style.transform = 'scale(1)';
+            card.style.boxShadow = card.getAttribute('data-plan').includes('Anual') ? `0 4px 12px ${config.primary_action_color}22` : 'none';
           }
         });
       });
-      
-      isTyping = false;
-    }
 
-    async function addBotMessageWithHTML(htmlContent) {
-      const chatMessages = document.getElementById('chat-messages');
-      
-      // Mostrar indicador de digitação
-      const typingDiv = document.createElement('div');
-      typingDiv.className = 'flex items-start gap-2 md:gap-3 message-enter';
-      typingDiv.innerHTML = `
-        <div class="w-8 h-8 md:w-10 md:h-10 mobile-avatar rounded-2xl flex items-center justify-center flex-shrink-0 bot-avatar">
-          <svg width="16" height="16" class="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="6" y="6" width="12" height="10" rx="2" fill="white" fill-opacity="0.9"/>
-            <circle cx="9" cy="10" r="1.5" fill="#667eea"/>
-            <circle cx="15" cy="10" r="1.5" fill="#667eea"/>
-            <path d="M10 13H14" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
-            <rect x="11" y="2" width="2" height="4" rx="1" fill="white" fill-opacity="0.8"/>
-            <rect x="4" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
-            <rect x="17" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
-            <rect x="8" y="16" width="8" height="3" rx="1.5" fill="white" fill-opacity="0.6"/>
-          </svg>
-        </div>
-        <div class="bot-message mobile-message max-w-xs md:max-w-md lg:max-w-lg px-4 py-3 md:px-5 md:py-4 rounded-3xl glass-effect">
-          <div class="typing-indicator">
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-          </div>
-        </div>
-      `;
-      
-      chatMessages.appendChild(typingDiv);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-      
-      // Simular tempo de digitação
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Remover indicador e mostrar mensagem real
-      typingDiv.remove();
-      
-      const messageDiv = document.createElement('div');
-      messageDiv.className = 'flex items-start gap-2 md:gap-3 message-enter';
-      messageDiv.innerHTML = `
-        <div class="w-8 h-8 md:w-10 md:h-10 mobile-avatar rounded-2xl flex items-center justify-center flex-shrink-0 bot-avatar">
-          <svg width="16" height="16" class="md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="6" y="6" width="12" height="10" rx="2" fill="white" fill-opacity="0.9"/>
-            <circle cx="9" cy="10" r="1.5" fill="#667eea"/>
-            <circle cx="15" cy="10" r="1.5" fill="#667eea"/>
-            <path d="M10 13H14" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
-            <rect x="11" y="2" width="2" height="4" rx="1" fill="white" fill-opacity="0.8"/>
-            <rect x="4" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
-            <rect x="17" y="11" width="3" height="2" rx="1" fill="white" fill-opacity="0.7"/>
-            <rect x="8" y="16" width="8" height="3" rx="1.5" fill="white" fill-opacity="0.6"/>
-          </svg>
-        </div>
-        <div class="bot-message mobile-message max-w-xs md:max-w-md lg:max-w-lg px-4 py-3 md:px-5 md:py-4 rounded-3xl glass-effect">
-          ${htmlContent}
-        </div>
-      `;
-      
-      chatMessages.appendChild(messageDiv);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-      
-      applyConfig(config);
-    }
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (errorMsg) errorMsg.classList.add('hidden');
 
-    function enviarParaWeb3Forms(data) {
-      const form = document.getElementById("invisibleForm");
-
-      // Limpa inputs antigos (caso exista um segundo envio)
-      [...form.querySelectorAll(".dynamic-field")].forEach(e => e.remove());
-
-      // Cria campos ocultos para cada dado coletado
-      Object.entries(data).forEach(([chave, valor]) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = chave;
-        input.value = valor;
-        input.classList.add("dynamic-field");
-        form.appendChild(input);
-      });
-
-      form.submit(); // ENVIA PARA O WEB3FORMS 🎉
-    }
-
-    async function processRegistration() {
-      isTyping = true;
-      await addBotMessage("Perfeito! Estou processando seu cadastro...");
-
-      const clientData = {
-        id: Date.now().toString(),
-        tipo_pessoa: userData.tipo_pessoa,
-        nome_completo: userData.nome_completo,
-        documento: userData.documento,
-        email: userData.email,
-        telefone: userData.telefone,
-        melhor_data_pagamento: userData.melhor_data_pagamento,
-        quantidade_veiculos: userData.quantidade_veiculos,
-        melhor_horario_contato: userData.melhor_horario_contato,
-        nome_usuario: userData.nome_usuario,
-        senha: userData.senha,
-        data_cadastro: new Date().toISOString()
-      };
-
-      // Salvar dados no console para visualização
-      console.log('📋 Cadastro realizado:', clientData);
-      
-      // ENVIA PARA WEB3FORMS
-      enviarParaWeb3Forms(clientData);
-      
-      // Simular processamento
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      await addBotMessage("Cadastro enviado com sucesso! 🎉");
-      await addBotMessage("Em breve nossa equipe entrará em contato com você.");
-      
-      // Mensagem adicional sobre fase de testes
-      const mensagemTeste = `
-        <div class="rounded-lg p-3 border-l-4 mt-3" style="background-color: rgba(59, 130, 246, 0.1); border-color: #3b82f6;">
-          <div class="flex items-start gap-2">
-            <span class="text-sm">💡</span>
-            <div class="text-sm">
-              <p class="mb-2"><strong>Lembrando novamente:</strong> Estamos em fase de testes, e nosso sistema ainda está em desenvolvimento, por isso seu cadastro será analisado individualmente.</p>
-              <p class="mb-2">Se quiser ser um dos primeiros usuários do nosso sistema, a partir de <strong>R$ 39,90</strong> você tem acesso ilimitado ao nosso sistema até a data do lançamento sem pagar mais nada.</p>
-              <p><strong>PIX para apoiar:</strong> <span style="color: #3b82f6; font-weight: bold;">financeiro@gaveblue.com</span></p>
-            </div>
-          </div>
-        </div>
-      `;
-      
-      await addBotMessageWithHTML(mensagemTeste);
-      
-      // Mostrar opções finais
-      await showFinalOptions();
-      
-      isTyping = false;
-    }
-
-    async function showFinalOptions() {
-      await addBotMessage("O que você gostaria de fazer agora?");
-
-      const input = document.getElementById('user-input');
-      const sendBtn = document.getElementById('send-btn');
-      const optionsContainer = document.getElementById('options-container');
-      
-      input.style.display = 'none';
-      sendBtn.style.display = 'none';
-      optionsContainer.style.display = 'flex';
-      
-      optionsContainer.innerHTML = `
-        <button class="option-btn px-8 py-4 rounded-2xl hover:scale-105 transition-all duration-300 text-white font-medium" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);" data-value="novo">
-          🔄 Iniciar novo cadastro
-        </button>
-        <button class="option-btn px-8 py-4 rounded-2xl hover:scale-105 transition-all duration-300 text-white font-medium" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); box-shadow: 0 8px 32px rgba(107, 114, 128, 0.3);" data-value="encerrar">
-          👋 Encerrar atendimento
-        </button>
-      `;
-      
-      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
-      applyConfig(config);
-      
-      // Adicionar event listeners aos botões
-      optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const value = btn.getAttribute('data-value');
-          
-          // Esconder botões
-          optionsContainer.style.display = 'none';
-          
-          if (value === 'novo') {
-            addUserMessage("🔄 Iniciar novo cadastro");
-            await restartChat();
-          } else {
-            addUserMessage("👋 Encerrar atendimento");
-            await addBotMessage("Obrigado por usar nosso sistema! Até logo! 👋😊");
+          if (steps[currentStep].isReview) {
+            await submitForm();
+            return;
           }
-        });
-      });
-    }
 
-    async function showCorrectionOptions() {
-      await addBotMessage("Qual informação você gostaria de corrigir?");
-
-      const correctionOptions = [
-        { key: 'tipo_pessoa', label: '📋 Tipo de pessoa' },
-        { key: 'nome_completo', label: '👤 Nome completo' },
-        { key: 'documento', label: '📄 Documento (CPF/CNPJ)' },
-        { key: 'email', label: '📧 E-mail' },
-        { key: 'telefone', label: '📱 Telefone' },
-        { key: 'quantidade_veiculos', label: '🚗 Quantidade de veículos' },
-        { key: 'melhor_data_pagamento', label: '��� Data de pagamento' },
-        { key: 'melhor_horario_contato', label: '⏰ Horário de contato' },
-        { key: 'nome_usuario', label: '👤 Nome de usuário' },
-        { key: 'senha', label: '🔒 Senha' }
-      ];
-
-      const input = document.getElementById('user-input');
-      const sendBtn = document.getElementById('send-btn');
-      const optionsContainer = document.getElementById('options-container');
-      
-      input.style.display = 'none';
-      sendBtn.style.display = 'none';
-      optionsContainer.style.display = 'flex';
-      
-      optionsContainer.innerHTML = correctionOptions.map(option => 
-        `<button class="option-btn px-4 py-2 border rounded-lg hover:opacity-80 transition-opacity" data-value="${option.key}">
-          ${option.label}
-        </button>`
-      ).join('') + `
-        <button class="option-btn px-4 py-2 border rounded-lg hover:opacity-80 transition-opacity bg-gray-600 text-white border-gray-600" data-value="voltar">
-          ↩️ Voltar para confirmação
-        </button>
-      `;
-      
-      applyConfig(config);
-      
-      // Adicionar event listeners aos botões
-      optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const value = btn.getAttribute('data-value');
+          const formElements = new FormData(form);
+          let hasEmptyFields = false;
+          const currentStepFields = steps[currentStep].fields || [];
           
-          // Esconder botões
-          optionsContainer.style.display = 'none';
-          
-          if (value === 'voltar') {
-            addUserMessage("↩️ Voltar para confirmação");
-            await finishRegistration();
-          } else {
-            const selectedOption = correctionOptions.find(opt => opt.key === value);
-            addUserMessage(selectedOption.label);
-            await correctField(value);
-          }
-        });
-      });
-    }
-
-    async function correctField(fieldKey) {
-      // Encontrar a pergunta correspondente
-      const questionIndex = questions.findIndex(q => q.key === fieldKey);
-      const question = questions[questionIndex];
-      
-      if (!question) return;
-      
-      await addBotMessage(`Vamos corrigir: ${question.question}`);
-      
-      // Definir pergunta dinâmica para documento
-      if (question.key === 'documento') {
-        if (userData.tipo_pessoa === 'Pessoa Física') {
-          question.question = 'Digite o CPF correto:';
-        } else {
-          question.question = 'Digite o CNPJ correto:';
-        }
-        await addBotMessage(question.question);
-      }
-      
-      const input = document.getElementById('user-input');
-      const sendBtn = document.getElementById('send-btn');
-      const optionsContainer = document.getElementById('options-container');
-      
-      if (question.type === 'select') {
-        // Mostrar opções como botões
-        input.style.display = 'none';
-        sendBtn.style.display = 'none';
-        optionsContainer.style.display = 'flex';
-        
-        optionsContainer.innerHTML = question.options.map(option => 
-          `<button class="option-btn mobile-button px-4 py-3 md:px-6 md:py-3 modern-button rounded-2xl hover:scale-105 transition-all duration-300 text-white/90 font-medium text-sm md:text-base" data-value="${option}">
-            ${option}
-          </button>`
-        ).join('');
-        
-        applyConfig(config);
-        
-        // Adicionar event listeners aos botões
-        optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const value = btn.getAttribute('data-value');
-            handleCorrection(fieldKey, value, question);
-          });
-        });
-      } else {
-        // Mostrar input de texto
-        input.style.display = 'block';
-        sendBtn.style.display = 'block';
-        optionsContainer.style.display = 'none';
-        
-        input.type = question.type;
-        input.value = userData[fieldKey] || '';
-        input.focus();
-        
-        // Remover listeners anteriores e adicionar novo
-        const newSendBtn = sendBtn.cloneNode(true);
-        sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
-        
-        const newInput = input.cloneNode(true);
-        input.parentNode.replaceChild(newInput, input);
-        
-        newInput.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') {
-            const value = newInput.value.trim();
-            if (value) {
-              handleCorrection(fieldKey, value, question);
-              newInput.value = '';
+          // Verifica se é a etapa de seleção de plano
+          if (steps[currentStep].isPlanSelection) {
+            if (!formData.plano_escolhido) {
+              hasEmptyFields = true;
             }
           }
-        });
-        
-        newSendBtn.addEventListener('click', () => {
-          const value = newInput.value.trim();
-          if (value) {
-            handleCorrection(fieldKey, value, question);
-            newInput.value = '';
+          
+          for (let field of currentStepFields) {
+            const value = formElements.get(field.id);
+            if (field.required && (!value || value.trim() === '')) {
+              hasEmptyFields = true;
+              break;
+            }
+            if (value && value.trim() !== '') {
+              formData[field.id] = value;
+            }
           }
+
+          if (hasEmptyFields) {
+            stepStatus[currentStep] = 'error';
+            renderForm();
+            
+            setTimeout(() => {
+              const errorMsg = document.getElementById('error-message');
+              if (errorMsg) {
+                const errorText = steps[currentStep].isPlanSelection && !formData.plano_escolhido 
+                  ? 'Por favor, selecione um plano!'
+                  : 'Por favor, preencha todos os campos obrigatórios!';
+                errorMsg.querySelector('p span:last-child').textContent = errorText;
+                errorMsg.classList.remove('hidden');
+              }
+            }, 10);
+            return;
+          }
+
+          if (currentStep === 4) {
+            const senha = formData.senha;
+            const confirmarSenha = formData.confirmar_senha;
+            
+            if ((senha || confirmarSenha) && senha !== confirmarSenha) {
+              stepStatus[currentStep] = 'error';
+              renderForm();
+              
+              setTimeout(() => {
+                const errorMsg = document.getElementById('error-message');
+                if (errorMsg) {
+                  errorMsg.querySelector('p span:last-child').textContent = 'As senhas não coincidem!';
+                  errorMsg.classList.remove('hidden');
+                }
+              }, 10);
+              return;
+            }
+          }
+
+          const card = document.querySelector('.step-slide-in');
+          if (card) {
+            card.innerHTML = `
+              <div style="display: flex; align-items: center; justify-content: center; height: 100%; padding: 40px;">
+                <div style="text-align: center;">
+                  <div style="width: 60px; height: 60px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: ${config.primary_action_color}; border-radius: 30px; margin: 0 auto 20px; animation: spin 0.8s linear infinite;"></div>
+                  <p style="color: ${config.text_color}; font-size: ${config.font_size * 0.95}px;">Processando...</p>
+                </div>
+              </div>
+            `;
+          }
+          
+          setTimeout(() => {
+            currentStep++;
+            stepStatus[currentStep - 1] = 'success';
+            renderForm();
+          }, 600);
         });
       }
     }
 
-    async function handleCorrection(fieldKey, newValue, question) {
-      // Validar entrada se necessário
-      if (question.validation) {
-        const tipoPessoa = question.key === 'documento' ? userData.tipo_pessoa : null;
-        const validationError = validateInput(newValue, question.validation, tipoPessoa);
-        
-        if (validationError) {
-          await addBotMessage(`❌ ${validationError} Tente novamente:`);
-          return; // Não aceita a correção
-        }
-      }
-      
-      // Atualizar o dado
-      userData[fieldKey] = newValue;
-      
-      // Mostrar resposta do usuário (senha como asteriscos)
-      const displayValue = question.type === 'password' ? '*'.repeat(newValue.length) : newValue;
-      addUserMessage(displayValue);
-      
-      // Esconder inputs
-      document.getElementById('user-input').style.display = 'none';
-      document.getElementById('send-btn').style.display = 'none';
-      document.getElementById('options-container').style.display = 'none';
-      
-      // Confirmar correção
-      await addBotMessage(`✅ Informação atualizada com sucesso!`);
-      
-      // Se corrigiu a senha, pedir confirmação novamente
-      if (fieldKey === 'senha') {
-        await askPasswordConfirmation();
-      } else {
-        // Voltar para a tela de confirmação
-        setTimeout(async () => {
-          await addBotMessage("Vamos revisar novamente suas informações:");
-          await finishRegistration();
-        }, 1000);
-      }
-    }
+    async function submitForm() {
+      const nextBtn = document.getElementById('next-btn');
 
-    async function askPasswordConfirmation() {
-      await addBotMessage("Confirme sua nova senha:");
-      
-      const input = document.getElementById('user-input');
-      const sendBtn = document.getElementById('send-btn');
-      const optionsContainer = document.getElementById('options-container');
-      
-      input.style.display = 'block';
-      sendBtn.style.display = 'block';
-      optionsContainer.style.display = 'none';
-      
-      input.type = 'password';
-      input.value = '';
-      input.focus();
-      
-      // Remover listeners anteriores e adicionar novo
-      const newSendBtn = sendBtn.cloneNode(true);
-      sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
-      
-      const newInput = input.cloneNode(true);
-      input.parentNode.replaceChild(newInput, input);
-      
-      const handlePasswordConfirmation = async () => {
-        const confirmPassword = newInput.value.trim();
-        if (!confirmPassword) return;
-        
-        if (confirmPassword !== userData.senha) {
-          addUserMessage('*'.repeat(confirmPassword.length));
-          
-          // Esconder inputs
-          newInput.style.display = 'none';
-          newSendBtn.style.display = 'none';
-          
-          await addBotMessage("❌ As senhas não coincidem. O que você gostaria de fazer?");
-          
-          // Mostrar opções para o usuário
-          optionsContainer.style.display = 'flex';
-          optionsContainer.innerHTML = `
-            <button class="option-btn px-6 py-3 border rounded-lg hover:opacity-80 transition-opacity bg-blue-600 text-white border-blue-600" data-value="tentar_novamente">
-              🔄 Tentar confirmar novamente
-            </button>
-            <button class="option-btn px-6 py-3 border rounded-lg hover:opacity-80 transition-opacity bg-orange-600 text-white border-orange-600" data-value="nova_senha">
-              🔑 Criar nova senha
-            </button>
-          `;
-          
-          applyConfig(config);
-          
-          // Adicionar event listeners aos botões
-          optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-              const value = btn.getAttribute('data-value');
-              
-              // Esconder botões
-              optionsContainer.style.display = 'none';
-              
-              if (value === 'tentar_novamente') {
-                addUserMessage("🔄 Tentar confirmar novamente");
-                await askPasswordConfirmation();
-              } else {
-                addUserMessage("🔑 Criar nova senha");
-                await askNewPassword();
-              }
-            });
-          });
-          
-          return;
-        }
-        
-        // Senha confirmada
-        addUserMessage('*'.repeat(confirmPassword.length));
-        
-        // Esconder inputs
-        newInput.style.display = 'none';
-        newSendBtn.style.display = 'none';
-        
-        await addBotMessage("✅ Senha confirmada com sucesso!");
-        
-        // Voltar para confirmação
-        setTimeout(async () => {
-          await addBotMessage("Vamos revisar novamente suas informações:");
-          await finishRegistration();
-        }, 1000);
-      };
-      
-      newInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          handlePasswordConfirmation();
-        }
-      });
-      
-      newSendBtn.addEventListener('click', handlePasswordConfirmation);
-    }
+      if (nextBtn) {
+        nextBtn.disabled = true;
+        nextBtn.textContent = 'Enviando...';
+        nextBtn.style.opacity = '0.6';
+      }
 
-    async function askNewPassword() {
-      await addBotMessage("Crie uma nova senha segura (mínimo 6 caracteres):");
+      const web3form = document.getElementById('web3forms');
       
-      const input = document.getElementById('user-input');
-      const sendBtn = document.getElementById('send-btn');
-      const optionsContainer = document.getElementById('options-container');
-      
-      input.style.display = 'block';
-      sendBtn.style.display = 'block';
-      optionsContainer.style.display = 'none';
-      
-      input.type = 'password';
-      input.value = '';
-      input.focus();
-      
-      // Remover listeners anteriores e adicionar novo
-      const newSendBtn = sendBtn.cloneNode(true);
-      sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
-      
-      const newInput = input.cloneNode(true);
-      input.parentNode.replaceChild(newInput, input);
-      
-      const handleNewPassword = async () => {
-        const newPassword = newInput.value.trim();
-        if (!newPassword) return;
+      for (let [key, value] of Object.entries(formData)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value;
+        input.className = 'dynamic-field';
+        web3form.appendChild(input);
+      }
+
+      try {
+        web3form.submit();
+        stepStatus[currentStep] = 'success';
+        currentStep++;
+        renderForm();
         
-        // Validar nova senha
-        const validationError = validateInput(newPassword, 'password');
-        if (validationError) {
-          await addBotMessage(`❌ ${validationError} Tente novamente:`);
-          newInput.value = '';
-          return;
-        }
-        
-        // Atualizar senha
-        userData.senha = newPassword;
-        
-        addUserMessage('*'.repeat(newPassword.length));
-        
-        // Esconder inputs
-        newInput.style.display = 'none';
-        newSendBtn.style.display = 'none';
-        
-        await addBotMessage("✅ Nova senha criada! Agora confirme sua senha:");
-        
-        // Pedir confirmação da nova senha
         setTimeout(() => {
-          askPasswordConfirmation();
-        }, 1000);
-      };
-      
-      newInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          handleNewPassword();
+          stepStatus[currentStep] = 'success';
+          currentStep++;
+          stepStatus[currentStep] = 'warning';
+          renderForm();
+        }, 3000);
+      } catch (error) {
+        const errorMsg = document.getElementById('error-message');
+        if (errorMsg) {
+          errorMsg.querySelector('p span:last-child').textContent = 'Erro ao enviar. Tente novamente.';
+          errorMsg.classList.remove('hidden');
         }
+        if (nextBtn) {
+          nextBtn.disabled = false;
+          nextBtn.textContent = config.submit_button_text || defaultConfig.submit_button_text;
+          nextBtn.style.opacity = '1';
+        }
+      }
+
+      web3form.querySelectorAll('.dynamic-field').forEach(el => el.remove());
+    }
+
+    async function onConfigChange(newConfig) {
+      Object.assign(config, newConfig);
+      renderForm();
+    }
+
+    function mapToCapabilities(cfg) {
+      return {
+        recolorables: [
+          {
+            get: () => cfg.background_color || defaultConfig.background_color,
+            set: (value) => {
+              cfg.background_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ background_color: value });
+              }
+            }
+          },
+          {
+            get: () => cfg.surface_color || defaultConfig.surface_color,
+            set: (value) => {
+              cfg.surface_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ surface_color: value });
+              }
+            }
+          },
+          {
+            get: () => cfg.text_color || defaultConfig.text_color,
+            set: (value) => {
+              cfg.text_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            }
+          },
+          {
+            get: () => cfg.primary_action_color || defaultConfig.primary_action_color,
+            set: (value) => {
+              cfg.primary_action_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ primary_action_color: value });
+              }
+            }
+          },
+          {
+            get: () => cfg.secondary_action_color || defaultConfig.secondary_action_color,
+            set: (value) => {
+              cfg.secondary_action_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ secondary_action_color: value });
+              }
+            }
+          }
+        ],
+        borderables: [],
+        fontEditable: {
+          get: () => cfg.font_family || defaultConfig.font_family,
+          set: (value) => {
+            cfg.font_family = value;
+            if (window.elementSdk) {
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          }
+        },
+        fontSizeable: {
+          get: () => cfg.font_size || defaultConfig.font_size,
+          set: (value) => {
+            cfg.font_size = value;
+            if (window.elementSdk) {
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }
+      };
+    }
+
+    function mapToEditPanelValues(cfg) {
+      return new Map([
+        ["form_title", cfg.form_title || defaultConfig.form_title],
+        ["submit_button_text", cfg.submit_button_text || defaultConfig.submit_button_text]
+      ]);
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
       });
-      
-      newSendBtn.addEventListener('click', handleNewPassword);
     }
 
-    async function restartChat() {
-      // Resetar variáveis
-      chatStep = 0;
-      userData = {};
-      isTyping = false;
-      
-      await addBotMessage("Perfeito! Vamos iniciar um novo cadastro. 🚀");
-      
-      setTimeout(() => {
-        askNextQuestion();
-      }, 1000);
-    }
-
-    initializeApp();
+    renderForm();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8fbd0210d5db39',t:'MTc2NDg5NzgwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b80783bc238f200',t:'MTc2NzQyMjA1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
