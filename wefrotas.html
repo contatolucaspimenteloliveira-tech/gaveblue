@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WeFrotas - Gestão de Frotas</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/_sdk/data_sdk.js"></script>
   <script src="/_sdk/element_sdk.js"></script>
   <style>
     body {
@@ -462,6 +461,7 @@
     }
   </style>
   <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
   <div id="app-container" class="h-full w-full flex flex-col overflow-auto"><!-- Header -->
@@ -830,6 +830,26 @@
     let selectedOrders = new Set();
     let selectedContas = new Set();
     let currentEditingRecord = null;
+
+    // LocalStorage Helper Functions
+    function saveToLocalStorage() {
+      localStorage.setItem('wefrotas_data', JSON.stringify(allData));
+    }
+
+    function loadFromLocalStorage() {
+      const saved = localStorage.getItem('wefrotas_data');
+      if (saved) {
+        try {
+          allData = JSON.parse(saved);
+        } catch (e) {
+          allData = [];
+        }
+      }
+    }
+
+    function generateId() {
+      return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
 
     const defaultConfig = {
       app_title: "WeFrotas",
@@ -1310,6 +1330,7 @@
       const form = e.target;
       const inputs = form.querySelectorAll('input, select, textarea');
       const data = {
+        __backendId: currentEditingRecord?.__backendId || generateId(),
         id: currentEditingRecord?.id || `${type}-${Date.now()}`,
         type: type,
         created_at: currentEditingRecord?.created_at || new Date().toISOString()
@@ -1327,23 +1348,23 @@
       });
 
       try {
-        const result = currentEditingRecord 
-          ? await window.dataSdk.update({ ...data, __backendId: currentEditingRecord.__backendId })
-          : await window.dataSdk.create(data);
-
-        if (result.isOk) {
-          showToast(currentEditingRecord ? 'Registro atualizado!' : 'Registro cadastrado!');
-          closeModal();
-          currentEditingRecord = null;
+        if (currentEditingRecord) {
+          // Update existing record
+          const index = allData.findIndex(item => item.__backendId === currentEditingRecord.__backendId);
+          if (index !== -1) {
+            allData[index] = data;
+          }
         } else {
-          showToast('Erro ao salvar registro: ' + (result.error?.message || 'erro desconhecido'), 'error');
-          const submitBtn = form.querySelector('button[type="submit"]');
-          const submitText = document.getElementById('submit-text');
-          const submitLoading = document.getElementById('submit-loading');
-          submitBtn.disabled = false;
-          submitText.classList.remove('hidden');
-          submitLoading.classList.add('hidden');
+          // Add new record
+          allData.push(data);
         }
+
+        saveToLocalStorage();
+        updateUI();
+        
+        showToast(currentEditingRecord ? 'Registro atualizado!' : 'Registro cadastrado!');
+        closeModal();
+        currentEditingRecord = null;
       } catch (error) {
         showToast('Erro ao salvar: ' + error.message, 'error');
         const submitBtn = form.querySelector('button[type="submit"]');
@@ -1361,6 +1382,7 @@
       const nota_fiscal = document.getElementById('dynamic-fueling-nota_fiscal').value;
       
       const data = {
+        __backendId: generateId(),
         id: `lancamento-${Date.now()}`,
         type: 'lancamento',
         tipo_lancamento: 'abastecimento',
@@ -1374,14 +1396,12 @@
         created_at: new Date().toISOString()
       };
 
-      const result = await window.dataSdk.create(data);
-
-      if (result.isOk) {
-        showToast('Abastecimento registrado!');
-        closeModal();
+      try {
+        allData.push(data);
         
         // Create associated conta
         const contaData = {
+          __backendId: generateId(),
           id: `conta-${Date.now()}`,
           type: 'conta',
           descricao: data.descricao,
@@ -1393,9 +1413,15 @@
           pago: false,
           created_at: new Date().toISOString()
         };
-        await window.dataSdk.create(contaData);
-      } else {
-        showToast('Erro ao salvar abastecimento', 'error');
+        allData.push(contaData);
+        
+        saveToLocalStorage();
+        updateUI();
+        
+        showToast('Abastecimento registrado!');
+        closeModal();
+      } catch (error) {
+        showToast('Erro ao salvar abastecimento: ' + error.message, 'error');
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const submitText = document.getElementById('submit-text');
         const submitLoading = document.getElementById('submit-loading');
@@ -1411,6 +1437,7 @@
       const nota_fiscal = document.getElementById('dynamic-expense-nota_fiscal').value;
       
       const data = {
+        __backendId: generateId(),
         id: `lancamento-${Date.now()}`,
         type: 'lancamento',
         tipo_lancamento: 'despesa',
@@ -1423,14 +1450,12 @@
         created_at: new Date().toISOString()
       };
 
-      const result = await window.dataSdk.create(data);
-
-      if (result.isOk) {
-        showToast('Despesa registrada!');
-        closeModal();
+      try {
+        allData.push(data);
         
         // Create associated conta
         const contaData = {
+          __backendId: generateId(),
           id: `conta-${Date.now()}`,
           type: 'conta',
           descricao: data.descricao,
@@ -1442,9 +1467,15 @@
           pago: false,
           created_at: new Date().toISOString()
         };
-        await window.dataSdk.create(contaData);
-      } else {
-        showToast('Erro ao salvar despesa', 'error');
+        allData.push(contaData);
+        
+        saveToLocalStorage();
+        updateUI();
+        
+        showToast('Despesa registrada!');
+        closeModal();
+      } catch (error) {
+        showToast('Erro ao salvar despesa: ' + error.message, 'error');
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const submitText = document.getElementById('submit-text');
         const submitLoading = document.getElementById('submit-loading');
@@ -1554,18 +1585,19 @@
       if (selectedOrders.size === 0) return;
       
       const btn = document.getElementById('btn-delete-selected');
-      const originalHTML = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = '<div class="loading-spinner inline-block"></div>';
 
       for (const id of selectedOrders) {
-        const order = allData.find(item => item.__backendId === id);
-        if (order) {
-          await window.dataSdk.delete(order);
+        const index = allData.findIndex(item => item.__backendId === id);
+        if (index !== -1) {
+          allData.splice(index, 1);
         }
       }
       
+      saveToLocalStorage();
       selectedOrders.clear();
+      updateUI();
       showToast('Ordens excluídas!');
     }
 
@@ -1653,22 +1685,20 @@
       if (selectedContas.size === 0) return;
       
       const btn = document.getElementById('btn-pay-selected');
-      const originalHTML = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = '<div class="loading-spinner inline-block"></div>';
 
       for (const id of selectedContas) {
-        const conta = allData.find(item => item.__backendId === id);
-        if (conta) {
-          await window.dataSdk.update({
-            ...conta,
-            pago: true,
-            data_pagamento: new Date().toISOString().split('T')[0]
-          });
+        const index = allData.findIndex(item => item.__backendId === id);
+        if (index !== -1) {
+          allData[index].pago = true;
+          allData[index].data_pagamento = new Date().toISOString().split('T')[0];
         }
       }
       
+      saveToLocalStorage();
       selectedContas.clear();
+      updateUI();
       showToast('Contas pagas!');
     }
 
@@ -2136,15 +2166,6 @@
       });
     }
 
-    // Data Handler
-    const dataHandler = {
-      onDataChanged(data) {
-        allData = data;
-        updateUI();
-        updateSelects();
-      }
-    };
-
     // Element SDK
     async function onConfigChange(config) {
       const appTitle = config.app_title || defaultConfig.app_title;
@@ -2164,11 +2185,9 @@
 
     // Initialize App
     async function initializeApp() {
-      const sdkResult = await window.dataSdk.init(dataHandler);
-      if (!sdkResult.isOk) {
-        showToast('Erro ao inicializar dados', 'error');
-        return;
-      }
+      // Load data from localStorage
+      loadFromLocalStorage();
+      updateUI();
 
       if (window.elementSdk) {
         window.elementSdk.init({
@@ -2194,5 +2213,5 @@
 
     document.addEventListener('DOMContentLoaded', initializeApp);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b855d7402e2c6c1',t:'MTc2NzQ3MzM5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b8562fe9200c6c1',t:'MTc2NzQ3MzYxNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
