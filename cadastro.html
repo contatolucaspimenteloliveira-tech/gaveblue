@@ -779,19 +779,38 @@
         nextBtn.style.opacity = '0.6';
       }
 
-      const web3form = document.getElementById('web3forms');
-      
-      for (let [key, value] of Object.entries(formData)) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = value;
-        input.className = 'dynamic-field';
-        web3form.appendChild(input);
-      }
-
       try {
+        // Salva os dados no Firebase Firestore
+        if (window.firebaseDb && window.firebaseAddDoc && window.firebaseCollection && window.firebaseTimestamp) {
+          const cadastroData = {
+            ...formData,
+            dataEnvio: window.firebaseTimestamp(),
+            status: 'aguardando_analise'
+          };
+
+          await window.firebaseAddDoc(
+            window.firebaseCollection(window.firebaseDb, 'assinaturas'),
+            cadastroData
+          );
+
+          console.log('✅ Dados salvos no Firebase com sucesso!');
+        }
+
+        // Também envia para o Web3Forms (backup)
+        const web3form = document.getElementById('web3forms');
+        
+        for (let [key, value] of Object.entries(formData)) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = value;
+          input.className = 'dynamic-field';
+          web3form.appendChild(input);
+        }
+
         web3form.submit();
+
+        // Sucesso!
         stepStatus[currentStep] = 'success';
         currentStep++;
         renderForm();
@@ -802,7 +821,11 @@
           stepStatus[currentStep] = 'warning';
           renderForm();
         }, 3000);
+
+        web3form.querySelectorAll('.dynamic-field').forEach(el => el.remove());
+
       } catch (error) {
+        console.error('❌ Erro ao salvar dados:', error);
         const errorMsg = document.getElementById('error-message');
         if (errorMsg) {
           errorMsg.querySelector('p span:last-child').textContent = 'Erro ao enviar. Tente novamente.';
@@ -814,8 +837,6 @@
           nextBtn.style.opacity = '1';
         }
       }
-
-      web3form.querySelectorAll('.dynamic-field').forEach(el => el.remove());
     }
 
     async function onConfigChange(newConfig) {
@@ -911,6 +932,36 @@
     }
 
     renderForm();
+  </script><!-- Firebase SDK -->
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDZ3yH2UXOo6_i12WgCDgMJM49xw5Src_M",
+      authDomain: "gave-blue.firebaseapp.com",
+      projectId: "gave-blue",
+      storageBucket: "gave-blue.firebasestorage.app",
+      messagingSenderId: "525961083996",
+      appId: "1:525961083996:web:45e2bcc8101963c61cba99",
+      measurementId: "G-BWVVVPMM79S"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    // Disponibiliza o Firestore globalmente para uso na função submitForm
+    window.firebaseDb = db;
+    window.firebaseAddDoc = addDoc;
+    window.firebaseCollection = collection;
+    window.firebaseTimestamp = serverTimestamp;
+
+    console.log("✅ Firebase inicializado com sucesso!");
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b80783bc238f200',t:'MTc2NzQyMjA1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b840d24f7da3e73',t:'MTc2NzQ1OTYxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
