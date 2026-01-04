@@ -94,7 +94,7 @@
     const steps = [
       {
         title: "Informações Pessoais",
-        subtitle: "Nos conte um pouco sobre você",
+        subtitle: "",
         fields: [
           { id: "tipo_pessoa", label: "Tipo de Pessoa", type: "select", options: ["Pessoa Física", "Pessoa Jurídica"], required: true },
           { id: "nome_completo", label: "Nome Completo", type: "text", placeholder: "Digite seu nome completo", required: true },
@@ -103,7 +103,7 @@
       },
       {
         title: "Contato",
-        subtitle: "Como podemos falar com você?",
+        subtitle: "",
         fields: [
           { id: "email", label: "E-mail", type: "email", placeholder: "seu@email.com", required: true },
           { id: "telefone", label: "Telefone", type: "tel", placeholder: "(11) 99999-9999", required: true },
@@ -112,15 +112,15 @@
       },
       {
         title: "Sobre seu Negócio",
-        subtitle: "Conte-nos mais sobre sua empresa",
+        subtitle: "",
         fields: [
-          { id: "tipo_negocio", label: "Tipo de Negócio", type: "select", options: ["Gestão de Frotas", "Transportadora", "Logística", "E-commerce", "Varejo", "Serviços", "Indústria", "Outros"], required: true },
+          { id: "tipo_negocio", label: "Tipo de Negócio", type: "select", options: ["Gestão de Frotas", "Transportadora", "Logística", "E-commerce", "Varejo", "Servi����os", "Indústria", "Outros"], required: true },
           { id: "tamanho_empresa", label: "Tamanho da Empresa", type: "select", options: ["Autônomo/MEI", "Pequena (até 10 funcionários)", "Média (11-50 funcionários)", "Grande (51-200 funcionários)", "Corporativo (mais de 200)"], required: true }
         ]
       },
       {
         title: "Plano e Pagamento",
-        subtitle: "Escolha o melhor plano para você",
+        subtitle: "",
         isPlanSelection: true,
         fields: [
           { id: "melhor_data_pagamento", label: "Melhor Data de Vencimento", type: "select", options: ["Dia 5", "Dia 10", "Dia 15", "Dia 20", "Dia 25", "Dia 30", "Último dia útil"], required: true }
@@ -128,7 +128,7 @@
       },
       {
         title: "Acesso ao Sistema",
-        subtitle: "Crie suas credenciais de acesso",
+        subtitle: "",
         canSkip: true,
         fields: [
           { id: "nome_usuario", label: "Nome de Usuário", type: "text", placeholder: "escolha_um_usuario", required: false },
@@ -138,17 +138,17 @@
       },
       {
         title: "Revisão Final",
-        subtitle: "Confira seus dados antes de finalizar",
+        subtitle: "",
         isReview: true
       },
       {
         title: "Analisando Cadastro",
-        subtitle: "Estamos validando suas informações",
+        subtitle: "",
         isLoading: true
       },
       {
         title: "Cadastro em Análise",
-        subtitle: "Recebemos suas informações",
+        subtitle: "",
         isConfirmation: true
       }
     ];
@@ -168,24 +168,22 @@
         <div class="min-h-full flex flex-col py-4 px-4">
           
           <!-- Header -->
-          <div class="max-w-2xl w-full mx-auto mb-4" style="position: sticky; top: 0; background-color: ${config.background_color}; z-index: 10; padding-top: 16px; padding-bottom: 8px;">
-            <div class="mb-3">
-              <h1 class="font-bold" style="color: ${config.text_color}; font-size: ${baseSize * 1.5}px; font-family: ${customFont}, ${baseFontStack}; font-weight: 700;">
-                ${config.form_title || defaultConfig.form_title}
-              </h1>
-              <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.85}px; margin-top: 2px;">
-                Cadastro de Assinatura Premium
-              </p>
-            </div>
-
+          <div class="max-w-2xl w-full mx-auto mb-2" style="position: sticky; top: 0; background-color: ${config.background_color}; z-index: 10; padding-top: 16px; padding-bottom: 8px;">
+            
+            <!-- Título Principal -->
+            <h1 style="color: ${config.text_color}; font-size: ${baseSize * 2}px; font-weight: 700; text-align: center; margin-bottom: 16px; font-family: ${customFont}, ${baseFontStack};">
+              ${config.form_title || defaultConfig.form_title}
+            </h1>
+            
             <!-- Indicador de Etapas -->
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 8px;">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin-top: 8px;">
               ${steps.map((s, idx) => {
                 let iconContent = '';
                 let bgColor = '';
                 let iconColor = '';
                 let animation = '';
                 let cssClass = '';
+                let showLabel = idx === currentStep; // Só mostra o nome da etapa atual
                 
                 if (stepStatus[idx] === 'success') {
                   iconContent = '✓';
@@ -202,14 +200,14 @@
                     cssClass = 'error-icon';
                   }
                 } else if (stepStatus[idx] === 'warning') {
-                  iconContent = '⚠';
+                  iconContent = '↻';
                   bgColor = '#fbbf24';
                   iconColor = 'white';
                 } else if (idx === currentStep) {
-                  iconContent = '⟳';
+                  iconContent = '↻';
                   bgColor = '#fbbf24';
                   iconColor = 'white';
-                  animation = 'spin 2s linear infinite';
+                  animation = 'spin 1.5s linear infinite';
                 } else if (idx < currentStep) {
                   iconContent = '✓';
                   bgColor = config.primary_action_color;
@@ -222,9 +220,16 @@
                 
                 return `
                 <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                  <div style="width: 100%; height: 2px; background-color: ${idx <= currentStep ? config.primary_action_color : 'rgba(255, 255, 255, 0.1)'}; border-radius: 2px; transition: all 0.3s;"></div>
+                  <div style="width: 100%; height: 2px; background-color: ${idx < currentStep ? config.primary_action_color : 'rgba(255, 255, 255, 0.1)'}; border-radius: 2px; transition: all 0.3s;"></div>
                   <div class="${cssClass}" style="width: 28px; height: 28px; border-radius: 14px; background: ${bgColor}; display: flex; align-items: center; justify-content: center; font-size: ${baseSize * 0.8}px; font-weight: 700; color: ${iconColor}; transition: all 0.3s; box-shadow: ${idx === currentStep ? `0 3px 10px ${bgColor}55` : 'none'}; animation: ${animation};">
                     ${iconContent}
+                  </div>
+                  <div style="height: 32px; display: flex; align-items: center; justify-content: center;">
+                    ${showLabel ? `
+                    <p style="color: ${idx === currentStep ? config.text_color : config.secondary_action_color}; font-size: ${baseSize * 0.65}px; font-weight: ${idx === currentStep ? '700' : '500'}; text-align: center; margin: 0; opacity: ${idx === currentStep ? '1' : '0.7'}; transition: all 0.3s;">
+                      ${s.title}
+                    </p>
+                    ` : ''}
                   </div>
                 </div>
               `;
@@ -247,24 +252,11 @@
               .success-icon { animation: checkmark 0.5s ease-out; }
               .error-icon { animation: errorShake 0.4s ease-out; }
             </style>
-            <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.8}px; margin-top: 8px; text-align: center;">
-              ${step.title}
-            </p>
           </div>
 
           <!-- Card Principal -->
           <div class="max-w-2xl w-full mx-auto flex-1" style="display: flex; align-items: center;">
-            <div class="step-slide-in" style="background-color: ${config.surface_color}; padding: 20px; border-radius: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); height: 520px; width: 100%; overflow-y: auto;">
-              
-              <!-- Título da Etapa -->
-              <div style="text-align: center; margin-bottom: 16px;">
-                <h2 style="color: ${config.text_color}; font-size: ${baseSize * 1.3}px; font-weight: 700; margin-bottom: 4px; font-family: ${customFont}, ${baseFontStack};">
-                  ${step.title}
-                </h2>
-                <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.85}px;">
-                  ${step.subtitle}
-                </p>
-              </div>
+            <div class="step-slide-in" style="background-color: ${config.surface_color}; padding: 20px; border-radius: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); height: 380px; width: 100%; overflow: hidden;">
 
               ${step.isPlanSelection ? `
                 <!-- Seleção de Planos -->
@@ -333,21 +325,24 @@
                 </form>
               ` : step.isLoading ? `
                 <!-- Tela de Carregamento -->
-                <div style="text-align: center; padding: 40px 20px;">
-                  <div style="width: 60px; height: 60px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: ${config.primary_action_color}; border-radius: 30px; margin: 0 auto 24px; animation: spin 1s linear infinite;">
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; padding: 40px;">
+                  <div style="text-align: center;">
+                    <div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                      <span style="font-size: 64px; animation: spin 1.5s linear infinite; display: inline-block;">↻</span>
+                    </div>
+                    <h3 style="color: ${config.text_color}; font-size: ${baseSize * 1.2}px; font-weight: 700; margin-bottom: 10px;">
+                      Validando seus dados...
+                    </h3>
+                    <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.9}px; line-height: 1.6;">
+                      Aguarde enquanto verificamos suas informações
+                    </p>
                   </div>
-                  <h3 style="color: ${config.text_color}; font-size: ${baseSize * 1.2}px; font-weight: 700; margin-bottom: 10px;">
-                    Validando seus dados...
-                  </h3>
-                  <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.9}px; line-height: 1.6;">
-                    Aguarde enquanto verificamos suas informações
-                  </p>
                 </div>
               ` : step.isConfirmation ? `
                 <!-- Tela de Confirmação Final -->
                 <div style="text-align: center; padding: 30px 20px;">
-                  <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 40px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 8px 32px rgba(251, 191, 36, 0.4); animation: pulse 2s infinite;">
-                    <span style="font-size: 44px;">⚠️</span>
+                  <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 40px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4); animation: pulse 2s infinite;">
+                    <span style="font-size: 44px;">✓</span>
                   </div>
                   <style>
                     @keyframes pulse {
@@ -356,38 +351,53 @@
                     }
                   </style>
                   
-                  <h3 style="color: #fbbf24; font-size: ${baseSize * 1.4}px; font-weight: 700; margin-bottom: 10px;">
-                    ⚠️ Não foi possível validar automaticamente
+                  <h3 style="color: #10b981; font-size: ${baseSize * 1.4}px; font-weight: 700; margin-bottom: 10px;">
+                    SEUS DADOS FORAM RECEBIDOS
                   </h3>
                   
-                  <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.9}px; margin-bottom: 20px; line-height: 1.6;">
-                    Mas não se preocupe! Recebemos seu cadastro com sucesso 👍
+                  <p style="color: ${config.text_color}; font-size: ${baseSize * 0.95}px; margin-bottom: 20px; line-height: 1.7; padding: 0 10px;">
+                    Agora seu cadastro segue em análise. Nosso prazo para retorno é de <strong style="color: ${config.primary_action_color};">7 dias úteis</strong>.
                   </p>
                   
-                  <div style="background-color: rgba(255, 255, 255, 0.05); padding: 18px; border-radius: 16px; margin-bottom: 18px;">
-                    <p style="color: ${config.text_color}; font-size: ${baseSize * 0.95}px; margin-bottom: 10px; line-height: 1.6;">
-                      <strong>📧 Enviaremos a resposta para:</strong>
+                  <div style="background: linear-gradient(135deg, ${config.primary_action_color}15, ${config.primary_action_color}08); padding: 18px; border-radius: 16px; border-left: 4px solid ${config.primary_action_color}; margin-bottom: 18px;">
+                    <p style="color: ${config.text_color}; font-size: ${baseSize * 0.95}px; line-height: 1.7; margin-bottom: 12px;">
+                      <strong>⚡ Quer agilizar seu processo?</strong>
                     </p>
-                    <p style="color: ${config.primary_action_color}; font-size: ${baseSize}px; font-weight: 600;">
-                      ${formData.email}
+                    <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.9}px; line-height: 1.7; margin-bottom: 14px;">
+                      Caso queira agilizar seu processo e integrar o sistema com mais fluidez, faça o pagamento referente ao plano escolhido e <strong style="color: ${config.text_color};">seu acesso fica disponível em até 24h</strong>! �����
                     </p>
+                    <div style="background-color: rgba(255, 255, 255, 0.08); padding: 14px; border-radius: 12px;">
+                      <p style="color: ${config.text_color}; font-size: ${baseSize * 0.85}px; font-weight: 600; margin-bottom: 6px;">
+                        ���� Chave PIX para pagamento:
+                      </p>
+                      <p style="color: ${config.primary_action_color}; font-size: ${baseSize * 1.05}px; font-weight: 700;">
+                        financeiro@gaveblue.com
+                      </p>
+                    </div>
                   </div>
                   
-                  <div style="background: linear-gradient(135deg, ${config.primary_action_color}15, ${config.primary_action_color}08); padding: 16px; border-radius: 16px; border-left: 4px solid ${config.primary_action_color};">
-                    <p style="color: ${config.text_color}; font-size: ${baseSize * 0.9}px; line-height: 1.6; margin-bottom: 10px;">
-                      <strong>👥 Nossa equipe irá analisar:</strong>
+                  <div style="background-color: rgba(255, 255, 255, 0.05); padding: 16px; border-radius: 16px; margin-bottom: 14px;">
+                    <p style="color: ${config.text_color}; font-size: ${baseSize * 0.9}px; margin-bottom: 8px; line-height: 1.6;">
+                      <strong>���� Confirmação enviada para:</strong>
                     </p>
-                    <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.85}px; line-height: 1.7;">
-                      ✓ Validação dos seus dados<br>
-                      ✓ Confirmação do cadastro<br>
-                      ✓ Instruções de pagamento<br>
-                      ✓ Credenciais de acesso ao sistema
+                    <p style="color: ${config.primary_action_color}; font-size: ${baseSize * 0.95}px; font-weight: 600;">
+                      ${formData.email}
                     </p>
                   </div>
                   
                   <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.8}px; margin-top: 18px;">
                     Obrigado por escolher a GaveBlue! 💙
                   </p>
+                  
+                  <!-- Botões de Ação Final -->
+                  <div style="display: flex; gap: 10px; margin-top: 24px;">
+                    <button type="button" id="btn-voltar-site" class="oneui-button" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 600; transition: all 0.2s; flex: 1;">
+                      ← Voltar ao Site
+                    </button>
+                    <button type="button" id="btn-novo-cadastro" class="oneui-button" style="background: linear-gradient(135deg, ${config.primary_action_color}, ${config.primary_action_color}cc); color: white; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 700; transition: all 0.2s; flex: 1; box-shadow: 0 4px 16px ${config.primary_action_color}44;">
+                      ✨ Novo Cadastro
+                    </button>
+                  </div>
                 </div>
               ` : step.isReview ? `
                 <!-- Tela de Revisão -->
@@ -560,7 +570,7 @@
                   <!-- Mensagem de Erro -->
                   <div id="error-message" class="hidden" style="background-color: #ff444422; padding: 12px; border-radius: 12px; border-left: 4px solid #ff4444;">
                     <p style="color: #ff6666; font-size: ${baseSize * 0.85}px; font-weight: 600;">
-                      <span>❌</span> <span></span>
+                      <span>���</span> <span></span>
                     </p>
                   </div>
 
@@ -571,14 +581,14 @@
                         ← Voltar
                       </button>
                     ` : ''}
-                    <button type="submit" id="next-btn" class="oneui-button" style="background: linear-gradient(135deg, ${config.primary_action_color}, ${config.primary_action_color}cc); color: white; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 700; transition: all 0.2s; flex: 2; box-shadow: 0 4px 16px ${config.primary_action_color}44;">
-                      Continuar →
-                    </button>
                     ${step.canSkip ? `
                       <button type="button" id="skip-btn" class="oneui-button" style="background-color: transparent; border: 2px solid ${config.secondary_action_color}44; color: ${config.secondary_action_color}; padding: 12px 18px; border-radius: 12px; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 600; transition: all 0.2s; flex: 1;">
                         Pular
                       </button>
                     ` : ''}
+                    <button type="submit" id="next-btn" class="oneui-button" style="background: linear-gradient(135deg, ${config.primary_action_color}, ${config.primary_action_color}cc); color: white; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 700; transition: all 0.2s; flex: 2; box-shadow: 0 4px 16px ${config.primary_action_color}44;">
+                      Continuar →
+                    </button>
                   </div>
                 </form>
               `}
@@ -588,12 +598,7 @@
 
         </div>
 
-        <!-- Formulário Web3Forms (oculto) -->
-        <form id="web3forms" action="https://api.web3forms.com/submit" method="POST" style="display:none;">
-          <input type="hidden" name="access_key" value="3d63fe0c-224b-41c8-9c8a-874feabd403d">
-          <input type="hidden" name="subject" value="🎯 Nova Assinatura GaveBlue Premium">
-          <input type="hidden" name="from_name" value="GaveBlue Premium - Sistema de Assinaturas">
-        </form>
+
       `;
 
       setupHandlers();
@@ -634,6 +639,25 @@
           renderForm();
         });
       });
+
+      // Botões da tela final
+      const btnVoltarSite = document.getElementById('btn-voltar-site');
+      const btnNovoCadastro = document.getElementById('btn-novo-cadastro');
+      
+      if (btnVoltarSite) {
+        btnVoltarSite.addEventListener('click', () => {
+          window.open('https://gaveblue.com', '_blank', 'noopener,noreferrer');
+        });
+      }
+      
+      if (btnNovoCadastro) {
+        btnNovoCadastro.addEventListener('click', () => {
+          currentStep = 0;
+          formData = {};
+          stepStatus = {};
+          renderForm();
+        });
+      }
 
       const inputs = document.querySelectorAll('.oneui-input');
       inputs.forEach(input => {
@@ -695,7 +719,7 @@
           let hasEmptyFields = false;
           const currentStepFields = steps[currentStep].fields || [];
           
-          // Verifica se é a etapa de seleção de plano
+          // Verifica se é a etapa de seleç��o de plano
           if (steps[currentStep].isPlanSelection) {
             if (!formData.plano_escolhido) {
               hasEmptyFields = true;
@@ -722,7 +746,7 @@
               if (errorMsg) {
                 const errorText = steps[currentStep].isPlanSelection && !formData.plano_escolhido 
                   ? 'Por favor, selecione um plano!'
-                  : 'Por favor, preencha todos os campos obrigatórios!';
+                  : 'Por favor, preencha todos os campos obrigat��rios!';
                 errorMsg.querySelector('p span:last-child').textContent = errorText;
                 errorMsg.classList.remove('hidden');
               }
@@ -749,23 +773,10 @@
             }
           }
 
-          const card = document.querySelector('.step-slide-in');
-          if (card) {
-            card.innerHTML = `
-              <div style="display: flex; align-items: center; justify-content: center; height: 100%; padding: 40px;">
-                <div style="text-align: center;">
-                  <div style="width: 60px; height: 60px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: ${config.primary_action_color}; border-radius: 30px; margin: 0 auto 20px; animation: spin 0.8s linear infinite;"></div>
-                  <p style="color: ${config.text_color}; font-size: ${config.font_size * 0.95}px;">Processando...</p>
-                </div>
-              </div>
-            `;
-          }
-          
-          setTimeout(() => {
-            currentStep++;
-            stepStatus[currentStep - 1] = 'success';
-            renderForm();
-          }, 600);
+          // Avança direto para próxima etapa
+          stepStatus[currentStep] = 'success';
+          currentStep++;
+          renderForm();
         });
       }
     }
@@ -796,25 +807,12 @@
           console.log('✅ Dados salvos no Firebase com sucesso!');
         }
 
-        // Também envia para o Web3Forms (backup)
-        const web3form = document.getElementById('web3forms');
-        
-        for (let [key, value] of Object.entries(formData)) {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = key;
-          input.value = value;
-          input.className = 'dynamic-field';
-          web3form.appendChild(input);
-        }
-
-        web3form.submit();
-
-        // Sucesso!
+        // Sucesso - vai para tela de carregamento
         stepStatus[currentStep] = 'success';
         currentStep++;
         renderForm();
         
+        // Aguarda 3 segundos e vai para tela de confirmação final
         setTimeout(() => {
           stepStatus[currentStep] = 'success';
           currentStep++;
@@ -822,10 +820,8 @@
           renderForm();
         }, 3000);
 
-        web3form.querySelectorAll('.dynamic-field').forEach(el => el.remove());
-
       } catch (error) {
-        console.error('❌ Erro ao salvar dados:', error);
+        console.error('��� Erro ao salvar dados:', error);
         const errorMsg = document.getElementById('error-message');
         if (errorMsg) {
           errorMsg.querySelector('p span:last-child').textContent = 'Erro ao enviar. Tente novamente.';
@@ -963,5 +959,5 @@
 
     console.log("✅ Firebase inicializado com sucesso!");
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b840d24f7da3e73',t:'MTc2NzQ1OTYxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b8732f79491a42d',t:'MTc2NzQ5MjYyMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
