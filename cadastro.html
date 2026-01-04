@@ -114,7 +114,7 @@
         title: "Sobre seu Negócio",
         subtitle: "",
         fields: [
-          { id: "tipo_negocio", label: "Tipo de Negócio", type: "select", options: ["Gestão de Frotas", "Transportadora", "Logística", "E-commerce", "Varejo", "Servi����os", "Indústria", "Outros"], required: true },
+          { id: "tipo_negocio", label: "Tipo de Negócio", type: "select", options: ["Gestão de Frotas", "Transportadora", "Logística", "E-commerce", "Varejo", "Serviços", "Indústria", "Outros"], required: true },
           { id: "tamanho_empresa", label: "Tamanho da Empresa", type: "select", options: ["Autônomo/MEI", "Pequena (até 10 funcionários)", "Média (11-50 funcionários)", "Grande (51-200 funcionários)", "Corporativo (mais de 200)"], required: true }
         ]
       },
@@ -165,25 +165,25 @@
       app.style.color = config.text_color || defaultConfig.text_color;
 
       app.innerHTML = `
-        <div class="min-h-full flex flex-col py-4 px-4">
+        <div class="min-h-full flex flex-col py-3 px-3">
           
           <!-- Header -->
-          <div class="max-w-2xl w-full mx-auto mb-2" style="position: sticky; top: 0; background-color: ${config.background_color}; z-index: 10; padding-top: 16px; padding-bottom: 8px;">
+          <div class="max-w-2xl w-full mx-auto mb-1" style="position: sticky; top: 0; background-color: ${config.background_color}; z-index: 10; padding-top: 8px; padding-bottom: 8px;">
             
             <!-- Título Principal -->
-            <h1 style="color: ${config.text_color}; font-size: ${baseSize * 2}px; font-weight: 700; text-align: center; margin-bottom: 16px; font-family: ${customFont}, ${baseFontStack};">
+            <h1 style="color: ${config.text_color}; font-size: ${baseSize * 1.5}px; font-weight: 700; text-align: center; margin-bottom: 8px; font-family: ${customFont}, ${baseFontStack};">
               ${config.form_title || defaultConfig.form_title}
             </h1>
             
             <!-- Indicador de Etapas -->
-            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin-top: 8px;">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; margin-top: 8px;">
               ${steps.map((s, idx) => {
                 let iconContent = '';
                 let bgColor = '';
                 let iconColor = '';
                 let animation = '';
                 let cssClass = '';
-                let showLabel = idx === currentStep; // Só mostra o nome da etapa atual
+                let showLabel = idx === currentStep;
                 
                 if (stepStatus[idx] === 'success') {
                   iconContent = '✓';
@@ -219,14 +219,14 @@
                 }
                 
                 return `
-                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
                   <div style="width: 100%; height: 2px; background-color: ${idx < currentStep ? config.primary_action_color : 'rgba(255, 255, 255, 0.1)'}; border-radius: 2px; transition: all 0.3s;"></div>
-                  <div class="${cssClass}" style="width: 28px; height: 28px; border-radius: 14px; background: ${bgColor}; display: flex; align-items: center; justify-content: center; font-size: ${baseSize * 0.8}px; font-weight: 700; color: ${iconColor}; transition: all 0.3s; box-shadow: ${idx === currentStep ? `0 3px 10px ${bgColor}55` : 'none'}; animation: ${animation};">
+                  <div class="${cssClass}" style="width: 36px; height: 36px; border-radius: 18px; background: ${bgColor}; display: flex; align-items: center; justify-content: center; font-size: ${baseSize * 1}px; font-weight: 700; color: ${iconColor}; transition: all 0.3s; box-shadow: ${idx === currentStep ? `0 3px 10px ${bgColor}55` : 'none'}; animation: ${animation};">
                     ${iconContent}
                   </div>
-                  <div style="height: 32px; display: flex; align-items: center; justify-content: center;">
+                  <div style="height: 28px; display: flex; align-items: center; justify-content: center;">
                     ${showLabel ? `
-                    <p style="color: ${idx === currentStep ? config.text_color : config.secondary_action_color}; font-size: ${baseSize * 0.65}px; font-weight: ${idx === currentStep ? '700' : '500'}; text-align: center; margin: 0; opacity: ${idx === currentStep ? '1' : '0.7'}; transition: all 0.3s;">
+                    <p style="color: ${idx === currentStep ? config.text_color : config.secondary_action_color}; font-size: ${baseSize * 0.6}px; font-weight: ${idx === currentStep ? '700' : '500'}; text-align: center; margin: 0; opacity: ${idx === currentStep ? '1' : '0.7'}; transition: all 0.3s; line-height: 1.2;">
                       ${s.title}
                     </p>
                     ` : ''}
@@ -255,37 +255,37 @@
           </div>
 
           <!-- Card Principal -->
-          <div class="max-w-2xl w-full mx-auto flex-1" style="display: flex; align-items: center;">
-            <div class="step-slide-in" style="background-color: ${config.surface_color}; padding: 20px; border-radius: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); height: 380px; width: 100%; overflow-y: auto;">
+          <div class="max-w-2xl w-full mx-auto flex-1" style="display: flex; align-items: flex-start; padding-top: 20px;">
+            <div class="step-slide-in" style="background-color: ${config.surface_color}; padding: 16px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); max-height: 420px; min-height: 320px; width: 100%; overflow-y: auto;">
 
               ${step.isPlanSelection ? `
                 <!-- Seleção de Planos -->
                 <form id="step-form" style="display: flex; flex-direction: column; gap: 14px;">
                   
                   <!-- Cards de Planos -->
-                  <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px;">
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 12px;">
                     
                     <!-- Plano Mensal -->
-                    <div class="plan-card" data-plan="Premium Mensal - R$ 59,90/mês" style="background-color: rgba(255, 255, 255, 0.05); padding: 14px; border-radius: 14px; border: 2px solid ${formData.plano_escolhido === 'Premium Mensal - R$ 59,90/mês' ? config.primary_action_color : 'rgba(255, 255, 255, 0.1)'}; cursor: pointer; transition: all 0.2s; position: relative;">
-                      ${formData.plano_escolhido === 'Premium Mensal - R$ 59,90/mês' ? `<div style="position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 10px; background: ${config.primary_action_color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700;">✓</div>` : ''}
-                      <div style="position: absolute; top: -8px; right: 8px; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 3px 8px; border-radius: 8px; font-size: ${config.font_size * 0.65}px; font-weight: 700;">🎁 60% OFF</div>
-                      <h4 style="color: ${config.text_color}; font-size: ${config.font_size * 0.95}px; font-weight: 700; margin-bottom: 6px;">Mensal</h4>
-                      <p style="color: ${config.primary_action_color}; font-size: ${config.font_size * 1.3}px; font-weight: 700; margin-bottom: 4px;">R$ 59,90</p>
-                      <p style="color: ${config.secondary_action_color}; font-size: ${config.font_size * 0.75}px;">por mês</p>
-                      <p style="color: ${config.secondary_action_color}; font-size: ${config.font_size * 0.65}px; text-decoration: line-through; margin-top: 2px;">De R$ 149,00</p>
-                      <p style="color: #10b981; font-size: ${config.font_size * 0.7}px; margin-top: 4px; font-weight: 600;">60% OFF nos 3 primeiros meses</p>
+                    <div class="plan-card" data-plan="Premium Mensal - R$ 59,90/mês" style="background-color: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 12px; border: 2px solid ${formData.plano_escolhido === 'Premium Mensal - R$ 59,90/mês' ? config.primary_action_color : 'rgba(255, 255, 255, 0.1)'}; cursor: pointer; transition: all 0.2s; position: relative;">
+                      ${formData.plano_escolhido === 'Premium Mensal - R$ 59,90/mês' ? `<div style="position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 9px; background: ${config.primary_action_color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 700;">✓</div>` : ''}
+                      <div style="position: absolute; top: -6px; right: 6px; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 2px 6px; border-radius: 6px; font-size: ${config.font_size * 0.55}px; font-weight: 700;">60% OFF</div>
+                      <h4 style="color: ${config.text_color}; font-size: ${config.font_size * 0.85}px; font-weight: 700; margin-bottom: 5px;">Mensal</h4>
+                      <p style="color: ${config.primary_action_color}; font-size: ${config.font_size * 1.1}px; font-weight: 700; margin-bottom: 3px;">R$ 59,90</p>
+                      <p style="color: ${config.secondary_action_color}; font-size: ${config.font_size * 0.7}px;">por mês</p>
+                      <p style="color: ${config.secondary_action_color}; font-size: ${config.font_size * 0.6}px; text-decoration: line-through; margin-top: 2px;">De R$ 149,00</p>
+                      <p style="color: #10b981; font-size: ${config.font_size * 0.62}px; margin-top: 3px; font-weight: 600; line-height: 1.2;">60% OFF nos 3 primeiros meses</p>
                     </div>
 
                     <!-- Plano Anual - MAIS VANTAJOSO -->
-                    <div class="plan-card" data-plan="Premium Anual - R$ 299,00/ano" style="background: linear-gradient(135deg, ${config.primary_action_color}22, ${config.primary_action_color}11); padding: 14px; border-radius: 14px; border: 2px solid ${formData.plano_escolhido === 'Premium Anual - R$ 299,00/ano' ? config.primary_action_color : config.primary_action_color + '66'}; cursor: pointer; transition: all 0.2s; position: relative; box-shadow: 0 4px 12px ${config.primary_action_color}22;">
-                      ${formData.plano_escolhido === 'Premium Anual - R$ 299,00/ano' ? `<div style="position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 10px; background: ${config.primary_action_color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700;">✓</div>` : ''}
-                      <div style="position: absolute; top: -8px; right: 8px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 3px 8px; border-radius: 8px; font-size: ${config.font_size * 0.65}px; font-weight: 700;">🔥 88% OFF</div>
-                      <div style="position: absolute; top: 8px; left: 8px; background: ${config.primary_action_color}; color: white; padding: 2px 6px; border-radius: 6px; font-size: ${config.font_size * 0.65}px; font-weight: 700;">⭐ MAIS VANTAJOSO</div>
-                      <h4 style="color: ${config.text_color}; font-size: ${config.font_size * 0.95}px; font-weight: 700; margin-bottom: 6px; margin-top: 12px;">Anual</h4>
-                      <p style="color: ${config.primary_action_color}; font-size: ${config.font_size * 1.3}px; font-weight: 700; margin-bottom: 4px;">R$ 299,00</p>
-                      <p style="color: ${config.secondary_action_color}; font-size: ${config.font_size * 0.75}px;">por ano</p>
-                      <p style="color: ${config.secondary_action_color}; font-size: ${config.font_size * 0.65}px; text-decoration: line-through; margin-top: 2px;">De R$ 2.499,00</p>
-                      <p style="color: #ef4444; font-size: ${config.font_size * 0.7}px; margin-top: 4px; font-weight: 600;">Economia de R$ 420 no ano!</p>
+                    <div class="plan-card" data-plan="Premium Anual - R$ 299,00/ano" style="background: linear-gradient(135deg, ${config.primary_action_color}22, ${config.primary_action_color}11); padding: 12px; border-radius: 12px; border: 2px solid ${formData.plano_escolhido === 'Premium Anual - R$ 299,00/ano' ? config.primary_action_color : config.primary_action_color + '66'}; cursor: pointer; transition: all 0.2s; position: relative; box-shadow: 0 4px 12px ${config.primary_action_color}22;">
+                      ${formData.plano_escolhido === 'Premium Anual - R$ 299,00/ano' ? `<div style="position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 9px; background: ${config.primary_action_color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 700;">✓</div>` : ''}
+                      <div style="position: absolute; top: -6px; right: 6px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 2px 6px; border-radius: 6px; font-size: ${config.font_size * 0.55}px; font-weight: 700;">88% OFF</div>
+                      <div style="position: absolute; top: 6px; left: 6px; background: ${config.primary_action_color}; color: white; padding: 2px 5px; border-radius: 5px; font-size: ${config.font_size * 0.55}px; font-weight: 700;">MELHOR</div>
+                      <h4 style="color: ${config.text_color}; font-size: ${config.font_size * 0.85}px; font-weight: 700; margin-bottom: 5px; margin-top: 10px;">Anual</h4>
+                      <p style="color: ${config.primary_action_color}; font-size: ${config.font_size * 1.1}px; font-weight: 700; margin-bottom: 3px;">R$ 299,00</p>
+                      <p style="color: ${config.secondary_action_color}; font-size: ${config.font_size * 0.7}px;">por ano</p>
+                      <p style="color: ${config.secondary_action_color}; font-size: ${config.font_size * 0.6}px; text-decoration: line-through; margin-top: 2px;">De R$ 2.499,00</p>
+                      <p style="color: #ef4444; font-size: ${config.font_size * 0.62}px; margin-top: 3px; font-weight: 600; line-height: 1.2;">Economia de R$ 420 no ano!</p>
                     </div>
 
                   </div>
@@ -309,17 +309,17 @@
                   <!-- Mensagem de Erro -->
                   <div id="error-message" class="hidden" style="background-color: #ff444422; padding: 12px; border-radius: 12px; border-left: 4px solid #ff4444;">
                     <p style="color: #ff6666; font-size: ${config.font_size * 0.85}px; font-weight: 600;">
-                      <span>❌</span> <span></span>
+                      <span>X</span> <span></span>
                     </p>
                   </div>
 
                   <!-- Botões de Navegação -->
                   <div style="display: flex; gap: 10px; margin-top: 8px;">
                     <button type="button" id="prev-btn" class="oneui-button" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${config.font_size * 0.9}px; font-weight: 600; transition: all 0.2s; flex: 1;">
-                      ← Voltar
+                      Voltar
                     </button>
                     <button type="submit" id="next-btn" class="oneui-button" style="background: linear-gradient(135deg, ${config.primary_action_color}, ${config.primary_action_color}cc); color: white; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${config.font_size * 0.9}px; font-weight: 700; transition: all 0.2s; flex: 2; box-shadow: 0 4px 16px ${config.primary_action_color}44;">
-                      Continuar →
+                      Continuar
                     </button>
                   </div>
                 </form>
@@ -361,14 +361,14 @@
                   
                   <div style="background: linear-gradient(135deg, ${config.primary_action_color}15, ${config.primary_action_color}08); padding: 18px; border-radius: 16px; border-left: 4px solid ${config.primary_action_color}; margin-bottom: 18px;">
                     <p style="color: ${config.text_color}; font-size: ${baseSize * 0.95}px; line-height: 1.7; margin-bottom: 12px;">
-                      <strong>⚡ Quer agilizar seu processo?</strong>
+                      <strong>Quer agilizar seu processo?</strong>
                     </p>
                     <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.9}px; line-height: 1.7; margin-bottom: 14px;">
-                      Caso queira agilizar seu processo e integrar o sistema com mais fluidez, faça o pagamento referente ao plano escolhido e <strong style="color: ${config.text_color};">seu acesso fica disponível em até 24h</strong>! �����
+                      Caso queira agilizar seu processo e integrar o sistema com mais fluidez, faça o pagamento referente ao plano escolhido e <strong style="color: ${config.text_color};">seu acesso fica disponível em até 24h</strong>!
                     </p>
                     <div style="background-color: rgba(255, 255, 255, 0.08); padding: 14px; border-radius: 12px;">
                       <p style="color: ${config.text_color}; font-size: ${baseSize * 0.85}px; font-weight: 600; margin-bottom: 6px;">
-                        ���� Chave PIX para pagamento:
+                        Chave PIX para pagamento:
                       </p>
                       <p style="color: ${config.primary_action_color}; font-size: ${baseSize * 1.05}px; font-weight: 700;">
                         financeiro@gaveblue.com
@@ -378,7 +378,7 @@
                   
                   <div style="background-color: rgba(255, 255, 255, 0.05); padding: 16px; border-radius: 16px; margin-bottom: 14px;">
                     <p style="color: ${config.text_color}; font-size: ${baseSize * 0.9}px; margin-bottom: 8px; line-height: 1.6;">
-                      <strong>���� Confirmação enviada para:</strong>
+                      <strong>Confirmação enviada para:</strong>
                     </p>
                     <p style="color: ${config.primary_action_color}; font-size: ${baseSize * 0.95}px; font-weight: 600;">
                       ${formData.email}
@@ -386,16 +386,16 @@
                   </div>
                   
                   <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.8}px; margin-top: 18px;">
-                    Obrigado por escolher a GaveBlue! 💙
+                    Obrigado por escolher a GaveBlue!
                   </p>
                   
                   <!-- Botões de Ação Final -->
                   <div style="display: flex; gap: 10px; margin-top: 24px;">
                     <button type="button" id="btn-voltar-site" class="oneui-button" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 600; transition: all 0.2s; flex: 1;">
-                      ← Voltar ao Site
+                      Voltar ao Site
                     </button>
                     <button type="button" id="btn-novo-cadastro" class="oneui-button" style="background: linear-gradient(135deg, ${config.primary_action_color}, ${config.primary_action_color}cc); color: white; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 700; transition: all 0.2s; flex: 1; box-shadow: 0 4px 16px ${config.primary_action_color}44;">
-                      ✨ Novo Cadastro
+                      Novo Cadastro
                     </button>
                   </div>
                 </div>
@@ -505,7 +505,7 @@
                     <!-- Info PIX -->
                     <div style="background: linear-gradient(135deg, ${config.primary_action_color}15, ${config.primary_action_color}08); padding: 12px; border-radius: 14px; border-left: 4px solid ${config.primary_action_color};">
                       <p style="color: ${config.text_color}; font-size: ${baseSize * 0.85}px; font-weight: 600; margin-bottom: 4px;">
-                        💳 Informações de Pagamento
+                        Informações de Pagamento
                       </p>
                       <p style="color: ${config.secondary_action_color}; font-size: ${baseSize * 0.8}px; margin-bottom: 4px;">
                         Após confirmar, envie o pagamento via PIX:
@@ -520,14 +520,14 @@
                   <!-- Mensagem de Erro -->
                   <div id="error-message" class="hidden" style="background-color: #ff444422; padding: 12px; border-radius: 12px; border-left: 4px solid #ff4444; margin-top: 14px;">
                     <p style="color: #ff6666; font-size: ${baseSize * 0.85}px; font-weight: 600;">
-                      <span>❌</span> <span></span>
+                      <span>X</span> <span></span>
                     </p>
                   </div>
 
                   <!-- Botões -->
                   <div style="display: flex; gap: 10px; margin-top: 16px;">
                     <button type="button" id="prev-btn" class="oneui-button" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 600; transition: all 0.2s; flex: 1;">
-                      ← Voltar
+                      Voltar
                     </button>
                     <button type="submit" id="next-btn" class="oneui-button" style="background: linear-gradient(135deg, ${config.primary_action_color}, ${config.primary_action_color}cc); color: white; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 700; transition: all 0.2s; flex: 2; box-shadow: 0 4px 16px ${config.primary_action_color}44;">
                       ${config.submit_button_text || defaultConfig.submit_button_text}
@@ -570,7 +570,7 @@
                   <!-- Mensagem de Erro -->
                   <div id="error-message" class="hidden" style="background-color: #ff444422; padding: 12px; border-radius: 12px; border-left: 4px solid #ff4444;">
                     <p style="color: #ff6666; font-size: ${baseSize * 0.85}px; font-weight: 600;">
-                      <span>���</span> <span></span>
+                      <span>X</span> <span></span>
                     </p>
                   </div>
 
@@ -578,7 +578,7 @@
                   <div style="display: flex; gap: 10px; margin-top: 8px;">
                     ${currentStep > 0 ? `
                       <button type="button" id="prev-btn" class="oneui-button" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 600; transition: all 0.2s; flex: 1;">
-                        ← Voltar
+                        Voltar
                       </button>
                     ` : ''}
                     ${step.canSkip ? `
@@ -587,7 +587,7 @@
                       </button>
                     ` : ''}
                     <button type="submit" id="next-btn" class="oneui-button" style="background: linear-gradient(135deg, ${config.primary_action_color}, ${config.primary_action_color}cc); color: white; padding: 12px 18px; border-radius: 12px; border: none; cursor: pointer; font-size: ${baseSize * 0.9}px; font-weight: 700; transition: all 0.2s; flex: 2; box-shadow: 0 4px 16px ${config.primary_action_color}44;">
-                      Continuar →
+                      Continuar
                     </button>
                   </div>
                 </form>
@@ -719,7 +719,7 @@
           let hasEmptyFields = false;
           const currentStepFields = steps[currentStep].fields || [];
           
-          // Verifica se é a etapa de seleç��o de plano
+          // Verifica se é a etapa de seleção de plano
           if (steps[currentStep].isPlanSelection) {
             if (!formData.plano_escolhido) {
               hasEmptyFields = true;
@@ -746,7 +746,7 @@
               if (errorMsg) {
                 const errorText = steps[currentStep].isPlanSelection && !formData.plano_escolhido 
                   ? 'Por favor, selecione um plano!'
-                  : 'Por favor, preencha todos os campos obrigat��rios!';
+                  : 'Por favor, preencha todos os campos obrigatórios!';
                 errorMsg.querySelector('p span:last-child').textContent = errorText;
                 errorMsg.classList.remove('hidden');
               }
@@ -821,7 +821,7 @@
         }, 3000);
 
       } catch (error) {
-        console.error('��� Erro ao salvar dados:', error);
+        console.error('Erro ao salvar dados:', error);
         const errorMsg = document.getElementById('error-message');
         if (errorMsg) {
           errorMsg.querySelector('p span:last-child').textContent = 'Erro ao enviar. Tente novamente.';
@@ -959,5 +959,5 @@
 
     console.log("✅ Firebase inicializado com sucesso!");
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b87378305eda42d',t:'MTc2NzQ5MjgwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b876da3544f00f1',t:'MTc2NzQ5NTAyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
