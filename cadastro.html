@@ -170,10 +170,19 @@
           <!-- Header -->
           <div class="max-w-2xl w-full mx-auto mb-1" style="position: sticky; top: 0; background-color: ${config.background_color}; z-index: 10; padding-top: 8px; padding-bottom: 8px;">
             
-            <!-- Título Principal -->
-            <h1 style="color: ${config.text_color}; font-size: ${baseSize * 1.5}px; font-weight: 700; text-align: center; margin-bottom: 8px; font-family: ${customFont}, ${baseFontStack};">
-              ${config.form_title || defaultConfig.form_title}
-            </h1>
+            <!-- Título Principal e Botão Sair -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <div style="flex: 1;"></div>
+              <h1 style="color: ${config.text_color}; font-size: ${baseSize * 1.5}px; font-weight: 700; text-align: center; margin: 0; font-family: ${customFont}, ${baseFontStack}; flex: 1;">
+                ${config.form_title || defaultConfig.form_title}
+              </h1>
+              <div style="flex: 1; display: flex; justify-content: flex-end;">
+                <button id="exit-btn" class="oneui-button" style="background-color: ${config.secondary_action_color}22; color: ${config.text_color}; padding: 8px 16px; border-radius: 10px; border: none; cursor: pointer; font-size: ${baseSize * 0.8}px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: ${baseSize * 1}px;">✕</span>
+                  <span>Sair</span>
+                </button>
+              </div>
+            </div>
             
             <!-- Indicador de Etapas -->
             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; margin-top: 8px;">
@@ -640,13 +649,29 @@
         });
       });
 
+      // Botão de sair
+      const exitBtn = document.getElementById('exit-btn');
+      if (exitBtn) {
+        exitBtn.addEventListener('click', () => {
+          window.location.href = 'https://gaveblue.com';
+        });
+        
+        exitBtn.addEventListener('mouseenter', () => {
+          exitBtn.style.transform = 'scale(1.05)';
+        });
+        
+        exitBtn.addEventListener('mouseleave', () => {
+          exitBtn.style.transform = 'scale(1)';
+        });
+      }
+
       // Botões da tela final
       const btnVoltarSite = document.getElementById('btn-voltar-site');
       const btnNovoCadastro = document.getElementById('btn-novo-cadastro');
       
       if (btnVoltarSite) {
         btnVoltarSite.addEventListener('click', () => {
-          window.open('https://gaveblue.com', '_blank', 'noopener,noreferrer');
+          window.location.href = 'https://gaveblue.com';
         });
       }
       
@@ -959,5 +984,5 @@
 
     console.log("✅ Firebase inicializado com sucesso!");
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b876da3544f00f1',t:'MTc2NzQ5NTAyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b87df9c02899872',t:'MTc2NzQ5OTY5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
