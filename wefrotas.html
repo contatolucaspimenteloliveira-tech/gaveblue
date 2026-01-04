@@ -27,8 +27,8 @@
     }
 
     .card-modern:hover {
-      transform: translateY(-4px) scale(1.01);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
     }
 
     .glass-header {
@@ -149,8 +149,8 @@
     }
 
     .modern-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.35);
     }
 
     .modern-button:active {
@@ -170,7 +170,7 @@
 
     .modern-button-secondary:hover {
       background: rgba(0, 0, 0, 0.08);
-      transform: translateY(-2px);
+      transform: translateY(-1px);
     }
 
     /* Estilização de campos de data */
@@ -281,7 +281,7 @@
     }
 
     .card-modern:hover .icon-circle {
-      transform: scale(1.1) rotate(5deg);
+      transform: scale(1.05);
       background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
     }
 
@@ -303,8 +303,8 @@
     }
 
     .summary-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
     }
 
     /* Scrollbar Styling */
@@ -483,16 +483,14 @@
    <nav class="glass-header px-6 py-3 sticky top-[88px] z-30 overflow-x-auto">
     <div class="flex gap-2 items-center"><button class="tab-button w-12 h-12 flex items-center justify-center transition-all tab-active" onclick="showTab('dashboard')" title="Dashboard">
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect> <rect x="14" y="3" width="7" height="7"></rect> <rect x="14" y="14" width="7" height="7"></rect> <rect x="3" y="14" width="7" height="7"></rect>
-      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('orders')" title="Ordens de Serviço">
-      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /> <polyline points="14 2 14 8 20 8"></polyline> <line x1="9" y1="15" x2="15" y2="15"></line> <line x1="9" y1="18" x2="15" y2="18"></line> <line x1="9" y1="12" x2="12" y2="12"></line>
-      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('lancamentos')" title="Lan��amentos">
-      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line> <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
       </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('contas')" title="Contas a Pagar">
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line> <line x1="18" y1="20" x2="18" y2="4"></line> <line x1="6" y1="20" x2="6" y2="16"></line>
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('orders')" title="Ordens de Serviço">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /> <polyline points="14 2 14 8 20 8"></polyline> <line x1="9" y1="15" x2="15" y2="15"></line> <line x1="9" y1="18" x2="15" y2="18"></line> <line x1="9" y1="12" x2="12" y2="12"></line>
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('lancamentos')" title="Lançamentos">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line> <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
       </svg></button>
-     <div class="w-px h-8 bg-gray-300 mx-1"></div><button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('cadastros')" title="Cadastros">
-      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
-      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('veiculos')" title="Veículos">
+     <div class="w-px h-8 bg-gray-300 mx-1"></div><button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('veiculos')" title="Veículos">
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect> <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon> <circle cx="5.5" cy="18.5" r="2.5"></circle> <circle cx="18.5" cy="18.5" r="2.5"></circle>
       </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="showTab('motoristas')" title="Motoristas">
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /> <circle cx="12" cy="7" r="4"></circle>
@@ -502,13 +500,15 @@
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
       </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="openHelpModal()" title="Ajuda">
       <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle> <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /> <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg></button> <button class="tab-button w-12 h-12 flex items-center justify-center transition-all" onclick="window.open('https://gaveblue.com', '_blank')" title="Sair">
+      <svg width="22" height="22" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /> <polyline points="16 17 21 12 16 7"></polyline> <line x1="21" y1="12" x2="9" y2="12"></line>
       </svg></button>
     </div>
    </nav><!-- Main Content -->
    <main class="flex-1 p-6 overflow-auto"><!-- Dashboard Content -->
     <div id="dashboard-content" class="tab-content active">
      <div class="space-y-6"><!-- Main Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
        <div class="summary-card">
         <div class="icon-circle mx-auto mb-4">
          🚗
@@ -533,7 +533,18 @@
        </div>
        <div class="summary-card">
         <div class="icon-circle mx-auto mb-4">
-         ����
+         🏢
+        </div>
+        <div class="text-xs text-gray-500 font-bold uppercase tracking-wide text-center">
+         Fornecedores
+        </div>
+        <div id="dashboard-fornecedores" class="text-4xl font-bold gradient-text text-center mt-2">
+         0
+        </div>
+       </div>
+       <div class="summary-card">
+        <div class="icon-circle mx-auto mb-4">
+         📋
         </div>
         <div class="text-xs text-gray-500 font-bold uppercase tracking-wide text-center">
          Ordens Abertas
@@ -605,26 +616,48 @@
     </div><!-- Veículos Content -->
     <div id="veiculos-content" class="tab-content">
      <div class="card-modern p-8">
-      <div class="mb-8">
+      <div class="flex items-center justify-between mb-8">
        <h2 class="text-2xl font-bold text-gray-900">Lista de Veículos</h2>
-       <p class="text-sm text-gray-600 font-medium mt-2">Acesse a aba <strong>Cadastros</strong> para adicionar novos veículos</p>
+      </div><!-- Selection Info -->
+      <div id="vehicles-selection-info" class="mb-6 flex items-center justify-between px-2">
+       <div class="flex items-center gap-3"><input type="checkbox" id="select-all-vehicles" class="modern-checkbox" onchange="toggleSelectAllVehicles()" title="Selecionar Todos"> <span id="vehicles-selected-count" class="text-sm font-semibold text-gray-700">0 selecionados</span>
+       </div>
+       <div class="flex items-center gap-3"><button onclick="showCadastroForm('vehicle')" class="w-10 h-10 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 transition-all" title="Novo Veículo">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
+         </svg></button> <button onclick="editSelectedVehicle()" id="btn-edit-vehicle" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Editar Veículo">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+         </svg></button> <button onclick="deleteSelectedVehicles()" id="btn-delete-vehicles" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Excluir Selecionados">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+         </svg></button>
+       </div>
       </div>
       <div id="vehicles-list" class="space-y-4">
        <div class="text-center py-16 text-gray-500">
-        Nenhum veículo cadastrado. Acesse a aba <strong>Cadastros</strong> para começar.
+        Nenhum veículo cadastrado. Clique no botão + para começar.
        </div>
       </div>
      </div>
     </div><!-- Motoristas Content -->
     <div id="motoristas-content" class="tab-content">
      <div class="card-modern p-8">
-      <div class="mb-8">
+      <div class="flex items-center justify-between mb-8">
        <h2 class="text-2xl font-bold text-gray-900">Lista de Motoristas</h2>
-       <p class="text-sm text-gray-600 font-medium mt-2">Acesse a aba <strong>Cadastros</strong> para adicionar novos motoristas</p>
+      </div><!-- Selection Info -->
+      <div id="drivers-selection-info" class="mb-6 flex items-center justify-between px-2">
+       <div class="flex items-center gap-3"><input type="checkbox" id="select-all-drivers" class="modern-checkbox" onchange="toggleSelectAllDrivers()" title="Selecionar Todos"> <span id="drivers-selected-count" class="text-sm font-semibold text-gray-700">0 selecionados</span>
+       </div>
+       <div class="flex items-center gap-3"><button onclick="showCadastroForm('driver')" class="w-10 h-10 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 transition-all" title="Novo Motorista">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
+         </svg></button> <button onclick="editSelectedDriver()" id="btn-edit-driver" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Editar Motorista">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+         </svg></button> <button onclick="deleteSelectedDrivers()" id="btn-delete-drivers" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Excluir Selecionados">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+         </svg></button>
+       </div>
       </div>
       <div id="drivers-list" class="space-y-4">
        <div class="text-center py-16 text-gray-500">
-        Nenhum motorista cadastrado. Acesse a aba <strong>Cadastros</strong> para começar.
+        Nenhum motorista cadastrado. Clique no botão + para começar.
        </div>
       </div>
      </div>
@@ -633,14 +666,6 @@
      <div class="card-modern p-8">
       <div class="flex items-center justify-between mb-8">
        <h2 class="text-2xl font-bold text-gray-900">Ordens de Serviço</h2>
-       <div class="flex gap-3"><button onclick="printSelectedOrder()" class="modern-button-secondary w-12 h-12 flex items-center justify-center p-0" title="Imprimir OS">
-         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline> <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /> <rect x="6" y="14" width="12" height="8"></rect>
-         </svg></button> <button onclick="exportSelectedOrder()" class="modern-button-secondary w-12 h-12 flex items-center justify-center p-0" title="Exportar">
-         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <polyline points="7 10 12 15 17 10"></polyline> <line x1="12" y1="15" x2="12" y2="3"></line>
-         </svg></button> <button onclick="showCadastroForm('order')" class="modern-button w-12 h-12 flex items-center justify-center p-0" title="Nova Ordem de Serviço">
-         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
-         </svg></button>
-       </div>
       </div><!-- Filtros OS -->
       <div class="mb-6 card-modern p-5" style="background: rgba(255, 255, 255, 0.6);">
        <div class="flex flex-wrap gap-3 items-end">
@@ -660,11 +685,21 @@
          </svg></button>
        </div>
       </div><!-- Selection Info -->
-      <div id="selection-info" class="mb-6 flex items-center gap-3 px-2"><span id="orders-selected-count" class="text-sm font-semibold text-gray-700">0 selecionadas</span> <button onclick="deleteSelectedOrders()" id="btn-delete-selected" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Excluir Selecionadas">
-        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        </svg></button> <button onclick="editSelectedOrder()" id="btn-edit-selected" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Editar Ordem Selecionada">
-        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-        </svg></button>
+      <div id="selection-info" class="mb-6 flex items-center justify-between px-2">
+       <div class="flex items-center gap-3"><input type="checkbox" id="select-all-orders" class="modern-checkbox" onchange="toggleSelectAllOrders()" title="Selecionar Todas"> <span id="orders-selected-count" class="text-sm font-semibold text-gray-700">0 selecionadas</span>
+       </div>
+       <div class="flex items-center gap-3"><button onclick="showCadastroForm('order')" class="w-10 h-10 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 transition-all" title="Nova Ordem de Serviço">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
+         </svg></button> <button onclick="editSelectedOrder()" id="btn-edit-selected" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Editar Ordem Selecionada">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+         </svg></button> <button onclick="printSelectedOrder()" id="btn-print-selected" class="w-10 h-10 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Imprimir OS">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline> <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /> <rect x="6" y="14" width="12" height="8"></rect>
+         </svg></button> <button onclick="exportSelectedOrder()" class="w-10 h-10 flex items-center justify-center rounded-xl text-green-600 hover:bg-green-50 transition-all" title="Exportar">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <polyline points="7 10 12 15 17 10"></polyline> <line x1="12" y1="15" x2="12" y2="3"></line>
+         </svg></button> <button onclick="deleteSelectedOrders()" id="btn-delete-selected" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Excluir Selecionadas">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+         </svg></button>
+       </div>
       </div>
       <div id="orders-list" class="space-y-4">
        <div class="text-center py-16 text-gray-500">
@@ -715,9 +750,13 @@
     <div id="contas-content" class="tab-content">
      <div class="card-modern p-8">
       <div class="flex items-center justify-between mb-8">
-       <h2 class="text-2xl font-bold text-gray-900">Contas a Pagar</h2><button onclick="exportContas()" class="modern-button-secondary w-12 h-12 flex items-center justify-center p-0" title="Exportar Contas">
-        <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <polyline points="7 10 12 15 17 10"></polyline> <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg></button>
+       <h2 class="text-2xl font-bold text-gray-900">Contas a Pagar</h2>
+       <div class="flex gap-3"><button onclick="showNovoLancamentoMenu()" class="modern-button w-12 h-12 flex items-center justify-center p-0" title="Novo Lançamento">
+         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
+         </svg></button> <button onclick="exportContas()" class="modern-button-secondary w-12 h-12 flex items-center justify-center p-0" title="Exportar Contas">
+         <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <polyline points="7 10 12 15 17 10"></polyline> <line x1="12" y1="15" x2="12" y2="3"></line>
+         </svg></button>
+       </div>
       </div><!-- Filtros Contas -->
       <div class="mb-6 card-modern p-5" style="background: rgba(255, 255, 255, 0.6);">
        <div class="flex flex-wrap gap-3 items-end">
@@ -732,44 +771,22 @@
          <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line> <line x1="6" y1="6" x2="18" y2="18"></line>
          </svg></button>
        </div>
-      </div><!-- Resumo de Contas -->
-      <div id="contas-summary" class="mb-8 grid grid-cols-3 gap-5">
-       <div class="summary-card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%); border: 1.5px solid rgba(239, 68, 68, 0.2);">
-        <div class="text-xs text-red-700 font-bold uppercase tracking-wide">
-         A Vencer
-        </div>
-        <div id="contas-a-vencer" class="text-3xl font-bold text-red-700 mt-2">
-         R$ 0,00
-        </div>
-       </div>
-       <div class="summary-card" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%); border: 1.5px solid rgba(245, 158, 11, 0.2);">
-        <div class="text-xs text-yellow-700 font-bold uppercase tracking-wide">
-         Vencidas
-        </div>
-        <div id="contas-vencidas" class="text-3xl font-bold text-yellow-700 mt-2">
-         R$ 0,00
-        </div>
-       </div>
-       <div class="summary-card" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.1) 100%); border: 1.5px solid rgba(34, 197, 94, 0.2);">
-        <div class="text-xs text-green-700 font-bold uppercase tracking-wide">
-         Pagas
-        </div>
-        <div id="contas-pagas" class="text-3xl font-bold text-green-700 mt-2">
-         R$ 0,00
-        </div>
-       </div>
       </div><!-- Contas Selection Info -->
-      <div id="contas-selection-info" class="mb-6 flex items-center gap-3 px-2"><span id="contas-selected-count" class="text-sm font-semibold text-gray-700">0 selecionadas</span> <span id="contas-selected-total" class="text-sm font-bold gradient-text">R$ 0,00</span> <button onclick="editSelectedConta()" id="btn-edit-conta" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Editar Conta">
-        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-        </svg></button> <button onclick="deleteSelectedContas()" id="btn-delete-conta" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Excluir Selecionadas">
-        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        </svg></button> <button onclick="agruparContas()" id="btn-agrupar-conta" class="w-10 h-10 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Agrupar em Uma Conta">
-        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /> <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline> <line x1="12" y1="22.08" x2="12" y2="12"></line>
-        </svg></button> <button onclick="paySelectedContas()" id="btn-pay-selected" class="w-10 h-10 flex items-center justify-center rounded-xl text-green-600 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Dar Baixa">
-        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline>
-        </svg></button> <button onclick="renegociarConta()" id="btn-renegociar" class="w-10 h-10 flex items-center justify-center rounded-xl text-orange-600 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Renegociar Vencimento">
-        <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-        </svg></button>
+      <div id="contas-selection-info" class="mb-6 flex items-center justify-between px-2">
+       <div class="flex items-center gap-3"><span id="contas-selected-count" class="text-sm font-semibold text-gray-700">0 selecionadas</span> <span id="contas-selected-total" class="text-sm font-bold gradient-text">R$ 0,00</span>
+       </div>
+       <div class="flex items-center gap-3"><button onclick="editSelectedConta()" id="btn-edit-conta" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Editar Conta">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+         </svg></button> <button onclick="deleteSelectedContas()" id="btn-delete-conta" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Excluir Selecionadas">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+         </svg></button> <button onclick="agruparContas()" id="btn-agrupar-conta" class="w-10 h-10 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Agrupar em Uma Conta">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /> <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline> <line x1="12" y1="22.08" x2="12" y2="12"></line>
+         </svg></button> <button onclick="paySelectedContas()" id="btn-pay-selected" class="w-10 h-10 flex items-center justify-center rounded-xl text-green-600 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Dar Baixa">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline>
+         </svg></button> <button onclick="renegociarConta()" id="btn-renegociar" class="w-10 h-10 flex items-center justify-center rounded-xl text-orange-600 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Renegociar Vencimento">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+         </svg></button>
+       </div>
       </div>
       <div id="contas-list" class="space-y-4">
        <div class="text-center py-16 text-gray-500">
@@ -780,262 +797,24 @@
     </div><!-- Fornecedores Content -->
     <div id="fornecedores-content" class="tab-content">
      <div class="card-modern p-8">
-      <div class="mb-8">
+      <div class="flex items-center justify-between mb-8">
        <h2 class="text-2xl font-bold text-gray-900">Lista de Fornecedores</h2>
-       <p class="text-sm text-gray-600 font-medium mt-2">Acesse a aba <strong>Cadastros</strong> para adicionar novos fornecedores</p>
+      </div><!-- Selection Info -->
+      <div id="suppliers-selection-info" class="mb-6 flex items-center justify-between px-2">
+       <div class="flex items-center gap-3"><input type="checkbox" id="select-all-suppliers" class="modern-checkbox" onchange="toggleSelectAllSuppliers()" title="Selecionar Todos"> <span id="suppliers-selected-count" class="text-sm font-semibold text-gray-700">0 selecionados</span>
+       </div>
+       <div class="flex items-center gap-3"><button onclick="showCadastroForm('supplier')" class="w-10 h-10 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 transition-all" title="Novo Fornecedor">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line>
+         </svg></button> <button onclick="editSelectedSupplier()" id="btn-edit-supplier" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Editar Fornecedor">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+         </svg></button> <button onclick="deleteSelectedSuppliers()" id="btn-delete-suppliers" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled title="Excluir Selecionados">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+         </svg></button>
+       </div>
       </div>
       <div id="fornecedores-list" class="space-y-4">
        <div class="text-center py-16 text-gray-500">
-        Nenhum fornecedor cadastrado. Acesse a aba <strong>Cadastros</strong> para começar.
-       </div>
-      </div>
-     </div>
-    </div><!-- Cadastros Content -->
-    <div id="cadastros-content" class="tab-content">
-     <div class="space-y-6">
-      <div class="card-modern p-8">
-       <h2 class="text-2xl font-bold text-gray-900 mb-8">Central de Cadastros</h2>
-       <div class="grid grid-cols-1 md:grid-cols-3 gap-6"><button onclick="showCadastroForm('vehicle')" class="card-modern p-8 text-center transition-all hover:shadow-2xl group">
-         <div class="icon-circle mx-auto mb-4">
-          ����
-         </div>
-         <div class="font-bold text-gray-900 text-lg group-hover:gradient-text transition-all">
-          Cadastrar Veículo
-         </div></button> <button onclick="showCadastroForm('driver')" class="card-modern p-8 text-center transition-all hover:shadow-2xl group">
-         <div class="icon-circle mx-auto mb-4">
-          👤
-         </div>
-         <div class="font-bold text-gray-900 text-lg group-hover:gradient-text transition-all">
-          Cadastrar Motorista
-         </div></button> <button onclick="showCadastroForm('supplier')" class="card-modern p-8 text-center transition-all hover:shadow-2xl group">
-         <div class="icon-circle mx-auto mb-4">
-          🏢
-         </div>
-         <div class="font-bold text-gray-900 text-lg group-hover:gradient-text transition-all">
-          Cadastrar Fornecedor
-         </div></button>
-       </div>
-      </div>
-     </div>
-    </div><!-- Configura����es Content -->
-    <div id="configuracoes-content" class="tab-content">
-     <div class="space-y-6">
-      <div class="card-modern p-8">
-       <h2 class="text-2xl font-bold text-gray-900 mb-8">⚙️ Configurações do Sistema</h2><!-- Personalização -->
-       <div class="mb-8">
-        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">🎨</span> Personalização</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-         <div><label class="block text-sm font-semibold text-gray-700 mb-2">Título do Sistema</label> <input type="text" id="config-app-title" class="modern-input w-full" placeholder="WeFrotas">
-         </div>
-         <div><label class="block text-sm font-semibold text-gray-700 mb-2">Nome da Empresa</label> <input type="text" id="config-company-name" class="modern-input w-full" placeholder="Gestão de Frotas">
-         </div>
-        </div>
-       </div><!-- Aparência -->
-       <div class="mb-8 pb-8 border-b border-gray-200">
-        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">🌙</span> Aparência</h3>
-        <div class="summary-card p-5">
-         <div class="flex items-center justify-between">
-          <div>
-           <div class="font-bold text-gray-900">
-            Modo Escuro
-           </div>
-           <div class="text-sm text-gray-600 mt-1">
-            Ativar tema escuro para reduzir o brilho da tela
-           </div>
-          </div>
-          <div class="dark-mode-toggle" id="dark-mode-toggle-config" onclick="toggleDarkModeInConfig()">
-           <div class="dark-mode-toggle-circle"></div>
-          </div>
-         </div>
-        </div>
-       </div><!-- Notificações -->
-       <div class="mb-8 pb-8 border-b border-gray-200">
-        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">🔔</span> Notificações</h3>
-        <div class="space-y-4">
-         <div class="summary-card p-5">
-          <div class="flex items-center justify-between">
-           <div>
-            <div class="font-bold text-gray-900">
-             Alertas de Vencimento
-            </div>
-            <div class="text-sm text-gray-600 mt-1">
-             Notificar sobre contas próximas do vencimento
-            </div>
-           </div><input type="checkbox" id="config-alert-vencimento" class="modern-checkbox">
-          </div>
-         </div>
-         <div class="summary-card p-5">
-          <div class="flex items-center justify-between">
-           <div class="flex-1">
-            <div class="font-bold text-gray-900">
-             Antecedência do Alerta
-            </div>
-            <div class="text-sm text-gray-600 mt-1">
-             Quantos dias antes do vencimento alertar
-            </div>
-           </div><select id="config-dias-alerta" class="modern-input w-32"> <option value="3">3 dias</option> <option value="5">5 dias</option> <option value="7" selected>7 dias</option> <option value="10">10 dias</option> <option value="15">15 dias</option> <option value="30">30 dias</option> </select>
-          </div>
-         </div>
-         <div class="summary-card p-5">
-          <div class="flex items-center justify-between">
-           <div>
-            <div class="font-bold text-gray-900">
-             Som nas Notificações
-            </div>
-            <div class="text-sm text-gray-600 mt-1">
-             Reproduzir som ao exibir notificações
-            </div>
-           </div><input type="checkbox" id="config-sound-notification" class="modern-checkbox">
-          </div>
-         </div>
-        </div>
-       </div><!-- Ordem de Serviço -->
-       <div class="mb-8 pb-8 border-b border-gray-200">
-        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">📋</span> Ordens de Serviço</h3>
-        <div class="space-y-4">
-         <div class="summary-card p-5">
-          <div class="flex items-center justify-between">
-           <div>
-            <div class="font-bold text-gray-900">
-             Auto-fechamento de OS
-            </div>
-            <div class="text-sm text-gray-600 mt-1">
-             Fechar automaticamente ordens após período sem atividade
-            </div>
-           </div><input type="checkbox" id="config-auto-close-os" class="modern-checkbox">
-          </div>
-         </div>
-         <div class="summary-card p-5">
-          <div class="flex items-center justify-between">
-           <div class="flex-1">
-            <div class="font-bold text-gray-900">
-             Dias para Auto-fechamento
-            </div>
-            <div class="text-sm text-gray-600 mt-1">
-             Período de inatividade antes do fechamento automático
-            </div>
-           </div><select id="config-dias-auto-close" class="modern-input w-32"> <option value="15">15 dias</option> <option value="30" selected>30 dias</option> <option value="45">45 dias</option> <option value="60">60 dias</option> <option value="90">90 dias</option> </select>
-          </div>
-         </div>
-        </div>
-       </div><!-- Financeiro -->
-       <div class="mb-8 pb-8 border-b border-gray-200">
-        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">💰</span> Financeiro</h3>
-        <div class="space-y-4">
-         <div class="summary-card p-5">
-          <div class="flex items-center justify-between">
-           <div class="flex-1">
-            <div class="font-bold text-gray-900">
-             Moeda
-            </div>
-            <div class="text-sm text-gray-600 mt-1">
-             Formato de exibição de valores monetários
-            </div>
-           </div><select id="config-currency" class="modern-input w-32"> <option value="BRL" selected>R$ (BRL)</option> <option value="USD">$ (USD)</option> <option value="EUR">��� (EUR)</option> </select>
-          </div>
-         </div>
-         <div class="summary-card p-5">
-          <div class="flex items-center justify-between">
-           <div>
-            <div class="font-bold text-gray-900">
-             Permitir Contas Negativas
-            </div>
-            <div class="text-sm text-gray-600 mt-1">
-             Permitir valores negativos em lançamentos
-            </div>
-           </div><input type="checkbox" id="config-allow-negative" class="modern-checkbox">
-          </div>
-         </div>
-        </div>
-       </div><!-- Backup e Dados -->
-       <div class="mb-8 pb-8 border-b border-gray-200">
-        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">💾</span> Backup e Dados</h3>
-        <div class="space-y-4">
-         <div class="summary-card p-5">
-          <div class="flex items-center justify-between">
-           <div>
-            <div class="font-bold text-gray-900">
-             Backup Automático
-            </div>
-            <div class="text-sm text-gray-600 mt-1">
-             Criar backup automático dos dados periodicamente
-            </div>
-           </div><input type="checkbox" id="config-auto-backup" class="modern-checkbox" checked>
-          </div>
-         </div>
-         <div class="grid grid-cols-1 md:grid-cols-2 gap-4"><button onclick="exportAllData()" class="summary-card p-5 text-center hover:shadow-lg transition-all cursor-pointer">
-           <div class="text-4xl mb-3">
-            📥
-           </div>
-           <div class="font-bold text-gray-900">
-            Exportar Todos os Dados
-           </div>
-           <div class="text-sm text-gray-600 mt-1">
-            Fazer download completo em JSON
-           </div></button> <button onclick="importData()" class="summary-card p-5 text-center hover:shadow-lg transition-all cursor-pointer">
-           <div class="text-4xl mb-3">
-            📤
-           </div>
-           <div class="font-bold text-gray-900">
-            Importar Dados
-           </div>
-           <div class="text-sm text-gray-600 mt-1">
-            Restaurar backup anterior
-           </div></button>
-         </div>
-        </div>
-       </div><!-- Sistema -->
-       <div class="mb-8">
-        <h3 class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3"><span class="icon-circle w-10 h-10 text-xl">⚡</span> Sistema</h3>
-        <div class="space-y-4">
-         <div class="summary-card p-5" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-           <div>
-            <div class="text-sm text-gray-600 font-semibold">
-             Total de Registros
-            </div>
-            <div id="config-total-records" class="text-2xl font-bold gradient-text mt-1">
-             0
-            </div>
-           </div>
-           <div>
-            <div class="text-sm text-gray-600 font-semibold">
-             Veículos
-            </div>
-            <div id="config-total-vehicles" class="text-2xl font-bold gradient-text mt-1">
-             0
-            </div>
-           </div>
-           <div>
-            <div class="text-sm text-gray-600 font-semibold">
-             Motoristas
-            </div>
-            <div id="config-total-drivers" class="text-2xl font-bold gradient-text mt-1">
-             0
-            </div>
-           </div>
-           <div>
-            <div class="text-sm text-gray-600 font-semibold">
-             Ordens de Serviço
-            </div>
-            <div id="config-total-orders" class="text-2xl font-bold gradient-text mt-1">
-             0
-            </div>
-           </div>
-          </div>
-         </div><button onclick="clearAllData()" class="summary-card p-5 w-full text-center hover:shadow-lg transition-all cursor-pointer" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%); border: 1.5px solid rgba(239, 68, 68, 0.2);">
-          <div class="text-4xl mb-3">
-           ����️
-          </div>
-          <div class="font-bold text-red-700">
-           Limpar Todos os Dados
-          </div>
-          <div class="text-sm text-red-600 mt-1">
-           ⚠️ Ação irreversível - todos os dados serão apagados
-          </div></button>
-        </div>
-       </div><!-- Botões de Ação -->
-       <div class="flex justify-end gap-3 pt-6 border-t border-gray-200"><button onclick="resetConfigurations()" class="modern-button-secondary"> Restaurar Padrões </button> <button onclick="saveConfigurations()" class="modern-button"> Salvar Configurações </button>
+        Nenhum fornecedor cadastrado. Clique no botão + para começar.
        </div>
       </div>
      </div>
@@ -1056,6 +835,9 @@
     let selectedOrders = new Set();
     let selectedContas = new Set();
     let selectedLancamentos = new Set();
+    let selectedVehicles = new Set();
+    let selectedDrivers = new Set();
+    let selectedSuppliers = new Set();
     let currentEditingRecord = null;
 
     // LocalStorage Helper Functions
@@ -1179,7 +961,7 @@
         <form id="dynamic-form" class="space-y-5">
           <div class="grid grid-cols-2 gap-5">
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Veículo</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Ve��culo</label>
               <select id="dynamic-order-veiculo_id" class="modern-input w-full">
                 <option value="">Selecione um veículo</option>
               </select>
@@ -1262,7 +1044,7 @@
               <input type="email" id="dynamic-supplier-email" class="modern-input w-full" placeholder="contato@empresa.com">
             </div>
             <div class="col-span-2">
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Endereço</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Endere��o</label>
               <input type="text" id="dynamic-supplier-endereco" class="modern-input w-full" placeholder="Rua, número, bairro">
             </div>
           </div>
@@ -1461,7 +1243,7 @@
 
           <!-- Navegação -->
           <div class="card-modern p-6">
-            <h4 class="text-lg font-bold text-gray-900 mb-4">�� Barra de Navegação</h4>
+            <h4 class="text-lg font-bold text-gray-900 mb-4">🧭 Barra de Navegação</h4>
             <div class="space-y-3">
               <div class="flex items-center gap-3 p-3 summary-card">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1512,17 +1294,6 @@
 
               <div class="flex items-center gap-3 p-3 summary-card">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                <div>
-                  <div class="text-sm font-bold text-gray-900">Cadastros</div>
-                  <div class="text-xs text-gray-600">Central para cadastrar novos veículos 🚗, motoristas 👤 e fornecedores 🏢</div>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-3 p-3 summary-card">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="1" y="3" width="15" height="13"></rect>
                   <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
                   <circle cx="5.5" cy="18.5" r="2.5"></circle>
@@ -1530,7 +1301,7 @@
                 </svg>
                 <div>
                   <div class="text-sm font-bold text-gray-900">Veículos</div>
-                  <div class="text-xs text-gray-600">Lista completa de todos os veículos cadastrados</div>
+                  <div class="text-xs text-gray-600">Cadastre, edite e exclua veículos diretamente na listagem</div>
                 </div>
               </div>
 
@@ -1541,7 +1312,7 @@
                 </svg>
                 <div>
                   <div class="text-sm font-bold text-gray-900">Motoristas</div>
-                  <div class="text-xs text-gray-600">Lista completa de todos os motoristas cadastrados</div>
+                  <div class="text-xs text-gray-600">Cadastre, edite e exclua motoristas diretamente na listagem</div>
                 </div>
               </div>
 
@@ -1552,17 +1323,7 @@
                 </svg>
                 <div>
                   <div class="text-sm font-bold text-gray-900">Fornecedores</div>
-                  <div class="text-xs text-gray-600">Lista de fornecedores (postos, oficinas, etc.)</div>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-3 p-3 summary-card">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-                </svg>
-                <div>
-                  <div class="text-sm font-bold text-gray-900">Configurações</div>
-                  <div class="text-xs text-gray-600">Personalize o título do sistema e ative modo escuro</div>
+                  <div class="text-xs text-gray-600">Cadastre postos, oficinas e outros fornecedores diretamente na listagem</div>
                 </div>
               </div>
             </div>
@@ -1577,10 +1338,10 @@
                 <h5 class="font-bold text-gray-900 mb-2">📋 Ordens de Serviço</h5>
                 <ul class="text-sm text-gray-700 space-y-1 ml-4 list-disc">
                   <li><strong>Criar OS:</strong> Clique no botão + para criar uma nova ordem</li>
-                  <li><strong>Status:</strong> Aberta (⚠��� amarelo), Em Andamento (🔵 azul), Fechada (✅ verde)</li>
+                  <li><strong>Status:</strong> Aberta (⚠️ amarelo), Em Andamento (🔵 azul), Fechada (�� verde)</li>
                   <li><strong>Filtros:</strong> Filtre por número, data, status e ordenação</li>
                   <li><strong>Seleção múltipla:</strong> Use os checkboxes para selecionar ordens</li>
-                  <li><strong>Editar:</strong> Selecione apenas 1 OS e clique no ícone de edição ✏️</li>
+                  <li><strong>Editar:</strong> Selecione apenas 1 OS e clique no ícone de edição ✏��</li>
                   <li><strong>Excluir:</strong> Selecione e clique no ícone da lixeira 🗑️</li>
                   <li><strong>Imprimir:</strong> Selecione 1 OS e clique no ícone de impressora 🖨️</li>
                   <li><strong>Exportar:</strong> Clique no ícone de download ⬇️ para exportar CSV</li>
@@ -1601,7 +1362,7 @@
               <div class="summary-card p-4">
                 <h5 class="font-bold text-gray-900 mb-2">💳 Contas a Pagar</h5>
                 <ul class="text-sm text-gray-700 space-y-1 ml-4 list-disc">
-                  <li><strong>Status:</strong> Pendentes (⏳), Vencidas (⚠️ vermelho), Pagas (✓ verde)</li>
+                  <li><strong>Status:</strong> Pendentes (⏳), Vencidas (⚠️ vermelho), Pagas (✅ verde)</li>
                   <li><strong>Dar Baixa ✓:</strong> Selecione contas e clique em ✓ para marcar como pagas</li>
                   <li><strong>Editar ✏️:</strong> Selecione 1 conta para editar valor, vencimento ou fornecedor</li>
                   <li><strong>Renegociar 🔄:</strong> Altere a data de vencimento de uma conta</li>
@@ -1612,11 +1373,12 @@
               </div>
 
               <div class="summary-card p-4">
-                <h5 class="font-bold text-gray-900 mb-2">🚗 Cadastros</h5>
+                <h5 class="font-bold text-gray-900 mb-2">�� Cadastros</h5>
                 <ul class="text-sm text-gray-700 space-y-1 ml-4 list-disc">
                   <li><strong>Veículos:</strong> Placa, modelo, ano, cor, chassi e RENAVAM</li>
                   <li><strong>Motoristas:</strong> Nome, CPF, CNH, categoria, telefone e e-mail</li>
                   <li><strong>Fornecedores:</strong> Razão social, CNPJ, categoria (posto, oficina, etc.)</li>
+                  <li><strong>Botões no cabeçalho:</strong> + (incluir), ✏️ (editar), ������� (excluir)</li>
                 </ul>
               </div>
             </div>
@@ -1659,6 +1421,7 @@
               <li>Agrupar contas facilita o pagamento de múltiplas despesas de uma vez</li>
               <li>Lançamentos vinculados a OS aparecem na impressão da ordem</li>
               <li>O Dashboard oferece uma visão rápida de toda a operação</li>
+              <li>Os botões de + ✏️ 🗑️ agora estão nos cabeçalhos de cada módulo!</li>
             </ul>
           </div>
 
@@ -1682,141 +1445,11 @@
       if (isDark) {
         // Ícone de sol para modo escuro
         btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
-        showToast('Modo escuro ativado! 🌙');
+        showToast('Modo escuro ativado! ��');
       } else {
         // Ícone de lua para modo claro
         btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
         showToast('Modo claro ativado! ☀️');
-      }
-    }
-
-    function loadConfigurations() {
-      const config = window.elementSdk?.config || defaultConfig;
-      const settings = JSON.parse(localStorage.getItem('wefrotas_settings') || '{}');
-      
-      // Personalização
-      document.getElementById('config-app-title').value = config.app_title || defaultConfig.app_title;
-      document.getElementById('config-company-name').value = config.company_name || defaultConfig.company_name;
-      
-      // Aparência
-      const darkModeToggle = document.getElementById('dark-mode-toggle-config');
-      if (config.dark_mode) {
-        darkModeToggle.classList.add('active');
-      } else {
-        darkModeToggle.classList.remove('active');
-      }
-      
-      // Notificações
-      document.getElementById('config-alert-vencimento').checked = settings.alert_vencimento !== false;
-      document.getElementById('config-dias-alerta').value = settings.dias_alerta || '7';
-      document.getElementById('config-sound-notification').checked = settings.sound_notification || false;
-      
-      // Ordem de Serviço
-      document.getElementById('config-auto-close-os').checked = settings.auto_close_os || false;
-      document.getElementById('config-dias-auto-close').value = settings.dias_auto_close || '30';
-      
-      // Financeiro
-      document.getElementById('config-currency').value = settings.currency || 'BRL';
-      document.getElementById('config-allow-negative').checked = settings.allow_negative || false;
-      
-      // Backup
-      document.getElementById('config-auto-backup').checked = settings.auto_backup !== false;
-      
-      // Sistema
-      document.getElementById('config-total-records').textContent = allData.length;
-      document.getElementById('config-total-vehicles').textContent = allData.filter(i => i.type === 'vehicle').length;
-      document.getElementById('config-total-drivers').textContent = allData.filter(i => i.type === 'driver').length;
-      document.getElementById('config-total-orders').textContent = allData.filter(i => i.type === 'order').length;
-    }
-
-    async function saveConfigurations() {
-      const settings = {
-        alert_vencimento: document.getElementById('config-alert-vencimento').checked,
-        dias_alerta: document.getElementById('config-dias-alerta').value,
-        sound_notification: document.getElementById('config-sound-notification').checked,
-        auto_close_os: document.getElementById('config-auto-close-os').checked,
-        dias_auto_close: document.getElementById('config-dias-auto-close').value,
-        currency: document.getElementById('config-currency').value,
-        allow_negative: document.getElementById('config-allow-negative').checked,
-        auto_backup: document.getElementById('config-auto-backup').checked
-      };
-      
-      localStorage.setItem('wefrotas_settings', JSON.stringify(settings));
-      
-      const newConfig = {
-        app_title: document.getElementById('config-app-title').value,
-        company_name: document.getElementById('config-company-name').value,
-        dark_mode: document.getElementById('dark-mode-toggle-config').classList.contains('active')
-      };
-
-      if (window.elementSdk) {
-        await window.elementSdk.setConfig(newConfig);
-      }
-      
-      showToast('Configurações salvas com sucesso!');
-    }
-
-    function resetConfigurations() {
-      if (confirm('Tem certeza que deseja restaurar as configurações padrão?')) {
-        localStorage.removeItem('wefrotas_settings');
-        
-        if (window.elementSdk) {
-          window.elementSdk.setConfig(defaultConfig);
-        }
-        
-        loadConfigurations();
-        showToast('Configurações restauradas!');
-      }
-    }
-
-    function exportAllData() {
-      const dataStr = JSON.stringify(allData, null, 2);
-      const blob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `wefrotas-backup-${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      showToast('Backup exportado com sucesso!');
-    }
-
-    function importData() {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const importedData = JSON.parse(event.target.result);
-            if (Array.isArray(importedData)) {
-              allData = importedData;
-              saveToLocalStorage();
-              updateUI();
-              showToast(`${importedData.length} registros importados com sucesso!`);
-            } else {
-              showToast('Arquivo inválido!', 'error');
-            }
-          } catch (error) {
-            showToast('Erro ao importar dados: ' + error.message, 'error');
-          }
-        };
-        reader.readAsText(file);
-      };
-      input.click();
-    }
-
-    function clearAllData() {
-      if (confirm('⚠️ ATENÇÃO: Esta ação irá apagar TODOS os dados do sistema de forma IRREVERSÍVEL.\n\nTem certeza que deseja continuar?')) {
-        if (confirm('ÚLTIMA CONFIRMAÇÃO: Todos os veículos, motoristas, ordens de serviço, lançamentos e contas serão excluídos permanentemente. Confirma?')) {
-          allData = [];
-          saveToLocalStorage();
-          updateUI();
-          showToast('Todos os dados foram apagados!');
-        }
       }
     }
 
@@ -1825,7 +1458,7 @@
         vehicle: currentEditingRecord ? 'Editar Veículo' : 'Novo Veículo',
         driver: currentEditingRecord ? 'Editar Motorista' : 'Novo Motorista',
         order: currentEditingRecord ? 'Editar Ordem de Serviço' : 'Nova Ordem de Serviço',
-        supplier: 'Novo Fornecedor',
+        supplier: currentEditingRecord ? 'Editar Fornecedor' : 'Novo Fornecedor',
         fueling: 'Novo Abastecimento',
         expense: 'Nova Despesa'
       };
@@ -1878,10 +1511,53 @@
       showCadastroForm(type);
     }
 
+    function showNovoLancamentoMenu() {
+      document.getElementById('modal-title').textContent = 'Novo Lançamento';
+      document.getElementById('modal-content').innerHTML = `
+        <div class="space-y-4">
+          <p class="text-sm text-gray-700 text-center mb-6">Escolha o tipo de lançamento que deseja registrar:</p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Abastecimento Card -->
+            <button onclick="closeModal(); showLancamentoPopup('fueling');" class="card-modern p-6 hover:shadow-2xl transition-all text-left" style="background: linear-gradient(135deg, rgba(132, 250, 176, 0.1) 0%, rgba(143, 211, 244, 0.1) 100%);">
+              <div class="flex items-center gap-4 mb-4">
+                <div class="icon-circle">⛽</div>
+                <div>
+                  <h3 class="text-lg font-bold text-gray-900">Abastecimento</h3>
+                  <p class="text-sm text-gray-600 font-medium">Registrar abastecimento de veículo</p>
+                </div>
+              </div>
+            </button>
+
+            <!-- Despesa Card -->
+            <button onclick="closeModal(); showLancamentoPopup('expense');" class="card-modern p-6 hover:shadow-2xl transition-all text-left" style="background: linear-gradient(135deg, rgba(246, 211, 101, 0.1) 0%, rgba(253, 160, 133, 0.1) 100%);">
+              <div class="flex items-center gap-4 mb-4">
+                <div class="icon-circle">💸</div>
+                <div>
+                  <h3 class="text-lg font-bold text-gray-900">Despesa</h3>
+                  <p class="text-sm text-gray-600 font-medium">Registrar despesa da frota</p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <div class="flex justify-end pt-4 border-t border-gray-200 mt-6">
+            <button onclick="closeModal()" class="modern-button-secondary">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('modal-overlay').classList.remove('hidden');
+      document.getElementById('modal-overlay').classList.add('flex');
+    }
+
     // Form Handlers
     async function handleGenericSubmit(e, type) {
       const form = e.target;
       const inputs = form.querySelectorAll('input, select, textarea');
+      const isEditing = !!currentEditingRecord;
       const data = {
         __backendId: currentEditingRecord?.__backendId || generateId(),
         id: currentEditingRecord?.id || `${type}-${Date.now()}`,
@@ -1900,33 +1576,26 @@
         }
       });
 
-      try {
-        if (currentEditingRecord) {
-          // Update existing record
-          const index = allData.findIndex(item => item.__backendId === currentEditingRecord.__backendId);
-          if (index !== -1) {
-            allData[index] = data;
-          }
-        } else {
-          // Add new record
-          allData.push(data);
+      if (isEditing) {
+        // Update existing record
+        const index = allData.findIndex(item => item.__backendId === currentEditingRecord.__backendId);
+        if (index !== -1) {
+          allData[index] = data;
         }
-
-        saveToLocalStorage();
-        updateUI();
-        
-        showToast(currentEditingRecord ? 'Registro atualizado!' : 'Registro cadastrado!');
-        closeModal();
-        currentEditingRecord = null;
-      } catch (error) {
-        showToast('Erro ao salvar: ' + error.message, 'error');
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const submitText = document.getElementById('submit-text');
-        const submitLoading = document.getElementById('submit-loading');
-        submitBtn.disabled = false;
-        submitText.classList.remove('hidden');
-        submitLoading.classList.add('hidden');
+      } else {
+        // Add new record
+        allData.push(data);
       }
+
+      saveToLocalStorage();
+      
+      // Show toast first
+      showToast(isEditing ? 'Registro atualizado!' : 'Registro cadastrado!');
+      
+      // Then close modal and update UI
+      closeModal();
+      currentEditingRecord = null;
+      updateUI();
     }
 
     async function handleFuelingSubmit(e) {
@@ -1934,6 +1603,7 @@
       const data_vencimento = document.getElementById('dynamic-fueling-data_vencimento').value;
       const nota_fiscal = document.getElementById('dynamic-fueling-nota_fiscal').value;
       const ordem_id = document.getElementById('dynamic-fueling-ordem_id').value;
+      const isEditing = !!currentEditingRecord;
       
       const data = {
         __backendId: currentEditingRecord?.__backendId || generateId(),
@@ -1951,59 +1621,51 @@
         created_at: currentEditingRecord?.created_at || new Date().toISOString()
       };
 
-      try {
-        if (currentEditingRecord) {
-          // Update existing
-          const index = allData.findIndex(item => item.__backendId === currentEditingRecord.__backendId);
-          if (index !== -1) {
-            allData[index] = data;
-            // Update associated conta
-            const contaIndex = allData.findIndex(c => c.type === 'conta' && c.lancamento_id === data.id);
-            if (contaIndex !== -1) {
-              allData[contaIndex].descricao = data.descricao;
-              allData[contaIndex].valor = data.valor;
-              allData[contaIndex].data_vencimento = data_vencimento;
-              allData[contaIndex].nota_fiscal = nota_fiscal;
-              allData[contaIndex].fornecedor_id = fornecedor_id;
-            }
+      if (isEditing) {
+        // Update existing
+        const index = allData.findIndex(item => item.__backendId === currentEditingRecord.__backendId);
+        if (index !== -1) {
+          allData[index] = data;
+          // Update associated conta
+          const contaIndex = allData.findIndex(c => c.type === 'conta' && c.lancamento_id === data.id);
+          if (contaIndex !== -1) {
+            allData[contaIndex].descricao = data.descricao;
+            allData[contaIndex].valor = data.valor;
+            allData[contaIndex].data_vencimento = data_vencimento;
+            allData[contaIndex].nota_fiscal = nota_fiscal;
+            allData[contaIndex].fornecedor_id = fornecedor_id;
           }
-          showToast('Abastecimento atualizado!');
-        } else {
-          // Create new
-          allData.push(data);
-          
-          // Create associated conta
-          const contaData = {
-            __backendId: generateId(),
-            id: `conta-${Date.now()}`,
-            type: 'conta',
-            descricao: data.descricao,
-            valor: data.valor,
-            data_vencimento: data_vencimento,
-            nota_fiscal: nota_fiscal,
-            fornecedor_id: fornecedor_id,
-            lancamento_id: data.id,
-            pago: false,
-            created_at: new Date().toISOString()
-          };
-          allData.push(contaData);
-          
-          showToast('Abastecimento registrado!');
         }
+      } else {
+        // Create new
+        allData.push(data);
         
-        saveToLocalStorage();
-        updateUI();
-        closeModal();
-        currentEditingRecord = null;
-      } catch (error) {
-        showToast('Erro ao salvar abastecimento: ' + error.message, 'error');
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const submitText = document.getElementById('submit-text');
-        const submitLoading = document.getElementById('submit-loading');
-        submitBtn.disabled = false;
-        submitText.classList.remove('hidden');
-        submitLoading.classList.add('hidden');
+        // Create associated conta
+        const contaData = {
+          __backendId: generateId(),
+          id: `conta-${Date.now()}`,
+          type: 'conta',
+          descricao: data.descricao,
+          valor: data.valor,
+          data_vencimento: data_vencimento,
+          nota_fiscal: nota_fiscal,
+          fornecedor_id: fornecedor_id,
+          lancamento_id: data.id,
+          pago: false,
+          created_at: new Date().toISOString()
+        };
+        allData.push(contaData);
       }
+      
+      saveToLocalStorage();
+      
+      // Show toast first
+      showToast(isEditing ? 'Abastecimento atualizado!' : 'Abastecimento registrado!');
+      
+      // Then close modal and update UI
+      closeModal();
+      currentEditingRecord = null;
+      updateUI();
     }
 
     async function handleExpenseSubmit(e) {
@@ -2011,6 +1673,7 @@
       const data_vencimento = document.getElementById('dynamic-expense-data_vencimento').value;
       const nota_fiscal = document.getElementById('dynamic-expense-nota_fiscal').value;
       const ordem_id = document.getElementById('dynamic-expense-ordem_id').value;
+      const isEditing = !!currentEditingRecord;
       
       const data = {
         __backendId: currentEditingRecord?.__backendId || generateId(),
@@ -2027,59 +1690,51 @@
         created_at: currentEditingRecord?.created_at || new Date().toISOString()
       };
 
-      try {
-        if (currentEditingRecord) {
-          // Update existing
-          const index = allData.findIndex(item => item.__backendId === currentEditingRecord.__backendId);
-          if (index !== -1) {
-            allData[index] = data;
-            // Update associated conta
-            const contaIndex = allData.findIndex(c => c.type === 'conta' && c.lancamento_id === data.id);
-            if (contaIndex !== -1) {
-              allData[contaIndex].descricao = data.descricao;
-              allData[contaIndex].valor = data.valor;
-              allData[contaIndex].data_vencimento = data_vencimento;
-              allData[contaIndex].nota_fiscal = nota_fiscal;
-              allData[contaIndex].fornecedor_id = fornecedor_id;
-            }
+      if (isEditing) {
+        // Update existing
+        const index = allData.findIndex(item => item.__backendId === currentEditingRecord.__backendId);
+        if (index !== -1) {
+          allData[index] = data;
+          // Update associated conta
+          const contaIndex = allData.findIndex(c => c.type === 'conta' && c.lancamento_id === data.id);
+          if (contaIndex !== -1) {
+            allData[contaIndex].descricao = data.descricao;
+            allData[contaIndex].valor = data.valor;
+            allData[contaIndex].data_vencimento = data_vencimento;
+            allData[contaIndex].nota_fiscal = nota_fiscal;
+            allData[contaIndex].fornecedor_id = fornecedor_id;
           }
-          showToast('Despesa atualizada!');
-        } else {
-          // Create new
-          allData.push(data);
-          
-          // Create associated conta
-          const contaData = {
-            __backendId: generateId(),
-            id: `conta-${Date.now()}`,
-            type: 'conta',
-            descricao: data.descricao,
-            valor: data.valor,
-            data_vencimento: data_vencimento,
-            nota_fiscal: nota_fiscal,
-            fornecedor_id: fornecedor_id,
-            lancamento_id: data.id,
-            pago: false,
-            created_at: new Date().toISOString()
-          };
-          allData.push(contaData);
-          
-          showToast('Despesa registrada!');
         }
+      } else {
+        // Create new
+        allData.push(data);
         
-        saveToLocalStorage();
-        updateUI();
-        closeModal();
-        currentEditingRecord = null;
-      } catch (error) {
-        showToast('Erro ao salvar despesa: ' + error.message, 'error');
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const submitText = document.getElementById('submit-text');
-        const submitLoading = document.getElementById('submit-loading');
-        submitBtn.disabled = false;
-        submitText.classList.remove('hidden');
-        submitLoading.classList.add('hidden');
+        // Create associated conta
+        const contaData = {
+          __backendId: generateId(),
+          id: `conta-${Date.now()}`,
+          type: 'conta',
+          descricao: data.descricao,
+          valor: data.valor,
+          data_vencimento: data_vencimento,
+          nota_fiscal: nota_fiscal,
+          fornecedor_id: fornecedor_id,
+          lancamento_id: data.id,
+          pago: false,
+          created_at: new Date().toISOString()
+        };
+        allData.push(contaData);
       }
+      
+      saveToLocalStorage();
+      
+      // Show toast first
+      showToast(isEditing ? 'Despesa atualizada!' : 'Despesa registrada!');
+      
+      // Then close modal and update UI
+      closeModal();
+      currentEditingRecord = null;
+      updateUI();
     }
 
     // Filter Functions
@@ -2207,7 +1862,7 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Observações de Fechamento</label>
-            <textarea id="close-obs" rows="3" class="modern-input w-full" placeholder="Observa��ões sobre o fechamento da OS..."></textarea>
+            <textarea id="close-obs" rows="3" class="modern-input w-full" placeholder="Observações sobre o fechamento da OS..."></textarea>
           </div>
           <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
             <button type="button" onclick="closeModal()" class="modern-button-secondary">
@@ -2472,7 +2127,7 @@
       document.getElementById('modal-content').innerHTML = `
         <form id="edit-conta-form" class="space-y-5">
           <div class="col-span-2">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Descrição*</label>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Descriç��o*</label>
             <input type="text" id="edit-descricao" required class="modern-input w-full" value="${conta.descricao}">
           </div>
           <div class="grid grid-cols-2 gap-5">
@@ -2614,14 +2269,14 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Observações</label>
-            <textarea id="observacoes-renegociacao" rows="3" class="modern-input w-full" placeholder="Motivo da renegociação..."></textarea>
+            <textarea id="observacoes-renegociacao" rows="3" class="modern-input w-full" placeholder="Motivo da renegocia��ão..."></textarea>
           </div>
           <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
             <button type="button" onclick="closeModal()" class="modern-button-secondary">
               Cancelar
             </button>
             <button type="submit" class="modern-button">
-              Confirmar Renegociação
+              Confirmar Renegociaç����o
             </button>
           </div>
         </form>
@@ -2698,88 +2353,18 @@
         showToast('Selecione apenas uma ordem para imprimir', 'error');
         return;
       }
-
+      
       const orderId = Array.from(selectedOrders)[0];
-      const order = allData.find(item => item.__backendId === orderId);
-      if (!order) return;
-
-      const veiculo = allData.find(v => v.type === 'vehicle' && v.id === order.veiculo_id);
-      const motorista = allData.find(m => m.type === 'driver' && m.id === order.motorista_id);
-      const numeroOS = getOrderNumber(order);
-      
-      const lancamentos = allData.filter(l => l.type === 'lancamento' && l.veiculo_id === order.veiculo_id);
-      
-      const contas = allData.filter(c => 
-        c.type === 'conta' && 
-        lancamentos.some(l => l.id === c.lancamento_id)
-      );
-
-      const totalContas = contas.reduce((sum, c) => sum + (c.valor || 0), 0);
-
-      const contasHTML = contas.map(c => {
-        const fornecedor = allData.find(f => f.type === 'supplier' && f.id === c.fornecedor_id);
-        return `
-          <tr>
-            <td>${formatDate(c.data_vencimento)}</td>
-            <td>${fornecedor ? fornecedor.razao_social : '-'}</td>
-            <td>${c.nota_fiscal || '-'}</td>
-            <td>${c.descricao}</td>
-            <td style="text-align: right;">${formatCurrency(c.valor)}</td>
-          </tr>
-        `;
-      }).join('');
-
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write('<!DOCTYPE html><html><head><title>Ordem de Servico ' + numeroOS + '</title>');
-      printWindow.document.write('<style>@page{size:A4;margin:2cm}body{font-family:Arial,sans-serif;font-size:12px;line-height:1.4;color:#000;max-width:21cm;margin:0 auto;padding:20px}.header{text-align:center;border-bottom:3px solid #667eea;padding-bottom:20px;margin-bottom:30px}.header h1{margin:0;font-size:28px;color:#667eea}.header .os-number{font-size:24px;font-weight:bold;color:#333;margin-top:10px}.section{margin-bottom:25px}.section-title{font-size:14px;font-weight:bold;color:#667eea;border-bottom:2px solid #e0e0e0;padding-bottom:5px;margin-bottom:12px}.info-row{display:flex;margin-bottom:8px}.info-label{font-weight:bold;min-width:150px;color:#555}.info-value{color:#000}table{width:100%;border-collapse:collapse;margin-top:15px}th{background:#667eea;color:white;padding:10px;text-align:left;font-weight:bold;font-size:11px}td{padding:8px;border-bottom:1px solid #e0e0e0;font-size:11px}.total-row{font-weight:bold;background:#f5f7fa;border-top:2px solid #667eea}.signature-area{margin-top:60px;padding-top:20px;border-top:2px solid #e0e0e0}.signature-line{margin-top:50px;border-top:2px solid #000;width:300px;text-align:center;padding-top:5px}.status-badge{display:inline-block;padding:4px 12px;border-radius:8px;font-weight:bold;font-size:11px;text-transform:uppercase}.status-aberta{background:#fda085;color:white}.status-andamento{background:#667eea;color:white}.status-fechada{background:#84fab0;color:white}@media print{body{padding:0}.no-print{display:none}}</style></head><body>');
-      printWindow.document.write('<div class="header"><h1>WeFrotas</h1><div class="os-number">ORDEM DE SERVICO N ' + numeroOS + '</div></div>');
-      printWindow.document.write('<div class="section"><div class="section-title">Informacoes Gerais</div><div class="info-row"><div class="info-label">Status:</div><div class="info-value"><span class="status-badge status-' + order.status + '">' + order.status + '</span></div></div>');
-      printWindow.document.write('<div class="info-row"><div class="info-label">Data de Abertura:</div><div class="info-value">' + formatDate(order.data_abertura) + '</div></div>');
-      if (order.data_fechamento) {
-        printWindow.document.write('<div class="info-row"><div class="info-label">Data de Fechamento:</div><div class="info-value">' + formatDate(order.data_fechamento) + '</div></div>');
-      }
-      printWindow.document.write('</div>');
-      printWindow.document.write('<div class="section"><div class="section-title">Veiculo e Motorista</div>');
-      printWindow.document.write('<div class="info-row"><div class="info-label">Veiculo:</div><div class="info-value">' + (veiculo ? veiculo.placa + ' - ' + veiculo.modelo + ' ' + veiculo.ano : '-') + '</div></div>');
-      printWindow.document.write('<div class="info-row"><div class="info-label">Motorista:</div><div class="info-value">' + (motorista ? motorista.nome : '-') + '</div></div>');
-      printWindow.document.write('<div class="info-row"><div class="info-label">Quilometragem:</div><div class="info-value">' + order.km + ' km</div></div></div>');
-      printWindow.document.write('<div class="section"><div class="section-title">Descricao do Servico</div><div class="info-value">' + order.descricao + '</div></div>');
-      if (contas.length > 0) {
-        printWindow.document.write('<div class="section"><div class="section-title">Lancamentos e Pagamentos</div><table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Nota Fiscal</th><th>Descricao</th><th style="text-align:right;">Valor</th></tr></thead><tbody>');
-        printWindow.document.write(contasHTML);
-        printWindow.document.write('<tr class="total-row"><td colspan="4" style="text-align:right;">TOTAL</td><td style="text-align:right;">' + formatCurrency(totalContas) + '</td></tr></tbody></table></div>');
-      }
-      printWindow.document.write('<div class="signature-area"><div class="signature-line" style="margin: 0 auto;"><div>AUTORIZADOR</div></div></div>');
-      printWindow.document.write('<script>window.onload=function(){window.print()}<\/script></body></html>');
-      printWindow.document.close();
-    }
-
-    // Conta Actions
-    async function paySelectedContas() {
-      if (selectedContas.size === 0) return;
-      
-      const btn = document.getElementById('btn-pay-selected');
-      btn.disabled = true;
-      btn.innerHTML = '<div class="loading-spinner inline-block"></div>';
-
-      for (const id of selectedContas) {
-        const index = allData.findIndex(item => item.__backendId === id);
-        if (index !== -1) {
-          allData[index].pago = true;
-          allData[index].data_pagamento = new Date().toISOString().split('T')[0];
-        }
-      }
-      
-      saveToLocalStorage();
-      selectedContas.clear();
-      updateUI();
-      showToast('Contas pagas!');
+      printOrderDirect(orderId);
     }
 
     function exportContas() {
       const contas = getFilteredContas();
       const csv = 'Descrição,Valor,Vencimento,Status\n' + 
-        contas.map(c => `${c.descricao},${c.valor},${formatDate(c.data_vencimento)},${c.pago ? 'Pago' : 'Pendente'}`).join('\n');
+        contas.map(conta => {
+          const status = conta.pago ? 'Pago' : (conta.data_vencimento < new Date().toISOString().split('T')[0] ? 'Vencido' : 'Pendente');
+          return `${conta.descricao},${conta.valor},${formatDate(conta.data_vencimento)},${status}`;
+        }).join('\n');
       
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
@@ -2790,560 +2375,632 @@
       showToast('Contas exportadas!');
     }
 
-    // Render Functions
-    function renderVehicles() {
-      const container = document.getElementById('vehicles-list');
+    // Vehicle Actions
+    function editSelectedVehicle() {
+      if (selectedVehicles.size === 1) {
+        const id = Array.from(selectedVehicles)[0];
+        currentEditingRecord = allData.find(item => item.__backendId === id);
+        if (currentEditingRecord) {
+          showCadastroForm('vehicle');
+        }
+      }
+    }
+
+    async function deleteSelectedVehicles() {
+      if (selectedVehicles.size === 0) return;
+      
+      for (const id of selectedVehicles) {
+        const index = allData.findIndex(item => item.__backendId === id);
+        if (index !== -1) {
+          allData.splice(index, 1);
+        }
+      }
+      
+      saveToLocalStorage();
+      selectedVehicles.clear();
+      updateUI();
+      showToast('Ve����culos excluídos!');
+    }
+
+    // Driver Actions
+    function editSelectedDriver() {
+      if (selectedDrivers.size === 1) {
+        const id = Array.from(selectedDrivers)[0];
+        currentEditingRecord = allData.find(item => item.__backendId === id);
+        if (currentEditingRecord) {
+          showCadastroForm('driver');
+        }
+      }
+    }
+
+    async function deleteSelectedDrivers() {
+      if (selectedDrivers.size === 0) return;
+      
+      for (const id of selectedDrivers) {
+        const index = allData.findIndex(item => item.__backendId === id);
+        if (index !== -1) {
+          allData.splice(index, 1);
+        }
+      }
+      
+      saveToLocalStorage();
+      selectedDrivers.clear();
+      updateUI();
+      showToast('Motoristas excluídos!');
+    }
+
+    // Supplier Actions
+    function editSelectedSupplier() {
+      if (selectedSuppliers.size === 1) {
+        const id = Array.from(selectedSuppliers)[0];
+        currentEditingRecord = allData.find(item => item.__backendId === id);
+        if (currentEditingRecord) {
+          showCadastroForm('supplier');
+        }
+      }
+    }
+
+    async function deleteSelectedSuppliers() {
+      if (selectedSuppliers.size === 0) return;
+      
+      for (const id of selectedSuppliers) {
+        const index = allData.findIndex(item => item.__backendId === id);
+        if (index !== -1) {
+          allData.splice(index, 1);
+        }
+      }
+      
+      saveToLocalStorage();
+      selectedSuppliers.clear();
+      updateUI();
+      showToast('Fornecedores excluídos!');
+    }
+
+    // Update Selects
+    function updateSelects() {
       const vehicles = allData.filter(item => item.type === 'vehicle');
-
-      if (vehicles.length === 0) {
-        container.innerHTML = '<div class="text-center py-16 text-gray-500 font-medium">Nenhum veículo cadastrado. Acesse a aba <strong>Cadastros</strong> para começar.</div>';
-        return;
-      }
-
-      container.innerHTML = vehicles.map(v => `
-        <div class="card-modern p-5 flex items-center justify-between transition-all">
-          <div class="flex items-center gap-5">
-            <div class="icon-circle">🚗</div>
-            <div>
-              <div class="font-bold text-gray-900 text-lg">${v.placa}</div>
-              <div class="text-sm text-gray-600 font-medium mt-1">${v.modelo} - ${v.ano}</div>
-              <div class="text-xs text-gray-500 mt-1">Chassi: ${v.chassi || '-'}</div>
-            </div>
-          </div>
-          <div class="text-right summary-card px-5 py-3">
-            <div class="text-xs text-gray-500 font-semibold uppercase">Cor</div>
-            <div class="text-sm font-bold text-gray-900 mt-1">${v.cor}</div>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function renderDrivers() {
-      const container = document.getElementById('drivers-list');
       const drivers = allData.filter(item => item.type === 'driver');
+      const suppliers = allData.filter(item => item.type === 'supplier');
+      const orders = allData.filter(item => item.type === 'order');
 
-      if (drivers.length === 0) {
-        container.innerHTML = '<div class="text-center py-16 text-gray-500 font-medium">Nenhum motorista cadastrado. Acesse a aba <strong>Cadastros</strong> para começar.</div>';
-        return;
-      }
+      // Update vehicle selects
+      const vehicleSelects = document.querySelectorAll('[id^="dynamic-"][id$="-veiculo_id"]');
+      vehicleSelects.forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Selecione um veículo</option>' + 
+          vehicles.map(v => `<option value="${v.id}" ${v.id === currentValue ? 'selected' : ''}>${v.placa} - ${v.modelo}</option>`).join('');
+      });
 
-      container.innerHTML = drivers.map(m => `
-        <div class="card-modern p-5 flex items-center justify-between transition-all">
-          <div class="flex items-center gap-5">
-            <div class="icon-circle">👤</div>
-            <div>
-              <div class="font-bold text-gray-900 text-lg">${m.nome}</div>
-              <div class="text-sm text-gray-600 font-medium mt-1">CPF: ${m.cpf}</div>
-              <div class="text-xs text-gray-500 mt-1">CNH: ${m.cnh} - Categoria ${m.categoria_cnh}</div>
-            </div>
-          </div>
-          <div class="text-right">
-            <div class="text-sm text-gray-700 font-semibold">${m.telefone}</div>
-            <div class="text-xs text-gray-500 mt-1">${m.email || '-'}</div>
-          </div>
-        </div>
-      `).join('');
+      // Update driver selects
+      const driverSelects = document.querySelectorAll('[id^="dynamic-"][id$="-motorista_id"]');
+      driverSelects.forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Selecione um motorista</option>' + 
+          drivers.map(d => `<option value="${d.id}" ${d.id === currentValue ? 'selected' : ''}>${d.nome}</option>`).join('');
+      });
+
+      // Update supplier selects
+      const supplierSelects = document.querySelectorAll('[id^="dynamic-"][id$="-fornecedor_id"]');
+      supplierSelects.forEach(select => {
+        const currentValue = select.value;
+        const isFueling = select.id.includes('fueling');
+        let filteredSuppliers = suppliers;
+        if (isFueling) {
+          filteredSuppliers = suppliers.filter(s => s.categoria === 'posto');
+        }
+        select.innerHTML = '<option value="">Selecione ' + (isFueling ? 'um posto' : 'um fornecedor') + '</option>' + 
+          filteredSuppliers.map(s => `<option value="${s.id}" ${s.id === currentValue ? 'selected' : ''}>${s.razao_social}</option>`).join('');
+      });
+
+      // Update order selects
+      const orderSelects = document.querySelectorAll('[id^="dynamic-"][id$="-ordem_id"]');
+      orderSelects.forEach(select => {
+        const currentValue = select.value;
+        const openOrders = orders.filter(o => o.status === 'aberta' || o.status === 'andamento');
+        select.innerHTML = '<option value="">Não alocar em OS</option>' + 
+          openOrders.map(o => `<option value="${o.id}" ${o.id === currentValue ? 'selected' : ''}>OS ${getOrderNumber(o)} - ${o.descricao.substring(0, 30)}...</option>`).join('');
+      });
     }
 
-    function renderOrders() {
-      const container = document.getElementById('orders-list');
-      const orders = getFilteredOrders();
+    // UI Update Functions
+    function updateUI() {
+      updateDashboard();
+      updateOrdersList();
+      updateContasList();
+      updateLancamentosList();
+      updateVehiclesList();
+      updateDriversList();
+      updateSuppliersList();
+    }
 
+    function updateDashboard() {
+      const vehicles = allData.filter(item => item.type === 'vehicle');
+      const drivers = allData.filter(item => item.type === 'driver');
+      const suppliers = allData.filter(item => item.type === 'supplier');
+      const openOrders = allData.filter(item => item.type === 'order' && (item.status === 'aberta' || item.status === 'andamento'));
+      const pendingContas = allData.filter(item => item.type === 'conta' && !item.pago);
+      
+      document.getElementById('dashboard-veiculos').textContent = vehicles.length;
+      document.getElementById('dashboard-motoristas').textContent = drivers.length;
+      document.getElementById('dashboard-fornecedores').textContent = suppliers.length;
+      document.getElementById('dashboard-ordens').textContent = openOrders.length;
+      document.getElementById('dashboard-contas').textContent = pendingContas.length;
+
+      const contas = allData.filter(item => item.type === 'conta');
+      const hoje = new Date().toISOString().split('T')[0];
+      const totalPagar = contas.filter(c => !c.pago).reduce((sum, c) => sum + c.valor, 0);
+      const totalVencidas = contas.filter(c => !c.pago && c.data_vencimento < hoje).reduce((sum, c) => sum + c.valor, 0);
+      const totalPago = contas.filter(c => c.pago).reduce((sum, c) => sum + c.valor, 0);
+
+      document.getElementById('dashboard-total-pagar').textContent = formatCurrency(totalPagar);
+      document.getElementById('dashboard-vencidas').textContent = formatCurrency(totalVencidas);
+      document.getElementById('dashboard-pago').textContent = formatCurrency(totalPago);
+
+      // Recent Orders
+      const recentOrders = allData.filter(item => item.type === 'order')
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 5);
+
+      const ordersHtml = recentOrders.length > 0 ? recentOrders.map(order => {
+        const veiculo = allData.find(v => v.type === 'vehicle' && v.id === order.veiculo_id);
+        return `
+          <div class="summary-card p-4 flex items-center justify-between">
+            <div>
+              <div class="font-bold text-gray-900">OS ${getOrderNumber(order)}</div>
+              <div class="text-sm text-gray-600">${veiculo ? veiculo.placa : '-'} - ${formatDate(order.data_abertura)}</div>
+            </div>
+            <span class="status-${order.status}">${order.status.toUpperCase()}</span>
+          </div>
+        `;
+      }).join('') : '<div class="text-center py-8 text-gray-500 text-sm">Nenhuma ordem registrada</div>';
+
+      document.getElementById('dashboard-recent-orders').innerHTML = ordersHtml;
+
+      // Recent Lancamentos
+      const recentLancamentos = allData.filter(item => item.type === 'lancamento')
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 5);
+
+      const lancamentosHtml = recentLancamentos.length > 0 ? recentLancamentos.map(lanc => {
+        const veiculo = allData.find(v => v.type === 'vehicle' && v.id === lanc.veiculo_id);
+        return `
+          <div class="summary-card p-4 flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xl">${lanc.tipo_lancamento === 'abastecimento' ? '⛽' : '💸'}</span>
+                <div>
+                  <div class="font-bold text-gray-900">${lanc.descricao}</div>
+                  <div class="text-sm text-gray-600">${veiculo ? veiculo.placa : '-'}</div>
+                </div>
+              </div>
+            </div>
+            <div class="font-bold gradient-text">${formatCurrency(lanc.valor)}</div>
+          </div>
+        `;
+      }).join('') : '<div class="text-center py-8 text-gray-500 text-sm">Nenhum lançamento registrado</div>';
+
+      document.getElementById('dashboard-recent-lancamentos').innerHTML = lancamentosHtml;
+    }
+
+    function updateOrdersList() {
+      const orders = getFilteredOrders();
+      const container = document.getElementById('orders-list');
+      
       if (orders.length === 0) {
-        container.innerHTML = '<div class="text-center py-16 text-gray-500 font-medium">Nenhuma ordem de serviço encontrada.</div>';
+        container.innerHTML = '<div class="text-center py-16 text-gray-500">Nenhuma ordem de serviço encontrada.</div>';
+        document.getElementById('orders-selected-count').textContent = '0 selecionadas';
+        document.getElementById('btn-delete-selected').disabled = true;
+        document.getElementById('btn-edit-selected').disabled = true;
         return;
       }
 
       container.innerHTML = orders.map(order => {
         const veiculo = allData.find(v => v.type === 'vehicle' && v.id === order.veiculo_id);
         const motorista = allData.find(m => m.type === 'driver' && m.id === order.motorista_id);
-        const numeroOS = getOrderNumber(order);
+        const isSelected = selectedOrders.has(order.__backendId);
         
         return `
-          <div class="card-modern p-5">
-            <div class="flex items-start gap-4">
-              <input type="checkbox" class="order-checkbox modern-checkbox mt-1" data-id="${order.__backendId}" ${selectedOrders.has(order.__backendId) ? 'checked' : ''}>
-              <div class="flex-1">
-                <div class="flex items-start justify-between mb-3">
-                  <div class="flex items-center gap-3">
-                    <span class="badge-numero-os">OS Nº ${numeroOS}</span>
-                    <span class="status-${order.status}">${order.status.toUpperCase()}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    ${order.km ? `<div class="text-xs text-gray-500 font-semibold">${order.km} km</div>` : ''}
-                    <button onclick="editOrderDirect('${order.__backendId}')" class="w-9 h-9 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 transition-all" title="Editar OS">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                      </svg>
-                    </button>
-                    ${order.status !== 'fechada' ? `
-                      <button onclick="closeOrderDirect('${order.__backendId}')" class="w-9 h-9 flex items-center justify-center rounded-xl text-green-600 hover:bg-green-50 transition-all" title="Fechar OS">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </button>
-                    ` : `
-                      <button onclick="reopenOrderDirect('${order.__backendId}')" class="w-9 h-9 flex items-center justify-center rounded-xl text-orange-600 hover:bg-orange-50 transition-all" title="Reabrir OS">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-                        </svg>
-                      </button>
-                    `}
-                    <button onclick="printOrderDirect('${order.__backendId}')" class="w-9 h-9 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 transition-all" title="Salvar PDF">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="9" y1="15" x2="15" y2="15"></line>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                <div class="font-bold text-gray-900 text-lg mb-3">${order.descricao}</div>
-                <div class="grid grid-cols-2 gap-3 text-sm summary-card p-4">
-                  <div>
-                    <span class="text-gray-500 font-semibold">Veículo:</span>
-                    <span class="text-gray-900 font-bold ml-1">${veiculo ? veiculo.placa : '-'}</span>
-                  </div>
-                  <div>
-                    <span class="text-gray-500 font-semibold">Motorista:</span>
-                    <span class="text-gray-900 font-bold ml-1">${motorista ? motorista.nome : '-'}</span>
-                  </div>
-                  <div>
-                    <span class="text-gray-500 font-semibold">Abertura:</span>
-                    <span class="text-gray-900 font-bold ml-1">${formatDate(order.data_abertura)}</span>
-                  </div>
-                  <div>
-                    <span class="text-gray-500 font-semibold">Fechamento:</span>
-                    <span class="text-gray-900 font-bold ml-1">${formatDate(order.data_fechamento)}</span>
-                  </div>
-                </div>
+          <div class="card-modern p-6 flex items-center gap-5 ${isSelected ? 'ring-2 ring-blue-500' : ''}">
+            <input type="checkbox" class="modern-checkbox" ${isSelected ? 'checked' : ''} 
+              onchange="toggleOrderSelection('${order.__backendId}')">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-3">
+                <span class="badge-numero-os">OS ${getOrderNumber(order)}</span>
+                <span class="status-${order.status}">${order.status.toUpperCase()}</span>
               </div>
+              <div class="text-sm text-gray-700 mb-2"><strong>Veículo:</strong> ${veiculo ? `${veiculo.placa} - ${veiculo.modelo}` : '-'}</div>
+              <div class="text-sm text-gray-700 mb-2"><strong>Motorista:</strong> ${motorista ? motorista.nome : '-'}</div>
+              <div class="text-sm text-gray-700 mb-2"><strong>Descrição:</strong> ${order.descricao}</div>
+              <div class="text-xs text-gray-500">Abertura: ${formatDate(order.data_abertura)} ${order.data_fechamento ? '• Fechamento: ' + formatDate(order.data_fechamento) : ''}</div>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="editOrderDirect('${order.__backendId}')" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 transition-all" title="Editar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+              <button onclick="printOrderDirect('${order.__backendId}')" class="w-10 h-10 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 transition-all" title="Imprimir">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+              </button>
+              ${order.status !== 'fechada' ? `
+                <button onclick="closeOrderDirect('${order.__backendId}')" class="w-10 h-10 flex items-center justify-center rounded-xl text-green-600 hover:bg-green-50 transition-all" title="Fechar OS">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </button>
+              ` : `
+                <button onclick="reopenOrderDirect('${order.__backendId}')" class="w-10 h-10 flex items-center justify-center rounded-xl text-orange-600 hover:bg-orange-50 transition-all" title="Reabrir OS">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                  </svg>
+                </button>
+              `}
             </div>
           </div>
         `;
       }).join('');
 
-      // Attach checkbox listeners
-      document.querySelectorAll('.order-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', (e) => {
-          if (e.target.checked) {
-            selectedOrders.add(e.target.dataset.id);
-          } else {
-            selectedOrders.delete(e.target.dataset.id);
-          }
-          updateOrderSelection();
-        });
-      });
-    }
-
-    function updateOrderSelection() {
-      document.getElementById('orders-selected-count').textContent = `${selectedOrders.size} selecionadas`;
+      document.getElementById('orders-selected-count').textContent = `${selectedOrders.size} selecionada${selectedOrders.size !== 1 ? 's' : ''}`;
       document.getElementById('btn-delete-selected').disabled = selectedOrders.size === 0;
       document.getElementById('btn-edit-selected').disabled = selectedOrders.size !== 1;
-    }
-
-    function renderLancamentos() {
-      const container = document.getElementById('all-lancamentos-list');
-      const lancamentos = allData.filter(item => item.type === 'lancamento');
-
-      if (lancamentos.length === 0) {
-        container.innerHTML = '<div class="text-center py-16 text-gray-500 font-medium">Nenhum lançamento registrado.</div>';
-        return;
+      document.getElementById('btn-print-selected').disabled = selectedOrders.size !== 1;
+      
+      // Update select-all checkbox
+      const selectAllCheckbox = document.getElementById('select-all-orders');
+      if (selectAllCheckbox) {
+        const filteredOrders = getFilteredOrders();
+        selectAllCheckbox.checked = filteredOrders.length > 0 && selectedOrders.size === filteredOrders.length;
       }
-
-      container.innerHTML = lancamentos.map(l => {
-        const veiculo = allData.find(v => v.type === 'vehicle' && v.id === l.veiculo_id);
-        const fornecedor = allData.find(f => f.type === 'supplier' && f.id === l.fornecedor_id);
-        const ordem = l.ordem_id ? allData.find(o => o.type === 'order' && o.id === l.ordem_id) : null;
-        const icon = l.tipo_lancamento === 'abastecimento' ? '���' : '💸';
-        const colorGradient = l.tipo_lancamento === 'abastecimento' ? 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)' : 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)';
-        
-        return `
-          <div class="card-modern p-5">
-            <div class="flex items-start gap-4">
-              <div class="icon-circle">${icon}</div>
-              <div class="flex-1">
-                <div class="flex items-start justify-between">
-                  <div>
-                    <div class="font-bold text-gray-900 text-lg">${l.descricao}</div>
-                    ${ordem ? `<div class="text-xs px-3 py-1 rounded-full font-bold mt-2 inline-block" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%); color: #667eea;">Alocado na OS Nº ${getOrderNumber(ordem)}</div>` : ''}
-                    <div class="text-sm text-gray-600 font-medium mt-2">
-                      Veículo: <span class="font-bold text-gray-900">${veiculo ? veiculo.placa : '-'}</span>
-                    </div>
-                    <div class="text-sm text-gray-600 mt-1">
-                      Fornecedor: <span class="font-bold text-gray-900">${fornecedor ? fornecedor.razao_social : '-'}</span>
-                    </div>
-                    ${l.tipo_lancamento === 'abastecimento' ? `
-                      <div class="text-sm text-gray-600 font-semibold mt-1">${l.litros || 0} litros</div>
-                    ` : ''}
-                    ${l.nota_fiscal ? `
-                      <div class="text-xs text-gray-500 mt-1">NF: ${l.nota_fiscal}</div>
-                    ` : ''}
-                    <div class="text-xs text-gray-500 mt-1">Vencimento: ${formatDate(l.data_vencimento)}</div>
-                  </div>
-                  <div class="text-right">
-                    <div class="text-2xl font-bold" style="background: ${colorGradient}; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${formatCurrency(l.valor)}</div>
-                    <div class="text-xs text-gray-500 font-semibold mt-1">${formatDate(l.created_at)}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
     }
 
-    function renderContas() {
-      const container = document.getElementById('contas-list');
+    function updateContasList() {
       const contas = getFilteredContas();
-
+      const container = document.getElementById('contas-list');
+      const hoje = new Date().toISOString().split('T')[0];
+      
       if (contas.length === 0) {
-        container.innerHTML = '<div class="text-center py-16 text-gray-500 font-medium">Nenhuma conta encontrada.</div>';
+        container.innerHTML = '<div class="text-center py-16 text-gray-500">Nenhuma conta encontrada.</div>';
+        document.getElementById('contas-selected-count').textContent = '0 selecionadas';
+        document.getElementById('contas-selected-total').textContent = 'R$ 0,00';
+        document.getElementById('btn-delete-conta').disabled = true;
+        document.getElementById('btn-edit-conta').disabled = true;
+        document.getElementById('btn-pay-selected').disabled = true;
+        document.getElementById('btn-agrupar-conta').disabled = true;
+        document.getElementById('btn-renegociar').disabled = true;
         return;
       }
 
-      const hoje = new Date().toISOString().split('T')[0];
-
-      container.innerHTML = contas.map(c => {
-        const vencida = !c.pago && c.data_vencimento < hoje;
-        let statusStyle = '';
-        if (c.pago) {
-          statusStyle = 'background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.15) 100%); border: 1.5px solid rgba(34, 197, 94, 0.3);';
-        } else if (vencida) {
-          statusStyle = 'background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%); border: 1.5px solid rgba(239, 68, 68, 0.3);';
-        } else {
-          statusStyle = 'background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.15) 100%); border: 1.5px solid rgba(245, 158, 11, 0.3);';
-        }
+      container.innerHTML = contas.map(conta => {
+        const fornecedor = allData.find(f => f.type === 'supplier' && f.id === conta.fornecedor_id);
+        const isSelected = selectedContas.has(conta.__backendId);
+        const isVencida = !conta.pago && conta.data_vencimento < hoje;
         
         return `
-          <div class="card-modern p-5" style="${statusStyle}">
-            <div class="flex items-start gap-4">
-              ${!c.pago ? `<input type="checkbox" class="conta-checkbox modern-checkbox mt-1" data-id="${c.__backendId}" ${selectedContas.has(c.__backendId) ? 'checked' : ''}>` : '<div class="w-5"></div>'}
-              <div class="flex-1">
-                <div class="flex items-start justify-between">
-                  <div>
-                    <div class="font-bold text-gray-900 text-lg">${c.descricao}</div>
-                    <div class="text-sm text-gray-700 font-semibold mt-2">
-                      Vencimento: <span class="font-bold">${formatDate(c.data_vencimento)}</span>
-                      ${vencida ? ' <span class="text-red-600 font-bold">⚠️ VENCIDA</span>' : ''}
-                    </div>
-                    ${c.pago ? `<div class="text-sm text-green-700 font-bold mt-1">✓ Pago em ${formatDate(c.data_pagamento)}</div>` : ''}
-                  </div>
-                  <div class="text-right">
-                    <div class="text-2xl font-bold gradient-text">${formatCurrency(c.valor)}</div>
-                    ${c.pago ? '<div class="text-xs text-green-700 font-bold mt-1">PAGO</div>' : ''}
-                  </div>
-                </div>
+          <div class="card-modern p-6 flex items-center gap-5 ${isSelected ? 'ring-2 ring-blue-500' : ''}">
+            <input type="checkbox" class="modern-checkbox" ${isSelected ? 'checked' : ''} 
+              onchange="toggleContaSelection('${conta.__backendId}')">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-3">
+                ${conta.pago ? 
+                  '<span class="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">✓ PAGO</span>' : 
+                  isVencida ?
+                    '<span class="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">⚠ VENCIDA</span>' :
+                    '<span class="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700">⏳ PENDENTE</span>'
+                }
+                ${conta.agrupada ? '<span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">���� AGRUPADA</span>' : ''}
+                ${conta.renegociada ? '<span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">🔄 RENEGOCIADA</span>' : ''}
               </div>
+              <div class="text-lg font-bold text-gray-900 mb-2">${conta.descricao}</div>
+              <div class="text-sm text-gray-700 mb-1"><strong>Fornecedor:</strong> ${fornecedor ? fornecedor.razao_social : '-'}</div>
+              <div class="text-sm text-gray-700 mb-1"><strong>Vencimento:</strong> ${formatDate(conta.data_vencimento)}</div>
+              ${conta.nota_fiscal ? `<div class="text-sm text-gray-700"><strong>NF:</strong> ${conta.nota_fiscal}</div>` : ''}
+              ${conta.pago ? `<div class="text-xs text-green-600 mt-2">Pago em: ${formatDate(conta.data_pagamento)}</div>` : ''}
             </div>
+            <div class="text-2xl font-bold gradient-text">${formatCurrency(conta.valor)}</div>
           </div>
         `;
       }).join('');
 
-      // Attach checkbox listeners
-      document.querySelectorAll('.conta-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', (e) => {
-          if (e.target.checked) {
-            selectedContas.add(e.target.dataset.id);
-          } else {
-            selectedContas.delete(e.target.dataset.id);
-          }
-          updateContasSelection();
-        });
-      });
-
-      updateContasSummary();
-    }
-
-    function updateContasSelection() {
-      const total = Array.from(selectedContas).reduce((sum, id) => {
+      const selectedTotal = Array.from(selectedContas).reduce((sum, id) => {
         const conta = allData.find(c => c.__backendId === id);
         return sum + (conta ? conta.valor : 0);
       }, 0);
 
-      document.getElementById('contas-selected-count').textContent = `${selectedContas.size} selecionadas`;
-      document.getElementById('contas-selected-total').textContent = formatCurrency(total);
-      document.getElementById('btn-pay-selected').disabled = selectedContas.size === 0;
-      document.getElementById('btn-renegociar').disabled = selectedContas.size !== 1;
-      document.getElementById('btn-edit-conta').disabled = selectedContas.size !== 1;
+      document.getElementById('contas-selected-count').textContent = `${selectedContas.size} selecionada${selectedContas.size !== 1 ? 's' : ''}`;
+      document.getElementById('contas-selected-total').textContent = formatCurrency(selectedTotal);
       document.getElementById('btn-delete-conta').disabled = selectedContas.size === 0;
+      document.getElementById('btn-edit-conta').disabled = selectedContas.size !== 1;
+      document.getElementById('btn-pay-selected').disabled = selectedContas.size === 0;
       document.getElementById('btn-agrupar-conta').disabled = selectedContas.size < 2;
+      document.getElementById('btn-renegociar').disabled = selectedContas.size !== 1;
     }
 
-    function updateContasSummary() {
-      const contas = allData.filter(item => item.type === 'conta');
-      const hoje = new Date().toISOString().split('T')[0];
-
-      const aVencer = contas.filter(c => !c.pago && c.data_vencimento >= hoje).reduce((sum, c) => sum + c.valor, 0);
-      const vencidas = contas.filter(c => !c.pago && c.data_vencimento < hoje).reduce((sum, c) => sum + c.valor, 0);
-      const pagas = contas.filter(c => c.pago).reduce((sum, c) => sum + c.valor, 0);
-
-      document.getElementById('contas-a-vencer').textContent = formatCurrency(aVencer);
-      document.getElementById('contas-vencidas').textContent = formatCurrency(vencidas);
-      document.getElementById('contas-pagas').textContent = formatCurrency(pagas);
-    }
-
-    function renderSuppliers() {
-      const container = document.getElementById('fornecedores-list');
-      const suppliers = allData.filter(item => item.type === 'supplier');
-
-      if (suppliers.length === 0) {
-        container.innerHTML = '<div class="text-center py-16 text-gray-500 font-medium">Nenhum fornecedor cadastrado. Acesse a aba <strong>Cadastros</strong> para começar.</div>';
+    function updateLancamentosList() {
+      const lancamentos = allData.filter(item => item.type === 'lancamento')
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const container = document.getElementById('all-lancamentos-list');
+      
+      if (lancamentos.length === 0) {
+        container.innerHTML = '<div class="text-center py-16 text-gray-500">Nenhum lançamento registrado.</div>';
         return;
       }
 
-      container.innerHTML = suppliers.map(f => `
-        <div class="card-modern p-5 flex items-center justify-between transition-all">
-          <div class="flex items-center gap-5">
-            <div class="icon-circle">🏢</div>
-            <div>
-              <div class="flex items-center gap-3">
-                <div class="font-bold text-gray-900 text-lg">${f.razao_social}</div>
-                <span class="text-xs px-3 py-1 rounded-full font-bold" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%); color: #667eea;">${getCategoriaLabel(f.categoria)}</span>
+      container.innerHTML = lancamentos.map(lanc => {
+        const veiculo = allData.find(v => v.type === 'vehicle' && v.id === lanc.veiculo_id);
+        const fornecedor = allData.find(f => f.type === 'supplier' && f.id === lanc.fornecedor_id);
+        const ordem = lanc.ordem_id ? allData.find(o => o.type === 'order' && o.id === lanc.ordem_id) : null;
+        
+        return `
+          <div class="card-modern p-6">
+            <div class="flex items-start gap-4">
+              <div class="text-4xl">${lanc.tipo_lancamento === 'abastecimento' ? '⛽' : '💸'}</div>
+              <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                  <h4 class="text-lg font-bold text-gray-900">${lanc.descricao}</h4>
+                  <span class="px-3 py-1 rounded-full text-xs font-bold ${lanc.tipo_lancamento === 'abastecimento' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}">${lanc.tipo_lancamento === 'abastecimento' ? 'ABASTECIMENTO' : 'DESPESA'}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-700">
+                  <div><strong>Veículo:</strong> ${veiculo ? `${veiculo.placa} - ${veiculo.modelo}` : '-'}</div>
+                  <div><strong>Fornecedor:</strong> ${fornecedor ? fornecedor.razao_social : '-'}</div>
+                  ${lanc.litros ? `<div><strong>Litros:</strong> ${lanc.litros} L</div>` : ''}
+                  <div><strong>Vencimento:</strong> ${formatDate(lanc.data_vencimento)}</div>
+                  ${lanc.nota_fiscal ? `<div><strong>NF:</strong> ${lanc.nota_fiscal}</div>` : ''}
+                  ${ordem ? `<div><strong>Ordem:</strong> OS ${getOrderNumber(ordem)}</div>` : ''}
+                </div>
               </div>
-              <div class="text-sm text-gray-600 font-medium mt-1">CNPJ: ${f.cnpj}</div>
-              ${f.endereco ? `<div class="text-xs text-gray-500 mt-1">${f.endereco}</div>` : ''}
+              <div class="text-2xl font-bold gradient-text">${formatCurrency(lanc.valor)}</div>
             </div>
           </div>
-          <div class="text-right">
-            <div class="text-sm text-gray-700 font-semibold">${f.telefone || '-'}</div>
-            <div class="text-xs text-gray-500 mt-1">${f.email || '-'}</div>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
-    function updateSelects() {
+    function updateVehiclesList() {
       const vehicles = allData.filter(item => item.type === 'vehicle');
+      const container = document.getElementById('vehicles-list');
+      
+      if (vehicles.length === 0) {
+        container.innerHTML = '<div class="text-center py-16 text-gray-500">Nenhum veículo cadastrado. Clique no bot��o + para começar.</div>';
+        document.getElementById('vehicles-selected-count').textContent = '0 selecionados';
+        document.getElementById('btn-delete-vehicles').disabled = true;
+        document.getElementById('btn-edit-vehicle').disabled = true;
+        document.getElementById('select-all-vehicles').checked = false;
+        return;
+      }
+
+      container.innerHTML = vehicles.map(vehicle => {
+        const isSelected = selectedVehicles.has(vehicle.__backendId);
+        
+        return `
+          <div class="card-modern p-6 flex items-center gap-5 ${isSelected ? 'ring-2 ring-blue-500' : ''}">
+            <input type="checkbox" class="modern-checkbox" ${isSelected ? 'checked' : ''} 
+              onchange="toggleVehicleSelection('${vehicle.__backendId}')">
+            <div class="icon-circle">🚗</div>
+            <div class="flex-1">
+              <div class="text-xl font-bold text-gray-900 mb-2">${vehicle.placa}</div>
+              <div class="text-sm text-gray-700">${vehicle.modelo} • ${vehicle.ano} • ${vehicle.cor}</div>
+              ${vehicle.chassi ? `<div class="text-xs text-gray-500 mt-1">Chassi: ${vehicle.chassi}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('vehicles-selected-count').textContent = `${selectedVehicles.size} selecionado${selectedVehicles.size !== 1 ? 's' : ''}`;
+      document.getElementById('btn-delete-vehicles').disabled = selectedVehicles.size === 0;
+      document.getElementById('btn-edit-vehicle').disabled = selectedVehicles.size !== 1;
+      
+      // Update select-all checkbox
+      const selectAllCheckbox = document.getElementById('select-all-vehicles');
+      if (selectAllCheckbox) {
+        selectAllCheckbox.checked = vehicles.length > 0 && selectedVehicles.size === vehicles.length;
+      }
+    }
+
+    function updateDriversList() {
       const drivers = allData.filter(item => item.type === 'driver');
+      const container = document.getElementById('drivers-list');
+      
+      if (drivers.length === 0) {
+        container.innerHTML = '<div class="text-center py-16 text-gray-500">Nenhum motorista cadastrado. Clique no botão + para começar.</div>';
+        document.getElementById('drivers-selected-count').textContent = '0 selecionados';
+        document.getElementById('btn-delete-drivers').disabled = true;
+        document.getElementById('btn-edit-driver').disabled = true;
+        document.getElementById('select-all-drivers').checked = false;
+        return;
+      }
+
+      container.innerHTML = drivers.map(driver => {
+        const isSelected = selectedDrivers.has(driver.__backendId);
+        
+        return `
+          <div class="card-modern p-6 flex items-center gap-5 ${isSelected ? 'ring-2 ring-blue-500' : ''}">
+            <input type="checkbox" class="modern-checkbox" ${isSelected ? 'checked' : ''} 
+              onchange="toggleDriverSelection('${driver.__backendId}')">
+            <div class="icon-circle">👤</div>
+            <div class="flex-1">
+              <div class="text-xl font-bold text-gray-900 mb-2">${driver.nome}</div>
+              <div class="text-sm text-gray-700">CNH: ${driver.cnh} • Categoria: ${driver.categoria_cnh}</div>
+              <div class="text-sm text-gray-700">CPF: ${driver.cpf} • Tel: ${driver.telefone}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('drivers-selected-count').textContent = `${selectedDrivers.size} selecionado${selectedDrivers.size !== 1 ? 's' : ''}`;
+      document.getElementById('btn-delete-drivers').disabled = selectedDrivers.size === 0;
+      document.getElementById('btn-edit-driver').disabled = selectedDrivers.size !== 1;
+      
+      // Update select-all checkbox
+      const selectAllCheckbox = document.getElementById('select-all-drivers');
+      if (selectAllCheckbox) {
+        selectAllCheckbox.checked = drivers.length > 0 && selectedDrivers.size === drivers.length;
+      }
+    }
+
+    function updateSuppliersList() {
       const suppliers = allData.filter(item => item.type === 'supplier');
-      const postos = suppliers.filter(s => s.categoria === 'posto');
-      const orders = allData.filter(item => item.type === 'order');
+      const container = document.getElementById('fornecedores-list');
+      
+      if (suppliers.length === 0) {
+        container.innerHTML = '<div class="text-center py-16 text-gray-500">Nenhum fornecedor cadastrado. Clique no botão + para começar.</div>';
+        document.getElementById('suppliers-selected-count').textContent = '0 selecionados';
+        document.getElementById('btn-delete-suppliers').disabled = true;
+        document.getElementById('btn-edit-supplier').disabled = true;
+        document.getElementById('select-all-suppliers').checked = false;
+        return;
+      }
 
-      const vehicleSelects = document.querySelectorAll('select[id*="veiculo_id"]');
-      vehicleSelects.forEach(select => {
-        const currentValue = select.value;
-        select.innerHTML = '<option value="">Selecione um veículo</option>' + 
-          vehicles.map(v => `<option value="${v.id}" ${currentValue === v.id ? 'selected' : ''}>${v.placa} - ${v.modelo}</option>`).join('');
-      });
-
-      const driverSelects = document.querySelectorAll('select[id*="motorista_id"]');
-      driverSelects.forEach(select => {
-        const currentValue = select.value;
-        select.innerHTML = '<option value="">Selecione um motorista</option>' + 
-          drivers.map(m => `<option value="${m.id}" ${currentValue === m.id ? 'selected' : ''}>${m.nome}</option>`).join('');
-      });
-
-      // Fornecedor selects (all suppliers)
-      const fornecedorSelects = document.querySelectorAll('select[id*="fornecedor_id"]:not([id*="fueling"])');
-      fornecedorSelects.forEach(select => {
-        const currentValue = select.value;
-        select.innerHTML = '<option value="">Selecione um fornecedor</option>' + 
-          suppliers.map(s => `<option value="${s.id}" ${currentValue === s.id ? 'selected' : ''}>${s.razao_social} (${getCategoriaLabel(s.categoria)})</option>`).join('');
-      });
-
-      // Posto selects (only gas stations for fueling)
-      const postoSelects = document.querySelectorAll('select[id*="fueling-fornecedor_id"]');
-      postoSelects.forEach(select => {
-        const currentValue = select.value;
-        select.innerHTML = '<option value="">Selecione um posto</option>' + 
-          postos.map(p => `<option value="${p.id}" ${currentValue === p.id ? 'selected' : ''}>${p.razao_social}</option>`).join('');
-      });
-
-      // Order selects for lancamentos
-      const orderSelects = document.querySelectorAll('select[id*="ordem_id"]');
-      orderSelects.forEach(select => {
-        const currentValue = select.value;
-        const veiculoId = select.closest('form')?.querySelector('[id*="veiculo_id"]')?.value;
+      container.innerHTML = suppliers.map(supplier => {
+        const isSelected = selectedSuppliers.has(supplier.__backendId);
+        const categoriaEmoji = {
+          posto: '⛽',
+          oficina: '🔧',
+          borracharia: '🛞',
+          concessionaria: '��',
+          autoeletrica: '⚡',
+          funilaria: '🎨',
+          lavagem: '🧼',
+          pecas: '⚙️',
+          seguros: '🛡️',
+          outros: '🏢'
+        };
         
-        let filteredOrders = orders;
-        if (veiculoId) {
-          filteredOrders = orders.filter(o => o.veiculo_id === veiculoId);
-        }
-        
-        select.innerHTML = '<option value="">Não alocar em OS</option>' + 
-          filteredOrders.map(o => `<option value="${o.id}" ${currentValue === o.id ? 'selected' : ''}>OS Nº ${getOrderNumber(o)} - ${o.descricao.substring(0, 30)}</option>`).join('');
-      });
-    }
-
-    function getCategoriaLabel(categoria) {
-      const labels = {
-        'posto': 'Posto',
-        'oficina': 'Oficina',
-        'borracharia': 'Borracharia',
-        'concessionaria': 'Concessão',
-        'autoeletrica': 'Auto Elétrica',
-        'funilaria': 'Funilaria',
-        'lavagem': 'Lavagem',
-        'pecas': 'Peças',
-        'seguros': 'Seguros',
-        'outros': 'Outros'
-      };
-      return labels[categoria] || categoria;
-    }
-
-    function updateUI() {
-      const activeTab = document.querySelector('.tab-content.active');
-      if (!activeTab) return;
-
-      const tabId = activeTab.id.replace('-content', '');
-      
-      if (tabId === 'dashboard') renderDashboard();
-      if (tabId === 'veiculos') renderVehicles();
-      if (tabId === 'motoristas') renderDrivers();
-      if (tabId === 'fornecedores') renderSuppliers();
-      if (tabId === 'orders') renderOrders();
-      if (tabId === 'lancamentos') renderLancamentos();
-      if (tabId === 'contas') renderContas();
-      if (tabId === 'cadastros') updateSelects();
-
-      document.getElementById('total-records').textContent = allData.length;
-    }
-
-    function renderDashboard() {
-      const veiculos = allData.filter(item => item.type === 'vehicle').length;
-      const motoristas = allData.filter(item => item.type === 'driver').length;
-      const ordensAbertas = allData.filter(item => item.type === 'order' && item.status !== 'fechada').length;
-      
-      const contas = allData.filter(item => item.type === 'conta');
-      const hoje = new Date().toISOString().split('T')[0];
-      const contasPendentes = contas.filter(c => !c.pago).length;
-      const totalPagar = contas.filter(c => !c.pago).reduce((sum, c) => sum + c.valor, 0);
-      const vencidas = contas.filter(c => !c.pago && c.data_vencimento < hoje).reduce((sum, c) => sum + c.valor, 0);
-      const pago = contas.filter(c => c.pago).reduce((sum, c) => sum + c.valor, 0);
-
-      document.getElementById('dashboard-veiculos').textContent = veiculos;
-      document.getElementById('dashboard-motoristas').textContent = motoristas;
-      document.getElementById('dashboard-ordens').textContent = ordensAbertas;
-      document.getElementById('dashboard-contas').textContent = contasPendentes;
-      document.getElementById('dashboard-total-pagar').textContent = formatCurrency(totalPagar);
-      document.getElementById('dashboard-vencidas').textContent = formatCurrency(vencidas);
-      document.getElementById('dashboard-pago').textContent = formatCurrency(pago);
-
-      // Recent Orders
-      const recentOrders = allData.filter(item => item.type === 'order').slice(-5).reverse();
-      const ordersContainer = document.getElementById('dashboard-recent-orders');
-      if (recentOrders.length === 0) {
-        ordersContainer.innerHTML = '<div class="text-center py-8 text-gray-500 text-sm">Nenhuma ordem registrada</div>';
-      } else {
-        ordersContainer.innerHTML = recentOrders.map(order => {
-          const veiculo = allData.find(v => v.type === 'vehicle' && v.id === order.veiculo_id);
-          const numeroOS = getOrderNumber(order);
-          return `
-            <div class="summary-card p-4">
-              <div class="flex items-center justify-between">
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-2">
-                    <span class="badge-numero-os text-xs">OS ${numeroOS}</span>
-                  </div>
-                  <div class="text-sm font-bold text-gray-900">${order.descricao.substring(0, 30)}${order.descricao.length > 30 ? '...' : ''}</div>
-                  <div class="text-xs text-gray-600 mt-1">${veiculo ? veiculo.placa : '-'}</div>
-                </div>
-                <div class="text-right">
-                  <span class="status-${order.status} text-xs mt-1 inline-block">${order.status.toUpperCase()}</span>
-                </div>
-              </div>
+        return `
+          <div class="card-modern p-6 flex items-center gap-5 ${isSelected ? 'ring-2 ring-blue-500' : ''}">
+            <input type="checkbox" class="modern-checkbox" ${isSelected ? 'checked' : ''} 
+              onchange="toggleSupplierSelection('${supplier.__backendId}')">
+            <div class="icon-circle">${categoriaEmoji[supplier.categoria] || '🏢'}</div>
+            <div class="flex-1">
+              <div class="text-xl font-bold text-gray-900 mb-2">${supplier.razao_social}</div>
+              <div class="text-sm text-gray-700">CNPJ: ${supplier.cnpj} • ${supplier.categoria}</div>
+              ${supplier.telefone ? `<div class="text-sm text-gray-700">Tel: ${supplier.telefone}</div>` : ''}
             </div>
-          `;
-        }).join('');
-      }
+          </div>
+        `;
+      }).join('');
 
-      // Recent Lancamentos
-      const recentLancamentos = allData.filter(item => item.type === 'lancamento').slice(-5).reverse();
-      const lancamentosContainer = document.getElementById('dashboard-recent-lancamentos');
-      if (recentLancamentos.length === 0) {
-        lancamentosContainer.innerHTML = '<div class="text-center py-8 text-gray-500 text-sm">Nenhum lançamento registrado</div>';
+      document.getElementById('suppliers-selected-count').textContent = `${selectedSuppliers.size} selecionado${selectedSuppliers.size !== 1 ? 's' : ''}`;
+      document.getElementById('btn-delete-suppliers').disabled = selectedSuppliers.size === 0;
+      document.getElementById('btn-edit-supplier').disabled = selectedSuppliers.size !== 1;
+      
+      // Update select-all checkbox
+      const selectAllCheckbox = document.getElementById('select-all-suppliers');
+      if (selectAllCheckbox) {
+        selectAllCheckbox.checked = suppliers.length > 0 && selectedSuppliers.size === suppliers.length;
+      }
+    }
+
+    // Toggle Selection Functions
+    function toggleOrderSelection(id) {
+      if (selectedOrders.has(id)) {
+        selectedOrders.delete(id);
       } else {
-        lancamentosContainer.innerHTML = recentLancamentos.map(l => {
-          const veiculo = allData.find(v => v.type === 'vehicle' && v.id === l.veiculo_id);
-          const icon = l.tipo_lancamento === 'abastecimento' ? '⛽' : '����';
-          return `
-            <div class="summary-card p-4">
-              <div class="flex items-center gap-3">
-                <div class="text-2xl">${icon}</div>
-                <div class="flex-1">
-                  <div class="text-sm font-bold text-gray-900">${l.descricao.substring(0, 30)}${l.descricao.length > 30 ? '...' : ''}</div>
-                  <div class="text-xs text-gray-600 mt-1">${veiculo ? veiculo.placa : '-'}</div>
-                </div>
-                <div class="text-sm font-bold gradient-text">${formatCurrency(l.valor)}</div>
-              </div>
-            </div>
-          `;
-        }).join('');
+        selectedOrders.add(id);
       }
+      updateUI();
     }
 
-    // Event Listeners Setup
-    function setupEventListeners() {
-      // Filter listeners - removed auto-update on date change
-      document.getElementById('filter-order-status').addEventListener('change', applyOrderFilters);
-      document.getElementById('order-sort').addEventListener('change', applyOrderFilters);
-      
-      document.getElementById('filter-contas-status').addEventListener('change', applyContasFilters);
-
-      // Modal close on backdrop
-      document.getElementById('modal-overlay').addEventListener('click', (e) => {
-        if (e.target.id === 'modal-overlay') closeModal();
-      });
-    }
-
-    // Element SDK
-    async function onConfigChange(config) {
-      const appTitle = config.app_title || defaultConfig.app_title;
-      const companyName = config.company_name || defaultConfig.company_name;
-      const darkMode = config.dark_mode !== undefined ? config.dark_mode : defaultConfig.dark_mode;
-
-      document.getElementById('app-title').textContent = appTitle;
-      document.getElementById('company-name').textContent = companyName;
-
-      // Apply dark mode
-      if (darkMode) {
-        document.body.classList.add('dark-mode');
+    function toggleContaSelection(id) {
+      if (selectedContas.has(id)) {
+        selectedContas.delete(id);
       } else {
-        document.body.classList.remove('dark-mode');
+        selectedContas.add(id);
       }
+      updateUI();
     }
 
-    // Initialize App
-    async function initializeApp() {
-      // Load data from localStorage
-      loadFromLocalStorage();
-      
-      // Load dark mode preference
-      const savedDarkMode = localStorage.getItem('wefrotas_dark_mode') === 'true';
-      if (savedDarkMode) {
-        document.body.classList.add('dark-mode');
-        const btn = document.getElementById('dark-mode-btn');
-        if (btn) {
-          btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
-        }
+    function toggleVehicleSelection(id) {
+      if (selectedVehicles.has(id)) {
+        selectedVehicles.delete(id);
+      } else {
+        selectedVehicles.add(id);
       }
-      
-
-      if (window.elementSdk) {
-        window.elementSdk.init({
-          defaultConfig,
-          onConfigChange,
-          mapToCapabilities: () => ({
-            recolorables: [],
-            borderables: [],
-            fontEditable: undefined,
-            fontSizeable: undefined
-          }),
-          mapToEditPanelValues: (config) => new Map([
-            ["app_title", config.app_title || defaultConfig.app_title],
-            ["company_name", config.company_name || defaultConfig.company_name]
-          ])
-        });
-
-        await onConfigChange(window.elementSdk.config);
-      }
-
-      setupEventListeners();
+      updateUI();
     }
 
-    document.addEventListener('DOMContentLoaded', initializeApp);
+    function toggleDriverSelection(id) {
+      if (selectedDrivers.has(id)) {
+        selectedDrivers.delete(id);
+      } else {
+        selectedDrivers.add(id);
+      }
+      updateUI();
+    }
+
+    function toggleSupplierSelection(id) {
+      if (selectedSuppliers.has(id)) {
+        selectedSuppliers.delete(id);
+      } else {
+        selectedSuppliers.add(id);
+      }
+      updateUI();
+    }
+
+    function toggleSelectAllVehicles() {
+      const vehicles = allData.filter(item => item.type === 'vehicle');
+      const checkbox = document.getElementById('select-all-vehicles');
+      
+      if (checkbox.checked) {
+        vehicles.forEach(v => selectedVehicles.add(v.__backendId));
+      } else {
+        selectedVehicles.clear();
+      }
+      updateUI();
+    }
+
+    function toggleSelectAllDrivers() {
+      const drivers = allData.filter(item => item.type === 'driver');
+      const checkbox = document.getElementById('select-all-drivers');
+      
+      if (checkbox.checked) {
+        drivers.forEach(d => selectedDrivers.add(d.__backendId));
+      } else {
+        selectedDrivers.clear();
+      }
+      updateUI();
+    }
+
+    function toggleSelectAllSuppliers() {
+      const suppliers = allData.filter(item => item.type === 'supplier');
+      const checkbox = document.getElementById('select-all-suppliers');
+      
+      if (checkbox.checked) {
+        suppliers.forEach(s => selectedSuppliers.add(s.__backendId));
+      } else {
+        selectedSuppliers.clear();
+      }
+      updateUI();
+    }
+
+    function toggleSelectAllOrders() {
+      const orders = getFilteredOrders();
+      const checkbox = document.getElementById('select-all-orders');
+      
+      if (checkbox.checked) {
+        orders.forEach(o => selectedOrders.add(o.__backendId));
+      } else {
+        selectedOrders.clear();
+      }
+      updateUI();
+    }
+
+    // Initialize
+    loadFromLocalStorage();
+    
+    // Load dark mode preference
+    const savedDarkMode = localStorage.getItem('wefrotas_dark_mode');
+    if (savedDarkMode === 'true') {
+      document.body.classList.add('dark-mode');
+      const btn = document.getElementById('dark-mode-btn');
+      btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+    }
+    
+    updateUI();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b85b295b3220316',t:'MTc2NzQ3Njg3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b88255b279ea42d',t:'MTc2NzUwMjU1MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
