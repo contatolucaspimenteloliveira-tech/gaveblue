@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Modern Login</title>
   <script src="/_sdk/element_sdk.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script><!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <style>
     body {
       box-sizing: border-box;
@@ -40,24 +42,24 @@
     
     /* Glass Morphism Effects */
     .glass-card {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
       box-shadow: 
         0 25px 50px -12px rgba(0, 0, 0, 0.25),
-        0 0 0 1px rgba(255, 255, 255, 0.05),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
     }
     
     .glass-input {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.7);
       backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(0, 0, 0, 0.1);
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     .glass-input:focus {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.9);
       border-color: rgba(37, 99, 235, 0.5);
       box-shadow: 
         0 0 0 3px rgba(37, 99, 235, 0.1),
@@ -236,55 +238,43 @@
   <div class="floating-orb"></div>
   <div class="floating-orb"></div>
   <div class="floating-orb"></div>
-  <div class="min-h-full flex items-center justify-center p-6">
-   <div class="w-full max-w-md"><!-- Main Card -->
-    <div class="glass-card rounded-3xl p-6 fade-in-up"><!-- Avatar Section -->
-     <div class="text-center mb-6 fade-in-up-delay">
-      <div class="avatar-gradient w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 transform hover:scale-105 transition-all duration-300">
-       <svg class="w-8 h-8 text-white" fill="currentColor" viewbox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-       </svg>
-      </div>
-      <h1 id="page-title" class="text-2xl font-bold text-white mb-2">Bem-vindo de Volta</h1>
-      <p id="welcome-message" class="text-white/70 text-base">Faça login para continuar em sua conta</p>
+  <div class="min-h-full flex items-center justify-end p-6 md:p-12">
+   <div class="w-full max-w-sm"><!-- Main Card -->
+    <div class="glass-card rounded-2xl p-8 fade-in-up"><!-- Avatar Section -->
+     <div class="text-center mb-8 fade-in-up-delay">
+      <h1 id="page-title" class="text-3xl font-bold text-gray-800 mb-2">Bem-vindo de Volta</h1>
+      <p id="welcome-message" class="text-gray-600 text-sm font-light">Faça login para continuar em sua conta</p>
      </div><!-- Success Message -->
-     <div id="success-message" class="mb-6 p-4 glass-card rounded-2xl text-center hidden success-scale">
-      <div class="flex items-center justify-center mb-2">
-       <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+     <div id="success-message" class="mb-6 p-3 bg-green-50 border border-green-200 rounded-xl text-center hidden success-scale">
+      <div class="flex items-center justify-center">
+       <div class="w-6 h-6 bg-green-500 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
        </div>
-       <p class="font-semibold text-white">Login realizado com sucesso!</p>
+       <p class="font-light text-green-800 text-sm">Login realizado com sucesso!</p>
       </div>
      </div><!-- Error Message -->
-     <div id="error-message" class="mb-6 p-4 glass-card rounded-2xl text-center hidden border-red-500/30">
-      <div class="flex items-center justify-center mb-2">
-       <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center mr-3">
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+     <div id="error-message" class="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl text-center hidden">
+      <div class="flex items-center justify-center">
+       <div class="w-6 h-6 bg-red-500 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
        </div>
-       <p class="font-semibold text-red-300">Usuário ou senha incorretos</p>
+       <p class="font-light text-red-800 text-sm">Usuário ou senha incorretos</p>
       </div>
      </div><!-- Content Container with Fixed Height -->
      <div class="min-h-[240px] fade-in-up-delay-2"><!-- Login Form -->
-      <form id="login-form" class="space-y-4"><!-- Username Input -->
-       <div class="relative">
-        <div class="absolute left-4 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-         <svg class="w-4 h-4 text-white" fill="currentColor" viewbox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-         </svg>
-        </div><input type="text" id="username" class="glass-input w-full pl-14 pr-6 py-3 rounded-2xl text-white placeholder-white/50 focus:outline-none text-base" placeholder="Digite seu usuário" required>
+      <form id="login-form" class="space-y-5"><!-- Email Input -->
+       <div class="relative"><label for="username" class="block text-gray-700 text-xs font-light mb-2 ml-1">E-mail</label> <input type="email" id="username" class="glass-input w-full px-4 py-2.5 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:outline-none" placeholder="Digite seu e-mail" required>
        </div><!-- Password Input -->
-       <div class="relative">
-        <div class="absolute left-4 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+       <div class="relative"><label for="password" class="block text-gray-700 text-xs font-light mb-2 ml-1">Senha</label> <input type="password" id="password" class="glass-input w-full px-4 py-2.5 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:outline-none pr-12" placeholder="Digite sua senha" required> <button type="button" id="toggle-password" class="absolute right-3 top-9 w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-700 transition-all duration-300">
+         <svg id="eye-closed" class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
          </svg>
-        </div><input type="password" id="password" class="glass-input w-full pl-14 pr-16 py-3 rounded-2xl text-white placeholder-white/50 focus:outline-none text-base" placeholder="Digite sua senha" required> <button type="button" id="toggle-password" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 glass-card rounded-xl flex items-center justify-center text-white/70 hover:text-white transition-all duration-300 hover:scale-105">
-         <svg id="eye-closed" class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-         </svg>
-         <svg id="eye-open" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+         <svg id="eye-open" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
          </svg></button>
-       </div><!-- Login Button --> <button type="submit" id="login-button" class="glass-button w-full py-3 rounded-2xl font-bold text-white text-base relative z-10"> Entrar </button> <!-- Register Link -->
-       <div class="text-center mt-4">
-        <p class="text-white/60 text-sm">Ainda não tem login? <a href="https://gaveblue.com/cadastro" target="_blank" rel="noopener noreferrer" class="text-blue-300 hover:text-blue-200 font-semibold underline transition-colors duration-300"> Cadastre-se agora! </a></p>
+       </div><!-- Login Button --> <button type="submit" id="login-button" class="glass-button w-full py-2.5 rounded-xl font-medium text-white text-sm relative z-10 mt-6"> Entrar </button> <!-- Register Link -->
+       <div class="text-center mt-5">
+        <p class="text-gray-600 text-xs font-light">Ainda não tem login? <a href="https://gaveblue.com/cadastro" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700 font-normal underline transition-colors duration-300"> Cadastre-se agora! </a></p>
        </div>
       </form>
      </div>
@@ -294,7 +284,7 @@
   <div id="success-popup" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 opacity-0 transition-all duration-500 pointer-events-none">
    <div class="glass-card rounded-3xl p-8 max-w-sm mx-4 text-center transform scale-75 transition-all duration-500">
     <div id="success-icon" class="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-     <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+     <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
      </svg>
     </div>
     <div id="loading-icon" class="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 hidden">
@@ -305,15 +295,31 @@
    </div>
   </div>
   <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDZ3yH2UXOo6_i12WgCDgMJM49xw5Src_M",
+      authDomain: "gave-blue.firebaseapp.com",
+      projectId: "gave-blue",
+      appId: "1:525961083996:web:45e2bcc8101963c61cba99"
+    };
+
+    // Inicializa o Firebase (sem duplicar)
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    // Pega o Auth
+    const auth = firebase.auth();
+
     const defaultConfig = {
       background_color: "#2563eb",
-      surface_color: "rgba(255, 255, 255, 0.08)",
-      text_color: "#ffffff",
+      surface_color: "rgba(255, 255, 255, 0.95)",
+      text_color: "#1f2937",
       primary_action_color: "#1d4ed8",
-      secondary_text_color: "rgba(255, 255, 255, 0.7)",
+      secondary_text_color: "#4b5563",
       page_title: "Bem-vindo de Volta",
       welcome_message: "Faça login para continuar em sua conta",
-      username_placeholder: "Digite seu usuário",
+      username_placeholder: "Digite seu e-mail",
       password_placeholder: "Digite sua senha",
       button_text: "Entrar",
       font_family: "system-ui",
@@ -335,28 +341,28 @@
       const pageTitle = document.getElementById('page-title');
       pageTitle.textContent = config.page_title || defaultConfig.page_title;
       pageTitle.style.color = textColor;
-      pageTitle.style.fontSize = `${baseFontSize * 1.5}px`;
+      pageTitle.style.fontSize = `${baseFontSize * 1.875}px`;
       pageTitle.style.fontFamily = `${fontFamily}, system-ui, -apple-system, sans-serif`;
       
       const welcomeMessage = document.getElementById('welcome-message');
       welcomeMessage.textContent = config.welcome_message || defaultConfig.welcome_message;
       welcomeMessage.style.color = secondaryTextColor;
-      welcomeMessage.style.fontSize = `${baseFontSize}px`;
+      welcomeMessage.style.fontSize = `${baseFontSize * 0.875}px`;
       welcomeMessage.style.fontFamily = `${fontFamily}, system-ui, -apple-system, sans-serif`;
       
       const usernameInput = document.getElementById('username');
       usernameInput.placeholder = config.username_placeholder || defaultConfig.username_placeholder;
-      usernameInput.style.fontSize = `${baseFontSize}px`;
+      usernameInput.style.fontSize = `${baseFontSize * 0.875}px`;
       usernameInput.style.fontFamily = `${fontFamily}, system-ui, -apple-system, sans-serif`;
       
       const passwordInput = document.getElementById('password');
       passwordInput.placeholder = config.password_placeholder || defaultConfig.password_placeholder;
-      passwordInput.style.fontSize = `${baseFontSize}px`;
+      passwordInput.style.fontSize = `${baseFontSize * 0.875}px`;
       passwordInput.style.fontFamily = `${fontFamily}, system-ui, -apple-system, sans-serif`;
       
       const loginButton = document.getElementById('login-button');
       loginButton.textContent = config.button_text || defaultConfig.button_text;
-      loginButton.style.fontSize = `${baseFontSize}px`;
+      loginButton.style.fontSize = `${baseFontSize * 0.875}px`;
       loginButton.style.fontFamily = `${fontFamily}, system-ui, -apple-system, sans-serif`;
     }
 
@@ -485,64 +491,70 @@
       
       errorMessage.classList.add('hidden');
       
-      if (username === 'admin' && password === '12345') {
-        // Show success popup
-        successPopup.classList.remove('pointer-events-none');
-        successPopup.classList.remove('opacity-0');
-        successPopup.classList.add('opacity-100');
-        
-        setTimeout(() => {
-          successPopup.querySelector('.glass-card').classList.remove('scale-75');
-          successPopup.querySelector('.glass-card').classList.add('scale-100');
-        }, 50);
-        
-        // Clear form
-        document.getElementById('username').value = '';
-        document.getElementById('password').value = '';
-        
-        // Switch to loading after 2 seconds
-        setTimeout(() => {
-          successIcon.classList.add('hidden');
-          loadingIcon.classList.remove('hidden');
-          popupTitle.textContent = 'Carregando...';
-          popupMessage.textContent = 'Aguarde um momento';
+      auth.signInWithEmailAndPassword(username, password)
+        .then(() => {
+          // �� Show success popup
+          successPopup.classList.remove('pointer-events-none');
+          successPopup.classList.remove('opacity-0');
+          successPopup.classList.add('opacity-100');
           
-          // Redirect after 3 seconds
           setTimeout(() => {
-            const newWindow = window.open('https://gaveblue.com/wefrotas', '_blank', 'noopener,noreferrer');
+            successPopup.querySelector('.glass-card').classList.remove('scale-75');
+            successPopup.querySelector('.glass-card').classList.add('scale-100');
+          }, 50);
+          
+          // Clear form
+          document.getElementById('username').value = '';
+          document.getElementById('password').value = '';
+          
+          // Switch to loading after 2 seconds
+          setTimeout(() => {
+            successIcon.classList.add('hidden');
+            loadingIcon.classList.remove('hidden');
+            popupTitle.textContent = 'Carregando...';
+            popupMessage.textContent = 'Aguarde um momento';
             
-            if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
-              popupTitle.textContent = 'Redirecionamento Bloqueado';
-              popupMessage.innerHTML = 'Clique <a href="https://gaveblue.com/wefrotas" target="_blank" rel="noopener noreferrer" class="text-blue-300 underline font-semibold hover:text-blue-200 transition-colors">aqui para acessar o sistema</a>';
-              return;
-            }
-            
-            // Hide popup
-            successPopup.classList.remove('opacity-100');
-            successPopup.classList.add('opacity-0');
-            successPopup.querySelector('.glass-card').classList.remove('scale-100');
-            successPopup.querySelector('.glass-card').classList.add('scale-75');
-            
+            // Redirect after 3 seconds
             setTimeout(() => {
-              successPopup.classList.add('pointer-events-none');
-              successIcon.classList.remove('hidden');
-              loadingIcon.classList.add('hidden');
-              popupTitle.textContent = 'Login Realizado!';
-              popupMessage.textContent = 'Redirecionando para o sistema...';
-            }, 500);
-          }, 3000);
-        }, 2000);
-      } else {
-        errorMessage.classList.remove('hidden');
-        loginForm.classList.add('error-shake');
-        
-        setTimeout(() => {
-          loginForm.classList.remove('error-shake');
-        }, 600);
-      }
+              const newWindow = window.open('https://gaveblue.com/wefrotas', '_blank', 'noopener,noreferrer');
+              
+              if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+                popupTitle.textContent = 'Redirecionamento Bloqueado';
+                popupMessage.innerHTML = 'Clique <a href="https://gaveblue.com/wefrotas" target="_blank" rel="noopener noreferrer" class="text-blue-300 underline font-semibold hover:text-blue-200 transition-colors">aqui para acessar o sistema</a>';
+                return;
+              }
+              
+              // Hide popup
+              successPopup.classList.remove('opacity-100');
+              successPopup.classList.add('opacity-0');
+              successPopup.querySelector('.glass-card').classList.remove('scale-100');
+              successPopup.querySelector('.glass-card').classList.add('scale-75');
+              
+              setTimeout(() => {
+                successPopup.classList.add('pointer-events-none');
+                successIcon.classList.remove('hidden');
+                loadingIcon.classList.add('hidden');
+                popupTitle.textContent = 'Login Realizado!';
+                popupMessage.textContent = 'Redirecionando para o sistema...';
+              }, 500);
+            }, 3000);
+          }, 2000);
+        })
+        .catch((error) => {
+          // ❌ Login falhou
+          errorMessage.classList.remove('hidden');
+          loginForm.classList.add('error-shake');
+          
+          setTimeout(() => {
+            loginForm.classList.remove('error-shake');
+          }, 600);
+          
+          // Se quiser ver o motivo no console:
+          console.log("Firebase login error:", error.code, error.message);
+        });
     });
 
     onConfigChange(defaultConfig);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f595a74b3cd97',t:'MTc2NDg5MzcyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c13b9b2b2ad6b20',t:'MTc2ODk2NjE0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
