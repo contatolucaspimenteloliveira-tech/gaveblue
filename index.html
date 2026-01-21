@@ -7,11 +7,60 @@
   <script src="https://cdn.tailwindcss.com"></script><!-- Canva SDKs -->
   <script src="/_sdk/element_sdk.js"></script>
   <style>
-    body {
-      box-sizing: border-box;
+    /* ===== CSS VARIABLES - DESIGN TOKENS ===== */
+    :root {
+      /* Background Colors */
+      --color-bg-primary: #0a0a0a;
+      --color-bg-secondary: #111111;
+      --color-bg-tertiary: #1a1a1a;
+      
+      /* Glass Effect */
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-hover-bg: rgba(255, 255, 255, 0.06);
+      --glass-hover-border: rgba(255, 255, 255, 0.15);
+      
+      /* Accent Colors */
+      --color-primary: #ff3366;
+      --color-primary-hover: #ff4d7a;
+      --color-secondary: #06b6d4;
+      --color-success: #10b981;
+      --color-warning: #fbbf24;
+      --color-danger: #ef4444;
+      
+      /* Text Colors */
+      --color-text-primary: #ffffff;
+      --color-text-secondary: rgba(255, 255, 255, 0.7);
+      --color-text-tertiary: rgba(255, 255, 255, 0.5);
+      
+      /* Shadows & Glow */
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+      --glow-primary: 0 0 20px rgba(255, 51, 102, 0.3);
+      --glow-success: 0 0 20px rgba(16, 185, 129, 0.3);
+      --glow-secondary: 0 0 20px rgba(6, 182, 212, 0.3);
+      
+      /* Transitions */
+      --transition-fast: 150ms ease;
+      --transition-base: 250ms ease;
+      --transition-slow: 350ms ease;
+      
+      /* Border Radius */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
     }
 
-    /* Garantir altura total em iframe sem usar unidades de viewport */
+    /* ===== BASE STYLES ===== */
+    body {
+      box-sizing: border-box;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
     html, body {
       height: 100%;
       width: 100%;
@@ -25,69 +74,69 @@
       min-height: 100%;
     }
 
-    /* Foco visível para acessibilidade */
-    .focus-outline:focus-visible {
-      outline: 3px solid rgba(255, 255, 255, 0.9);
-      outline-offset: 2px;
-    }
-
-    /* Garantir fundo escuro com animação */
+    /* ===== BACKGROUND ===== */
     #app-root {
-      background: linear-gradient(45deg, #0a1628, #1a3a5c, #0f2847, #2a4a6c, #0a1628, #1a3a5c, #0f2847, #1a3a5c);
-      background-size: 800% 800%;
-      animation: gradientShift 20s ease-in-out infinite;
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(255, 51, 102, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 50%),
+        linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
+      position: relative;
     }
 
-    @keyframes gradientShift {
-      0% {
-        background-position: 0% 50%;
-      }
-      25% {
-        background-position: 100% 50%;
-      }
-      50% {
-        background-position: 100% 100%;
-      }
-      75% {
-        background-position: 0% 100%;
-      }
-      100% {
-        background-position: 0% 50%;
-      }
+    #app-root::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: 
+        radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
     }
 
-    /* Animação de hover nos cards */
+    /* ===== FOCUS STATES ===== */
+    .focus-outline:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 3px;
+      box-shadow: var(--glow-primary);
+    }
+
+    /* ===== GLASS CARDS ===== */
     .card-hover {
       position: relative;
       overflow: hidden;
-      transition: all 0.3s ease;
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      transition: all var(--transition-base);
     }
 
     .card-hover::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-      transition: left 0.5s ease;
-    }
-
-    .card-hover:hover::before {
-      left: 100%;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity var(--transition-base);
     }
 
     .card-hover:hover {
-      transform: translateY(-4px) scale(1.02);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      transform: translateY(-4px);
+      background: var(--glass-hover-bg);
+      border-color: var(--glass-hover-border);
+      box-shadow: var(--shadow-lg), var(--glow-primary);
     }
 
-    /* Animação do popup de manutenção */
+    .card-hover:hover::before {
+      opacity: 1;
+    }
+
+    /* ===== ANIMATIONS ===== */
     @keyframes scaleIn {
       from {
         opacity: 0;
-        transform: scale(0.9);
+        transform: scale(0.95);
       }
       to {
         opacity: 1;
@@ -96,67 +145,207 @@
     }
 
     .animate-scale-in {
-      animation: scaleIn 0.3s ease-out;
+      animation: scaleIn var(--transition-base) ease-out;
     }
 
-    #premium-overlay {
-      transition: opacity 0.3s ease, transform 0.3s ease;
+    @keyframes gradientShift {
+      0%, 100% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
     }
 
-    /* Personalização da barra de rolagem */
+    /* ===== SCROLLBAR ===== */
     .custom-scrollbar::-webkit-scrollbar {
       width: 8px;
     }
 
     .custom-scrollbar::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.5);
-      border-radius: 10px;
+      background: var(--color-bg-secondary);
+      border-radius: 4px;
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: linear-gradient(180deg, #10b981, #059669);
-      border-radius: 10px;
-      transition: background 0.3s ease;
+      background: linear-gradient(180deg, var(--color-primary), var(--color-secondary));
+      border-radius: 4px;
+      transition: background var(--transition-base);
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(180deg, #34d399, #10b981);
+      background: linear-gradient(180deg, var(--color-primary-hover), var(--color-secondary));
     }
 
-    /* Botão de fechar (X) */
+    /* ===== BUTTONS ===== */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--color-primary) 0%, #d946ef 100%);
+      border: none;
+      box-shadow: var(--shadow-sm), var(--glow-primary);
+      transition: all var(--transition-base);
+    }
+
+    .btn-primary:hover {
+      box-shadow: var(--shadow-md), var(--glow-primary);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      transition: all var(--transition-base);
+    }
+
+    .btn-secondary:hover {
+      background: var(--glass-hover-bg);
+      border-color: var(--glass-hover-border);
+    }
+
+    /* ===== CLOSE BUTTON ===== */
     .close-btn-x {
       position: absolute;
       top: 16px;
       right: 16px;
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
       border-radius: 50%;
-      color: #ef4444;
+      color: var(--color-text-secondary);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all var(--transition-base);
       z-index: 10;
     }
 
     .close-btn-x:hover {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: rgba(239, 68, 68, 0.5);
-      transform: scale(1.1);
+      background: rgba(239, 68, 68, 0.15);
+      border-color: var(--color-danger);
+      color: var(--color-danger);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+      transform: rotate(90deg);
     }
 
     .close-btn-x svg {
       width: 18px;
       height: 18px;
     }
+
+    /* ===== OVERLAY ===== */
+    #premium-overlay,
+    #newyear-overlay {
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: opacity var(--transition-base);
+    }
+
+    /* ===== BADGES ===== */
+    .badge-premium {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      box-shadow: 0 0 16px rgba(251, 191, 36, 0.4);
+    }
+
+    .badge-free {
+      background: linear-gradient(135deg, var(--color-success) 0%, #059669 100%);
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+    }
+
+    /* ===== INPUTS (for forms) ===== */
+    input, select, textarea {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      color: var(--color-text-primary);
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-base);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: var(--glow-primary);
+      background: var(--glass-hover-bg);
+    }
+
+    /* ===== PLAN CARDS ===== */
+    .plan-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      transition: all var(--transition-base);
+    }
+
+    .plan-card:hover {
+      background: var(--glass-hover-bg);
+      border-color: var(--glass-hover-border);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+    }
+
+    /* ===== NAVBAR GLASS ===== */
+    nav {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--glass-border);
+    }
+
+    /* ===== BADGES ===== */
+    .badge-premium {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+    }
+
+    .badge-free {
+      background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* ===== SOCIAL ICONS ===== */
+    .social-icon {
+      transition: all var(--transition-base);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .social-icon:hover {
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: var(--shadow-md), 0 0 20px rgba(255, 22, 84, 0.3);
+    }
+
+    /* ===== MODAL CONTENT ===== */
+    .modal-content {
+      background: linear-gradient(135deg, rgba(18, 10, 13, 0.98) 0%, rgba(10, 6, 8, 0.98) 100%);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-lg), 0 0 60px rgba(255, 22, 84, 0.15);
+      backdrop-filter: blur(20px);
+    }
+
+    /* ===== TIMER ===== */
+    .timer-box {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-sm), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    }
   </style>
   <style>@view-transition { navigation: auto; }</style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
- <body style="background: #0f172a;">
+ <body style="background: #0a0608;">
   <div id="app-root" class="app-wrapper text-slate-50 flex flex-col relative overflow-hidden"><!-- Efeitos de fundo modernos -->
    <div class="absolute inset-0 overflow-hidden pointer-events-none">
     <div class="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
@@ -180,7 +369,7 @@
         <h1 id="hero-title" class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">Central moderna para simplificar a sua gestão</h1>
         <p id="hero-subtitle" class="text-base sm:text-lg md:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">Acesse um sistema desenvolvido especialmente para você, reunindo em um só lugar módulos financeiros, gestão de frotas e geração de documentos essenciais. Tudo pensado para oferecer praticidade, rapidez e mais eficiência no dia a dia do seu negócio.</p>
        </div><!-- Botões de sistemas -->
-       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-5 max-w-3xl mx-auto w-full" aria-label="Sistemas de gestão disponíveis"><!-- WeRecibos - ATIVO --> <a id="btn-werecibos" href="https://gaveblue.com/recibos" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border border-purple-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-purple-500/70 hover:shadow-xl hover:shadow-purple-500/20">
+       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto w-full" aria-label="Sistemas de gestão disponíveis"><!-- WeRecibos - ATIVO --> <a id="btn-werecibos" href="https://gaveblue.com/recibos" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border border-purple-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-purple-500/70 hover:shadow-xl hover:shadow-purple-500/20">
          <div class="flex flex-col gap-1 flex-1">
           <div class="flex items-center gap-2 mb-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white"> WeRecibos </span> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-emerald-400 to-emerald-500 border border-emerald-500/30 text-[10px] font-bold text-white shadow-lg shadow-emerald-500/50">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -196,6 +385,22 @@
           </div><span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Gestão completa de frotas, veículos e operações logísticas </span>
          </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500/20 to-sky-600/20 text-sky-400 group-hover:scale-110 transition-transform flex-shrink-0">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+          </svg></span> </a> <!-- WeTime - ATIVO --> <a id="btn-wetime" href="https://gaveblue.com/relogio" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border border-indigo-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-indigo-500/70 hover:shadow-xl hover:shadow-indigo-500/20">
+         <div class="flex flex-col gap-1 flex-1">
+          <div class="flex items-center gap-2 mb-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white"> WeTime </span> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-emerald-400 to-emerald-500 border border-emerald-500/30 text-[10px] font-bold text-white shadow-lg shadow-emerald-500/50">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg> GRÁTIS </span>
+          </div><span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Ponto eletrônico e controle de jornada </span>
+         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-indigo-600/20 text-indigo-400 group-hover:scale-110 transition-transform flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg></span> </a> <!-- GestaoPro - ATIVO --> <a id="btn-gestaopro" href="https://gaveblue.com/GestaoPro" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border border-rose-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-rose-500/70 hover:shadow-xl hover:shadow-rose-500/20">
+         <div class="flex flex-col gap-1 flex-1">
+          <div class="flex items-center gap-2 mb-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white"> GestaoPro </span> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-emerald-400 to-emerald-500 border border-emerald-500/30 text-[10px] font-bold text-white shadow-lg shadow-emerald-500/50">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg> GRÁTIS </span>
+          </div><span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Gestão empresarial completa e integrada </span>
+         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500/20 to-rose-600/20 text-rose-400 group-hover:scale-110 transition-transform flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
           </svg></span> </a> <!-- WeFinance - PREMIUM --> <button id="btn-wefinance" type="button" class="premium-btn focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border-2 border-amber-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-amber-500/70 hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer card-hover">
          <div class="flex flex-col gap-1 flex-1">
           <div class="flex items-center gap-2 mb-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white"> WeFinance </span> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-yellow-500 border border-amber-500/30 text-[10px] font-bold text-white shadow-lg shadow-amber-500/50">
@@ -249,13 +454,13 @@
         🎊
        </div>
        <div class="absolute -bottom-2 -left-2 text-2xl animate-bounce" style="animation-delay: 0.2s;">
-        ��
+        ✨
        </div>
       </div>
      </div><!-- Título -->
-     <h2 class="text-center text-2xl sm:text-3xl font-bold text-white mb-2">🎆 Feliz 2026! 🎆</h2><!-- Mensagem de boas-vindas -->
+     <h2 class="text-center text-2xl sm:text-3xl font-bold text-white mb-2">👋 Bem-vindo à Gaveblue!</h2><!-- Mensagem de boas-vindas -->
      <div class="text-center mb-3 sm:mb-4">
-      <p class="text-sm sm:text-base text-slate-200 font-semibold mb-1">Que este novo ano seja repleto de conquistas!</p>
+      <p class="text-sm sm:text-base text-slate-200 font-semibold mb-1">Estamos felizes em ter você aqui!</p>
      </div><!-- Box de novidade -->
      <div class="rounded-xl border-2 border-blue-500/40 bg-gradient-to-br from-blue-500/10 to-cyan-600/10 p-3 sm:p-4 mb-3 sm:mb-4">
       <div class="flex items-center gap-2 mb-2">
@@ -266,7 +471,7 @@
        <h3 class="text-base sm:text-lg font-bold text-white">Nova Melhoria no WeRecibos!</h3>
       </div>
       <div class="space-y-2 text-xs sm:text-sm text-slate-200">
-       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0 text-lg">��</span>
+       <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0 text-lg">📅</span>
         <p><strong class="text-white">Data automática:</strong> O campo de data agora preenche automaticamente com a data atual, agilizando o processo de criação de recibos.</p>
        </div>
        <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0 text-lg">✓</span>
@@ -296,7 +501,7 @@
        </svg>
       </div>
      </div><!-- Título -->
-     <h2 class="text-center text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2 sm:mb-3">���� Funcionalidade Premium</h2><!-- Descrição -->
+     <h2 class="text-center text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2 sm:mb-3">🔒 Funcionalidade Premium</h2><!-- Descrição -->
      <p class="text-center text-slate-300 mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base px-2">Esta é uma funcionalidade exclusiva para assinantes Premium. Faça login ou cadastre-se para ter acesso completo a todos os recursos da plataforma.</p><!-- Box de Benefícios -->
      <div class="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 p-4 sm:p-5 mb-4 sm:mb-6">
       <div class="flex items-center gap-2 mb-3 sm:mb-4"><span class="text-xl sm:text-2xl">✨</span>
@@ -771,5 +976,5 @@
 
 
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9be93cc3037e627a',t:'MTc2ODUyMDYyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c139750322d3002',t:'MTc2ODk2NDczOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
