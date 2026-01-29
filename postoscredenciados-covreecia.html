@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Postos Credenciados</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes greenGradient {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+    
+    .animated-green-title {
+      background: linear-gradient(90deg, #bae20a, #7cb305, #a3d505, #bae20a, #8cc208);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: greenGradient 4s ease infinite;
+    }
+    
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease forwards;
+    }
+    
+    .select-wrapper select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1.25rem;
+    }
+    
+    .card-hover {
+      transition: all 0.2s ease;
+    }
+    
+    .card-hover:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transform: translateY(-2px);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div id="app-container" class="h-full w-full overflow-auto bg-gray-50"><!-- Fixed Header -->
+   <div class="sticky top-0 z-50 bg-gradient-to-r from-white via-gray-50 to-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+     <div class="flex items-center justify-between gap-4">
+      <div class="flex-1"><!-- Title -->
+       <div class="flex items-center gap-3 mb-2">
+        <div class="h-10 w-10 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center">
+         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+         </svg>
+        </div>
+        <h1 id="page-title" class="text-xl sm:text-3xl font-bold animated-green-title">Lista de Postos Credenciados</h1>
+       </div>
+       <p id="subtitle" class="text-sm sm:text-base text-gray-700 ml-0 sm:ml-13">Selecione uma cidade para explorar</p>
+      </div><!-- Logo -->
+      <div class="flex-shrink-0"><img src="https://i.imgur.com/ZOmbJ8o.png" alt="Logo da Empresa" loading="lazy" class="h-20 sm:h-28 w-auto object-contain" onerror="console.error('Image failed to load:', this.src); this.style.display='none';">
+      </div>
+     </div>
+    </div>
+   </div><!-- City Selector Section -->
+   <div class="bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+     <div class="max-w-md"><label for="city-select" class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">📍 Escolha a Localização</label>
+      <div class="relative select-wrapper"><select id="city-select" class="w-full px-4 py-3 pr-10 rounded-lg border-2 border-gray-300 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none bg-white cursor-pointer hover:border-gray-400 shadow-sm" onchange="selectCityFromDropdown(this.value)"> <option value="">Selecione uma cidade...</option> <option value="Todos os Postos">🏢 Todos os Postos</option> <option value="Pinheiros">📍 Pinheiros</option> </select>
+      </div>
+     </div>
+    </div>
+   </div><!-- Main Content -->
+   <div class="pb-8"><!-- City Grid View -->
+    <div id="dashboard" class="w-full px-4 sm:px-6 pt-6">
+     <div class="max-w-7xl mx-auto">
+      <div class="mb-6">
+       <h2 class="text-2xl font-bold text-gray-900 mb-2">Explore por Região</h2>
+       <p class="text-gray-600">Clique em uma cidade para ver os postos credenciados</p>
+      </div><!-- Cities Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"><!-- São Mateus - Featured -->
+       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
+        <div class="relative z-10">
+         <div class="flex items-center justify-between mb-4">
+          <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+           </svg>
+          </div><span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">Em breve</span>
+         </div>
+         <h3 class="text-xl font-bold mb-1">São Mateus</h3>
+         <p class="text-gray-100 text-sm">Em breve</p>
+        </div>
+       </div><!-- Boa Esperança -->
+       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
+        <div class="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full -ml-12 -mb-12"></div>
+        <div class="relative z-10">
+         <div class="flex items-center justify-between mb-4">
+          <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+           </svg>
+          </div><span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">Em breve</span>
+         </div>
+         <h3 class="text-xl font-bold mb-1">Boa Esperança</h3>
+         <p class="text-gray-100 text-sm">Em breve</p>
+        </div>
+       </div><!-- Pinheiros --> <button onclick="selectCity('Pinheiros')" class="relative bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
+        <div class="absolute top-0 left-0 w-20 h-20 bg-white opacity-10 rounded-full -ml-10 -mt-10"></div>
+        <div class="relative z-10">
+         <div class="flex items-center justify-between mb-4">
+          <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+           </svg>
+          </div><span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">3 postos</span>
+         </div>
+         <h3 class="text-xl font-bold mb-1">Pinheiros</h3>
+         <p class="text-purple-100 text-sm">Região central</p>
+        </div></button> <!-- Ponto Belo -->
+       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
+        <div class="absolute bottom-0 right-0 w-28 h-28 bg-white opacity-10 rounded-full -mr-14 -mb-14"></div>
+        <div class="relative z-10">
+         <div class="flex items-center justify-between mb-4">
+          <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+           </svg>
+          </div><span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">Em breve</span>
+         </div>
+         <h3 class="text-xl font-bold mb-1">Ponto Belo</h3>
+         <p class="text-gray-100 text-sm">Em breve</p>
+        </div>
+       </div><!-- Montanha -->
+       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-12 -mt-12"></div>
+        <div class="relative z-10">
+         <div class="flex items-center justify-between mb-4">
+          <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+           </svg>
+          </div><span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">Em breve</span>
+         </div>
+         <h3 class="text-xl font-bold mb-1">Montanha</h3>
+         <p class="text-gray-100 text-sm">Em breve</p>
+        </div>
+       </div><!-- Pedro Canário -->
+       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-10 rounded-full -ml-16 -mb-16"></div>
+        <div class="relative z-10">
+         <div class="flex items-center justify-between mb-4">
+          <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+           </svg>
+          </div><span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">Em breve</span>
+         </div>
+         <h3 class="text-xl font-bold mb-1">Pedro Canário</h3>
+         <p class="text-gray-100 text-sm">Em breve</p>
+        </div>
+       </div>
+      </div><!-- Ver Todos Button --> <button onclick="selectCity('Todos os Postos')" class="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-xl p-6 flex items-center justify-between transition-all hover:shadow-lg">
+       <div>
+        <h3 class="text-lg font-bold mb-1">Ver Todos os Postos</h3>
+        <p class="text-gray-300 text-sm">3 postos credenciados em Pinheiros</p>
+       </div>
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+       </svg></button>
+     </div>
+    </div><!-- Postos Display -->
+    <div id="postos-display" class="w-full px-4 sm:px-6 pt-6 hidden">
+     <div class="max-w-7xl mx-auto"><!-- Breadcrumb -->
+      <div class="flex items-center gap-2 mb-6 text-sm"><button onclick="backToSearch()" class="text-gray-500 hover:text-gray-900 font-medium transition-colors"> Localização </button>
+       <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+       </svg><span id="selected-city-name" class="text-gray-900 font-semibold"></span>
+      </div><!-- Stats Bar -->
+      <div class="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+       <div class="flex items-center justify-between">
+        <div>
+         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total de Postos</p>
+         <p id="postos-count" class="text-2xl font-bold text-gray-900 mt-1">0</p>
+        </div>
+        <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+         </svg>
+        </div>
+       </div>
+      </div><!-- Postos Grid -->
+      <div id="postos-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      page_title: 'Lista de Postos Credenciados',
+      subtitle: 'Selecione uma cidade para explorar',
+      background_color: '#f9fafb',
+      card_color: '#ffffff',
+      text_color: '#111827',
+      primary_action_color: '#3b82f6',
+      secondary_action_color: '#10b981',
+      font_family: 'Inter',
+      font_size: 16
+    };
+
+    let config = { ...defaultConfig };
+
+    const postosPorCidade = {
+      'Boa Esperança': [
+        { nome: 'Posto Central', endereco: 'Rua Principal, 123, Boa Esperança, ES' },
+        { nome: 'Posto Esperança', endereco: 'Av. da Paz, 456, Boa Esperança, ES' }
+      ],
+      'Pinheiros': [
+        { nome: 'Posto Nortão', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Nort%C3%A3o/@-18.4045169,-40.2319949,1969m/data=!3m1!1e3!4m6!3m5!1s0xb59a201628e4ab:0xcd6c4ad08d8fb206!8m2!3d-18.4045175!4d-40.2258587!16s%2Fg%2F11b6yqny3l' },
+        { nome: 'Posto Rede Nater (Shell)', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Rede+Nater+(Shell)+em+Pinheiros/@-18.4168459,-40.2107607,153m/data=!3m1!1e3!4m6!3m5!1s0xb59b33d7ff34b9:0x82053208dc2a16f8!8m2!3d-18.4163054!4d-40.2110065!16s%2Fg%2F11qpbrwj22' },
+        { nome: 'Posto Pinheiros', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Pinheiros/@-18.413462,-40.2128249,156m/data=!3m1!1e3!4m6!3m5!1s0xb59a1481427d61:0xeba41bb1a2b24a1e!8m2!3d-18.4135384!4d-40.2127649!16s%2Fg%2F1tj7xmm_' }
+      ],
+      'Ponto Belo': [
+        { nome: 'Posto Belo Horizonte', endereco: 'Praça Central, 111, Ponto Belo, ES' },
+        { nome: 'Posto da Vila', endereco: 'Rua Nova, 222, Ponto Belo, ES' }
+      ],
+      'Montanha': [
+        { nome: 'Posto Montanha Alta', endereco: 'Estrada Principal, 555, Montanha, ES' },
+        { nome: 'Posto do Vale', endereco: 'Av. Central, 666, Montanha, ES' }
+      ],
+      'Pedro Canário': [
+        { nome: 'Posto Canário', endereco: 'Rua Principal, 777, Pedro Canário, ES' },
+        { nome: 'Posto Norte', endereco: 'Av. Norte, 888, Pedro Canário, ES' }
+      ],
+      'São Mateus': [
+        { nome: 'Posto São Mateus Centro', endereco: 'Centro, 999, São Mateus, ES' },
+        { nome: 'Posto Sul', endereco: 'Zona Sul, 1010, São Mateus, ES' },
+        { nome: 'Posto Leste', endereco: 'Zona Leste, 1111, São Mateus, ES' }
+      ]
+    };
+
+    function selectCityFromDropdown(cityName) {
+      if (!cityName) return;
+      
+      selectCity(cityName);
+      
+      setTimeout(() => {
+        document.getElementById('city-select').value = '';
+      }, 300);
+    }
+
+    function openMap(link) {
+      window.open(link, '_blank', 'noopener,noreferrer');
+    }
+
+    function selectCity(cityName) {
+      let postos = [];
+      
+      if (cityName === 'Todos os Postos') {
+        // Apenas mostrar Pinheiros por enquanto
+        postosPorCidade['Pinheiros'].forEach(posto => {
+          postos.push({ ...posto, cidade: 'Pinheiros' });
+        });
+      } else {
+        postos = postosPorCidade[cityName].map(posto => ({ ...posto, cidade: cityName }));
+      }
+      
+      const postosDisplay = document.getElementById('postos-display');
+      const cityNameEl = document.getElementById('selected-city-name');
+      const postosListEl = document.getElementById('postos-list');
+      const postosCountEl = document.getElementById('postos-count');
+      
+      cityNameEl.textContent = cityName;
+      postosCountEl.textContent = postos.length;
+      
+      postosListEl.innerHTML = postos.map(posto => `
+        <div class="bg-white rounded-lg border border-gray-200 p-5 card-hover">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex-1">
+              <h3 class="font-semibold text-gray-900 text-base mb-1">${posto.nome}</h3>
+              ${posto.cidade ? `<span class="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded">${posto.cidade}</span>` : ''}
+            </div>
+            <div class="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 ml-3">
+              <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+            </div>
+          </div>
+          
+          <div class="space-y-2 mb-4 text-sm">
+            <div class="flex items-start gap-2 text-gray-600">
+              <svg class="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              <span class="break-words">${posto.endereco}</span>
+            </div>
+          </div>
+          
+          <button 
+            onclick="openMap('${posto.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(posto.endereco)}`}')"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+            </svg>
+            Ver no Mapa
+          </button>
+        </div>
+      `).join('');
+      
+      document.getElementById('dashboard').classList.add('hidden');
+      postosDisplay.classList.remove('hidden');
+    }
+
+    function backToSearch() {
+      document.getElementById('postos-display').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      document.getElementById('city-select').focus();
+    }
+
+    async function onConfigChange(newConfig) {
+      config = { ...defaultConfig, ...newConfig };
+      
+      const titleEl = document.getElementById('page-title');
+      if (titleEl) {
+        titleEl.textContent = config.page_title || defaultConfig.page_title;
+        titleEl.style.fontFamily = `${config.font_family || defaultConfig.font_family}, sans-serif`;
+      }
+      
+      const subtitleEl = document.getElementById('subtitle');
+      if (subtitleEl) {
+        subtitleEl.textContent = config.subtitle || defaultConfig.subtitle;
+        subtitleEl.style.fontFamily = `${config.font_family || defaultConfig.font_family}, sans-serif`;
+      }
+    }
+
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [
+          {
+            get: () => config.background_color || defaultConfig.background_color,
+            set: (value) => {
+              config.background_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ background_color: value });
+              }
+            }
+          },
+          {
+            get: () => config.card_color || defaultConfig.card_color,
+            set: (value) => {
+              config.card_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ card_color: value });
+              }
+            }
+          },
+          {
+            get: () => config.text_color || defaultConfig.text_color,
+            set: (value) => {
+              config.text_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            }
+          },
+          {
+            get: () => config.primary_action_color || defaultConfig.primary_action_color,
+            set: (value) => {
+              config.primary_action_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ primary_action_color: value });
+              }
+            }
+          },
+          {
+            get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+            set: (value) => {
+              config.secondary_action_color = value;
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ secondary_action_color: value });
+              }
+            }
+          }
+        ],
+        borderables: [],
+        fontEditable: {
+          get: () => config.font_family || defaultConfig.font_family,
+          set: (value) => {
+            config.font_family = value;
+            if (window.elementSdk) {
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          }
+        },
+        fontSizeable: {
+          get: () => config.font_size || defaultConfig.font_size,
+          set: (value) => {
+            config.font_size = value;
+            if (window.elementSdk) {
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }
+      };
+    }
+
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ['page_title', config.page_title || defaultConfig.page_title],
+        ['subtitle', config.subtitle || defaultConfig.subtitle]
+      ]);
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c5541fab43a1a92',t:'MTc2OTY1MzMwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
