@@ -37,7 +37,7 @@
     }
     
     .animated-green-title {
-      background: linear-gradient(90deg, #bae20a, #7cb305, #a3d505, #bae20a, #8cc208);
+      background: linear-gradient(90deg, #87a804, #5a7a03, #6d8d04, #87a804, #698502);
       background-size: 300% 100%;
       -webkit-background-clip: text;
       background-clip: text;
@@ -47,13 +47,6 @@
     
     .animate-fade-in {
       animation: fadeIn 0.4s ease forwards;
-    }
-    
-    .select-wrapper select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 0.75rem center;
-      background-size: 1.25rem;
     }
     
     .card-hover {
@@ -71,151 +64,156 @@
  <body class="h-full">
   <div id="app-container" class="h-full w-full overflow-auto bg-gray-50"><!-- Fixed Header -->
    <div class="sticky top-0 z-50 bg-gradient-to-r from-white via-gray-50 to-white shadow-lg">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-     <div class="flex items-center justify-between gap-4">
-      <div class="flex-1"><!-- Title -->
-       <div class="flex items-center gap-3 mb-2">
-        <div class="h-10 w-10 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center">
-         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-3">
+     <div class="flex items-center justify-between gap-2 sm:gap-4">
+      <div class="flex-1 min-w-0"><!-- Title -->
+       <div class="flex items-center gap-2 sm:gap-3">
+        <div class="h-7 w-7 sm:h-8 sm:w-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
+         <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
          </svg>
         </div>
-        <h1 id="page-title" class="text-xl sm:text-3xl font-bold animated-green-title">Lista de Postos Credenciados</h1>
+        <h1 id="page-title" class="text-base sm:text-2xl lg:text-3xl font-bold animated-green-title truncate">Lista de Postos Credenciados</h1>
        </div>
-       <p id="subtitle" class="text-sm sm:text-base text-gray-700 ml-0 sm:ml-13">Selecione uma cidade para explorar</p>
       </div><!-- Logo -->
-      <div class="flex-shrink-0"><img src="https://i.imgur.com/ZOmbJ8o.png" alt="Logo da Empresa" loading="lazy" class="h-20 sm:h-28 w-auto object-contain" onerror="console.error('Image failed to load:', this.src); this.style.display='none';">
-      </div>
-     </div>
-    </div>
-   </div><!-- City Selector Section -->
-   <div class="bg-white border-b border-gray-200 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-     <div class="max-w-md"><label for="city-select" class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">📍 Escolha a Localização</label>
-      <div class="relative select-wrapper"><select id="city-select" class="w-full px-4 py-3 pr-10 rounded-lg border-2 border-gray-300 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none bg-white cursor-pointer hover:border-gray-400 shadow-sm" onchange="selectCityFromDropdown(this.value)"> <option value="">Selecione uma cidade...</option> <option value="Todos os Postos">🏢 Todos os Postos</option> <option value="Pinheiros">📍 Pinheiros</option> </select>
+      <div class="flex-shrink-0"><img src="https://i.imgur.com/ZOmbJ8o.png" alt="Logo da Empresa" loading="lazy" class="h-12 sm:h-20 lg:h-24 w-auto object-contain" onerror="console.error('Image failed to load:', this.src); this.style.display='none';">
       </div>
      </div>
     </div>
    </div><!-- Main Content -->
-   <div class="pb-8"><!-- City Grid View -->
-    <div id="dashboard" class="w-full px-4 sm:px-6 pt-6">
+   <div class="pb-20"><!-- City Grid View -->
+    <div id="dashboard" class="w-full px-3 sm:px-6 pt-4 sm:pt-6">
      <div class="max-w-7xl mx-auto">
-      <div class="mb-6">
-       <h2 class="text-2xl font-bold text-gray-900 mb-2">Explore por Região</h2>
-       <p class="text-gray-600">Clique em uma cidade para ver os postos credenciados</p>
+      <div class="mb-4 sm:mb-6">
+       <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">Explore por Região</h2>
+       <p class="text-sm sm:text-base text-gray-600">Clique em uma cidade para ver os postos credenciados</p>
       </div><!-- Cities Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"><!-- São Mateus - Featured -->
-       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6"><!-- São Mateus - Featured -->
+       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
         <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
         <div class="relative z-10">
-         <div class="flex items-center justify-between mb-4">
-          <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+         <div class="flex items-center justify-between mb-3 sm:mb-4">
+          <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
            </svg>
-          </div><span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">Em breve</span>
+          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">Em breve</span>
          </div>
-         <h3 class="text-xl font-bold mb-1">São Mateus</h3>
-         <p class="text-gray-100 text-sm">Em breve</p>
+         <h3 class="text-lg sm:text-xl font-bold mb-1">São Mateus</h3>
+         <p class="text-gray-100 text-xs sm:text-sm">Em breve</p>
         </div>
        </div><!-- Boa Esperança -->
-       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
+       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
         <div class="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full -ml-12 -mb-12"></div>
         <div class="relative z-10">
-         <div class="flex items-center justify-between mb-4">
-          <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+         <div class="flex items-center justify-between mb-3 sm:mb-4">
+          <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
            </svg>
-          </div><span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">Em breve</span>
+          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">Em breve</span>
          </div>
-         <h3 class="text-xl font-bold mb-1">Boa Esperança</h3>
-         <p class="text-gray-100 text-sm">Em breve</p>
+         <h3 class="text-lg sm:text-xl font-bold mb-1">Boa Esperança</h3>
+         <p class="text-gray-100 text-xs sm:text-sm">Em breve</p>
         </div>
-       </div><!-- Pinheiros --> <button onclick="selectCity('Pinheiros')" class="relative bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
+       </div><!-- Pinheiros --> <button onclick="selectCity('Pinheiros')" class="relative bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
         <div class="absolute top-0 left-0 w-20 h-20 bg-white opacity-10 rounded-full -ml-10 -mt-10"></div>
         <div class="relative z-10">
-         <div class="flex items-center justify-between mb-4">
-          <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+         <div class="flex items-center justify-between mb-3 sm:mb-4">
+          <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
            </svg>
-          </div><span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">3 postos</span>
+          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">3 postos</span>
          </div>
-         <h3 class="text-xl font-bold mb-1">Pinheiros</h3>
-         <p class="text-purple-100 text-sm">Região central</p>
+         <h3 class="text-lg sm:text-xl font-bold mb-1">Pinheiros</h3>
+         <p class="text-purple-100 text-xs sm:text-sm">Região central</p>
         </div></button> <!-- Ponto Belo -->
-       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
+       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
         <div class="absolute bottom-0 right-0 w-28 h-28 bg-white opacity-10 rounded-full -mr-14 -mb-14"></div>
         <div class="relative z-10">
-         <div class="flex items-center justify-between mb-4">
-          <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+         <div class="flex items-center justify-between mb-3 sm:mb-4">
+          <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
            </svg>
-          </div><span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">Em breve</span>
+          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">Em breve</span>
          </div>
-         <h3 class="text-xl font-bold mb-1">Ponto Belo</h3>
-         <p class="text-gray-100 text-sm">Em breve</p>
+         <h3 class="text-lg sm:text-xl font-bold mb-1">Ponto Belo</h3>
+         <p class="text-gray-100 text-xs sm:text-sm">Em breve</p>
         </div>
        </div><!-- Montanha -->
-       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
+       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
         <div class="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-12 -mt-12"></div>
         <div class="relative z-10">
-         <div class="flex items-center justify-between mb-4">
-          <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+         <div class="flex items-center justify-between mb-3 sm:mb-4">
+          <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
            </svg>
-          </div><span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">Em breve</span>
+          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">Em breve</span>
          </div>
-         <h3 class="text-xl font-bold mb-1">Montanha</h3>
-         <p class="text-gray-100 text-sm">Em breve</p>
+         <h3 class="text-lg sm:text-xl font-bold mb-1">Montanha</h3>
+         <p class="text-gray-100 text-xs sm:text-sm">Em breve</p>
         </div>
        </div><!-- Pedro Canário -->
-       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
+       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
         <div class="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-10 rounded-full -ml-16 -mb-16"></div>
         <div class="relative z-10">
-         <div class="flex items-center justify-between mb-4">
-          <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+         <div class="flex items-center justify-between mb-3 sm:mb-4">
+          <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
            </svg>
-          </div><span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">Em breve</span>
+          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">Em breve</span>
          </div>
-         <h3 class="text-xl font-bold mb-1">Pedro Canário</h3>
-         <p class="text-gray-100 text-sm">Em breve</p>
+         <h3 class="text-lg sm:text-xl font-bold mb-1">Pedro Canário</h3>
+         <p class="text-gray-100 text-xs sm:text-sm">Em breve</p>
         </div>
        </div>
-      </div><!-- Ver Todos Button --> <button onclick="selectCity('Todos os Postos')" class="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-xl p-6 flex items-center justify-between transition-all hover:shadow-lg">
-       <div>
-        <h3 class="text-lg font-bold mb-1">Ver Todos os Postos</h3>
-        <p class="text-gray-300 text-sm">3 postos credenciados em Pinheiros</p>
+      </div><!-- Ver Todos Button --> <button onclick="selectCity('Todos os Postos')" class="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-xl p-4 sm:p-6 flex items-center justify-between transition-all hover:shadow-lg">
+       <div class="text-left">
+        <h3 class="text-base sm:text-lg font-bold mb-1">Ver Todos os Postos</h3>
+        <p class="text-gray-300 text-xs sm:text-sm">3 postos credenciados em Pinheiros</p>
        </div>
-       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+       <svg class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
        </svg></button>
      </div>
     </div><!-- Postos Display -->
-    <div id="postos-display" class="w-full px-4 sm:px-6 pt-6 hidden">
+    <div id="postos-display" class="w-full px-3 sm:px-6 pt-4 sm:pt-6 hidden">
      <div class="max-w-7xl mx-auto"><!-- Breadcrumb -->
-      <div class="flex items-center gap-2 mb-6 text-sm"><button onclick="backToSearch()" class="text-gray-500 hover:text-gray-900 font-medium transition-colors"> Localização </button>
-       <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+      <div class="flex items-center gap-2 mb-4 sm:mb-6 text-xs sm:text-sm"><button onclick="backToSearch()" class="text-gray-500 hover:text-gray-900 font-medium transition-colors"> Localização </button>
+       <svg class="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
        </svg><span id="selected-city-name" class="text-gray-900 font-semibold"></span>
       </div><!-- Stats Bar -->
-      <div class="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+      <div class="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
        <div class="flex items-center justify-between">
         <div>
          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total de Postos</p>
-         <p id="postos-count" class="text-2xl font-bold text-gray-900 mt-1">0</p>
+         <p id="postos-count" class="text-xl sm:text-2xl font-bold text-gray-900 mt-1">0</p>
         </div>
-        <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+         <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
          </svg>
         </div>
        </div>
       </div><!-- Postos Grid -->
-      <div id="postos-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      <div id="postos-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4"></div>
      </div>
     </div>
-   </div>
+   </div><!-- Security Warning -->
+   <div class="bg-yellow-400 border-t border-b border-yellow-600 py-4">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6">
+     <div class="flex items-center justify-center gap-2 text-gray-900">
+      <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewbox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+      </svg>
+      <p class="text-xs sm:text-sm font-bold">Não compartilhe esse link com terceiros</p>
+     </div>
+    </div>
+   </div><!-- Footer -->
+   <footer class="bg-gray-900 text-white py-6">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 text-center">
+     <p class="text-xs sm:text-sm text-gray-400">Desenvolvido e criado por <a href="https://gaveblue.com" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 transition-colors">gaveblue.com</a></p>
+     <p class="text-xs sm:text-sm text-gray-400 mt-1">© 2026 Todos os direitos reservados</p>
+    </div>
+   </footer>
   </div>
   <script>
     const defaultConfig = {
       page_title: 'Lista de Postos Credenciados',
-      subtitle: 'Selecione uma cidade para explorar',
       background_color: '#f9fafb',
       card_color: '#ffffff',
       text_color: '#111827',
@@ -245,26 +243,16 @@
         { nome: 'Posto Montanha Alta', endereco: 'Estrada Principal, 555, Montanha, ES' },
         { nome: 'Posto do Vale', endereco: 'Av. Central, 666, Montanha, ES' }
       ],
-      'Pedro Canário': [
+      'Pedro Can��rio': [
         { nome: 'Posto Canário', endereco: 'Rua Principal, 777, Pedro Canário, ES' },
         { nome: 'Posto Norte', endereco: 'Av. Norte, 888, Pedro Canário, ES' }
       ],
       'São Mateus': [
-        { nome: 'Posto São Mateus Centro', endereco: 'Centro, 999, São Mateus, ES' },
+        { nome: 'Posto São Mateus Centro', endereco: 'Centro, 999, S����o Mateus, ES' },
         { nome: 'Posto Sul', endereco: 'Zona Sul, 1010, São Mateus, ES' },
         { nome: 'Posto Leste', endereco: 'Zona Leste, 1111, São Mateus, ES' }
       ]
     };
-
-    function selectCityFromDropdown(cityName) {
-      if (!cityName) return;
-      
-      selectCity(cityName);
-      
-      setTimeout(() => {
-        document.getElementById('city-select').value = '';
-      }, 300);
-    }
 
     function openMap(link) {
       window.open(link, '_blank', 'noopener,noreferrer');
@@ -274,7 +262,6 @@
       let postos = [];
       
       if (cityName === 'Todos os Postos') {
-        // Apenas mostrar Pinheiros por enquanto
         postosPorCidade['Pinheiros'].forEach(posto => {
           postos.push({ ...posto, cidade: 'Pinheiros' });
         });
@@ -291,22 +278,22 @@
       postosCountEl.textContent = postos.length;
       
       postosListEl.innerHTML = postos.map(posto => `
-        <div class="bg-white rounded-lg border border-gray-200 p-5 card-hover">
+        <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 card-hover">
           <div class="flex items-start justify-between mb-3">
-            <div class="flex-1">
-              <h3 class="font-semibold text-gray-900 text-base mb-1">${posto.nome}</h3>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 text-sm sm:text-base mb-1">${posto.nome}</h3>
               ${posto.cidade ? `<span class="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded">${posto.cidade}</span>` : ''}
             </div>
-            <div class="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 ml-3">
-              <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 ml-2 sm:ml-3">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
               </svg>
             </div>
           </div>
           
-          <div class="space-y-2 mb-4 text-sm">
+          <div class="space-y-2 mb-3 sm:mb-4 text-xs sm:text-sm">
             <div class="flex items-start gap-2 text-gray-600">
-              <svg class="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
               </svg>
@@ -316,9 +303,9 @@
           
           <button 
             onclick="openMap('${posto.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(posto.endereco)}`}')"
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg flex items-center justify-center gap-2 transition-colors text-xs sm:text-sm"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
             </svg>
             Ver no Mapa
@@ -333,7 +320,6 @@
     function backToSearch() {
       document.getElementById('postos-display').classList.add('hidden');
       document.getElementById('dashboard').classList.remove('hidden');
-      document.getElementById('city-select').focus();
     }
 
     async function onConfigChange(newConfig) {
@@ -343,12 +329,6 @@
       if (titleEl) {
         titleEl.textContent = config.page_title || defaultConfig.page_title;
         titleEl.style.fontFamily = `${config.font_family || defaultConfig.font_family}, sans-serif`;
-      }
-      
-      const subtitleEl = document.getElementById('subtitle');
-      if (subtitleEl) {
-        subtitleEl.textContent = config.subtitle || defaultConfig.subtitle;
-        subtitleEl.style.fontFamily = `${config.font_family || defaultConfig.font_family}, sans-serif`;
       }
     }
 
@@ -425,8 +405,7 @@
 
     function mapToEditPanelValues(config) {
       return new Map([
-        ['page_title', config.page_title || defaultConfig.page_title],
-        ['subtitle', config.subtitle || defaultConfig.subtitle]
+        ['page_title', config.page_title || defaultConfig.page_title]
       ]);
     }
 
@@ -439,5 +418,5 @@
       });
     }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c5541fab43a1a92',t:'MTc2OTY1MzMwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c55654896a5d249',t:'MTc2OTY1NDc0OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
