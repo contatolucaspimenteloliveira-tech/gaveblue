@@ -96,20 +96,7 @@
        <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">Explore por Região</h2>
        <p class="text-sm sm:text-base text-gray-600">Clique em uma cidade para ver os postos credenciados</p>
       </div><!-- Cities Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6"><!-- São Mateus - Featured -->
-       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
-        <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-        <div class="relative z-10">
-         <div class="flex items-center justify-between mb-3 sm:mb-4">
-          <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-           </svg>
-          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">Em breve</span>
-         </div>
-         <h3 class="text-lg sm:text-xl font-bold mb-1">São Mateus</h3>
-         <p class="text-gray-100 text-xs sm:text-sm">Em breve</p>
-        </div>
-       </div><!-- Boa Esperança --> <button onclick="selectCity('Boa Esperança')" class="relative bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6"><!-- Boa Esperança --> <button onclick="selectCity('Boa Esperança')" class="relative bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
         <div class="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full -ml-12 -mb-12"></div>
         <div class="relative z-10">
          <div class="flex items-center justify-between mb-3 sm:mb-4">
@@ -119,19 +106,52 @@
           </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">1 posto</span>
          </div>
          <h3 class="text-lg sm:text-xl font-bold mb-1">Boa Esperança</h3>
-         <p class="text-green-100 text-xs sm:text-sm">Região norte</p>
-        </div></button> <!-- Pinheiros --> <button onclick="selectCity('Pinheiros')" class="relative bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
-        <div class="absolute top-0 left-0 w-20 h-20 bg-white opacity-10 rounded-full -ml-10 -mt-10"></div>
+        </div></button> <!-- Montanha --> <button onclick="selectCity('Montanha')" class="relative bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-12 -mt-12"></div>
         <div class="relative z-10">
          <div class="flex items-center justify-between mb-3 sm:mb-4">
           <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
            </svg>
-          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">3 postos</span>
+          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">1 posto</span>
          </div>
-         <h3 class="text-lg sm:text-xl font-bold mb-1">Pinheiros</h3>
-         <p class="text-purple-100 text-xs sm:text-sm">Região central</p>
-        </div></button> <!-- Ponto Belo -->
+         <h3 class="text-lg sm:text-xl font-bold mb-1">Montanha</h3>
+        </div></button> <!-- Nova Venécia --> <button onclick="selectCity('Nova Venécia')" class="relative bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
+        <div class="absolute top-0 right-0 w-28 h-28 bg-white opacity-10 rounded-full -mr-14 -mt-14"></div>
+        <div class="relative z-10">
+         <div class="flex items-center justify-between mb-3 sm:mb-4">
+          <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+           </svg>
+          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">1 posto</span>
+         </div>
+         <h3 class="text-lg sm:text-xl font-bold mb-1">Nova Venécia</h3>
+        </div></button> <!-- Pedro Canário --> <button onclick="selectCity('Pedro Canário')" class="relative bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-10 rounded-full -ml-16 -mb-16"></div>
+        <div class="relative z-10">
+         <div class="flex items-center justify-between mb-3 sm:mb-4">
+          <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+           </svg>
+          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">1 posto</span>
+         </div>
+         <h3 class="text-lg sm:text-xl font-bold mb-1">Pedro Canário</h3>
+        </div></button> <!-- Pinheiros - Recomendado -->
+       <div class="relative lg:col-span-1 sm:col-span-2 lg:col-span-1"><button onclick="selectCity('Pinheiros')" class="w-full relative bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
+         <div class="absolute top-0 left-0 w-20 h-20 bg-white opacity-10 rounded-full -ml-10 -mt-10"></div>
+         <div class="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-400 text-purple-900 text-xs sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
+          ⭐ Recomendado
+         </div>
+         <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3 sm:mb-4 mt-2 sm:mt-1">
+           <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+           </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">3 postos</span>
+          </div>
+          <h3 class="text-lg sm:text-xl font-bold mb-1">Pinheiros</h3>
+         </div></button>
+       </div><!-- Ponto Belo -->
        <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
         <div class="absolute bottom-0 right-0 w-28 h-28 bg-white opacity-10 rounded-full -mr-14 -mb-14"></div>
         <div class="relative z-10">
@@ -142,48 +162,22 @@
           </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">Em breve</span>
          </div>
          <h3 class="text-lg sm:text-xl font-bold mb-1">Ponto Belo</h3>
-         <p class="text-gray-100 text-xs sm:text-sm">Em breve</p>
         </div>
-       </div><!-- Montanha --> <button onclick="selectCity('Montanha')" class="relative bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
-        <div class="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-12 -mt-12"></div>
+       </div><!-- São Mateus --> <button onclick="selectCity('São Mateus')" class="relative bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
         <div class="relative z-10">
          <div class="flex items-center justify-between mb-3 sm:mb-4">
           <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
            </svg>
-          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">1 posto</span>
+          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">2 postos</span>
          </div>
-         <h3 class="text-lg sm:text-xl font-bold mb-1">Montanha</h3>
-         <p class="text-orange-100 text-xs sm:text-sm">Região central</p>
-        </div></button> <!-- Pedro Canário -->
-       <div class="relative bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden opacity-60 cursor-not-allowed">
-        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-10 rounded-full -ml-16 -mb-16"></div>
-        <div class="relative z-10">
-         <div class="flex items-center justify-between mb-3 sm:mb-4">
-          <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-           </svg>
-          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">Em breve</span>
-         </div>
-         <h3 class="text-lg sm:text-xl font-bold mb-1">Pedro Canário</h3>
-         <p class="text-gray-100 text-xs sm:text-sm">Em breve</p>
-        </div>
-       </div><!-- Nova Venécia --> <button onclick="selectCity('Nova Venécia')" class="relative bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden group hover:shadow-xl transition-all hover:scale-105">
-        <div class="absolute top-0 right-0 w-28 h-28 bg-white opacity-10 rounded-full -mr-14 -mt-14"></div>
-        <div class="relative z-10">
-         <div class="flex items-center justify-between mb-3 sm:mb-4">
-          <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-           </svg>
-          </div><span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">1 posto</span>
-         </div>
-         <h3 class="text-lg sm:text-xl font-bold mb-1">Nova Venécia</h3>
-         <p class="text-blue-100 text-xs sm:text-sm">Região oeste</p>
+         <h3 class="text-lg sm:text-xl font-bold mb-1">São Mateus</h3>
         </div></button>
       </div><!-- Ver Todos Button --> <button onclick="selectCity('Todos os Postos')" class="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-xl p-4 sm:p-6 flex items-center justify-between transition-all hover:shadow-lg">
        <div class="text-left">
         <h3 class="text-base sm:text-lg font-bold mb-1">Ver Todos os Postos</h3>
-        <p class="text-gray-300 text-xs sm:text-sm">6 postos credenciados em todas as regiões</p>
+        <p class="text-gray-300 text-xs sm:text-sm">8 postos credenciados em todas as regiões</p>
        </div>
        <svg class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
        </svg></button>
@@ -255,9 +249,9 @@
         { nome: 'Auto Posto 4 Rodas', endereco: 'Boa Esperança, ES', link: 'https://www.google.com/maps/place/Auto+Posto+4+Rodas/@-18.5404958,-40.2937824,826m/data=!3m2!1e3!4b1!4m6!3m5!1s0xb5956c7feac48d:0xc15be322b9fed420!8m2!3d-18.5404958!4d-40.2912075!16s%2Fg%2F1tfp3pxm' }
       ],
       'Pinheiros': [
-        { nome: 'Posto Nortão', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Nort%C3%A3o/@-18.4045169,-40.2319949,1969m/data=!3m1!1e3!4m6!3m5!1s0xb59a201628e4ab:0xcd6c4ad08d8fb206!8m2!3d-18.4045175!4d-40.2258587!16s%2Fg%2F11b6yqny3l' },
         { nome: 'Posto Rede Nater (Shell)', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Rede+Nater+(Shell)+em+Pinheiros/@-18.4168459,-40.2107607,153m/data=!3m1!1e3!4m6!3m5!1s0xb59b33d7ff34b9:0x82053208dc2a16f8!8m2!3d-18.4163054!4d-40.2110065!16s%2Fg%2F11qpbrwj22' },
-        { nome: 'Posto Pinheiros', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Pinheiros/@-18.413462,-40.2128249,156m/data=!3m1!1e3!4m6!3m5!1s0xb59a1481427d61:0xeba41bb1a2b24a1e!8m2!3d-18.4135384!4d-40.2127649!16s%2Fg%2F1tj7xmm_' }
+        { nome: 'Posto Pinheiros', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Pinheiros/@-18.413462,-40.2128249,156m/data=!3m1!1e3!4m6!3m5!1s0xb59a1481427d61:0xeba41bb1a2b24a1e!8m2!3d-18.4135384!4d-40.2127649!16s%2Fg%2F1tj7xmm_' },
+        { nome: 'Posto Nortão', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Nort%C3%A3o/@-18.4045169,-40.2319949,1969m/data=!3m1!1e3!4m6!3m5!1s0xb59a201628e4ab:0xcd6c4ad08d8fb206!8m2!3d-18.4045175!4d-40.2258587!16s%2Fg%2F11b6yqny3l?entry=ttu&g_ep=EgoyMDI2MDEyNi4wIKXMDSoKLDEwMDc5MjA2OUgBUAM%3D' }
       ],
       'Nova Venécia': [
         { nome: 'Posto Cidade Alta', endereco: 'Nova Venécia, ES', link: 'https://www.google.com/maps/place/Posto+Cidade+Alta/@-18.693836,-40.4136076,2405m/data=!3m1!1e3!4m10!1m2!2m1!1sposto!3m6!1s0xb5db2293e5e22b:0xeb619e2ab30e53b2!8m2!3d-18.693836!4d-40.3997215!15sCgVwb3N0b1oHIgVwb3N0b5IBC2dhc19zdGF0aW9u4AEA!16s%2Fg%2F11k62_1v8g' }
@@ -269,14 +263,12 @@
       'Montanha': [
         { nome: 'Posto Atlântico Servicentro', endereco: 'Montanha, ES', link: 'https://www.google.com/maps/place/Posto+Atlantico+Servicentro/@-18.1277285,-40.3620985,1655m/data=!3m1!1e3!4m10!1m2!2m1!1sauto+posto+servicentro+motanha!3m6!1s0xb50c56fe1af699:0xdce102eb786d422d!8m2!3d-18.1277285!4d-40.3525713!15sCh9hdXRvIHBvc3RvIHNlcnZpY2VudHJvIG1vbnRhbmhhkgELZ2FzX3N0YXRpb27gAQA!16s%2Fg%2F11hblk2rbr' }
       ],
-      'Pedro Can��rio': [
-        { nome: 'Posto Canário', endereco: 'Rua Principal, 777, Pedro Canário, ES' },
-        { nome: 'Posto Norte', endereco: 'Av. Norte, 888, Pedro Canário, ES' }
+      'Pedro Canário': [
+        { nome: 'Posto Canário', endereco: 'ES-209, 10 - Centro, Pedro Canário - ES', link: 'https://www.google.com/maps/place/ES-209,+10+-+Centro,+Pedro+Can%C3%A1rio+-+ES,+29970-000/@-18.2990761,-39.9587556,19z/data=!4m6!3m5!1s0xca804b02de6b95:0x50166aeec8735e0f!8m2!3d-18.2991215!4d-39.9579864!16s%2Fg%2F11f613rqzg?hl=pt-BR&entry=ttu&g_ep=EgoyMDI2MDIwMS4wIKXMDSoASAFQAw%3D%3D' }
       ],
       'São Mateus': [
-        { nome: 'Posto São Mateus Centro', endereco: 'Centro, 999, S�����o Mateus, ES' },
-        { nome: 'Posto Sul', endereco: 'Zona Sul, 1010, São Mateus, ES' },
-        { nome: 'Posto Leste', endereco: 'Zona Leste, 1111, São Mateus, ES' }
+        { nome: 'Posto Diamante Negro', endereco: 'São Mateus, ES', link: 'https://maps.app.goo.gl/caunq78awoUE6Nf96' },
+        { nome: 'Posto Damiani', endereco: 'São Mateus, ES', link: 'https://maps.app.goo.gl/LiyUgK2LJwUFPsjm8' }
       ]
     };
 
@@ -302,6 +294,12 @@
         });
         postosPorCidade['Montanha'].forEach(posto => {
           postos.push({ ...posto, cidade: 'Montanha' });
+        });
+        postosPorCidade['São Mateus'].forEach(posto => {
+          postos.push({ ...posto, cidade: 'São Mateus' });
+        });
+        postosPorCidade['Pedro Canário'].forEach(posto => {
+          postos.push({ ...posto, cidade: 'Pedro Canário' });
         });
       } else {
         postos = postosPorCidade[cityName].map(posto => ({ ...posto, cidade: cityName }));
@@ -372,7 +370,7 @@
       event.preventDefault();
       
       if (currentView === 'postos') {
-        // Se está na view de postos, volta para dashboard
+        // Se est�� na view de postos, volta para dashboard
         backToSearch();
       } else {
         // Se já está no dashboard, adiciona estado para não sair
@@ -480,5 +478,5 @@
       });
     }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c59e8b98564fe12',t:'MTc2OTcwMjA3Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c8e0390d6abf25e',t:'MTc3MDI0ODQzNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
