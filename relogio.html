@@ -1,338 +1,729 @@
 <!doctype html>
-<html lang="pt-BR" class="h-full">
+<html lang="en" class="h-full">
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Relógio Digital</title>
+  <title>Clock Display</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="/_sdk/element_sdk.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&amp;family=Rajdhani:wght@300;500;700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet">
   <style>
     body {
       box-sizing: border-box;
     }
-    
-    .clock-container {
-      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+
+    * {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
-    
-    .clock-display {
-      background: linear-gradient(180deg, #0d0d15 0%, #1a1a28 100%);
-      box-shadow: 
-        0 0 60px rgba(0, 212, 255, 0.15),
-        inset 0 2px 20px rgba(0, 0, 0, 0.8),
-        inset 0 -2px 10px rgba(255, 255, 255, 0.02);
+
+    .clock-wrapper {
+      background: linear-gradient(135deg, #001f3f 0%, #003d66 50%, #001f3f 100%);
+      min-height: 100%;
     }
-    
-    .time-digit {
-      font-family: 'Orbitron', monospace;
-      text-shadow: 
-        0 0 20px currentColor,
-        0 0 40px currentColor,
-        0 0 60px currentColor;
-      animation: pulse 2s ease-in-out infinite;
+
+    .clock-card {
+      background: linear-gradient(135deg, #0a2e4a 0%, #0d3a54 100%);
+      box-shadow: 0 20px 60px rgba(0, 100, 200, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(100, 180, 255, 0.3);
     }
-    
-    .time-separator {
-      animation: blink 1s ease-in-out infinite;
+
+    .time-display {
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #64b4ff;
+      text-shadow: 0 0 20px rgba(100, 180, 255, 0.4);
     }
-    
-    @keyframes blink {
-      0%, 50% { opacity: 1; }
-      51%, 100% { opacity: 0.3; }
+
+    .label-subtle {
+      color: #7fb3e5;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
-    
-    @keyframes pulse {
-      0%, 100% { filter: brightness(1); }
-      50% { filter: brightness(1.2); }
+
+    .theme-toggle {
+      background: rgba(100, 180, 255, 0.1);
+      border: 1px solid rgba(100, 180, 255, 0.3);
+      transition: all 0.3s ease;
+      color: #64b4ff;
     }
-    
-    .label-text {
-      font-family: 'Rajdhani', sans-serif;
-      letter-spacing: 0.3em;
+
+    .theme-toggle:hover {
+      background: rgba(100, 180, 255, 0.2);
+      border-color: rgba(100, 180, 255, 0.5);
+      transform: scale(1.05);
     }
-    
-    .glow-ring {
+
+    .theme-toggle.active {
+      background: rgba(255, 200, 100, 0.2);
+      color: #ffc864;
+      border-color: rgba(255, 200, 100, 0.5);
+    }
+
+    .dark-mode {
+      background: linear-gradient(135deg, #000814 0%, #001428 50%, #000814 100%);
+    }
+
+    .dark-mode .clock-card {
+      background: linear-gradient(135deg, #050f1f 0%, #071428 100%);
+      border-color: rgba(255, 200, 100, 0.3);
+      box-shadow: 0 20px 60px rgba(255, 150, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .dark-mode .label-subtle {
+      color: #ffc864;
+    }
+
+    .dark-mode .time-display {
+      color: #ffc864;
+      text-shadow: 0 0 20px rgba(255, 200, 100, 0.3);
+    }
+
+    .dark-mode .date-info {
+      color: #ffc864;
+    }
+
+    .date-info {
+      font-size: 14px;
+      color: #7fb3e5;
+      transition: color 0.2s ease;
+    }
+
+    .format-selector {
+      background: rgba(100, 180, 255, 0.1);
+      border: 1px solid rgba(100, 180, 255, 0.3);
+      border-radius: 8px;
+      padding: 4px;
+      display: flex;
+      gap: 4px;
+    }
+
+    .format-btn {
+      padding: 6px 12px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #7fb3e5;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .format-btn.active {
+      background: rgba(100, 180, 255, 0.2);
+      color: #64b4ff;
+      box-shadow: 0 0 12px rgba(100, 180, 255, 0.3);
+      border-radius: 6px;
+    }
+
+    .dark-mode .format-selector {
+      background: rgba(255, 200, 100, 0.1);
+      border-color: rgba(255, 200, 100, 0.3);
+    }
+
+    .dark-mode .format-btn {
+      color: #d4a574;
+    }
+
+    .dark-mode .format-btn.active {
+      background: rgba(255, 200, 100, 0.15);
+      color: #ffc864;
+      box-shadow: 0 0 12px rgba(255, 200, 100, 0.25);
+    }
+
+    .analog-clock {
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(100, 180, 255, 0.1), transparent), linear-gradient(135deg, rgba(100, 180, 255, 0.05), transparent);
+      border: 2px solid rgba(100, 180, 255, 0.4);
+      position: relative;
+      box-shadow: 0 0 30px rgba(100, 180, 255, 0.2), inset 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .dark-mode .analog-clock {
+      background: radial-gradient(circle at 30% 30%, rgba(255, 200, 100, 0.05), transparent), linear-gradient(135deg, rgba(255, 200, 100, 0.02), transparent);
+      border-color: rgba(255, 200, 100, 0.4);
+      box-shadow: 0 0 30px rgba(255, 200, 100, 0.15), inset 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .clock-center {
+      width: 10px;
+      height: 10px;
+      background: #64b4ff;
+      border-radius: 50%;
       position: absolute;
-      inset: -4px;
-      border-radius: 24px;
-      background: linear-gradient(45deg, #00d4ff, #7c3aed, #00d4ff);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      box-shadow: 0 0 8px rgba(100, 180, 255, 0.6);
+    }
+
+    .dark-mode .clock-center {
+      background: #ffc864;
+      box-shadow: 0 0 8px rgba(255, 200, 100, 0.6);
+    }
+
+    .hand {
+      position: absolute;
+      bottom: 50%;
+      left: 50%;
+      transform-origin: bottom center;
+      background: #64b4ff;
+    }
+
+    .dark-mode .hand {
+      background: #ffc864;
+    }
+
+    .hour-hand {
+      width: 4px;
+      height: 60px;
+      margin-left: -2px;
+    }
+
+    .minute-hand {
+      width: 3px;
+      height: 85px;
+      margin-left: -1.5px;
+      opacity: 0.8;
+    }
+
+    .second-hand {
+      width: 2px;
+      height: 95px;
+      margin-left: -1px;
+      background: #7fb3e5;
       opacity: 0.6;
-      filter: blur(8px);
-      animation: rotate 4s linear infinite;
     }
-    
-    @keyframes rotate {
-      0% { filter: blur(8px) hue-rotate(0deg); }
-      100% { filter: blur(8px) hue-rotate(360deg); }
+
+    .dark-mode .second-hand {
+      background: #e5a85c;
     }
-    
-    .date-display {
-      font-family: 'Rajdhani', sans-serif;
+
+    .number {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #7fb3e5;
     }
-    
-    .seconds-progress {
-      transition: width 0.1s linear;
+
+    .dark-mode .number {
+      color: #d4a574;
+    }
+
+    .number span {
+      display: inline-block;
+      line-height: 280px;
+    }
+
+    select {
+      background: rgba(100, 180, 255, 0.1) !important;
+      border: 1px solid rgba(100, 180, 255, 0.3) !important;
+      color: #64b4ff !important;
+      font-weight: 500 !important;
+      padding: 0.75rem !important;
+    }
+
+    select option {
+      background: #0a2e4a !important;
+      color: #64b4ff !important;
+      padding: 0.5rem !important;
+    }
+
+    select:focus {
+      outline: none !important;
+      box-shadow: 0 0 12px rgba(100, 180, 255, 0.3) !important;
+      border-color: rgba(100, 180, 255, 0.5) !important;
+    }
+
+    .dark-mode select {
+      background: rgba(255, 200, 100, 0.1) !important;
+      border-color: rgba(255, 200, 100, 0.3) !important;
+      color: #ffc864 !important;
+    }
+
+    .dark-mode select option {
+      background: #050f1f !important;
+      color: #ffc864 !important;
+    }
+
+    .dark-mode select:focus {
+      box-shadow: 0 0 12px rgba(255, 200, 100, 0.25) !important;
+      border-color: rgba(255, 200, 100, 0.5) !important;
+    }
+
+    h1 {
+      color: #64b4ff !important;
+      text-shadow: 0 0 20px rgba(100, 180, 255, 0.2) !important;
+    }
+
+    .dark-mode h1 {
+      color: #ffc864 !important;
+      text-shadow: 0 0 20px rgba(255, 200, 100, 0.15) !important;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease;
+    }
+
+    .fullscreen-mode {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 9999;
+    }
+
+    .fullscreen-mode .clock-wrapper {
+      padding: 0;
+    }
+
+    .fullscreen-mode #header-controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      left: auto;
+      width: auto;
+      margin-bottom: 0;
+      justify-content: flex-end;
+    }
+
+    .fullscreen-mode .max-w-2xl {
+      max-width: none;
+    }
+
+    .fullscreen-mode .clock-card {
+      border: none;
+      box-shadow: none;
+      background: transparent;
+    }
+
+    .fullscreen-mode .time-display {
+      font-size: 20vw !important;
+    }
+
+    .fullscreen-mode .date-info {
+      font-size: 3vw;
+    }
+
+    .fullscreen-mode .label-subtle {
+      font-size: 1.5vw;
+    }
+
+    .fullscreen-mode #digital-display {
+      gap: 3rem;
     }
   </style>
   <style>@view-transition { navigation: auto; }</style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full m-0 p-0 overflow-auto">
-  <div class="clock-container h-full w-full flex flex-col items-center justify-center p-8"><!-- T��tulo -->
-   <h1 id="clock-title" class="label-text text-cyan-400 text-xl md:text-2xl mb-8 uppercase tracking-widest">Relógio Digital</h1><!-- Container do Relógio -->
-   <div class="relative">
-    <div class="glow-ring"></div>
-    <div class="clock-display relative rounded-3xl p-8 md:p-12 border border-cyan-900/30"><!-- Display Principal -->
-     <div class="flex items-center justify-center gap-2 md:gap-4"><!-- Horas -->
-      <div class="text-center">
-       <div id="hours" class="time-digit text-5xl md:text-8xl lg:text-9xl font-black text-cyan-400">
-        00
-       </div><span class="label-text text-cyan-600/60 text-xs md:text-sm uppercase">Horas</span>
-      </div><!-- Separador --> <span class="time-separator time-digit text-4xl md:text-7xl lg:text-8xl font-bold text-purple-400 -mt-6">:</span> <!-- Minutos -->
-      <div class="text-center">
-       <div id="minutes" class="time-digit text-5xl md:text-8xl lg:text-9xl font-black text-purple-400">
-        00
-       </div><span class="label-text text-purple-600/60 text-xs md:text-sm uppercase">Minutos</span>
-      </div><!-- Separador --> <span class="time-separator time-digit text-4xl md:text-7xl lg:text-8xl font-bold text-pink-400 -mt-6">:</span> <!-- Segundos -->
-      <div class="text-center">
-       <div id="seconds" class="time-digit text-5xl md:text-8xl lg:text-9xl font-black text-pink-400">
-        00
-       </div><span class="label-text text-pink-600/60 text-xs md:text-sm uppercase">Segundos</span>
-      </div>
-     </div><!-- Barra de Progresso dos Segundos -->
-     <div class="mt-8 w-full h-1 bg-gray-800/50 rounded-full overflow-hidden">
-      <div id="seconds-bar" class="seconds-progress h-full bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 rounded-full" style="width: 0%"></div>
-     </div><!-- Data -->
-     <div id="date-display" class="date-display text-center mt-6 text-gray-400 text-lg md:text-xl font-medium tracking-wide">
-      Carregando...
+  <div class="clock-wrapper h-full w-full flex items-center justify-center p-4 md:p-8 transition-colors duration-300"><!-- Main Container -->
+   <div class="w-full max-w-2xl"><!-- Header with Controls -->
+    <div class="flex items-center justify-between mb-8" id="header-controls">
+     <div>
+      <h1 id="display-title" class="text-3xl md:text-4xl font-bold text-slate-900 dark-mode:text-slate-50 fade-in">Hora Atual</h1>
+      <p class="label-subtle mt-2 fade-in" style="animation-delay: 0.1s;">Exibição de relógio em tempo real</p>
      </div>
-    </div>
-   </div><!-- Indicador AM/PM -->
-   <div id="period" class="mt-8 px-6 py-2 rounded-full bg-cyan-400/10 border border-cyan-400/30"><span class="label-text text-cyan-400 text-sm md:text-base uppercase tracking-widest">--</span>
-   </div><!-- Botão Sair --> <button id="exit-btn" class="mt-8 px-6 py-2 rounded-lg bg-red-600/80 hover:bg-red-600 text-white text-sm font-medium uppercase tracking-wide transition-all duration-200"> Sair </button> <!-- Modal de Confirmação -->
-   <div id="confirm-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div class="bg-gradient-to-br from-gray-900 to-gray-950 rounded-3xl p-8 max-w-md w-full border border-cyan-500/30 shadow-2xl shadow-cyan-500/20">
-     <h2 class="label-text text-cyan-400 text-2xl font-bold mb-4 text-center uppercase">Confirmar Saída</h2>
-     <p class="text-gray-300 text-center mb-8 text-lg">Tem certeza que deseja sair?</p>
-     <div class="flex gap-4"><button id="cancel-btn" class="flex-1 px-6 py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-semibold uppercase tracking-wide transition-all duration-300"> Cancelar </button> <button id="confirm-btn" class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold uppercase tracking-wide transition-all duration-300"> Sair </button>
+     <div class="flex gap-2"><button id="fullscreen-toggle" class="theme-toggle w-10 h-10 rounded-lg flex items-center justify-center font-semibold transition-all duration-300 fade-in" style="animation-delay: 0.15s;" title="Tela cheia"> ⛶ </button> <button id="theme-toggle" class="theme-toggle w-10 h-10 rounded-lg flex items-center justify-center font-semibold transition-all duration-300 fade-in" style="animation-delay: 0.2s;"> 🌙 </button>
+     </div>
+    </div><!-- Clock Card -->
+    <div class="clock-card rounded-xl p-8 md:p-12 fade-in" style="animation-delay: 0.3s;"><!-- Controls -->
+     <div class="space-y-4 mb-8" id="controls-panel">
+      <div class="flex justify-between items-center"><span class="label-subtle">Formato de Exibição</span>
+       <div class="format-selector"><button class="format-btn active" data-format="digital">Digital</button> <button class="format-btn" data-format="analog">Analógico</button>
+       </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark-mode:border-slate-700">
+       <div><label class="label-subtle block mb-2">Idioma</label> <select id="language-select" class="w-full px-3 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2"> <option value="en">English</option> <option value="pt" selected>Português</option> <option value="es">Español</option> <option value="fr">Français</option> <option value="de">Deutsch</option> <option value="ja">日本語</option> <option value="zh">中文</option> </select>
+       </div>
+       <div><label class="label-subtle block mb-2">Fuso Horário</label> <select id="timezone-select" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark-mode:bg-slate-700 border border-slate-200 dark-mode:border-slate-600 text-slate-900 dark-mode:text-slate-50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-300"> <option value="UTC">UTC</option> <option value="America/New_York">America/New York</option> <option value="America/Chicago">America/Chicago</option> <option value="America/Denver">America/Denver</option> <option value="America/Los_Angeles">America/Los Angeles</option> <option value="Europe/London">Europe/London</option> <option value="Europe/Paris">Europe/Paris</option> <option value="Europe/Berlin">Europe/Berlin</option> <option value="Asia/Tokyo">Asia/Tokyo</option> <option value="Asia/Shanghai">Asia/Shanghai</option> <option value="Asia/Hong_Kong">Asia/Hong Kong</option> <option value="Asia/Singapore">Asia/Singapore</option> <option value="Australia/Sydney">Australia/Sydney</option> <option value="Pacific/Auckland">Pacific/Auckland</option> <option value="America/Sao_Paulo" selected>America/Sao Paulo</option> <option value="America/Argentina/Buenos_Aires">America/Buenos Aires</option> <option value="America/Mexico_City">America/Mexico City</option> </select>
+       </div>
+      </div>
+     </div><!-- Digital Display -->
+     <div id="digital-display" class="flex flex-col items-center gap-6">
+      <div class="text-center">
+       <div class="time-display text-6xl md:text-8xl text-slate-900"><span id="hours">00</span><span class="animate-pulse">:</span><span id="minutes">00</span><span class="animate-pulse">:</span><span id="seconds">00</span>
+       </div>
+       <div id="period" class="label-subtle mt-4">
+        --
+       </div>
+      </div>
+     </div><!-- Analog Display -->
+     <div id="analog-display" class="hidden flex flex-col items-center gap-6">
+      <div class="analog-clock">
+       <div id="hour-hand" class="hand hour-hand" style="transform: rotate(0deg);"></div>
+       <div id="minute-hand" class="hand minute-hand" style="transform: rotate(0deg);"></div>
+       <div id="second-hand" class="hand second-hand" style="transform: rotate(0deg);"></div>
+       <div class="clock-center"></div>
+      </div>
+     </div><!-- Date and Info -->
+     <div class="text-center mt-8 pt-8 border-t border-slate-200 dark-mode:border-slate-700">
+      <div id="date-info" class="date-info font-medium">
+       Loading...
+      </div>
+      <div id="week-info" class="label-subtle mt-2">
+       Week 0
+      </div>
      </div>
     </div>
    </div>
   </div>
   <script>
     const defaultConfig = {
-      clock_title: 'Relógio Digital',
-      background_color: '#0a0a0f',
-      primary_color: '#22d3ee',
-      secondary_color: '#a855f7',
-      accent_color: '#ec4899',
-      text_color: '#9ca3af',
-      font_family: 'Orbitron',
+      display_title: 'WeTime',
+      primary_color: '#0f172a',
+      secondary_color: '#64748b',
+      text_color: '#1e293b',
+      font_family: 'Inter',
       font_size: 16
     };
 
     let config = { ...defaultConfig };
+    let currentFormat = 'digital';
+    let isDarkMode = false;
+    let currentLanguage = 'pt';
+    let currentTimezone = 'America/Sao_Paulo';
+    let isFullscreen = false;
 
-    // Elementos do DOM
+    // Language Strings
+    const languages = {
+      en: {
+        currentTime: 'Current Time',
+        subtitle: 'Real-time clock display',
+        format: 'Display Format',
+        language: 'Language',
+        timezone: 'Timezone',
+        week: 'Week'
+      },
+      pt: {
+        currentTime: 'Hora Atual',
+        subtitle: 'Exibição de relógio em tempo real',
+        format: 'Formato de Exibição',
+        language: 'Idioma',
+        timezone: 'Fuso Horário',
+        week: 'Semana'
+      },
+      es: {
+        currentTime: 'Hora Actual',
+        subtitle: 'Pantalla de reloj en tiempo real',
+        format: 'Formato de Visualización',
+        language: 'Idioma',
+        timezone: 'Zona Horaria',
+        week: 'Semana'
+      },
+      fr: {
+        currentTime: 'Heure Actuelle',
+        subtitle: 'Affichage d\'horloge en temps réel',
+        format: 'Format d\'Affichage',
+        language: 'Langue',
+        timezone: 'Fuseau Horaire',
+        week: 'Semaine'
+      },
+      de: {
+        currentTime: 'Aktuelle Uhrzeit',
+        subtitle: 'Echtzeit-Uhrenanzeige',
+        format: 'Anzeigeformat',
+        language: 'Sprache',
+        timezone: 'Zeitzone',
+        week: 'Woche'
+      },
+      ja: {
+        currentTime: '��在時刻',
+        subtitle: 'リアルタイム時計表示',
+        format: '表示形�����',
+        language: '言語',
+        timezone: 'タイムゾーン',
+        week: '週'
+      },
+      zh: {
+        currentTime: '当前时间',
+        subtitle: '���时时钟显示',
+        format: '显示格式',
+        language: '语言',
+        timezone: '时区',
+        week: '周'
+      }
+    };
+
+    const dayNames = {
+      en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      pt: ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'],
+      es: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+      fr: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
+      de: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+      ja: ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜���', '土曜日'],
+      zh: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期��', '���期��']
+    };
+
+    const monthNames = {
+      en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+      pt: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'],
+      es: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+      fr: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+      de: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+      ja: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+      zh: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
+    };
+
+    // DOM Elements
     const hoursEl = document.getElementById('hours');
     const minutesEl = document.getElementById('minutes');
     const secondsEl = document.getElementById('seconds');
-    const secondsBar = document.getElementById('seconds-bar');
-    const dateDisplay = document.getElementById('date-display');
     const periodEl = document.getElementById('period');
-    const titleEl = document.getElementById('clock-title');
+    const dateInfoEl = document.getElementById('date-info');
+    const weekInfoEl = document.getElementById('week-info');
+    const titleEl = document.getElementById('display-title');
+    const themeToggle = document.getElementById('theme-toggle');
+    const wrapper = document.querySelector('.clock-wrapper');
+    const formatBtns = document.querySelectorAll('.format-btn');
+    const digitalDisplay = document.getElementById('digital-display');
+    const analogDisplay = document.getElementById('analog-display');
 
-    // Função para formatar números com zero à esquerda
+    // Utility Functions
     function padZero(num) {
       return num.toString().padStart(2, '0');
     }
 
-    // Função para obter o nome do dia da semana
     function getDayName(date) {
-      const days = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-      return days[date.getDay()];
+      return dayNames[currentLanguage][date.getDay()];
     }
 
-    // Função para obter o nome do mês
     function getMonthName(date) {
-      const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-      return months[date.getMonth()];
+      return monthNames[currentLanguage][date.getMonth()];
     }
 
-    // Função para atualizar o relógio
+    function getWeekNumber(date) {
+      const firstDay = new Date(date.getFullYear(), 0, 1);
+      const pastDaysOfYear = (date - firstDay) / 86400000;
+      return Math.ceil((pastDaysOfYear + firstDay.getDay() + 1) / 7);
+    }
+
+    // Update Clock
     function updateClock() {
-      const now = new Date();
+      let now = new Date();
       
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      const seconds = now.getSeconds();
-      const milliseconds = now.getMilliseconds();
+      // Convert to specified timezone
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: currentTimezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
       
-      // Atualizar dígitos
+      const parts = formatter.formatToParts(now);
+      const timeObj = {};
+      parts.forEach(part => {
+        timeObj[part.type] = part.value;
+      });
+      
+      const hours = parseInt(timeObj.hour);
+      const minutes = parseInt(timeObj.minute);
+      const seconds = parseInt(timeObj.second);
+      
+      // For analog clock smooth motion, we calculate milliseconds differently
+      const now_utc = new Date();
+      const milliseconds = now_utc.getMilliseconds();
+
+      // Digital display
       hoursEl.textContent = padZero(hours);
       minutesEl.textContent = padZero(minutes);
       secondsEl.textContent = padZero(seconds);
-      
-      // Atualizar barra de progresso (inclui milissegundos para suavidade)
-      const progressPercent = ((seconds * 1000 + milliseconds) / 60000) * 100;
-      secondsBar.style.width = `${progressPercent}%`;
-      
-      // Atualizar período (AM/PM)
+
+      // Period (AM/PM)
       const period = hours >= 12 ? 'PM' : 'AM';
-      periodEl.innerHTML = `<span class="label-text text-cyan-400 text-sm md:text-base uppercase tracking-widest">${period}</span>`;
+      periodEl.textContent = period;
+
+      // Analog hands
+      const hourDegrees = (hours % 12 + minutes / 60) * 30;
+      const minuteDegrees = (minutes + seconds / 60) * 6;
+      const secondDegrees = (seconds + milliseconds / 1000) * 6;
+
+      document.getElementById('hour-hand').style.transform = `rotate(${hourDegrees}deg)`;
+      document.getElementById('minute-hand').style.transform = `rotate(${minuteDegrees}deg)`;
+      document.getElementById('second-hand').style.transform = `rotate(${secondDegrees}deg)`;
+
+      // Date info with timezone
+      const dateFormatter = new Intl.DateTimeFormat(currentLanguage === 'zh' ? 'zh-CN' : currentLanguage, {
+        timeZone: currentTimezone,
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long'
+      });
       
-      // Atualizar data
-      const dayName = getDayName(now);
-      const day = now.getDate();
-      const monthName = getMonthName(now);
-      const year = now.getFullYear();
-      dateDisplay.textContent = `${dayName}, ${day} de ${monthName} de ${year}`;
+      const dateString = dateFormatter.format(new Date());
+      dateInfoEl.textContent = dateString;
+      
+      // Week number calculation
+      const getWeekNumber = (date) => {
+        const firstDay = new Date(date.getFullYear(), 0, 1);
+        const pastDaysOfYear = (date - firstDay) / 86400000;
+        return Math.ceil((pastDaysOfYear + firstDay.getDay() + 1) / 7);
+      };
+      
+      const week = getWeekNumber(new Date());
+      weekInfoEl.textContent = `${languages[currentLanguage].week} ${week}`;
     }
 
-    // Atualizar a cada 50ms para animação suave da barra
-    setInterval(updateClock, 50);
-    updateClock();
+    // Theme Toggle
+    themeToggle.addEventListener('click', function() {
+      isDarkMode = !isDarkMode;
+      wrapper.classList.toggle('dark-mode');
+      themeToggle.classList.toggle('active');
+      themeToggle.textContent = isDarkMode ? '☀️' : '🌙';
+    });
 
-    // Função para aplicar configurações
+    // Fullscreen Toggle
+    const fullscreenToggle = document.getElementById('fullscreen-toggle');
+    fullscreenToggle.addEventListener('click', function() {
+      isFullscreen = !isFullscreen;
+      const body = document.body;
+      const headerControls = document.getElementById('header-controls');
+      const controlsPanel = document.getElementById('controls-panel');
+      
+      if (isFullscreen) {
+        body.classList.add('fullscreen-mode');
+        controlsPanel.style.display = 'none';
+        headerControls.style.position = 'absolute';
+        headerControls.style.top = '20px';
+        headerControls.style.right = '20px';
+        headerControls.style.marginBottom = '0';
+        fullscreenToggle.textContent = '⊡';
+      } else {
+        body.classList.remove('fullscreen-mode');
+        controlsPanel.style.display = '';
+        headerControls.style.position = '';
+        headerControls.style.top = '';
+        headerControls.style.right = '';
+        headerControls.style.marginBottom = '';
+        fullscreenToggle.textContent = '⛶';
+      }
+    });
+
+    // Format Selector
+    formatBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        formatBtns.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentFormat = this.dataset.format;
+
+        digitalDisplay.classList.add('hidden');
+        analogDisplay.classList.add('hidden');
+
+        if (currentFormat === 'digital') {
+          digitalDisplay.classList.remove('hidden');
+        } else {
+          analogDisplay.classList.remove('hidden');
+        }
+      });
+    });
+
+    // Language Selector
+    document.getElementById('language-select').addEventListener('change', function(e) {
+      currentLanguage = e.target.value;
+      updateUIText();
+      updateClock();
+    });
+
+    // Timezone Selector
+    document.getElementById('timezone-select').addEventListener('change', function(e) {
+      currentTimezone = e.target.value;
+      updateClock();
+    });
+
+    // Update UI Text
+    function updateUIText() {
+      const lang = languages[currentLanguage];
+      document.querySelector('h1').textContent = lang.currentTime;
+      document.querySelector('h1').nextElementSibling.textContent = lang.subtitle;
+      
+      // Update format label
+      const formatLabel = document.querySelector('.flex.justify-between.items-center .label-subtle');
+      if (formatLabel) formatLabel.textContent = lang.format;
+      
+      // Update format buttons
+      const formatBtns = document.querySelectorAll('.format-btn');
+      if (formatBtns[0]) formatBtns[0].textContent = lang.digital;
+      if (formatBtns[1]) formatBtns[1].textContent = lang.analog;
+      
+      // Update labels
+      const labels = document.querySelectorAll('label.label-subtle');
+      if (labels[0]) labels[0].textContent = lang.language;
+      if (labels[1]) labels[1].textContent = lang.timezone;
+    }
+
+    // SDK Integration
     async function onConfigChange(newConfig) {
-      // Atualizar título
-      titleEl.textContent = newConfig.clock_title || defaultConfig.clock_title;
-      
-      // Atualizar cores
-      const primaryColor = newConfig.primary_color || defaultConfig.primary_color;
-      const secondaryColor = newConfig.secondary_color || defaultConfig.secondary_color;
-      const accentColor = newConfig.accent_color || defaultConfig.accent_color;
-      const textColor = newConfig.text_color || defaultConfig.text_color;
-      const bgColor = newConfig.background_color || defaultConfig.background_color;
-      
-      // Aplicar cores aos elementos
-      hoursEl.style.color = primaryColor;
-      titleEl.style.color = primaryColor;
-      
-      minutesEl.style.color = secondaryColor;
-      document.querySelectorAll('.time-separator')[0].style.color = secondaryColor;
-      
-      secondsEl.style.color = accentColor;
-      document.querySelectorAll('.time-separator')[1].style.color = accentColor;
-      
-      dateDisplay.style.color = textColor;
-      
-      // Atualizar gradiente da barra
-      secondsBar.style.background = `linear-gradient(to right, ${primaryColor}, ${secondaryColor}, ${accentColor})`;
-      
-      // Aplicar fonte
-      const fontFamily = newConfig.font_family || defaultConfig.font_family;
-      const baseFontStack = 'monospace';
-      hoursEl.style.fontFamily = `${fontFamily}, ${baseFontStack}`;
-      minutesEl.style.fontFamily = `${fontFamily}, ${baseFontStack}`;
-      secondsEl.style.fontFamily = `${fontFamily}, ${baseFontStack}`;
-      
-      // Aplicar tamanho da fonte (escala proporcional)
-      const baseSize = newConfig.font_size || defaultConfig.font_size;
-      titleEl.style.fontSize = `${baseSize * 1.25}px`;
+      titleEl.textContent = newConfig.display_title || defaultConfig.display_title;
     }
 
-    // Função para mapear capabilities
     function mapToCapabilities(cfg) {
       return {
-        recolorables: [
-          {
-            get: () => cfg.background_color || defaultConfig.background_color,
-            set: (value) => {
-              cfg.background_color = value;
-              if (window.elementSdk) window.elementSdk.setConfig({ background_color: value });
-            }
-          },
-          {
-            get: () => cfg.primary_color || defaultConfig.primary_color,
-            set: (value) => {
-              cfg.primary_color = value;
-              if (window.elementSdk) window.elementSdk.setConfig({ primary_color: value });
-            }
-          },
-          {
-            get: () => cfg.secondary_color || defaultConfig.secondary_color,
-            set: (value) => {
-              cfg.secondary_color = value;
-              if (window.elementSdk) window.elementSdk.setConfig({ secondary_color: value });
-            }
-          },
-          {
-            get: () => cfg.accent_color || defaultConfig.accent_color,
-            set: (value) => {
-              cfg.accent_color = value;
-              if (window.elementSdk) window.elementSdk.setConfig({ accent_color: value });
-            }
-          },
-          {
-            get: () => cfg.text_color || defaultConfig.text_color,
-            set: (value) => {
-              cfg.text_color = value;
-              if (window.elementSdk) window.elementSdk.setConfig({ text_color: value });
-            }
+        recolorables: [{
+          get: () => cfg.primary_color || defaultConfig.primary_color,
+          set: (v) => { 
+            cfg.primary_color = v; 
+            if (window.elementSdk) window.elementSdk.setConfig({ primary_color: v }); 
           }
-        ],
+        }],
         borderables: [],
         fontEditable: {
           get: () => cfg.font_family || defaultConfig.font_family,
-          set: (value) => {
-            cfg.font_family = value;
-            if (window.elementSdk) window.elementSdk.setConfig({ font_family: value });
+          set: (v) => { 
+            cfg.font_family = v; 
+            if (window.elementSdk) window.elementSdk.setConfig({ font_family: v }); 
           }
         },
         fontSizeable: {
           get: () => cfg.font_size || defaultConfig.font_size,
-          set: (value) => {
-            cfg.font_size = value;
-            if (window.elementSdk) window.elementSdk.setConfig({ font_size: value });
+          set: (v) => { 
+            cfg.font_size = v; 
+            if (window.elementSdk) window.elementSdk.setConfig({ font_size: v }); 
           }
         }
       };
     }
 
-    // Função para mapear valores do painel de edição
     function mapToEditPanelValues(cfg) {
       return new Map([
-        ['clock_title', cfg.clock_title || defaultConfig.clock_title]
+        ['display_title', cfg.display_title || defaultConfig.display_title]
       ]);
     }
 
-    // Inicializar SDK
+    // Initialize SDK
     if (window.elementSdk) {
-      window.elementSdk.init({
-        defaultConfig,
-        onConfigChange,
-        mapToCapabilities,
-        mapToEditPanelValues
-      });
+      window.elementSdk.init({ defaultConfig, onConfigChange, mapToCapabilities, mapToEditPanelValues });
       config = window.elementSdk.config || config;
     }
-    
-    // Aplicar configuração inicial
-    onConfigChange(config);
 
-    // Funcionalidade do botão sair
-    const exitBtn = document.getElementById('exit-btn');
-    const confirmModal = document.getElementById('confirm-modal');
-    const cancelBtn = document.getElementById('cancel-btn');
-    const confirmBtn = document.getElementById('confirm-btn');
-
-    // Abrir modal de confirmação
-    exitBtn.addEventListener('click', function() {
-      confirmModal.classList.remove('hidden');
-    });
-
-    // Cancelar saída
-    cancelBtn.addEventListener('click', function() {
-      confirmModal.classList.add('hidden');
-    });
-
-    // Confirmar saída e redirecionar
-    confirmBtn.addEventListener('click', function() {
-      // Redirecionar para o site (substitui a página atual)
-      window.open('https://gaveblue.com', '_blank', 'noopener,noreferrer');
-    });
+    // Start Clock Updates
+    setInterval(updateClock, 50);
+    updateClock();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c13a9c880096b20',t:'MTc2ODk2NTQ5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c97ca05b6c19aa9',t:'MTc3MDM1MDkzNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
