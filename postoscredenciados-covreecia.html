@@ -35,6 +35,34 @@
         background-position: 0% 50%;
       }
     }
+
+    @keyframes modalBackdropFadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes modalScaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.85) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .modal-backdrop {
+      animation: modalBackdropFadeIn 0.4s ease-out;
+    }
+
+    .modal-content {
+      animation: modalScaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
     
     .animated-green-title {
       background: linear-gradient(90deg, #6b8802, #3d5a01, #4f6c02, #6b8802, #527001);
@@ -62,7 +90,70 @@
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full">
-  <div id="app-container" class="h-full w-full overflow-auto bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200"><!-- Fixed Header -->
+  <div id="app-container" class="h-full w-full overflow-auto bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200"><!-- Modal Overlay - Aviso Informativo -->
+   <div id="modal-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4 modal-backdrop">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all modal-content"><!-- Header with Icon -->
+     <div class="bg-gradient-to-r from-red-500 to-red-600 px-5 sm:px-6 py-4 text-center rounded-t-2xl">
+      <div class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white mb-2">
+       <svg class="w-5 h-5 text-red-500" fill="currentColor" viewbox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+       </svg>
+      </div>
+      <h2 class="text-lg font-bold text-white">Atenção Motorista</h2>
+     </div><!-- Content -->
+     <div class="px-5 sm:px-6 py-3"><!-- Info Section -->
+      <div class="mb-2">
+       <h3 class="text-xs sm:text-sm font-bold text-gray-900 mb-2">Dados Obrigatórios:</h3>
+       <div class="space-y-1.5"><!-- Data -->
+        <div class="flex gap-1.5 items-start">
+         <div class="h-3.5 w-3.5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg class="w-2 h-2 text-blue-600" fill="currentColor" viewbox="0 0 20 20"><path d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v2h16V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H8a2 2 0 01-2-2V7z" />
+          </svg>
+         </div>
+         <p class="font-semibold text-gray-900 text-xs">Data do Abastecimento</p>
+        </div><!-- Quilometragem -->
+        <div class="flex gap-1.5 items-start">
+         <div class="h-3.5 w-3.5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg class="w-2 h-2 text-green-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+         </div>
+         <p class="font-semibold text-gray-900 text-xs">Quilometragem Atual</p>
+        </div><!-- Placa -->
+        <div class="flex gap-1.5 items-start">
+         <div class="h-3.5 w-3.5 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg class="w-2 h-2 text-purple-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9" />
+          </svg>
+         </div>
+         <p class="font-semibold text-gray-900 text-xs">Placa do Veículo</p>
+        </div><!-- Quantidade -->
+        <div class="flex gap-1.5 items-start">
+         <div class="h-3.5 w-3.5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg class="w-2 h-2 text-orange-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4" />
+          </svg>
+         </div>
+         <p class="font-semibold text-gray-900 text-xs">Quantidade em Litros</p>
+        </div><!-- Combustível -->
+        <div class="flex gap-1.5 items-start">
+         <div class="h-3.5 w-3.5 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg class="w-2 h-2 text-yellow-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+         </div>
+         <p class="font-semibold text-gray-900 text-xs">Tipo de Combustível</p>
+        </div><!-- Assinatura -->
+        <div class="flex gap-1.5 items-start">
+         <div class="h-3.5 w-3.5 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg class="w-2 h-2 text-indigo-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5" />
+          </svg>
+         </div>
+         <p class="font-semibold text-gray-900 text-xs">Assinatura Legível</p>
+        </div>
+       </div>
+      </div><!-- Important Notes -->
+      <div class="bg-yellow-50 border-l-4 border-yellow-400 p-2 rounded mb-3">
+       <p class="text-xs text-yellow-900 leading-tight"><strong>Nota:</strong> Ao assinar o comprovante de abastecimento, o usuário do veículo declara que conferiu o cupom e confirma que os dados informados estão corretos. Caso haja erro de faturamento decorrente de omissão ou informação incorreta atribuível ao usuário, este poderá ser responsabilizado pelos valores gerados.</p>
+      </div><!-- Buttons --> <button onclick="confirmModal()" class="w-full px-3 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-lg transition transform active:scale-95 text-sm"> Entendi e Confirmo </button>
+     </div>
+    </div>
+   </div><!-- Fixed Header -->
    <div class="sticky top-0 z-50 bg-gradient-to-r from-white via-gray-50 to-white shadow-lg">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-3">
      <div class="flex items-center justify-between gap-2 sm:gap-4">
@@ -77,15 +168,6 @@
       </div><!-- Logo -->
       <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0"><img src="https://i.ibb.co/fGzJKxy8/Grupo-Covre-0000.png" alt="Logo Grupo Covre" loading="lazy" class="h-16 sm:h-24 lg:h-32 w-auto object-contain" onerror="console.error('Image failed to load:', this.src); this.style.display='none';">
       </div>
-     </div>
-    </div>
-   </div><!-- Security Warning -->
-   <div class="bg-yellow-400 border-b border-yellow-600 py-3 sm:py-4">
-    <div class="w-full px-3 sm:px-6">
-     <div class="flex items-center justify-center gap-2 sm:gap-3 text-gray-900">
-      <svg class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="currentColor" viewbox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-      </svg>
-      <p class="text-xs sm:text-sm font-bold text-center">O abastecimento nos postos credenciados só é autorizado mediante apresentação do CARTÃO DE ABASTECIMENTO vinculado ao veículo.</p>
      </div>
     </div>
    </div><!-- Main Content -->
@@ -177,7 +259,7 @@
       </div><!-- Ver Todos Button --> <button onclick="selectCity('Todos os Postos')" class="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-xl p-4 sm:p-6 flex items-center justify-between transition-all hover:shadow-lg">
        <div class="text-left">
         <h3 class="text-base sm:text-lg font-bold mb-1">Ver Todos os Postos</h3>
-        <p class="text-gray-300 text-xs sm:text-sm">9 postos credenciados em todas as regiões</p>
+        <p class="text-gray-300 text-xs sm:text-sm">9 postos credenciados em todas as regi??es</p>
        </div>
        <svg class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
        </svg></button>
@@ -371,7 +453,7 @@
       event.preventDefault();
       
       if (currentView === 'postos') {
-        // Se est�� na view de postos, volta para dashboard
+        // Se está na view de postos, volta para dashboard
         backToSearch();
       } else {
         // Se já está no dashboard, adiciona estado para não sair
@@ -478,6 +560,44 @@
         mapToEditPanelValues
       });
     }
+
+    // Função para confirmar e fechar o modal
+    function confirmModal() {
+      const modalOverlay = document.getElementById('modal-overlay');
+      modalOverlay.style.display = 'none';
+      // Salva no sessionStorage para não mostrar novamente nesta sessão
+      sessionStorage.setItem('modal-shown', 'true');
+    }
+
+    // Formata a data em formato brasileiro
+    function formatDate(date) {
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${day}/${month}/${year} às ${hours}:${minutes}`;
+    }
+
+    // Mostra o modal ao carregar a página
+    window.addEventListener('DOMContentLoaded', function() {
+      // Define a data de hoje
+      const today = new Date();
+      const dateElement = document.getElementById('info-date');
+      if (dateElement) {
+        dateElement.textContent = formatDate(today);
+      }
+
+      // Verifica se o modal já foi mostrado nesta sessão
+      if (!sessionStorage.getItem('modal-shown')) {
+        const modalOverlay = document.getElementById('modal-overlay');
+        modalOverlay.style.display = 'flex';
+      } else {
+        const modalOverlay = document.getElementById('modal-overlay');
+        modalOverlay.style.display = 'none';
+      }
+    });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c939f846784cae8',t:'MTc3MDMwNzI1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c9761bc83ee36ec',t:'MTc3MDM0NjY2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
