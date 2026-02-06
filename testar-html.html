@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testador de HTML</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    .code-editor {
+      font-family: 'JetBrains Mono', monospace;
+      tab-size: 2;
+      line-height: 1.6;
+    }
+    
+    .code-editor:focus {
+      outline: none;
+    }
+    
+    .preview-frame {
+      background: white;
+    }
+    
+    .glow-effect {
+      box-shadow: 0 0 40px rgba(99, 102, 241, 0.15);
+    }
+    
+    .tab-active {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+    }
+    
+    .tab-inactive {
+      background: rgba(99, 102, 241, 0.1);
+      color: #6366f1;
+    }
+    
+    .tab-inactive:hover {
+      background: rgba(99, 102, 241, 0.2);
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: #1e1b4b;
+      border-radius: 4px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #6366f1;
+      border-radius: 4px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+      background: #818cf8;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full m-0 p-0 overflow-hidden">
+  <div id="app" class="h-full w-full flex flex-col" style="background: linear-gradient(135deg, #0f0a1e 0%, #1a1333 50%, #0f172a 100%);"><!-- Header -->
+   <header class="flex-shrink-0 px-6 py-4 border-b border-indigo-900/30">
+    <div class="flex items-center justify-between">
+     <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">
+       <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+       </svg>
+      </div>
+      <h1 id="main-title" class="text-xl font-bold text-white" style="font-family: 'Plus Jakarta Sans', sans-serif;">Testador de HTML</h1>
+     </div>
+     <div class="flex items-center gap-2"><button id="clear-btn" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">
+       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+       </svg> Limpar </button> <button id="run-btn" class="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200 flex items-center gap-2 hover:scale-105" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">
+       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+       </svg> Executar </button>
+     </div>
+    </div>
+   </header><!-- Main Content -->
+   <main class="flex-1 flex overflow-hidden p-4 gap-4" style="min-height: 0;"><!-- Editor Panel -->
+    <div class="flex-1 flex flex-col rounded-2xl overflow-hidden glow-effect" style="background: #13102a; border: 1px solid rgba(99, 102, 241, 0.2);"><!-- Editor Tabs -->
+     <div class="flex-shrink-0 flex items-center gap-2 px-4 py-3 border-b border-indigo-900/30"><button class="tab-btn tab-active px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200" data-tab="html"> HTML </button> <button class="tab-btn tab-inactive px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200" data-tab="css"> CSS </button> <button class="tab-btn tab-inactive px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200" data-tab="js"> JavaScript </button>
+     </div><!-- Editor Area -->
+     <div class="flex-1 overflow-hidden relative" style="min-height: 0;"><textarea id="html-editor" class="code-editor absolute inset-0 w-full h-full p-4 text-sm resize-none scrollbar-thin" style="background: transparent; color: #e2e8f0; caret-color: #818cf8;" spellcheck="false" placeholder="<!-- Digite seu HTML aqui -->
+<div class='container'>
+  <h1>Olá Mundo!</h1>
+  <p>Comece a criar...</p>
+</div>"></textarea> <textarea id="css-editor" class="code-editor absolute inset-0 w-full h-full p-4 text-sm resize-none scrollbar-thin hidden" style="background: transparent; color: #e2e8f0; caret-color: #818cf8;" spellcheck="false" placeholder="/* Estilos CSS */
+.container {
+  padding: 20px;
+  text-align: center;
+}
+
+h1 {
+  color: #6366f1;
+}"></textarea> <textarea id="js-editor" class="code-editor absolute inset-0 w-full h-full p-4 text-sm resize-none scrollbar-thin hidden" style="background: transparent; color: #e2e8f0; caret-color: #818cf8;" spellcheck="false" placeholder="// JavaScript
+console.log('Olá!');"></textarea>
+     </div><!-- Editor Footer -->
+     <div class="flex-shrink-0 px-4 py-2 border-t border-indigo-900/30 flex items-center justify-between"><span class="text-xs text-indigo-400/60">Pressione Ctrl+Enter para executar</span> <span id="char-count" class="text-xs text-indigo-400/60">0 caracteres</span>
+     </div>
+    </div><!-- Preview Panel -->
+    <div class="flex-1 flex flex-col rounded-2xl overflow-hidden glow-effect" style="background: #ffffff; border: 1px solid rgba(99, 102, 241, 0.2);"><!-- Preview Header -->
+     <div class="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200" style="background: #f8fafc;">
+      <div class="flex items-center gap-2">
+       <div class="flex gap-1.5">
+        <div class="w-3 h-3 rounded-full" style="background: #ef4444;"></div>
+        <div class="w-3 h-3 rounded-full" style="background: #eab308;"></div>
+        <div class="w-3 h-3 rounded-full" style="background: #22c55e;"></div>
+       </div><span class="text-sm font-medium text-gray-500 ml-2">Pré-visualização</span>
+      </div><button id="fullscreen-btn" class="p-1.5 rounded-lg hover:bg-gray-200 transition-colors" title="Tela cheia">
+       <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+       </svg></button>
+     </div><!-- Preview Frame -->
+     <div class="flex-1 overflow-auto" style="min-height: 0;"><iframe id="preview-frame" class="w-full h-full preview-frame" sandbox="allow-scripts" title="Preview"></iframe>
+     </div>
+    </div>
+   </main><!-- Toast Notification -->
+   <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl text-sm font-medium text-white opacity-0 pointer-events-none transition-all duration-300" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); transform: translateX(-50%) translateY(20px);">
+    ✓ Código executado com sucesso!
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      editor_title: 'Testador de HTML',
+      primary_color: '#6366f1',
+      secondary_color: '#8b5cf6',
+      background_color: '#0f0a1e',
+      text_color: '#e2e8f0',
+      surface_color: '#13102a'
+    };
+    
+    // DOM Elements
+    const htmlEditor = document.getElementById('html-editor');
+    const cssEditor = document.getElementById('css-editor');
+    const jsEditor = document.getElementById('js-editor');
+    const previewFrame = document.getElementById('preview-frame');
+    const runBtn = document.getElementById('run-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const charCount = document.getElementById('char-count');
+    const toast = document.getElementById('toast');
+    const mainTitle = document.getElementById('main-title');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    
+    let currentTab = 'html';
+    
+    // Tab switching
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        currentTab = tab;
+        
+        // Update tab styles
+        tabBtns.forEach(b => {
+          b.classList.remove('tab-active');
+          b.classList.add('tab-inactive');
+        });
+        btn.classList.remove('tab-inactive');
+        btn.classList.add('tab-active');
+        
+        // Show/hide editors
+        htmlEditor.classList.toggle('hidden', tab !== 'html');
+        cssEditor.classList.toggle('hidden', tab !== 'css');
+        jsEditor.classList.toggle('hidden', tab !== 'js');
+        
+        updateCharCount();
+      });
+    });
+    
+    // Update character count
+    function updateCharCount() {
+      const editors = { html: htmlEditor, css: cssEditor, js: jsEditor };
+      const totalChars = htmlEditor.value.length + cssEditor.value.length + jsEditor.value.length;
+      charCount.textContent = `${totalChars.toLocaleString('pt-BR')} caracteres`;
+    }
+    
+    [htmlEditor, cssEditor, jsEditor].forEach(editor => {
+      editor.addEventListener('input', updateCharCount);
+    });
+    
+    // Run code
+    function runCode() {
+      const html = htmlEditor.value;
+      const css = cssEditor.value;
+      const js = jsEditor.value;
+      
+      const fullCode = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; padding: 16px; font-family: system-ui, sans-serif; }
+            ${css}
+          </style>
+        </head>
+        <body>
+          ${html}
+          <script>${js}<\/script>
+        </body>
+        </html>
+      `;
+      
+      previewFrame.srcdoc = fullCode;
+      showToast();
+    }
+    
+    // Show toast notification
+    function showToast() {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) translateY(0)';
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(20px)';
+      }, 2000);
+    }
+    
+    // Clear all editors
+    function clearEditors() {
+      htmlEditor.value = '';
+      cssEditor.value = '';
+      jsEditor.value = '';
+      previewFrame.srcdoc = '';
+      updateCharCount();
+    }
+    
+    // Event listeners
+    runBtn.addEventListener('click', runCode);
+    clearBtn.addEventListener('click', clearEditors);
+    
+    // Keyboard shortcut
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        runCode();
+      }
+    });
+    
+    // Element SDK initialization
+    async function onConfigChange(config) {
+      const title = config.editor_title || defaultConfig.editor_title;
+      mainTitle.textContent = title;
+    }
+    
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [],
+        borderables: [],
+        fontEditable: undefined,
+        fontSizeable: undefined
+      };
+    }
+    
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ['editor_title', config.editor_title || defaultConfig.editor_title]
+      ]);
+    }
+    
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+    }
+    
+    // Initialize
+    updateCharCount();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c9766beb627f217',t:'MTc3MDM0Njg2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
