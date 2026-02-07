@@ -165,14 +165,14 @@
       resultDiv.classList.add('hidden');
 
       try {
-        // Tenta usar a API correta do InverTexto
-        const response = await fetch(`https://api.invertexto.com/v1/cep/${input}?token=${API_TOKEN}`);
+        // Usa a API do ViaCEP como alternativa
+        const response = await fetch(`https://viacep.com.br/ws/${input}/json/`);
         const data = await response.json();
 
         console.log('Resposta da API:', data);
 
-        // Verifica se houve erro ou dados vazios
-        if (data.error || data.status === 400 || data.status === 404 || !data.cep) {
+        // Verifica se houve erro
+        if (data.erro) {
           showError('CEP não encontrado. Verifique e tente novamente.');
           setLoading(false);
           return;
@@ -182,20 +182,19 @@
         cepData.innerHTML = `
           <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
-              ${createDataItem('CEP', data.cep || input)}
-              ${createDataItem('UF', data.state_shortname || data.state || 'Não informado')}
+              ${createDataItem('CEP', input)}
+              ${createDataItem('UF', data.uf || 'Não informado')}
             </div>
             <div>
               <span class="text-xs text-slate-500 uppercase tracking-wider">Logradouro</span>
-              <p class="text-slate-200 font-medium text-lg">${data.street || data.address || 'Não informado'}</p>
+              <p class="text-slate-200 font-medium text-lg">${data.logradouro || 'Não informado'}</p>
             </div>
             <div class="grid grid-cols-2 gap-4">
-              ${createDataItem('Bairro', data.neighborhood || data.district || 'Não informado')}
-              ${createDataItem('Cidade', data.city || 'Não informado')}
+              ${createDataItem('Bairro', data.bairro || 'Não informado')}
+              ${createDataItem('Cidade', data.localidade || 'Não informado')}
             </div>
             <div class="pt-2 border-t border-white/10">
-              <span class="text-xs text-slate-500 uppercase tracking-wider">Estado</span>
-              <p class="text-slate-200 font-medium">${data.state || 'Não informado'}</p>
+              ${createDataItem('Complemento', data.complemento || 'Não informado')}
             </div>
           </div>
         `;
@@ -223,5 +222,5 @@
       if (e.key === 'Enter') consultCEP();
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ca6b73a4148d89c',t:'MTc3MDUwNzQ1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ca6bff0d101d89c',t:'MTc3MDUwNzgwOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
