@@ -165,11 +165,11 @@
       resultDiv.classList.add('hidden');
 
       try {
-        const response = await fetch(`https://api.invertexto.com/v1/cep/${input}?token=${API_TOKEN}`);
+        const response = await fetch(`https://api.invertexto.com/v1/cep?cep=${input}&token=${API_TOKEN}`);
         const data = await response.json();
 
-        if (data.error) {
-          showError(data.message || 'CEP não encontrado');
+        if (data.status === 400 || data.status === 404 || !data.cep) {
+          showError('CEP não encontrado. Verifique e tente novamente.');
           setLoading(false);
           return;
         }
@@ -179,19 +179,19 @@
           <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
               ${createDataItem('CEP', data.cep || input)}
-              ${createDataItem('UF', data.state_shortname || 'Não informado')}
+              ${createDataItem('UF', data.state || 'Não informado')}
             </div>
             <div>
               <span class="text-xs text-slate-500 uppercase tracking-wider">Logradouro</span>
-              <p class="text-slate-200 font-medium text-lg">${data.street || 'Não informado'}</p>
+              <p class="text-slate-200 font-medium text-lg">${data.address || 'Não informado'}</p>
             </div>
             <div class="grid grid-cols-2 gap-4">
-              ${createDataItem('Bairro', data.neighborhood || 'Não informado')}
+              ${createDataItem('Bairro', data.district || 'Não informado')}
               ${createDataItem('Cidade', data.city || 'Não informado')}
             </div>
             <div class="pt-2 border-t border-white/10">
-              <span class="text-xs text-slate-500 uppercase tracking-wider">Estado</span>
-              <p class="text-slate-200 font-medium">${data.state || 'Não informado'}</p>
+              <span class="text-xs text-slate-500 uppercase tracking-wider">Região</span>
+              <p class="text-slate-200 font-medium">${data.region || 'Não informado'}</p>
             </div>
           </div>
         `;
@@ -218,5 +218,5 @@
       if (e.key === 'Enter') consultCEP();
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ca4bd32211fd89c',t:'MTc3MDQ4NjcyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ca6b400d300e2a9',t:'MTc3MDUwNzMyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
