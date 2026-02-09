@@ -1,804 +1,315 @@
+
+
+
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full">
  <head>
   <meta charset="UTF-8">
-  <title>Portal de Gestão Gaveblue</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Google Fonts: Plus Jakarta Sans -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GaveBlue - Gestão Inteligente</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"><!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script><!-- Canva SDKs -->
-  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <style>
-    /* ===== CSS VARIABLES - PREMIUM SAAS TOKENS ===== */
-    :root {
-      /* Backgrounds - Dark & Professional */
-      --bg-primary: #0f172a;
-      --bg-secondary: #1a2744;
-      --bg-tertiary: #232d45;
-      --bg-surface: #1f2937;
-      
-      /* Accents - Professional Palette */
-      --color-blue-primary: #2563eb;
-      --color-blue-hover: #1d4ed8;
-      --color-blue-light: #3b82f6;
-      --color-purple: #7c3aed;
-      --color-cyan: #0891b2;
-      
-      /* Text */
-      --text-primary: #f8fafc;
-      --text-secondary: #cbd5e1;
-      --text-tertiary: #94a3b8;
-      
-      /* Borders & Dividers */
-      --border-color: rgba(71, 85, 105, 0.5);
-      --border-light: rgba(71, 85, 105, 0.2);
-      
-      /* Shadows */
-      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-      --shadow-md: 0 4px 12px 0 rgba(0, 0, 0, 0.4);
-      --shadow-lg: 0 8px 24px 0 rgba(0, 0, 0, 0.5);
-      --shadow-xl: 0 12px 32px 0 rgba(0, 0, 0, 0.6);
-      
-      /* Transitions */
-      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-      --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
-      
-      /* Radius */
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --radius-xl: 20px;
-    }
-
-    /* ===== BASE STYLES ===== */
-    body {
-      box-sizing: border-box;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-    }
-
     html, body {
       height: 100%;
-      width: 100%;
-      margin: 0;
-      padding: 0;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      box-sizing: border-box;
     }
-
-    .app-wrapper {
-      width: 100%;
-      min-height: 100%;
-      display: flex;
-      flex-direction: column;
+    * {
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
-
-    /* ===== BACKGROUND ELEGANTE ===== */
-    #app-root {
-      background: linear-gradient(135deg, #0f172a 0%, #1a2744 50%, #232d45 100%);
+    .gradient-bg {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
       position: relative;
       overflow: hidden;
     }
-
-    /* Elementos decorativos discretos */
-    #app-root::before {
+    .gradient-bg::before {
       content: '';
-      position: absolute;
-      inset: 0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background: 
-        radial-gradient(circle at 15% 30%, rgba(37, 99, 235, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 85% 70%, rgba(124, 58, 237, 0.06) 0%, transparent 45%),
-        radial-gradient(circle at 50% 100%, rgba(8, 145, 178, 0.04) 0%, transparent 50%);
+        radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 40%);
       pointer-events: none;
+      z-index: 0;
     }
-
-    /* ===== GRADIENT TEXT ANIMADO ===== */
-    .gradient-text {
-      background: linear-gradient(90deg, #2563eb, #7c3aed, #0891b2, #2563eb);
-      background-size: 300% 100%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: gradientShift 6s ease infinite;
-    }
-
-    @keyframes gradientShift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-
-    /* ===== HEADER ===== */
-    header {
+    .w-full.min-h-full {
       position: relative;
-      z-index: 50;
+      z-index: 1;
     }
-
-    nav {
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border-light);
-      transition: all var(--transition-base);
+    .card-gradient {
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
     }
-
-    nav a {
-      transition: all var(--transition-fast);
+    .feature-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
-    nav a:hover {
-      color: var(--color-blue-light);
+    .feature-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 25px 50px rgba(59, 130, 246, 0.2);
+      border-color: currentColor;
     }
-
-    /* ===== BUTTONS ===== */
-    .btn-primary {
-      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-      border: none;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-      transition: all var(--transition-base);
+    .feature-card:hover .icon-container {
+      transform: scale(1.1) rotate(5deg);
     }
-
-    .btn-primary:hover {
-      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
-      transform: translateY(-2px);
+    .icon-container {
+      transition: transform 0.3s ease;
     }
-
-    .btn-secondary {
-      background: rgba(30, 41, 59, 0.8);
-      border: 1px solid var(--border-color);
-      transition: all var(--transition-base);
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.5); }
     }
-
-    .btn-secondary:hover {
-      background: rgba(51, 65, 85, 0.9);
-      border-color: rgba(71, 85, 105, 0.8);
+    .pulse-glow {
+      animation: pulse-glow 3s ease-in-out infinite;
     }
-
-    /* ===== CARD PREMIUM ===== */
-    .card-hover {
+    .nav-link {
       position: relative;
-      overflow: hidden;
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(23, 37, 61, 0.6) 100%);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      transition: all var(--transition-base);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
     }
-
-    .card-hover::before {
+    .nav-link::after {
       content: '';
       position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, transparent 50%);
-      opacity: 0;
-      transition: opacity var(--transition-base);
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      transition: width 0.3s ease;
     }
-
-    .card-hover:hover {
-      border-color: rgba(71, 85, 105, 0.8);
-      box-shadow: var(--shadow-lg);
-      transform: translateY(-4px);
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(124, 58, 237, 0.05) 100%);
+    .nav-link:hover::after {
+      width: 100%;
     }
-
-    .card-hover:hover::before {
-      opacity: 1;
-    }
-
-    /* ===== FOCUS STATES ===== */
-    .focus-outline:focus-visible {
-      outline: 2px solid var(--color-blue-primary);
-      outline-offset: 2px;
-    }
-
-    /* ===== CLOSE BUTTON ===== */
-    .close-btn-x {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(30, 41, 59, 0.8);
-      border: 1px solid var(--border-color);
+    
+    /* Mouse Glow Effect */
+    .mouse-glow {
+      position: fixed;
+      pointer-events: none;
+      z-index: 0;
+      width: 450px;
+      height: 450px;
       border-radius: 50%;
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: all var(--transition-base);
-      z-index: 10;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, rgba(59, 130, 246, 0.15) 35%, transparent 65%);
+      filter: blur(90px);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      mix-blend-mode: screen;
+    }
+    .mouse-glow.active {
+      opacity: 0.8;
     }
 
-    .close-btn-x:hover {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: #ef4444;
-      color: #ef4444;
-      transform: rotate(90deg);
-    }
-
-    .close-btn-x svg {
-      width: 18px;
-      height: 18px;
-    }
-
-    /* ===== OVERLAYS ===== */
-    #premium-overlay,
-    #newyear-overlay {
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      transition: opacity var(--transition-base);
-    }
-
-    /* ===== MODAL CONTENT ===== */
-    .modal-content {
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(26, 39, 68, 0.95) 100%);
-      border: 1px solid var(--border-color);
-      box-shadow: var(--shadow-xl);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-
-    /* ===== BADGES ===== */
-    .badge-free {
-      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-      box-shadow: 0 0 12px rgba(37, 99, 235, 0.3);
-    }
-
-    .badge-premium {
-      background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
-      box-shadow: 0 0 12px rgba(249, 115, 22, 0.3);
-    }
-
-    /* ===== ANIMATIONS ===== */
-    @keyframes scaleIn {
-      from {
-        opacity: 0;
-        transform: scale(0.95);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-
-    .animate-scale-in {
-      animation: scaleIn var(--transition-base) ease-out;
-    }
-
-    /* ===== INPUTS ===== */
-    input, select, textarea {
-      background: rgba(30, 41, 59, 0.5);
-      border: 1px solid var(--border-color);
-      color: var(--text-primary);
-      border-radius: var(--radius-sm);
-      transition: all var(--transition-base);
-    }
-
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: var(--color-blue-primary);
-      box-shadow: 0 0 12px rgba(37, 99, 235, 0.2);
-      background: rgba(37, 99, 235, 0.05);
-    }
-
-    /* ===== PLAN CARDS ===== */
-    .plan-card {
-      background: rgba(30, 41, 59, 0.6);
-      border: 1px solid var(--border-color);
-      transition: all var(--transition-base);
-      cursor: pointer;
-    }
-
-    .plan-card:hover {
-      background: rgba(37, 99, 235, 0.1);
-      border-color: rgba(71, 85, 105, 0.8);
-      box-shadow: var(--shadow-md);
-      transform: translateY(-4px);
-    }
-
-    /* ===== FOOTER ===== */
-    footer {
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(12px);
-      border-top: 1px solid var(--border-light);
-    }
-
-    /* ===== SCROLLBAR ===== */
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: linear-gradient(180deg, var(--color-blue-primary), var(--color-purple));
-      border-radius: 4px;
-      transition: background var(--transition-base);
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(180deg, var(--color-blue-light), var(--color-purple));
-    }
-
-    /* ===== SOCIAL ICONS ===== */
-    .social-icon {
-      transition: all var(--transition-base);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .social-icon:hover {
-      transform: translateY(-4px) scale(1.05);
-      box-shadow: var(--shadow-md);
-    }
-
-    /* ===== TIMER BOX ===== */
-    .timer-box {
-      background: rgba(37, 99, 235, 0.08);
-      border: 1px solid rgba(37, 99, 235, 0.3);
-      box-shadow: inset 0 1px 0 0 rgba(37, 99, 235, 0.1);
-      backdrop-filter: blur(8px);
-    }
   </style>
+  <script src="/_sdk/data_sdk.js"></script>
   <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
- <body style="background: #0a0e1a;">
-  <div id="app-root" class="app-wrapper text-slate-50 flex flex-col relative overflow-hidden">
-   <div class="absolute inset-0 overflow-hidden pointer-events-none">
-    <div class="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
-    <div class="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
-   </div>
-   <header class="w-full relative z-10 backdrop-blur-sm">
-    <nav class="max-w-6xl mx-auto w-full flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 gap-2">
-     <div class="flex items-center min-w-0"><img src="https://i.imgur.com/Zih5jH8.png" alt="Gaveblue" class="h-8 sm:h-10 md:h-12 w-auto" loading="lazy" onerror="this.style.display='block'; this.alt='Logo Gaveblue';">
+ <body class="h-full gradient-bg text-white overflow-auto">
+  <div class="mouse-glow" id="mouseGlow"></div>
+  <div class="w-full min-h-full"><!-- Header Fixo -->
+   <header class="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 h-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between"><img src="https://i.imgur.com/Zih5jH8.png" alt="Logo" class="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" onclick="goToSection('inicio');">
+     <div class="flex items-center gap-3"><button class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">Entrar</button> <button class="px-5 py-2 text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg">Comece Gratis</button>
      </div>
-     <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0"><a href="https://gaveblue.com/login" class="focus-outline px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-slate-300 hover:text-white transition-all rounded-lg hover:bg-white/5 whitespace-nowrap"> Entrar </a> <a href="https://gaveblue.com/cadastro" class="focus-outline px-3 sm:px-5 py-2 text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-400 hover:to-cyan-400 transition-all shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 whitespace-nowrap"> Cadastrar </a>
-     </div>
-    </nav>
-   </header>
-   <main class="flex-1 w-full relative z-10 flex items-center">
-    <section class="max-w-5xl mx-auto w-full px-3 sm:px-4 lg:px-8 py-6 sm:py-8 lg:py-10">
-     <div class="flex flex-col items-center text-center">
-      <div class="space-y-4 sm:space-y-5 lg:space-y-6 max-w-4xl w-full">
-       <div class="space-y-3 sm:space-y-4">
-        <h1 id="hero-title" class="gradient-text text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">Central moderna para simplificar a sua gestão</h1>
-        <p id="hero-subtitle" class="text-sm sm:text-base md:text-lg lg:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">Acesse um sistema desenvolvido especialmente para você, reunindo em um só lugar módulos financeiros, gestão de frotas e geração de documentos essenciais. Tudo pensado para oferecer praticidade, rapidez e mais eficiência no dia a dia do seu negócio.</p>
-       </div>
-       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 max-w-5xl mx-auto w-full" aria-label="Sistemas de gestão disponíveis"><!-- WeRecibos --> <a id="btn-werecibos" href="https://gaveblue.com/recibos" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border border-purple-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-purple-500/70 hover:shadow-xl hover:shadow-purple-500/20">
-         <div class="flex flex-col gap-1 flex-1">
-          <div class="flex items-center gap-2 mb-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white" id="btn-werecibos-label"> WeRecibos </span> <span class="badge-free inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-blue-500/30 text-[10px] font-bold text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg> GRÁTIS </span>
-          </div><span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Geração e gestão de recibos profissionais </span>
-         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/20 text-purple-400 group-hover:scale-110 transition-transform flex-shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-          </svg></span> </a> <!-- WeTime --> <a id="btn-wetime" href="https://gaveblue.com/relogio" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border border-indigo-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-indigo-500/70 hover:shadow-xl hover:shadow-indigo-500/20">
-         <div class="flex flex-col gap-1 flex-1">
-          <div class="flex items-center gap-2 mb-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white"> WeTime </span> <span class="badge-free inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-blue-500/30 text-[10px] font-bold text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg> GRÁTIS </span>
-          </div><span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Relógio online para consulta de horários </span>
-         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-indigo-600/20 text-indigo-400 group-hover:scale-110 transition-transform flex-shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg></span> </a> <!-- WeDevs --> <a id="btn-wedevs" href="https://gaveblue.com/testar-html" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border border-green-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-green-500/70 hover:shadow-xl hover:shadow-green-500/20">
-         <div class="flex flex-col gap-1 flex-1">
-          <div class="flex items-center gap-2 mb-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white"> WeDevs </span>
-           <div class="flex items-center gap-2"><span class="badge-free inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-blue-500/30 text-[10px] font-bold text-white">
-             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-             </svg> GRÁTIS </span> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-yellow-500/30 bg-yellow-500/20 text-[10px] font-bold text-yellow-300 animate-pulse">
-             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewbox="0 0 24 24" class="w-3 h-3"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-             </svg> NOVO </span>
-           </div>
-          </div><span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Testador de HTML e visualização de código </span>
-         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/20 text-green-400 group-hover:scale-110 transition-transform flex-shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-7.5 15" />
-          </svg></span> </a> <!-- WeFrotas - PREMIUM --> <button id="btn-wefrotas" type="button" class="premium-btn focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border-2 border-amber-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-amber-500/70 hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer card-hover">
-         <div class="flex flex-col gap-1 flex-1">
-          <div class="flex items-center gap-2 mb-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white" id="btn-wefrotas-label"> WeFrotas </span> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-yellow-500 border border-amber-500/30 text-[10px] font-bold text-white shadow-lg shadow-amber-500/50">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-            </svg> PREMIUM </span>
-          </div><span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Gestão completa de frotas, veículos e operações logísticas </span>
-         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 text-amber-400 group-hover:scale-110 transition-transform flex-shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-          </svg></span> </button> <!-- WeFinance - PREMIUM --> <button id="btn-wefinance" type="button" class="premium-btn focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border-2 border-amber-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-amber-500/70 hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer card-hover">
-         <div class="flex flex-col gap-1 flex-1">
-          <div class="flex items-center gap-2 mb-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white" id="btn-wefinance-label"> WeFinance </span> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-yellow-500 border border-amber-500/30 text-[10px] font-bold text-white shadow-lg shadow-amber-500/50">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-            </svg> PREMIUM </span>
-          </div><span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Visão financeira unificada, indicadores e fluxo de caixa </span>
-         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 text-amber-400 group-hover:scale-110 transition-transform flex-shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
-          </svg></span> </button> <!-- WeFiscal - PREMIUM --> <button id="btn-dev2" type="button" class="premium-btn focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border-2 border-amber-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-amber-500/70 hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer card-hover">
-         <div class="flex flex-col gap-1 flex-1">
-          <div class="flex items-center gap-2 mb-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white" id="btn-dev2-label"> WeFiscal </span> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-yellow-500 border border-amber-500/30 text-[10px] font-bold text-white shadow-lg shadow-amber-500/50">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-            </svg> PREMIUM </span>
-          </div><span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Gestão fiscal e tributária </span>
-         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 text-amber-400 group-hover:scale-110 transition-transform flex-shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-          </svg></span> </button> <!-- GestaoPro --> <a id="btn-gestaopro" href="https://gaveblue.com/gestaopro" class="card-hover focus-outline group relative inline-flex items-center justify-between gap-4 rounded-2xl border border-rose-500/50 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl px-5 py-5 text-left text-slate-200 hover:border-rose-500/70 hover:shadow-xl hover:shadow-rose-500/20">
-         <div class="flex flex-col gap-1 flex-1">
-          <div class="flex items-center gap-2 mb-1"><span class="text-base sm:text-lg font-bold tracking-tight text-white"> GestaoPro </span> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-rose-500/30 bg-rose-500/20 text-[10px] font-bold text-rose-300">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg> SAIBA MAIS </span>
-          </div><span class="text-xs sm:text-sm text-slate-400 leading-relaxed"> Gestão empresarial completa e integrada </span>
-         </div><span class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500/20 to-rose-600/20 text-rose-400 group-hover:scale-110 transition-transform flex-shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
-          </svg></span> </a>
+    </div>
+   </header><!-- Hero Section -->
+   <section id="inicio" class="pt-20 pb-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto relative z-10"><!-- Título e CTA (Topo) -->
+     <div class="mb-16">
+      <h1 id="hero-title" class="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight"><span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">Gestão Empresarial</span> <br><span class="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Completa e Inteligente</span></h1>
+      <p id="hero-subtitle" class="text-lg text-slate-300 mb-8">Simplifique todos os processos da sua empresa em uma unica plataforma.</p><a href="https://gaveblue.com/recibos" target="_blank" rel="noopener noreferrer" class="inline-flex px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl pulse-glow items-center gap-2 w-fit">
+       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+       </svg> Teste Gerador de Recibos </a>
+     </div><!-- Ferramentas (Embaixo) -->
+     <div>
+      <h2 class="text-3xl font-bold mb-8 text-slate-200">Nossas Ferramentas</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"><!-- Card 1 --> <button onclick="window.open('https://gaveblue.com/recibos', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-blue-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56"> <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
+        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 flex items-center justify-center mb-4">
+         <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+         </svg>
+        </div><h3 class="font-bold text-white text-lg mb-2">WeRecibos</h3><p class="text-sm text-slate-400">Gere recibos profissionais em segundos</p></button> <!-- Card 2 - WeTime --> <button onclick="window.open('https://gaveblue.com/relogio', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-green-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56"> <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
+        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 flex items-center justify-center mb-4">
+         <svg class="w-7 h-7 text-green-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+         </svg>
+        </div><h3 class="font-bold text-white text-lg mb-2">WeTime</h3>
+        <div id="wetime-display" class="text-2xl font-bold text-green-400 font-mono tracking-wider mb-2">
+         00:00:00
+        </div><p class="text-sm text-slate-400">Relógio Online</p></button> <!-- Card 3 --> <button onclick="window.open('https://gaveblue.com/consultacep', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-purple-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56"> <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
+        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 flex items-center justify-center mb-4">
+         <svg class="w-7 h-7 text-purple-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+         </svg>
+        </div><h3 class="font-bold text-white text-lg mb-2">WeCEP</h3><p class="text-sm text-slate-400">Consulte endereços por CEP</p></button> <!-- Card 4 - WeDevs --> <button onclick="window.open('https://gaveblue.com/testar-html', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-cyan-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56"> <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
+        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 border border-cyan-500/30 flex items-center justify-center mb-4">
+         <svg class="w-7 h-7 text-cyan-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4m0 0l-4 4m4-4H3" />
+         </svg>
+        </div><h3 class="font-bold text-white text-lg mb-2">WeDevs</h3><p class="text-sm text-slate-400">Plataforma para desenvolvedores testar HTML</p></button>
+      </div>
+     </div><!-- Parceiros Section -->
+     <div class="mt-20">
+      <h2 class="text-3xl font-bold mb-8 text-slate-200">Nossos Parceiros</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 items-center justify-center"><!-- Parceiro 1 -->
+       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><img src="https://i.ibb.co/fGzJKxy8/Grupo-Covre-0000.png" alt="Grupo Covre" class="max-h-16 max-w-full object-contain" loading="lazy">
+       </div><!-- Parceiro 2 -->
+       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><img src="https://i.imgur.com/igxq7oF.png" alt="Parceiro 2" class="max-h-16 max-w-full object-contain" loading="lazy">
+       </div><!-- Parceiro 3 -->
+       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><span class="text-slate-500 font-semibold text-center">Sua Marca</span>
+       </div><!-- Parceiro 4 -->
+       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><img src="https://i.imgur.com/vxKwUzB.png" alt="Parceiro 4" class="max-h-16 max-w-full object-contain" loading="lazy">
+       </div><!-- Parceiro 5 -->
+       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><img src="https://i.imgur.com/cQiPodD.png" alt="Parceiro 5" class="max-h-16 max-w-full object-contain" loading="lazy">
+       </div><!-- Parceiro 6 -->
+       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><span class="text-slate-500 font-semibold text-center">Sua Marca</span>
        </div>
       </div>
      </div>
-    </section>
-   </main>
-   <footer class="w-full relative z-10">
-    <div class="w-full border-t border-blue-500/20 backdrop-blur-sm bg-slate-900/50">
-     <div class="max-w-6xl mx-auto w-full px-3 sm:px-6 py-4 sm:py-6">
-      <div class="flex items-center justify-center gap-3 sm:gap-4 mb-3 sm:mb-4"><a href="https://instagram.com/gaveblue" target="_blank" rel="noopener noreferrer" class="focus-outline flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 hover:scale-110 transition-transform" aria-label="Instagram Gaveblue">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewbox="0 0 24 24" class="w-4 h-4 sm:w-5 sm:h-5 text-white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-        </svg></a> <a href="https://api.whatsapp.com/send/?phone=.&amp;text=Olá%2C+tenho+uma+sugestão+para+o+Gerador+de+Recibos&amp;type=phone_number&amp;app_absent=0" target="_blank" rel="noopener noreferrer" class="focus-outline flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-emerald-500 hover:scale-110 transition-transform" aria-label="WhatsApp Gaveblue">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewbox="0 0 24 24" class="w-4 h-4 sm:w-5 sm:h-5 text-white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-        </svg></a> <a href="mailto:suporte@gaveblue.com?subject=Suporte%20-%20Plataforma%20Gaveblue" class="focus-outline flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-blue-500 hover:scale-110 transition-transform" aria-label="Email Gaveblue">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 sm:w-5 sm:h-5 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+    </div>
+   </section><!-- Footer -->
+   <footer class="border-t border-slate-700/50 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto py-8">
+     <div class="flex flex-col items-center justify-center gap-4 text-center"><!-- Logo Maior --> <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo" class="h-10 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" onclick="goToSection('inicio');"> <!-- Redes Sociais -->
+      <div class="flex items-center justify-center gap-3"><a href="https://instagram.com/gaveblue" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg" title="Instagram">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+         <rect x="3" y="3" width="18" height="18" rx="5" ry="5" stroke-width="2"></rect><circle cx="12" cy="12" r="4" stroke-width="2"></circle><circle cx="17" cy="7" r="1.2" fill="currentColor"></circle>
+        </svg></a> <a href="https://wa.me/5527988790381" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-green-400 to-emerald-600 hover:from-green-500 hover:to-emerald-700 transition-all shadow-lg" title="WhatsApp">
+        <svg class="w-4 h-4 text-white" fill="currentColor" viewbox="0 0 24 24">
+         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+        </svg></a> <a href="mailto:contato@gaveblue.com" class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-red-600 hover:from-orange-500 hover:to-red-700 transition-all shadow-lg" title="E-mail">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg></a>
-      </div>
-      <div class="flex flex-col items-center justify-center gap-2 text-[10px] sm:text-xs text-slate-400 text-center"><span class="font-medium">© <span id="year-span"></span> gaveblue.com - Todos os direitos reservados.</span> <span id="footer-text" class="text-slate-500"></span>
+      </div><!-- Website --> <a href="https://gaveblue.com" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white transition-colors text-sm">gaveblue.com</a> <!-- Copyright -->
+      <div class="text-slate-500 text-xs">
+       © 2026 GaveBlue • Todos os direitos reservados
       </div>
      </div>
     </div>
-   </footer><!-- Popup Feliz Ano Novo -->
-   <div id="newyear-overlay" class="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4" style="background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px); display: none;">
-    <div class="custom-scrollbar relative w-full max-w-2xl rounded-xl sm:rounded-2xl border-2 border-blue-500/60 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-3 sm:p-5 shadow-2xl shadow-blue-500/40 animate-scale-in max-h-[95vh] overflow-y-auto"><button id="close-newyear-x-btn" type="button" class="close-btn-x focus-outline" aria-label="Fechar">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-      </svg></button>
-     <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-      <div class="w-20 h-20 bg-gradient-to-br from-blue-400 via-cyan-500 to-blue-500 rounded-full blur-2xl opacity-60 animate-pulse"></div>
-     </div>
-     <div class="flex justify-center mb-3">
-      <div class="relative">
-       <div class="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 via-cyan-500 to-blue-600 shadow-lg shadow-blue-500/50 animate-pulse"><span class="text-3xl sm:text-4xl">🎉</span>
-       </div>
-       <div class="absolute -top-2 -right-2 text-2xl animate-bounce">
-        🎊
-       </div>
-       <div class="absolute -bottom-2 -left-2 text-2xl animate-bounce" style="animation-delay: 0.2s;">
-        ✨
-       </div>
-      </div>
-     </div>
-     <h2 class="text-center text-2xl sm:text-3xl font-bold text-white mb-2">👋 Bem-vindo à Gaveblue!</h2>
-     <div class="text-center mb-3 sm:mb-4">
-      <p class="text-sm sm:text-base text-slate-200 font-semibold mb-1">Estamos felizes em ter você aqui!</p>
-     </div>
-     <div class="space-y-3 sm:space-y-4 mb-4 sm:mb-6"><!-- WeRecibos -->
-      <div class="rounded-xl border-2 border-blue-500/40 bg-gradient-to-br from-blue-500/10 to-cyan-600/10 p-3 sm:p-4">
-       <div class="flex items-center gap-2 mb-2">
-        <div class="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 shadow-lg flex-shrink-0">
-         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5 sm:w-6 sm:h-6 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-         </svg>
-        </div>
-        <h3 class="text-base sm:text-lg font-bold text-white">Nova Melhoria no WeRecibos!</h3>
-       </div>
-       <div class="space-y-2 text-xs sm:text-sm text-slate-200">
-        <div class="flex items-start gap-3"><span class="text-blue-400 mt-1 flex-shrink-0 text-lg">📅</span>
-         <p><strong class="text-white">Data automática:</strong> O campo de data agora preenche automaticamente com a data atual, agilizando o processo de criação de recibos.</p>
-        </div>
-        <div class="flex items-start gap-3"><span class="text-blue-400 mt-1 flex-shrink-0 text-lg">✓</span>
-         <p><strong class="text-white">Totalmente personalizável:</strong> Você ainda pode alterar a data manualmente sempre que precisar - o campo continua 100% editável!</p>
-        </div>
-        <div class="flex items-start gap-3"><span class="text-cyan-400 mt-1 flex-shrink-0 text-lg">⚡</span>
-         <p><strong class="text-white">Mais agilidade:</strong> Percebemos que a maioria dos recibos usa a data atual, então automatizamos para economizar seu tempo.</p>
-        </div>
-       </div>
-      </div><!-- WeDevs -->
-      <div class="rounded-xl border-2 border-green-500/40 bg-gradient-to-br from-green-500/10 to-emerald-600/10 p-3 sm:p-4">
-       <div class="flex items-center gap-2 mb-2">
-        <div class="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-gradient-to-br from-green-400 to-emerald-500 shadow-lg flex-shrink-0">
-         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5 sm:w-6 sm:h-6 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-7.5 15" />
-         </svg>
-        </div>
-        <h3 class="text-base sm:text-lg font-bold text-white">WeDevs Acaba de Chegar! 🎉</h3>
-       </div>
-       <div class="space-y-2 text-xs sm:text-sm text-slate-200">
-        <div class="flex items-start gap-3"><span class="text-green-400 mt-1 flex-shrink-0 text-lg">💻</span>
-         <p><strong class="text-white">Testador HTML online:</strong> Escreva, visualize e teste seu código HTML em tempo real sem sair da plataforma Gaveblue!</p>
-        </div>
-        <div class="flex items-start gap-3"><span class="text-green-400 mt-1 flex-shrink-0 text-lg">👁️</span>
-         <p><strong class="text-white">Preview instantâneo:</strong> Veja o resultado do seu código imediatamente enquanto digita, com suporte completo a HTML, CSS e JavaScript.</p>
-        </div>
-        <div class="flex items-start gap-3"><span class="text-emerald-400 mt-1 flex-shrink-0 text-lg">🚀</span>
-         <p><strong class="text-white">Perfeito para prototipagem:</strong> Teste layouts, componentes e ideias rapidamente. Ideal para designers e desenvolvedores!</p>
-        </div>
-       </div>
-      </div>
-     </div>
-     <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 mb-3 sm:mb-4">
-      <p class="text-center text-xs sm:text-sm text-amber-200 leading-relaxed">💛 <strong>Obrigado por fazer parte da nossa jornada!</strong> Continuaremos trabalhando para trazer cada vez mais melhorias para você.</p>
-     </div>
-     <div class="flex flex-col sm:flex-row gap-3"><a href="https://gaveblue.com/recibos" class="focus-outline flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/30 transition-all hover:from-blue-400 hover:to-cyan-400 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5">
-       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-       </svg><span>Criar Recibo Agora</span> </a> <button id="close-newyear-btn" type="button" class="focus-outline flex-1 inline-flex items-center justify-center rounded-xl border-2 border-slate-600 bg-slate-700/50 px-4 py-2.5 text-sm font-semibold text-slate-200 transition-all hover:bg-slate-700 hover:border-slate-500"> Fechar </button>
-     </div>
-    </div>
-   </div><!-- Popup Premium -->
-   <div id="premium-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4" style="background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); display: none;">
-    <div class="custom-scrollbar relative w-full max-w-5xl rounded-xl sm:rounded-2xl border border-amber-500/40 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-4 sm:p-6 lg:p-8 shadow-2xl shadow-amber-500/30 animate-scale-in max-h-[95vh] overflow-y-auto"><button id="close-premium-x-btn" type="button" class="close-btn-x focus-outline" aria-label="Fechar">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-      </svg></button>
-     <div class="flex justify-center mb-3 sm:mb-4">
-      <div class="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 shadow-lg shadow-amber-500/50">
-       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8 sm:w-10 sm:h-10 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-       </svg>
-      </div>
-     </div>
-     <h2 class="text-center text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2 sm:mb-3">🔒 Funcionalidade Premium</h2>
-     <p class="text-center text-slate-300 mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base px-2">Esta é uma funcionalidade exclusiva para assinantes Premium. Faça login ou cadastre-se para ter acesso completo a todos os recursos da plataforma.</p>
-     <div class="rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-cyan-600/10 p-4 sm:p-5 mb-4 sm:mb-6">
-      <div class="flex items-center gap-2 mb-3 sm:mb-4"><span class="text-xl sm:text-2xl">✨</span>
-       <h3 class="text-base sm:text-lg font-bold text-white">O que você ganha com Premium</h3>
-      </div>
-      <div class="space-y-2 sm:space-y-3 text-xs sm:text-sm text-slate-300">
-       <div class="flex items-start gap-2 sm:gap-3"><span class="text-blue-400 mt-0.5 sm:mt-1 flex-shrink-0">✓</span>
-        <p><strong class="text-white">WeFrotas</strong> – Gestão completa de frotas e ve��culos</p>
-       </div>
-       <div class="flex items-start gap-2 sm:gap-3"><span class="text-blue-400 mt-0.5 sm:mt-1 flex-shrink-0">✓</span>
-        <p><strong class="text-white">WeFinance</strong> – Controle financeiro com indicadores em tempo real</p>
-       </div>
-       <div class="flex items-start gap-2 sm:gap-3"><span class="text-blue-400 mt-0.5 sm:mt-1 flex-shrink-0">✓</span>
-        <p><strong class="text-white">WeFiscal</strong> – Gestão fiscal e tributária simplificada</p>
-       </div>
-       <div class="flex items-start gap-2 sm:gap-3"><span class="text-blue-400 mt-0.5 sm:mt-1 flex-shrink-0">✓</span>
-        <p><strong class="text-white">Suporte prioritário</strong> e atualizações exclusivas</p>
-       </div>
-      </div>
-     </div>
-     <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 sm:p-5 mb-4 sm:mb-6">
-      <div class="flex items-center gap-2 mb-3 sm:mb-4"><span class="text-xl sm:text-2xl">💳</span>
-       <h3 class="text-base sm:text-lg font-bold text-white">Planos Especiais</h3>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5"><button type="button" class="plan-card focus-outline rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm p-4 sm:p-5 text-left transition-all hover:border-amber-500/60 hover:shadow-lg hover:shadow-amber-500/20 hover:-translate-y-1 cursor-pointer" data-plan="mensal" onclick="window.location.href='https://gaveblue.com/cadastro?plan=mensal'"> <p class="text-amber-400 font-semibold text-xs sm:text-sm mb-2">MENSAL</p>
-        <div class="mb-3">
-         <div class="flex items-baseline gap-2 mb-1"><span class="text-2xl sm:text-3xl font-bold text-white">R$ 59,90</span> <span class="text-xs sm:text-sm text-slate-400">/mês</span>
-         </div>
-         <div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-slate-500 line-through">De R$ 149,00</span> <span class="inline-flex px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-bold text-red-400">-60% OFF</span>
-         </div>
-        </div>
-        <div class="mb-3 rounded-lg bg-blue-500/10 border border-blue-500/30 p-2">
-         <p class="text-[10px] sm:text-xs text-blue-300 font-semibold">🎁 60% OFF nos 3 primeiros meses</p>
-        </div><p class="text-xs text-slate-400 mb-3">Cobrança mensal recorrente</p>
-        <div class="flex items-center justify-center gap-2 rounded-lg bg-amber-500/20 border border-amber-500/40 py-2 sm:py-2.5 text-amber-300 font-semibold text-xs sm:text-sm"><span>Escolher Plano</span>
-         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3 sm:w-4 sm:h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-         </svg>
-        </div></button> <button type="button" class="plan-card focus-outline rounded-xl border-2 border-blue-500/50 bg-gradient-to-br from-blue-500/10 to-cyan-600/10 backdrop-blur-sm p-4 sm:p-5 relative text-left transition-all hover:border-blue-500/70 hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-1 cursor-pointer" data-plan="anual" onclick="window.location.href='https://gaveblue.com/cadastro?plan=anual'">
-        <div class="absolute -top-2 sm:-top-3 left-1/2 transform -translate-x-1/2"><span class="inline-flex px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-blue-500 text-[10px] sm:text-xs font-bold text-white shadow-lg">MAIS VANTAJOSO</span>
-        </div><p class="text-blue-400 font-semibold text-xs sm:text-sm mb-2 mt-2">ANUAL</p>
-        <div class="mb-3">
-         <div class="flex items-baseline gap-2 mb-1"><span class="text-2xl sm:text-3xl font-bold text-white">R$ 299,00</span> <span class="text-xs sm:text-sm text-slate-400">/ano</span>
-         </div>
-         <div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-slate-500 line-through">De R$ 2.499,00</span> <span class="inline-flex px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-bold text-red-400">-88% OFF</span>
-         </div>
-        </div>
-        <div class="mb-3 rounded-lg bg-blue-500/20 border border-blue-500/40 p-2">
-         <p class="text-[10px] sm:text-xs text-blue-200 font-bold">🎊 88% de desconto no primeiro ano!</p>
-        </div><p class="text-xs text-blue-400 font-semibold mb-3">Economia de R$ 420 no ano!</p>
-        <div class="flex items-center justify-center gap-2 rounded-lg bg-blue-500/30 border border-blue-500/50 py-2 sm:py-2.5 text-blue-200 font-semibold text-xs sm:text-sm"><span>Escolher Plano</span>
-         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3 sm:w-4 sm:h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-         </svg>
-        </div></button>
-      </div>
-      <div class="mt-4 sm:mt-5 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
-       <div class="flex items-center justify-center gap-2 mb-2">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3 sm:w-4 sm:h-4 text-red-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <p class="text-[10px] sm:text-xs text-red-300 font-semibold">⏰ Oferta expira em:</p>
-       </div>
-       <div class="flex items-center justify-center gap-2 sm:gap-3">
-        <div class="flex flex-col items-center">
-         <div class="bg-slate-900/80 border border-red-500/40 rounded-lg px-2 sm:px-3 py-1 sm:py-2 min-w-[40px] sm:min-w-[50px]"><span id="timer-minutes" class="text-xl sm:text-2xl font-bold text-red-300">05</span>
-         </div><span class="text-[9px] sm:text-[10px] text-slate-400 mt-1">MIN</span>
-        </div><span class="text-xl sm:text-2xl font-bold text-red-400">:</span>
-        <div class="flex flex-col items-center">
-         <div class="bg-slate-900/80 border border-red-500/40 rounded-lg px-2 sm:px-3 py-1 sm:py-2 min-w-[40px] sm:min-w-[50px]"><span id="timer-seconds" class="text-xl sm:text-2xl font-bold text-red-300">00</span>
-         </div><span class="text-[9px] sm:text-[10px] text-slate-400 mt-1">SEG</span>
-        </div>
-       </div>
-      </div>
-     </div>
-     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><a href="https://gaveblue.com/cadastro" class="focus-outline inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-bold text-white shadow-lg shadow-blue-500/30 transition-all hover:from-blue-400 hover:to-cyan-400 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5"> <span>🎉</span> <span>TESTE GRÁTIS 30 DIAS</span> </a> <a href="https://gaveblue.com/login" class="focus-outline inline-flex items-center justify-center rounded-xl border-2 border-slate-600 bg-slate-700/50 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold text-slate-200 transition-all hover:bg-slate-700 hover:border-slate-500"> Já tenho conta </a>
-     </div>
-    </div>
-   </div>
+   </footer>
   </div>
   <script>
-    const defaultConfig = {
-      hero_title: "Central moderna para simplificar a sua gestão",
-      hero_subtitle: "Acesse um sistema desenvolvido especialmente para você, reunindo em um só lugar módulos financeiros, gestão de frotas e geração de documentos essenciais. Tudo pensado para oferecer praticidade, rapidez e mais eficiência no dia a dia do seu negócio.",
-      cta_wefrotas_label: "WeFrotas",
-      cta_wefinance_label: "WeFinance",
-      cta_werecibos_label: "WeRecibos",
-      cta_dev2_label: "WeFiscal",
-      footer_text: "",
-      background_color: "#0a0e1a",
-      surface_color: "#141a2a",
-      text_color: "#f1f5f9",
-      primary_action_color: "#3b82f6",
-      secondary_action_color: "#06b6d4",
-      font_family: "Inter",
-      font_size: 14
-    };
+    // Mouse Glow Tracker Effect
+    const mouseGlow = document.getElementById('mouseGlow');
+    let mouseX = 0;
+    let mouseY = 0;
+    let glowX = 0;
+    let glowY = 0;
 
-    (function setYear() {
-      const yearSpan = document.getElementById("year-span");
-      if (yearSpan) {
-        const now = new Date();
-        yearSpan.textContent = now.getFullYear();
-      }
-    })();
+    document.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      mouseGlow.classList.add('active');
+    });
 
-    async function applyConfig(config) {
-      const effective = Object.assign({}, defaultConfig, config || {});
-      const baseFont = effective.font_family || defaultConfig.font_family;
-      const baseSize = Number(effective.font_size || defaultConfig.font_size) || 14;
-      const fullFont = baseFont + ", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    document.addEventListener('mouseleave', () => {
+      mouseGlow.classList.remove('active');
+    });
 
-      const heroTitleEl = document.getElementById("hero-title");
-      const heroSubtitleEl = document.getElementById("hero-subtitle");
-      const btnWeFrotasEl = document.getElementById("btn-wefrotas");
-      const btnWeFinanceEl = document.getElementById("btn-wefinance");
-      const btnWeRecibosEl = document.getElementById("btn-werecibos");
-      const btnDev2El = document.getElementById("btn-dev2");
-      const footerTextEl = document.getElementById("footer-text");
-      const appRoot = document.getElementById("app-root");
+    function updateGlow() {
+      glowX += (mouseX - glowX) * 0.15;
+      glowY += (mouseY - glowY) * 0.15;
 
-      if (heroTitleEl) heroTitleEl.textContent = effective.hero_title || defaultConfig.hero_title;
-      if (heroSubtitleEl) heroSubtitleEl.textContent = effective.hero_subtitle || defaultConfig.hero_subtitle;
-      if (footerTextEl) footerTextEl.textContent = effective.footer_text || defaultConfig.footer_text;
+      mouseGlow.style.left = (glowX - 225) + 'px';
+      mouseGlow.style.top = (glowY - 225) + 'px';
 
-      if (btnWeFrotasEl) {
-        const labelSpan = btnWeFrotasEl.querySelector("span.text-base");
-        if (labelSpan) labelSpan.textContent = effective.cta_wefrotas_label || defaultConfig.cta_wefrotas_label;
-      }
-      if (btnWeFinanceEl) {
-        const labelSpan = btnWeFinanceEl.querySelector("span.text-base");
-        if (labelSpan) labelSpan.textContent = effective.cta_wefinance_label || defaultConfig.cta_wefinance_label;
-      }
-      if (btnWeRecibosEl) {
-        const labelSpan = btnWeRecibosEl.querySelector("span.text-base");
-        if (labelSpan) labelSpan.textContent = effective.cta_werecibos_label || defaultConfig.cta_werecibos_label;
-      }
-      if (btnDev2El) {
-        const labelSpan = btnDev2El.querySelector("span.text-base");
-        if (labelSpan) labelSpan.textContent = effective.cta_dev2_label || defaultConfig.cta_dev2_label;
-      }
-
-      if (appRoot) {
-        appRoot.style.background = `linear-gradient(135deg, ${effective.background_color} 0%, ${effective.surface_color} 50%, ${effective.background_color} 100%)`;
-      }
-
-      document.body.style.fontFamily = fullFont;
-      document.body.style.fontSize = baseSize + "px";
+      requestAnimationFrame(updateGlow);
     }
 
-    (function initElementSdk() {
-      if (!window.elementSdk) {
-        applyConfig(defaultConfig);
-        return;
+    updateGlow();
+
+    // WeTime Clock
+    function updateClock() {
+      const clockDisplay = document.getElementById('wetime-display');
+      if (clockDisplay) {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        clockDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+      }
+    }
+    
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    const defaultConfig = {
+      company_name: 'GestãoPro',
+      hero_title: 'Gestão Empresarial Completa e Inteligente',
+      hero_subtitle: 'Simplifique todos os processos da sua empresa em uma unica plataforma.',
+      primary_color: '#3b82f6',
+      secondary_color: '#8b5cf6'
+    };
+
+    let config = { ...defaultConfig };
+
+    async function onConfigChange(newConfig) {
+      config = { ...config, ...newConfig };
+
+      const heroTitle = document.getElementById('hero-title');
+      if (heroTitle) {
+        const titleText = config.hero_title || defaultConfig.hero_title;
+        const parts = titleText.split(' ');
+        const midPoint = Math.ceil(parts.length / 2);
+        const firstLine = parts.slice(0, midPoint).join(' ');
+        const secondLine = parts.slice(midPoint).join(' ');
+        heroTitle.innerHTML = `
+          <span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">${firstLine}</span>
+          <br>
+          <span class="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">${secondLine}</span>
+        `;
       }
 
-      window.elementSdk.init({
-        defaultConfig: defaultConfig,
-        onConfigChange: async function(config) {
-          await applyConfig(config);
-        },
-        mapToCapabilities: function(config) {
-          const cfg = config || defaultConfig;
-          return {
-            recolorables: [
-              { get: () => cfg.background_color || defaultConfig.background_color, set: (v) => { cfg.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
-              { get: () => cfg.surface_color || defaultConfig.surface_color, set: (v) => { cfg.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
-              { get: () => cfg.text_color || defaultConfig.text_color, set: (v) => { cfg.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
-              { get: () => cfg.primary_action_color || defaultConfig.primary_action_color, set: (v) => { cfg.primary_action_color = v; window.elementSdk.setConfig({ primary_action_color: v }); } },
-              { get: () => cfg.secondary_action_color || defaultConfig.secondary_action_color, set: (v) => { cfg.secondary_action_color = v; window.elementSdk.setConfig({ secondary_action_color: v }); } }
-            ],
-            borderables: [],
-            fontEditable: {
-              get: () => cfg.font_family || defaultConfig.font_family,
-              set: (v) => { cfg.font_family = v; window.elementSdk.setConfig({ font_family: v }); }
-            },
-            fontSizeable: {
-              get: () => cfg.font_size || defaultConfig.font_size,
-              set: (v) => { cfg.font_size = v; window.elementSdk.setConfig({ font_size: v }); }
+      const heroSubtitle = document.getElementById('hero-subtitle');
+      if (heroSubtitle) {
+        heroSubtitle.textContent = config.hero_subtitle || defaultConfig.hero_subtitle;
+      }
+    }
+
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [
+          {
+            get: () => config.primary_color || defaultConfig.primary_color,
+            set: (value) => {
+              config.primary_color = value;
+              window.elementSdk.setConfig({ primary_color: value });
             }
-          };
-        },
-        mapToEditPanelValues: (config) => {
-          const cfg = Object.assign({}, defaultConfig, config || {});
-          return new Map([
-            ["hero_title", cfg.hero_title],
-            ["hero_subtitle", cfg.hero_subtitle],
-            ["cta_werecibos_label", cfg.cta_werecibos_label],
-            ["cta_wefrotas_label", cfg.cta_wefrotas_label],
-            ["cta_wefinance_label", cfg.cta_wefinance_label],
-            ["cta_dev2_label", cfg.cta_dev2_label],
-            ["footer_text", cfg.footer_text]
-          ]);
-        }
+          },
+          {
+            get: () => config.secondary_color || defaultConfig.secondary_color,
+            set: (value) => {
+              config.secondary_color = value;
+              window.elementSdk.setConfig({ secondary_color: value });
+            }
+          }
+        ],
+        borderables: [],
+        fontEditable: undefined,
+        fontSizeable: undefined
+      };
+    }
+
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ['company_name', config.company_name || defaultConfig.company_name],
+        ['hero_title', config.hero_title || defaultConfig.hero_title],
+        ['hero_subtitle', config.hero_subtitle || defaultConfig.hero_subtitle]
+      ]);
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
       });
-    })();
-
-    (function initPromoTimer() {
-      const timerMinutes = document.getElementById("timer-minutes");
-      const timerSeconds = document.getElementById("timer-seconds");
-      let timeLeft = 5 * 60;
-
-      function updateDisplay() {
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-        timerMinutes.textContent = String(minutes).padStart(2, "0");
-        timerSeconds.textContent = String(seconds).padStart(2, "0");
-      }
-
-      const countdown = setInterval(function() {
-        timeLeft--;
-        updateDisplay();
-        if (timeLeft <= 0) clearInterval(countdown);
-      }, 1000);
-
-      updateDisplay();
-    })();
-
-    (function initNewYearPopup() {
-      const overlay = document.getElementById("newyear-overlay");
-      const closeBtnX = document.getElementById("close-newyear-x-btn");
-      const closeBtn = document.getElementById("close-newyear-btn");
-
-      if (!overlay) return;
-
-      function openPopup() {
-        overlay.style.display = "flex";
-        setTimeout(() => overlay.style.opacity = "1", 10);
-      }
-
-      function closePopup() {
-        overlay.style.opacity = "0";
-        setTimeout(() => overlay.style.display = "none", 300);
-      }
-
-      setTimeout(openPopup, 500);
-      closeBtnX && closeBtnX.addEventListener("click", closePopup);
-      closeBtn && closeBtn.addEventListener("click", closePopup);
-      overlay.addEventListener("click", (e) => e.target === overlay && closePopup());
-    })();
-
-    (function initPremiumPopup() {
-      const overlay = document.getElementById("premium-overlay");
-      const closeBtnX = document.getElementById("close-premium-x-btn");
-      const premiumBtns = document.querySelectorAll(".premium-btn");
-
-      if (!overlay) return;
-
-      function openPopup() {
-        overlay.style.display = "flex";
-        setTimeout(() => overlay.style.opacity = "1", 10);
-      }
-
-      function closePopup() {
-        overlay.style.opacity = "0";
-        setTimeout(() => overlay.style.display = "none", 300);
-      }
-
-      premiumBtns.forEach(btn => btn.addEventListener("click", openPopup));
-      closeBtnX && closeBtnX.addEventListener("click", closePopup);
-      overlay.addEventListener("click", (e) => e.target === overlay && closePopup());
-    })();
+    }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c97ad711150f217',t:'MTc3MDM0OTc2NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb0a9ede7e398e7',t:'MTc3MDYxMTc2NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
