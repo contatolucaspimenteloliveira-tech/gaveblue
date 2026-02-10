@@ -169,13 +169,13 @@
     </div><!-- CARDS DE SELEÇÃO -->
     <section id="cards-container" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12"><button onclick="openScreen('cep')" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-pointer">
       <svg class="w-8 h-8 text-blue-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-      </svg><h3 class="font-bold text-lg">CEP</h3><p class="text-slate-400 text-sm">Consultar endereços</p></button> <button onclick="openScreen('cpf')" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-pointer">
+      </svg><h3 class="font-bold text-lg">CEP</h3><p class="text-slate-400 text-sm">Consultar endereços</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
       <svg class="w-8 h-8 text-green-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v10a2 2 0 002 2h5m0-4h10m-10 4h10m-10-4V8" />
-      </svg><h3 class="font-bold text-lg">CPF</h3><p class="text-slate-400 text-sm">Validar CPF</p></button> <button onclick="openScreen('cnpj')" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-pointer">
+      </svg><h3 class="font-bold text-lg">CPF</h3><p class="text-slate-400 text-sm">Em breve</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
       <svg class="w-8 h-8 text-purple-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-      </svg><h3 class="font-bold text-lg">CNPJ</h3><p class="text-slate-400 text-sm">Consultar empresas</p></button> <button onclick="openScreen('placa')" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-pointer">
+      </svg><h3 class="font-bold text-lg">CNPJ</h3><p class="text-slate-400 text-sm">Em breve</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
       <svg class="w-8 h-8 text-cyan-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg><h3 class="font-bold text-lg">Placa</h3><p class="text-slate-400 text-sm">Consultar veículos</p></button>
+      </svg><h3 class="font-bold text-lg">Placa</h3><p class="text-slate-400 text-sm">Em breve</p></button>
     </section><!-- HOME SCREEN -->
     <section id="home-screen" class="block"><!-- Hero já está acima -->
     </section><!-- CEP SCREEN -->
@@ -347,6 +347,10 @@
       document.getElementById('error-message').textContent = message;
       toast.classList.remove('hidden');
       setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    function showComingSoon() {
+      showError('Este recurso estará disponível em breve! 🚀');
     }
 
     function sairApp() {
@@ -537,5 +541,5 @@
       `;
     }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb8544167d2c65f',t:'MTc3MDY5MjE0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb857b4f6ffc65f',t:'MTc3MDY5MjI4My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
