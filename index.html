@@ -13,30 +13,38 @@
     html, body {
       height: 100%;
       box-sizing: border-box;
+      margin: 0;
     }
     * {
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .gradient-bg {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
       position: relative;
+      background: #0b1220;
       overflow: hidden;
     }
-    .gradient-bg::before {
-      content: '';
+    .bg-layer {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: 
+      inset: -2px;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%),
         radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
         radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 40%);
-      pointer-events: none;
-      z-index: 0;
+        radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.10) 0%, transparent 40%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='512' height='512' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");
+      background-size:
+        cover, cover, cover, cover, 512px 512px;
+      background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat;
+      opacity: 1;
+      transform: translateZ(0);
     }
     .w-full.min-h-full {
+      position: relative;
+      z-index: 1;
+    }
+    header, section, footer {
       position: relative;
       z-index: 1;
     }
@@ -85,7 +93,7 @@
     .mouse-glow {
       position: fixed;
       pointer-events: none;
-      z-index: -1;
+      z-index: 0;
       width: 450px;
       height: 450px;
       border-radius: 50%;
@@ -93,10 +101,10 @@
       filter: blur(90px);
       opacity: 0;
       transition: opacity 0.3s ease;
-      mix-blend-mode: screen;
+      mix-blend-mode: normal;
     }
     .mouse-glow.active {
-      opacity: 0.8;
+      opacity: 0.35;
     }
 
     /* Sparkles */
@@ -162,6 +170,7 @@
   <style>@view-transition { navigation: auto; }</style>
  </head>
  <body class="h-full gradient-bg text-white overflow-auto">
+  <div class="bg-layer" aria-hidden="true"></div>
   <div class="mouse-glow" id="mouseGlow"></div>
   <div class="w-full min-h-full"><!-- Header Fixo -->
    <header class="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 h-16">
@@ -317,7 +326,7 @@
         </svg></a>
       </div><!-- Website --> <a href="https://gaveblue.com" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white transition-colors text-sm">gaveblue.com</a> <!-- Copyright -->
       <div class="text-slate-500 text-xs">
-       © 2026 GaveBlue • Todos os direitos reservados
+       �� 2026 GaveBlue • Todos os direitos reservados
       </div>
      </div>
     </div>
@@ -457,5 +466,5 @@
       });
     }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb7c3901107055f',t:'MTc3MDY4NjIxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb7d3e1910cf1b4',t:'MTc3MDY4Njg4NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
