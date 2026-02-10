@@ -119,19 +119,49 @@
     /* Gradient Background */
     .gradient-bg {
       background: linear-gradient(135deg, 
-        #1e3a8a 0%, 
-        #1e40af 25%, 
-        #2563eb 50%, 
-        #3b82f6 75%, 
-        #60a5fa 100%);
+        #030610 0%, 
+        #0a0820 15%,
+        #0f1035 30%, 
+        #0a1a3f 45%, 
+        #050d2d 60%,
+        #0a1635 75%,
+        #0f1035 90%,
+        #030610 100%);
       background-size: 400% 400%;
-      animation: gradientShift 15s ease infinite;
+      animation: gradientShift 20s ease infinite;
+      position: relative;
+      overflow: hidden;
     }
     
     @keyframes gradientShift {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
+    }
+    
+    /* Vibrant stars/particles */
+    .gradient-bg::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: 
+        radial-gradient(2px 2px at 20px 30px, #ff006e, transparent),
+        radial-gradient(2px 2px at 60px 70px, #00d9ff, transparent),
+        radial-gradient(1px 1px at 50px 50px, #ffbe0b, transparent),
+        radial-gradient(1px 1px at 130px 80px, #8338ec, transparent),
+        radial-gradient(2px 2px at 90px 10px, #ff006e, transparent),
+        radial-gradient(1px 1px at 30px 80px, #00d9ff, transparent),
+        radial-gradient(1px 1px at 130px 50px, #ffbe0b, transparent),
+        radial-gradient(2px 2px at 70px 100px, #8338ec, transparent);
+      background-size: 200px 200px;
+      animation: twinkle 8s ease-in-out infinite;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+    
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.8; }
     }
     
     /* Avatar Gradients */
@@ -238,8 +268,12 @@
   <div class="floating-orb"></div>
   <div class="floating-orb"></div>
   <div class="floating-orb"></div>
-  <div class="min-h-full flex items-center justify-end p-6 md:p-12">
-   <div class="w-full max-w-sm"><!-- Main Card -->
+  <div class="min-h-full flex items-center justify-between p-6 md:p-12 gap-8"><!-- Large Image Section on Left with Carousel -->
+   <div class="flex items-center justify-center flex-1">
+    <div class="relative w-full h-full"><!-- Single Image as Link --> <a href="https://gaveblue.com/recibos" target="_blank" rel="noopener noreferrer" class="block w-full h-full cursor-pointer"> <img src="https://i.imgur.com/4FcK04m.jpg" alt="Welcome illustration" loading="lazy" class="w-full h-full object-cover rounded-3xl drop-shadow-2xl" onerror="console.error('Image failed to load:', this.src); this.style.background='linear-gradient(135deg, #3b82f6, #60a5fa)'; this.style.opacity='0.3';"> </a>
+    </div>
+   </div>
+   <div class="w-full max-w-sm flex-shrink-0"><!-- Main Card -->
     <div class="glass-card rounded-2xl p-8 fade-in-up"><!-- Avatar Section -->
      <div class="text-center mb-8 fade-in-up-delay">
       <h1 id="page-title" class="text-3xl font-bold text-gray-800 mb-2">Bem-vindo de Volta</h1>
@@ -556,5 +590,5 @@
 
     onConfigChange(defaultConfig);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c13b9b2b2ad6b20',t:'MTc2ODk2NjE0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb8bbd986cd23ac',t:'MTc3MDY5NjM4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
