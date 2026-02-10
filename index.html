@@ -29,16 +29,28 @@
       z-index: 0;
       pointer-events: none;
       background-image:
-        linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%),
-        radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.10) 0%, transparent 40%),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='512' height='512' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");
+        linear-gradient(135deg, #0a0f1f 0%, #0f172a 25%, #1a1f3a 50%, #0f172a 75%, #0a0f1f 100%),
+        radial-gradient(circle at 15% 30%, rgba(59, 130, 246, 0.25) 0%, transparent 45%),
+        radial-gradient(circle at 85% 75%, rgba(139, 92, 246, 0.22) 0%, transparent 50%),
+        radial-gradient(circle at 50% 10%, rgba(59, 130, 246, 0.15) 0%, transparent 35%),
+        radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 70% 40%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='512' height='512' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
       background-size:
-        cover, cover, cover, cover, 512px 512px;
-      background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat;
+        cover, cover, cover, cover, cover, cover, 512px 512px;
+      background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat;
       opacity: 1;
       transform: translateZ(0);
+      animation: bg-subtle-shift 20s ease-in-out infinite;
+    }
+
+    @keyframes bg-subtle-shift {
+      0%, 100% {
+        background-position: 0% 0%;
+      }
+      50% {
+        background-position: 2% 2%;
+      }
     }
     .w-full.min-h-full {
       position: relative;
@@ -178,139 +190,11 @@
      <div class="flex items-center gap-3"><button class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">Entrar</button> <button class="px-5 py-2 text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg">Comece Gratis</button>
      </div>
     </div>
-   </header><!-- Hero Section -->
-   <section id="inicio" class="pt-20 pb-20 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-7xl mx-auto relative z-10"><!-- Título e CTA (Topo) -->
-     <div class="mb-16">
-      <h1 id="hero-title" class="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-6 leading-tight text-center whitespace-nowrap"><span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">Gestão Empresarial</span> <span class="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent"> Completa e Inteligente</span></h1>
-      <p id="hero-subtitle" class="text-lg text-slate-300 mb-8 leading-relaxed text-center">Acesse um sistema desenvolvido especialmente para você, reunindo em um só lugar módulos financeiros, gestão de frotas e geração de documentos essenciais. Tudo pensado para oferecer praticidade, rapidez e mais eficiência no dia a dia do seu negócio.</p>
-      <div class="flex justify-center"><a href="https://gaveblue.com/recibos" target="_blank" rel="noopener noreferrer" class="inline-flex px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl pulse-glow items-center gap-2 w-fit">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg> Testar Grátis - Gerador de Recibos </a>
-      </div>
-      <div class="flex justify-center items-center gap-2 mt-4">
-       <div class="flex gap-1">
-        <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewbox="0 0 24 24">
-         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-        <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewbox="0 0 24 24">
-         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-        <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewbox="0 0 24 24">
-         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-        <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewbox="0 0 24 24">
-         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-        <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewbox="0 0 24 24">
-         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-       </div><span class="text-sm text-slate-300 font-medium">4.99/5</span>
-      </div>
-     </div><!-- Ferramentas (Embaixo) -->
-     <div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"><!-- Card 1 --> <button onclick="window.open('https://gaveblue.com/recibos', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-blue-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56"> <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
-        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 flex items-center justify-center mb-4">
-         <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-         </svg>
-        </div><h3 class="font-bold text-white text-lg mb-2">WeRecibos</h3><p class="text-sm text-slate-400">Gere recibos profissionais em segundos</p></button> <!-- Card 2 - WeTime --> <button onclick="window.open('https://gaveblue.com/relogio', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-green-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56"> <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
-        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 flex items-center justify-center mb-4">
-         <svg class="w-7 h-7 text-green-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-         </svg>
-        </div><h3 class="font-bold text-white text-lg mb-2">WeTime</h3>
-        <div id="wetime-display" class="text-2xl font-bold text-green-400 font-mono tracking-wider mb-2">
-         00:00:00
-        </div><p class="text-sm text-slate-400">Relógio Online</p></button> <!-- Card 3 --> <button onclick="window.open('https://gaveblue.com/consultacep', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-purple-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56"> <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
-        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 flex items-center justify-center mb-4">
-         <svg class="w-7 h-7 text-purple-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-         </svg>
-        </div><h3 class="font-bold text-white text-lg mb-2">WeConsultas</h3><p class="text-sm text-slate-400">Consulte CNPJ, CEP e muito mais</p></button> <!-- Card 4 - WeDevs --> <button onclick="window.open('https://gaveblue.com/testar-html', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-cyan-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56"> <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
-        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 border border-cyan-500/30 flex items-center justify-center mb-4">
-         <svg class="w-7 h-7 text-cyan-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4m0 0l-4 4m4-4H3" />
-         </svg>
-        </div><h3 class="font-bold text-white text-lg mb-2">WeDevs</h3><p class="text-sm text-slate-400">Plataforma para desenvolvedores testar HTML</p></button> <!-- Card 5 - WeFrotas (Bloqueado) -->
-       <div class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-not-allowed flex flex-col items-start justify-start relative h-full min-h-56 opacity-60"><span class="absolute top-4 right-4 px-3 py-1 bg-slate-600/80 text-white text-xs font-semibold rounded-lg">Em Breve</span>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-         <svg class="w-12 h-12 text-slate-500" fill="currentColor" viewbox="0 0 24 24">
-          <path d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9 9 0 0 1-9 9zm3.5-9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5zm-5 0a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z" />
-         </svg>
-        </div>
-        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/20 border border-orange-500/30 flex items-center justify-center mb-4">
-         <svg class="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-         </svg>
-        </div>
-        <h3 class="font-bold text-slate-300 text-lg mb-2">WeFrotas</h3>
-        <p class="text-sm text-slate-500">Gestão completa de frotas</p>
-       </div><!-- Card 6 - WeFinance (Bloqueado) -->
-       <div class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-not-allowed flex flex-col items-start justify-start relative h-full min-h-56 opacity-60"><span class="absolute top-4 right-4 px-3 py-1 bg-slate-600/80 text-white text-xs font-semibold rounded-lg">Em Breve</span>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-         <svg class="w-12 h-12 text-slate-500" fill="currentColor" viewbox="0 0 24 24">
-          <path d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9 9 0 0 1-9 9zm3.5-9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5zm-5 0a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z" />
-         </svg>
-        </div>
-        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 border border-emerald-500/30 flex items-center justify-center mb-4">
-         <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-         </svg>
-        </div>
-        <h3 class="font-bold text-slate-300 text-lg mb-2">WeFinance</h3>
-        <p class="text-sm text-slate-500">Módulo financeiro avançado</p>
-       </div><!-- Card 7 - WePeople (Bloqueado) -->
-       <div class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-not-allowed flex flex-col items-start justify-start relative h-full min-h-56 opacity-60"><span class="absolute top-4 right-4 px-3 py-1 bg-slate-600/80 text-white text-xs font-semibold rounded-lg">Em Breve</span>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-         <svg class="w-12 h-12 text-slate-500" fill="currentColor" viewbox="0 0 24 24">
-          <path d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9 9 0 0 1-9 9zm3.5-9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5zm-5 0a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z" />
-         </svg>
-        </div>
-        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-pink-500/20 to-pink-600/20 border border-pink-500/30 flex items-center justify-center mb-4">
-         <svg class="w-7 h-7 text-pink-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h.01" />
-         </svg>
-        </div>
-        <h3 class="font-bold text-slate-300 text-lg mb-2">WePeople</h3>
-        <p class="text-sm text-slate-500">Gestão de recursos humanos</p>
-       </div><!-- Card 8 - WeDocs (Bloqueado) -->
-       <div class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-not-allowed flex flex-col items-start justify-start relative h-full min-h-56 opacity-60"><span class="absolute top-4 right-4 px-3 py-1 bg-slate-600/80 text-white text-xs font-semibold rounded-lg">Em Breve</span>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-         <svg class="w-12 h-12 text-slate-500" fill="currentColor" viewbox="0 0 24 24">
-          <path d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9 9 0 0 1-9 9zm3.5-9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5zm-5 0a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z" />
-         </svg>
-        </div>
-        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-indigo-500/20 to-indigo-600/20 border border-indigo-500/30 flex items-center justify-center mb-4">
-         <svg class="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-         </svg>
-        </div>
-        <h3 class="font-bold text-slate-300 text-lg mb-2">WeDocs</h3>
-        <p class="text-sm text-slate-500">Gerador de documentos</p>
-       </div>
-      </div>
-     </div><!-- Parceiros Section -->
-     <div class="mt-20">
-      <h2 class="text-3xl font-bold mb-8 text-slate-200">Nossos Parceiros</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 items-center justify-center"><!-- Parceiro 1 -->
-       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><img src="https://i.ibb.co/fGzJKxy8/Grupo-Covre-0000.png" alt="Grupo Covre" class="max-h-24 max-w-full object-contain" loading="lazy">
-       </div><!-- Parceiro 2 -->
-       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><img src="https://i.imgur.com/vxKwUzB.png" alt="Parceiro 2" class="max-h-28 max-w-full object-contain" loading="lazy">
-       </div><!-- Parceiro 3 -->
-       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><span class="gradient-text text-center">SUA MARCA AQUI</span>
-       </div><!-- Parceiro 4 -->
-       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><span class="gradient-text text-center">SUA MARCA AQUI</span>
-       </div><!-- Parceiro 5 -->
-       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><span class="gradient-text text-center">SUA MARCA AQUI</span>
-       </div><!-- Parceiro 6 -->
-       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><span class="gradient-text text-center">SUA MARCA AQUI</span>
-       </div>
-      </div>
-     </div>
+   </header><!-- Main Content Area -->
+   <main id="main-content" class="pt-20 pb-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto relative z-10"><!-- Conteúdo vai ser substituído aqui -->
     </div>
-   </section><!-- Footer -->
+   </main><!-- Footer -->
    <footer class="border-t border-slate-700/50 px-4 sm:px-6 lg:px-8 mt-20">
     <div class="max-w-7xl mx-auto py-12">
      <div class="flex flex-col items-center justify-center gap-4 text-center"><!-- Logo Maior --> <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo" class="h-16 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" onclick="goToSection('inicio');"> <!-- Redes Sociais -->
@@ -333,6 +217,156 @@
    </footer>
   </div>
   <script>
+    // Página inicial (home)
+    const pages = {
+      inicio: () => `
+        <div class="mb-16">
+          <h1 id="hero-title" class="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-6 leading-tight text-center">
+            <span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">Gestão Empresarial</span>
+            <span class="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent"> Completa e Inteligente</span>
+          </h1>
+          <p id="hero-subtitle" class="text-lg text-slate-300 mb-8 leading-relaxed text-center">Acesse um sistema desenvolvido especialmente para você, reunindo em um só lugar módulos financeiros, gestão de frotas e geração de documentos essenciais. Tudo pensado para oferecer praticidade, rapidez e mais eficiência no dia a dia do seu negócio.</p>
+          <div class="flex justify-center">
+            <a href="https://gaveblue.com/recibos" target="_blank" rel="noopener noreferrer" class="inline-flex px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl pulse-glow items-center gap-2 w-fit">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              Testar Grátis - Gerador de Recibos
+            </a>
+          </div>
+          <div class="flex justify-center items-center gap-2 mt-4">
+            <div class="flex gap-1">
+              <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </div>
+            <span class="text-sm text-slate-300 font-medium">4.99/5</span>
+          </div>
+        </div>
+        <div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <button onclick="window.open('https://gaveblue.com/recibos', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-blue-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56">
+            <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
+            <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 flex items-center justify-center mb-4">
+              <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            </div>
+            <h3 class="font-bold text-white text-lg mb-2">WeRecibos</h3>
+            <p class="text-sm text-slate-400">Gere recibos profissionais em segundos</p>
+          </button>
+          <button onclick="window.open('https://gaveblue.com/relogio', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-green-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56">
+            <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
+            <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 flex items-center justify-center mb-4">
+              <svg class="w-7 h-7 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <h3 class="font-bold text-white text-lg mb-2">WeTime</h3>
+            <div id="wetime-display" class="text-2xl font-bold text-green-400 font-mono tracking-wider mb-2">00:00:00</div>
+            <p class="text-sm text-slate-400">Relógio Online</p>
+          </button>
+          <button onclick="window.open('https://gaveblue.com/consultacep', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-purple-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56">
+            <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
+            <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 flex items-center justify-center mb-4">
+              <svg class="w-7 h-7 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            </div>
+            <h3 class="font-bold text-white text-lg mb-2">WeConsultas</h3>
+            <p class="text-sm text-slate-400">Consulte CNPJ, CEP e muito mais</p>
+          </button>
+          <button onclick="window.open('https://gaveblue.com/testar-html', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-cyan-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56">
+            <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
+            <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 border border-cyan-500/30 flex items-center justify-center mb-4">
+              <svg class="w-7 h-7 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4m0 0l-4 4m4-4H3" /></svg>
+            </div>
+            <h3 class="font-bold text-white text-lg mb-2">WeDevs</h3>
+            <p class="text-sm text-slate-400">Plataforma para desenvolvedores testar HTML</p>
+          </button>
+          <div class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-not-allowed flex flex-col items-start justify-start relative h-full min-h-56 opacity-60">
+            <span class="absolute top-4 right-4 px-3 py-1 bg-slate-600/80 text-white text-xs font-semibold rounded-lg">Em Breve</span>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+              <svg class="w-12 h-12 text-slate-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9 9 0 0 1-9 9zm3.5-9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5zm-5 0a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z"/></svg>
+            </div>
+            <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/20 border border-orange-500/30 flex items-center justify-center mb-4">
+              <svg class="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <h3 class="font-bold text-slate-300 text-lg mb-2">WeFrotas</h3>
+            <p class="text-sm text-slate-500">Gestão completa de frotas</p>
+          </div>
+          <div class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-not-allowed flex flex-col items-start justify-start relative h-full min-h-56 opacity-60">
+            <span class="absolute top-4 right-4 px-3 py-1 bg-slate-600/80 text-white text-xs font-semibold rounded-lg">Em Breve</span>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+              <svg class="w-12 h-12 text-slate-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9 9 0 0 1-9 9zm3.5-9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5zm-5 0a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z"/></svg>
+            </div>
+            <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 border border-emerald-500/30 flex items-center justify-center mb-4">
+              <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <h3 class="font-bold text-slate-300 text-lg mb-2">WeFinance</h3>
+            <p class="text-sm text-slate-500">Módulo financeiro avançado</p>
+          </div>
+          <div class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-not-allowed flex flex-col items-start justify-start relative h-full min-h-56 opacity-60">
+            <span class="absolute top-4 right-4 px-3 py-1 bg-slate-600/80 text-white text-xs font-semibold rounded-lg">Em Breve</span>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+              <svg class="w-12 h-12 text-slate-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9 9 0 0 1-9 9zm3.5-9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5zm-5 0a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z"/></svg>
+            </div>
+            <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-pink-500/20 to-pink-600/20 border border-pink-500/30 flex items-center justify-center mb-4">
+              <svg class="w-7 h-7 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h.01" /></svg>
+            </div>
+            <h3 class="font-bold text-slate-300 text-lg mb-2">WePeople</h3>
+            <p class="text-sm text-slate-500">Gestão de recursos humanos</p>
+          </div>
+          <div class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-not-allowed flex flex-col items-start justify-start relative h-full min-h-56 opacity-60">
+            <span class="absolute top-4 right-4 px-3 py-1 bg-slate-600/80 text-white text-xs font-semibold rounded-lg">Em Breve</span>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+              <svg class="w-12 h-12 text-slate-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9 9 0 0 1-9 9zm3.5-9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5zm-5 0a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z"/></svg>
+            </div>
+            <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-indigo-500/20 to-indigo-600/20 border border-indigo-500/30 flex items-center justify-center mb-4">
+              <svg class="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            </div>
+            <h3 class="font-bold text-slate-300 text-lg mb-2">WeDocs</h3>
+            <p class="text-sm text-slate-500">Gerador de documentos</p>
+          </div>
+          </div>
+        </div>
+        <div class="mt-20">
+          <h2 class="text-3xl font-bold mb-8 text-slate-200">Nossos Parceiros</h2>
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 items-center justify-center">
+            <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
+              <img src="https://i.ibb.co/fGzJKxy8/Grupo-Covre-0000.png" alt="Grupo Covre" class="max-h-24 max-w-full object-contain" loading="lazy">
+            </div>
+            <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
+              <img src="https://i.imgur.com/vxKwUzB.png" alt="Parceiro 2" class="max-h-28 max-w-full object-contain" loading="lazy">
+            </div>
+            <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
+              <span class="gradient-text text-center">SUA MARCA AQUI</span>
+            </div>
+            <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
+              <span class="gradient-text text-center">SUA MARCA AQUI</span>
+            </div>
+            <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
+              <span class="gradient-text text-center">SUA MARCA AQUI</span>
+            </div>
+            <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
+              <span class="gradient-text text-center">SUA MARCA AQUI</span>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    function loadPage(pageName) {
+      const mainContent = document.getElementById('main-content');
+      const pageContent = pages[pageName] ? pages[pageName]() : pages['inicio']();
+      mainContent.querySelector('.max-w-7xl').innerHTML = pageContent;
+      
+      // Se tiver WeTime display, atualiza relógio
+      updateClock();
+    }
+
+    function goToSection(section) {
+      loadPage(section);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Carrega página inicial ao abrir
+    loadPage('inicio');
+
     // Mouse Glow Tracker Effect
     const mouseGlow = document.getElementById('mouseGlow');
     let mouseX = 0;
@@ -345,7 +379,6 @@
       mouseY = e.clientY;
       mouseGlow.classList.add('active');
       
-      // Create sparkles occasionally
       if (Math.random() > 0.7) {
         createSparkle(mouseX, mouseY);
       }
@@ -466,5 +499,5 @@
       });
     }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb7d3e1910cf1b4',t:'MTc3MDY4Njg4NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb7ddde07eef1b4',t:'MTc3MDY4NzI5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
