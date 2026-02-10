@@ -3,39 +3,119 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Consultor de CEP</title>
+  <title>WeConsultas - GaveBlue</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="/_sdk/element_sdk.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <style>
-    body {
+    html, body {
+      height: 100%;
       box-sizing: border-box;
     }
     * {
-      font-family: 'Space Grotesk', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    .glass-card {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+    body {
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 25%, #2d1b4e 50%, #1a1f3a 75%, #0a0e27 100%);
+      position: relative;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(600px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.05), transparent 80%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    main {
+      position: relative;
+      z-index: 2;
+    }
+    .card-gradient {
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95));
+      position: relative;
+      overflow: hidden;
+    }
+    .card-gradient::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(600px at var(--card-mouse-x, 50%) var(--card-mouse-y, 50%), rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.1), transparent 70%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .feature-card {
+      transition: all 0.3s ease;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(600px at var(--card-mouse-x, 50%) var(--card-mouse-y, 50%), rgba(139, 92, 246, 0.25), rgba(59, 130, 246, 0.1), transparent 70%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(59, 130, 246, 0.25), 0 0 40px rgba(139, 92, 246, 0.2);
+      border-color: rgba(139, 92, 246, 0.5);
+    }
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+    .feature-card.active {
+      outline: 2px solid #8b5cf6;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+    }
+    .query-section {
+      display: none;
+      animation: fadeIn 0.3s ease-out;
+    }
+    .query-section.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .input-field {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(59, 130, 246, 0.2);
       transition: all 0.3s ease;
     }
     .input-field:focus {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      background: rgba(15, 23, 42, 0.95);
+      border-color: #3b82f6;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
     }
     .btn-primary {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
       transition: all 0.3s ease;
+      cursor: pointer;
     }
-    .btn-primary:hover {
+    .btn-primary:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
     }
     .btn-primary:disabled {
       opacity: 0.6;
@@ -43,106 +123,235 @@
       transform: none;
     }
     .result-card {
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(59, 130, 246, 0.2);
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .result-hidden {
+      display: none;
     }
-    .animate-fadeIn {
-      animation: fadeIn 0.4s ease-out;
+    .error-toast {
+      position: fixed;
+      bottom: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(239, 68, 68, 0.95);
+      backdrop-filter: blur(10px);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+      z-index: 50;
+      animation: slideUp 0.3s ease-out;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
   </style>
   <style>@view-transition { navigation: auto; }</style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
- <body class="h-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white overflow-auto">
-  <div class="w-full min-h-full p-4 md:p-8">
-   <div class="max-w-xl mx-auto"><!-- Header -->
-    <header class="text-center mb-8 animate-fadeIn">
-     <div class="inline-flex items-center gap-3 mb-4">
-      <svg class="w-10 h-10 text-indigo-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-      <h1 id="app-title" class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Consultor de CEP</h1>
+ <body class="text-white flex flex-col min-h-full"><!-- HEADER -->
+  <header class="w-full h-40 bg-slate-900/90 backdrop-blur border-b border-slate-700/30">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-3 sm:gap-4">
+    <div class="flex items-center gap-3 sm:gap-4"><a href="https://gaveblue.com" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition-opacity flex-shrink-0"> <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo" class="h-8 sm:h-10 w-auto" loading="lazy"> </a>
+     <div class="w-px h-5 sm:h-6 bg-slate-600/50"></div><span class="font-bold text-lg sm:text-xl bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent truncate">WeConsultas</span>
+    </div><button onclick="sairApp()" class="flex items-center gap-2 px-4 sm:px-6 py-2 bg-slate-700/50 hover:bg-slate-600/70 rounded-lg transition-colors text-slate-300 hover:text-white text-sm sm:text-base font-medium flex-shrink-0">
+     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+     </svg><span class="hidden sm:inline">Sair</span> </button>
+   </div>
+  </header><!-- CONTEÚDO PRINCIPAL -->
+  <main class="flex-1 pt-8 pb-6 px-4 sm:px-6">
+   <div class="max-w-7xl mx-auto"><!-- HERO -->
+    <div class="mb-6">
+     <h1 id="hero-title" class="text-2xl sm:text-3xl font-extrabold text-center mb-2 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Consulte CPF, CNPJ, CEP e Placa</h1>
+     <p id="hero-subtitle" class="text-center text-slate-300 text-lg">Tudo em um só lugar. Rápido, simples e gratuito.</p>
+    </div><!-- CARDS DE SELEÇÃO -->
+    <section id="cards-container" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12"><button onclick="openScreen('cep')" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-pointer">
+      <svg class="w-8 h-8 text-blue-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      </svg><h3 class="font-bold text-lg">CEP</h3><p class="text-slate-400 text-sm">Consultar endereços</p></button> <button onclick="openScreen('cpf')" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-pointer">
+      <svg class="w-8 h-8 text-green-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v10a2 2 0 002 2h5m0-4h10m-10 4h10m-10-4V8" />
+      </svg><h3 class="font-bold text-lg">CPF</h3><p class="text-slate-400 text-sm">Validar CPF</p></button> <button onclick="openScreen('cnpj')" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-pointer">
+      <svg class="w-8 h-8 text-purple-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+      </svg><h3 class="font-bold text-lg">CNPJ</h3><p class="text-slate-400 text-sm">Consultar empresas</p></button> <button onclick="openScreen('placa')" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-pointer">
+      <svg class="w-8 h-8 text-cyan-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg><h3 class="font-bold text-lg">Placa</h3><p class="text-slate-400 text-sm">Consultar veículos</p></button>
+    </section><!-- HOME SCREEN -->
+    <section id="home-screen" class="block"><!-- Hero já está acima -->
+    </section><!-- CEP SCREEN -->
+    <section id="cep-screen" class="query-section card-gradient rounded-2xl p-8">
+     <div class="flex items-center gap-3 mb-6"><button onclick="goHome()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors">
+       <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+       </svg></button>
+      <h2 class="text-2xl font-bold">Consultar CEP</h2>
      </div>
-     <p class="text-slate-400 text-lg">Encontre informações de endereço completas</p>
-    </header><!-- CEP Panel -->
-    <div class="glass-card rounded-2xl p-6 animate-fadeIn">
-     <h2 class="text-xl font-semibold mb-6 text-indigo-300">Consultar CEP</h2>
-     <div class="space-y-4">
-      <div><label for="cep-input" class="block text-sm font-medium text-slate-300 mb-2">CEP</label> <input type="text" id="cep-input" class="w-full px-4 py-3 rounded-xl input-field text-white placeholder-slate-500 outline-none" placeholder="00000-000" maxlength="9" oninput="maskCEP(this)">
-       <p class="text-xs text-slate-500 mt-2">Digite um CEP válido (ex: 01310-100)</p>
-      </div><button id="btn-cep" onclick="consultCEP()" class="w-full py-3 px-6 rounded-xl btn-primary text-white font-semibold"> Consultar CEP </button>
-      <div id="result-cep" class="hidden mt-6 result-card rounded-xl p-5 animate-fadeIn">
-       <h3 class="font-semibold text-lg text-indigo-300 mb-4">Resultado da Consulta</h3>
+     <div class="space-y-4"><input id="cep-input" class="w-full p-3 rounded-xl input-field text-white placeholder-slate-500" placeholder="00000-000" maxlength="9" oninput="maskCEP(this)"> <button id="btn-cep" onclick="consultCEP()" class="w-full py-3 rounded-xl btn-primary text-white font-semibold"> Consultar CEP </button>
+      <div id="result-cep" class="result-hidden result-card rounded-xl p-5 mt-6">
+       <h3 class="font-semibold text-blue-400 mb-4">Resultado</h3>
        <div id="cep-data" class="space-y-3"></div>
       </div>
      </div>
-    </div><!-- Error Toast -->
-    <div id="error-toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-red-500/90 backdrop-blur text-white px-6 py-3 rounded-xl shadow-lg hidden transition-all duration-300"><span id="error-message"></span>
-    </div><!-- Footer -->
-    <footer class="text-center mt-8 text-slate-500 text-sm">
-     <p>gaveblue.com</p>
-    </footer>
+    </section><!-- CPF SCREEN -->
+    <section id="cpf-screen" class="query-section card-gradient rounded-2xl p-8">
+     <div class="flex items-center gap-3 mb-6"><button onclick="goHome()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors">
+       <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+       </svg></button>
+      <h2 class="text-2xl font-bold">Validar CPF</h2>
+     </div>
+     <div class="space-y-4"><input id="cpf-input" class="w-full p-3 rounded-xl input-field text-white placeholder-slate-500" placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)"> <button id="btn-cpf" onclick="validarCPF()" class="w-full py-3 rounded-xl btn-primary text-white font-semibold"> Validar CPF </button>
+      <div id="result-cpf" class="result-hidden result-card rounded-xl p-5 mt-6">
+       <div id="cpf-data"></div>
+      </div>
+     </div>
+    </section><!-- CNPJ SCREEN -->
+    <section id="cnpj-screen" class="query-section card-gradient rounded-2xl p-8">
+     <div class="flex items-center gap-3 mb-6"><button onclick="goHome()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors">
+       <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+       </svg></button>
+      <h2 class="text-2xl font-bold">Consultar CNPJ</h2>
+     </div>
+     <div class="space-y-4"><input id="cnpj-input" class="w-full p-3 rounded-xl input-field text-white placeholder-slate-500" placeholder="00.000.000/0000-00" maxlength="18" oninput="maskCNPJ(this)"> <button id="btn-cnpj" onclick="consultarCNPJ()" class="w-full py-3 rounded-xl btn-primary text-white font-semibold"> Consultar CNPJ </button>
+      <div id="result-cnpj" class="result-hidden result-card rounded-xl p-5 mt-6">
+       <h3 class="font-semibold text-purple-400 mb-4">Resultado</h3>
+       <div id="cnpj-data" class="space-y-3"></div>
+      </div>
+     </div>
+    </section><!-- PLACA SCREEN -->
+    <section id="placa-screen" class="query-section card-gradient rounded-2xl p-8">
+     <div class="flex items-center gap-3 mb-6"><button onclick="goHome()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors">
+       <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+       </svg></button>
+      <h2 class="text-2xl font-bold">Consultar Placa</h2>
+     </div>
+     <div class="space-y-4"><input id="placa-input" class="w-full p-3 rounded-xl input-field text-white placeholder-slate-500 uppercase" placeholder="ABC1D23" maxlength="8" oninput="this.value = this.value.toUpperCase()"> <button id="btn-placa" onclick="consultarPlaca()" class="w-full py-3 rounded-xl btn-primary text-white font-semibold"> Consultar Placa </button>
+      <div id="result-placa" class="result-hidden result-card rounded-xl p-5 mt-6">
+       <h3 class="font-semibold text-cyan-400 mb-4">Resultado</h3>
+       <div id="placa-data" class="space-y-3"></div>
+      </div>
+     </div>
+    </section>
    </div>
+  </main><!-- FOOTER -->
+  <footer class="border-t border-slate-700/50 bg-slate-900/50 px-4 sm:px-6 py-6">
+   <div class="max-w-7xl mx-auto">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6"><!-- Logo --> <a href="https://gaveblue.com" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition-opacity flex-shrink-0"> <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo" class="h-10 sm:h-12 w-auto" loading="lazy"> </a> <!-- Redes Sociais -->
+     <div class="flex items-center justify-center gap-2"><a href="https://instagram.com/gaveblue" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all shadow-lg flex-shrink-0" title="Instagram">
+       <svg class="w-4 h-4 text-white" fill="currentColor" viewbox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2"></rect> <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"></circle> <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"></circle>
+       </svg></a> <a href="https://wa.me/." target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all shadow-lg flex-shrink-0" title="WhatsApp">
+       <svg class="w-4 h-4 text-white" fill="currentColor" viewbox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+       </svg></a> <a href="mailto:contato@gaveblue.com" class="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all shadow-lg flex-shrink-0" title="E-mail">
+       <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+       </svg></a>
+     </div><!-- Website e Copyright -->
+     <div class="text-center sm:text-right"><a href="https://gaveblue.com" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm block">gaveblue.com</a>
+      <p class="text-slate-500 text-xs mt-1">© 2026 GaveBlue • Todos os direitos reservados</p>
+     </div>
+    </div>
+   </div>
+  </footer><!-- ERROR TOAST -->
+  <div id="error-toast" class="error-toast hidden"><span id="error-message"></span>
   </div>
   <script>
-    const API_TOKEN = '24536|zt1aqsUUJlIwJmHAs8koZzctNZAUQ7mx';
-    
+    // Mouse tracking for background glow effect
+    document.addEventListener('mousemove', (e) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      document.documentElement.style.setProperty('--mouse-x', `${x}%`);
+      document.documentElement.style.setProperty('--mouse-y', `${y}%`);
+    });
+
+    // Mouse tracking for cards
+    document.querySelectorAll('.feature-card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--card-mouse-x', `${x}px`);
+        card.style.setProperty('--card-mouse-y', `${y}px`);
+      });
+    });
+
     const defaultConfig = {
-      app_title: 'Consultor de CEP'
+      hero_title: 'Consulte CPF, CNPJ, CEP e Placa',
+      hero_subtitle: 'Tudo em um só lugar. Rápido, simples e gratuito.'
     };
 
     let config = { ...defaultConfig };
 
-    // Initialize Element SDK
     if (window.elementSdk) {
       window.elementSdk.init({
         defaultConfig,
         onConfigChange: async (newConfig) => {
           config = { ...defaultConfig, ...newConfig };
-          document.getElementById('app-title').textContent = config.app_title || defaultConfig.app_title;
+          if (newConfig.hero_title) {
+            document.getElementById('hero-title').textContent = newConfig.hero_title;
+          }
+          if (newConfig.hero_subtitle) {
+            document.getElementById('hero-subtitle').textContent = newConfig.hero_subtitle;
+          }
         },
-        mapToCapabilities: (cfg) => ({
+        mapToCapabilities: () => ({
           recolorables: [],
           borderables: [],
           fontEditable: undefined,
           fontSizeable: undefined
         }),
         mapToEditPanelValues: (cfg) => new Map([
-          ['app_title', cfg.app_title || defaultConfig.app_title]
+          ['hero_title', cfg.hero_title || defaultConfig.hero_title],
+          ['hero_subtitle', cfg.hero_subtitle || defaultConfig.hero_subtitle]
         ])
       });
     }
 
-    function showError(message) {
-      const toast = document.getElementById('error-toast');
-      const msgEl = document.getElementById('error-message');
-      msgEl.textContent = message;
-      toast.classList.remove('hidden');
-      setTimeout(() => {
-        toast.classList.add('hidden');
-      }, 4000);
+    function switchQuery(type, el) {
+      document.querySelectorAll('.query-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.feature-card').forEach(c => c.classList.remove('active'));
+      document.getElementById(type + '-screen').classList.add('active');
+      if (el) el.classList.add('active');
     }
 
-    function setLoading(loading) {
-      const btn = document.getElementById('btn-cep');
-      if (loading) {
-        btn.disabled = true;
-        btn.innerHTML = `
-          <span class="flex items-center justify-center gap-2">
-            <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Consultando...
-          </span>
-        `;
-      } else {
-        btn.disabled = false;
-        btn.textContent = 'Consultar CEP';
-      }
+    function openScreen(type) {
+      document.getElementById('hero-title').scrollIntoView({ behavior: 'smooth' });
+      document.querySelectorAll('.query-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('cards-container').classList.add('hidden');
+      document.getElementById(type + '-screen').classList.add('active');
+      
+      // Limpa campos ao abrir uma nova tela
+      if (type === 'cep') document.getElementById('cep-input').focus();
+      else if (type === 'cpf') document.getElementById('cpf-input').focus();
+      else if (type === 'cnpj') document.getElementById('cnpj-input').focus();
+      else if (type === 'placa') document.getElementById('placa-input').focus();
+    }
+
+    function goHome() {
+      document.querySelectorAll('.query-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('cards-container').classList.remove('hidden');
+      
+      // Limpa resultados
+      document.getElementById('result-cep').classList.add('result-hidden');
+      document.getElementById('result-cpf').classList.add('result-hidden');
+      document.getElementById('result-cnpj').classList.add('result-hidden');
+      document.getElementById('result-placa').classList.add('result-hidden');
+      
+      // Limpa inputs
+      document.getElementById('cep-input').value = '';
+      document.getElementById('cpf-input').value = '';
+      document.getElementById('cnpj-input').value = '';
+      document.getElementById('placa-input').value = '';
+      
+      document.getElementById('hero-title').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function showError(message) {
+      const toast = document.getElementById('error-toast');
+      document.getElementById('error-message').textContent = message;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    function sairApp() {
+      window.open('https://gaveblue.com', '_blank');
+      window.close();
     }
 
     function maskCEP(input) {
@@ -160,67 +369,173 @@
         return;
       }
 
-      setLoading(true);
-      const resultDiv = document.getElementById('result-cep');
-      resultDiv.classList.add('hidden');
+      const btn = document.getElementById('btn-cep');
+      btn.disabled = true;
+      btn.textContent = 'Consultando...';
 
       try {
-        // Usa a API do ViaCEP como alternativa
         const response = await fetch(`https://viacep.com.br/ws/${input}/json/`);
         const data = await response.json();
 
-        console.log('Resposta da API:', data);
-
-        // Verifica se houve erro
         if (data.erro) {
-          showError('CEP não encontrado. Verifique e tente novamente.');
-          setLoading(false);
+          showError('CEP não encontrado');
+          btn.disabled = false;
+          btn.textContent = 'Consultar CEP';
           return;
         }
 
-        const cepData = document.getElementById('cep-data');
-        cepData.innerHTML = `
-          <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              ${createDataItem('CEP', input)}
-              ${createDataItem('UF', data.uf || 'Não informado')}
-            </div>
-            <div>
-              <span class="text-xs text-slate-500 uppercase tracking-wider">Logradouro</span>
-              <p class="text-slate-200 font-medium text-lg">${data.logradouro || 'Não informado'}</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              ${createDataItem('Bairro', data.bairro || 'Não informado')}
-              ${createDataItem('Cidade', data.localidade || 'Não informado')}
-            </div>
-            <div class="pt-2 border-t border-white/10">
-              ${createDataItem('Complemento', data.complemento || 'Não informado')}
-            </div>
+        const resultDiv = document.getElementById('result-cep');
+        resultDiv.classList.remove('result-hidden');
+        document.getElementById('cep-data').innerHTML = `
+          <div class="grid grid-cols-2 gap-4">
+            <div><span class="text-xs text-slate-500 uppercase">CEP</span><p class="text-slate-200 font-medium">${input}</p></div>
+            <div><span class="text-xs text-slate-500 uppercase">UF</span><p class="text-slate-200 font-medium">${data.uf || 'N/A'}</p></div>
+          </div>
+          <div><span class="text-xs text-slate-500 uppercase">Logradouro</span><p class="text-slate-200 font-medium">${data.logradouro || 'Não informado'}</p></div>
+          <div class="grid grid-cols-2 gap-4">
+            <div><span class="text-xs text-slate-500 uppercase">Bairro</span><p class="text-slate-200 font-medium">${data.bairro || 'N/A'}</p></div>
+            <div><span class="text-xs text-slate-500 uppercase">Cidade</span><p class="text-slate-200 font-medium">${data.localidade || 'N/A'}</p></div>
           </div>
         `;
-        
-        resultDiv.classList.remove('hidden');
       } catch (error) {
-        console.error('Erro na requisição:', error);
-        showError('Erro ao conectar com a API. Tente novamente.');
+        showError('Erro ao consultar CEP');
       }
-      
-      setLoading(false);
+
+      btn.disabled = false;
+      btn.textContent = 'Consultar CEP';
     }
 
-    function createDataItem(label, value) {
-      return `
-        <div>
-          <span class="text-xs text-slate-500 uppercase tracking-wider">${label}</span>
-          <p class="text-slate-200 font-medium">${value}</p>
+    function maskCPF(input) {
+      let value = input.value.replace(/\D/g, '');
+      if (value.length > 9) {
+        value = value.substring(0, 3) + '.' + value.substring(3, 6) + '.' + value.substring(6, 9) + '-' + value.substring(9, 11);
+      } else if (value.length > 6) {
+        value = value.substring(0, 3) + '.' + value.substring(3, 6) + '.' + value.substring(6);
+      } else if (value.length > 3) {
+        value = value.substring(0, 3) + '.' + value.substring(3);
+      }
+      input.value = value;
+    }
+
+    function validarCPF() {
+      const cpf = document.getElementById('cpf-input').value.replace(/\D/g, '');
+      if (cpf.length !== 11) {
+        showError('CPF deve conter 11 dígitos');
+        return;
+      }
+
+      const resultDiv = document.getElementById('result-cpf');
+      const isValid = validarCPFDigitos(cpf);
+      resultDiv.classList.remove('result-hidden');
+      document.getElementById('cpf-data').innerHTML = `
+        <div class="text-center">
+          <div class="inline-flex items-center gap-3 p-4 rounded-lg ${isValid ? 'bg-green-500/20' : 'bg-red-500/20'}">
+            <svg class="w-6 h-6 ${isValid ? 'text-green-400' : 'text-red-400'}" fill="currentColor" viewBox="0 0 20 20">
+              ${isValid ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>' : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/>'}
+            </svg>
+            <span class="text-lg font-semibold ${isValid ? 'text-green-400' : 'text-red-400'}">
+              ${isValid ? 'CPF Válido' : 'CPF Inválido'}
+            </span>
+          </div>
         </div>
       `;
     }
 
-    // Enter key support
-    document.getElementById('cep-input').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') consultCEP();
-    });
+    function validarCPFDigitos(cpf) {
+      if (cpf.length !== 11) return false;
+      if (/^(\d)\1{10}$/.test(cpf)) return false;
+
+      let sum = 0;
+      for (let i = 1; i <= 9; i++) {
+        sum += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+      }
+      let remainder = (sum * 10) % 11;
+      if (remainder === 10 || remainder === 11) remainder = 0;
+      if (remainder !== parseInt(cpf.substring(9, 10))) return false;
+
+      sum = 0;
+      for (let i = 1; i <= 10; i++) {
+        sum += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+      }
+      remainder = (sum * 10) % 11;
+      if (remainder === 10 || remainder === 11) remainder = 0;
+      if (remainder !== parseInt(cpf.substring(10, 11))) return false;
+
+      return true;
+    }
+
+    function maskCNPJ(input) {
+      let value = input.value.replace(/\D/g, '');
+      if (value.length > 12) {
+        value = value.substring(0, 2) + '.' + value.substring(2, 5) + '.' + value.substring(5, 8) + '/' + value.substring(8, 12) + '-' + value.substring(12, 14);
+      } else if (value.length > 8) {
+        value = value.substring(0, 2) + '.' + value.substring(2, 5) + '.' + value.substring(5, 8) + '/' + value.substring(8);
+      } else if (value.length > 5) {
+        value = value.substring(0, 2) + '.' + value.substring(2, 5) + '.' + value.substring(5);
+      } else if (value.length > 2) {
+        value = value.substring(0, 2) + '.' + value.substring(2);
+      }
+      input.value = value;
+    }
+
+    async function consultarCNPJ() {
+      const cnpj = document.getElementById('cnpj-input').value.replace(/\D/g, '');
+      if (cnpj.length !== 14) {
+        showError('CNPJ deve conter 14 dígitos');
+        return;
+      }
+
+      const btn = document.getElementById('btn-cnpj');
+      btn.disabled = true;
+      btn.textContent = 'Consultando...';
+
+      try {
+        const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          showError('CNPJ não encontrado');
+          btn.disabled = false;
+          btn.textContent = 'Consultar CNPJ';
+          return;
+        }
+
+        const resultDiv = document.getElementById('result-cnpj');
+        resultDiv.classList.remove('result-hidden');
+        document.getElementById('cnpj-data').innerHTML = `
+          <div class="space-y-3">
+            <div><span class="text-xs text-slate-500 uppercase">Razão Social</span><p class="text-slate-200 font-medium text-lg">${data.name || 'N/A'}</p></div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><span class="text-xs text-slate-500 uppercase">CNPJ</span><p class="text-slate-200 font-medium">${cnpj}</p></div>
+              <div><span class="text-xs text-slate-500 uppercase">Situação</span><p class="text-slate-200 font-medium">${data.status || 'N/A'}</p></div>
+            </div>
+            <div><span class="text-xs text-slate-500 uppercase">Endereço</span><p class="text-slate-200 font-medium">${data.street || 'N/A'}, ${data.number || 'N/A'} - ${data.city || 'N/A'}</p></div>
+          </div>
+        `;
+      } catch (error) {
+        showError('Erro ao consultar CNPJ');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Consultar CNPJ';
+    }
+
+    async function consultarPlaca() {
+      const placa = document.getElementById('placa-input').value.toUpperCase();
+      if (placa.length !== 7) {
+        showError('Placa deve conter 7 caracteres');
+        return;
+      }
+
+      const resultDiv = document.getElementById('result-placa');
+      resultDiv.classList.remove('result-hidden');
+      document.getElementById('placa-data').innerHTML = `
+        <div class="text-center p-4 bg-yellow-500/20 rounded-lg border border-yellow-500/30">
+          <p class="text-yellow-300 font-medium">Recurso em desenvolvimento</p>
+          <p class="text-slate-400 text-sm mt-2">Em breve será possível consultar informações de placas</p>
+        </div>
+      `;
+    }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ca6bff0d101d89c',t:'MTc3MDUwNzgwOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-</html> 
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb8544167d2c65f',t:'MTc3MDY5MjE0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
