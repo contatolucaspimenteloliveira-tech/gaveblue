@@ -52,6 +52,12 @@
         background-position: 2% 2%;
       }
     }
+    @media (max-width: 1023px) {
+      .bg-layer {
+        animation: none !important;
+        background-attachment: fixed;
+      }
+    }
     .w-full.min-h-full {
       position: relative;
       z-index: 1;
@@ -66,13 +72,24 @@
     .feature-card {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .feature-card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 25px 50px rgba(59, 130, 246, 0.2);
-      border-color: currentColor;
+    @media (min-width: 1024px) {
+      .feature-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 25px 50px rgba(59, 130, 246, 0.2);
+        border-color: currentColor;
+      }
+      .feature-card:hover .icon-container {
+        transform: scale(1.1) rotate(5deg);
+      }
     }
-    .feature-card:hover .icon-container {
-      transform: scale(1.1) rotate(5deg);
+    @media (max-width: 1023px) {
+      .feature-card:hover {
+        transform: none;
+        box-shadow: none;
+      }
+      .feature-card:hover .icon-container {
+        transform: none;
+      }
     }
     .icon-container {
       transition: transform 0.3s ease;
@@ -101,7 +118,7 @@
       width: 100%;
     }
     
-    /* Mouse Glow Effect */
+    /* Mouse Glow Effect - Desktop Only */
     .mouse-glow {
       position: fixed;
       pointer-events: none;
@@ -114,9 +131,15 @@
       opacity: 0;
       transition: opacity 0.3s ease;
       mix-blend-mode: normal;
+      display: none;
     }
     .mouse-glow.active {
       opacity: 0.35;
+    }
+    @media (min-width: 1024px) {
+      .mouse-glow {
+        display: block;
+      }
     }
 
     /* Sparkles */
@@ -375,6 +398,9 @@
     let glowY = 0;
 
     document.addEventListener('mousemove', (e) => {
+      const isMobile = window.matchMedia('(max-width: 1023px)').matches;
+      if (isMobile) return;
+      
       mouseX = e.clientX;
       mouseY = e.clientY;
       mouseGlow.classList.add('active');
@@ -499,5 +525,5 @@
       });
     }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb7ddde07eef1b4',t:'MTc3MDY4NzI5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb888f19665f1b4',t:'MTc3MDY5NDMwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
