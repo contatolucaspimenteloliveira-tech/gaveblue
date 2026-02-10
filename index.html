@@ -85,7 +85,7 @@
     .mouse-glow {
       position: fixed;
       pointer-events: none;
-      z-index: 0;
+      z-index: -1;
       width: 450px;
       height: 450px;
       border-radius: 50%;
@@ -97,6 +97,64 @@
     }
     .mouse-glow.active {
       opacity: 0.8;
+    }
+
+    /* Sparkles */
+    .sparkle {
+      position: fixed;
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    @keyframes sparkle-fade {
+      0% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0) translateY(-20px);
+      }
+    }
+    
+    .sparkle::before {
+      content: '';
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: radial-gradient(circle, #3b82f6, #8b5cf6);
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(59, 130, 246, 0.8);
+      animation: sparkle-fade 0.8s ease-out forwards;
+    }
+
+    @keyframes gradient-shimmer {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    .gradient-text {
+      font-weight: 900;
+      background: linear-gradient(90deg, 
+        #ff006e, 
+        #fb5607, 
+        #ffbe0b, 
+        #8338ec, 
+        #3a86ff, 
+        #ff006e);
+      background-size: 300% 100%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradient-shimmer 3s ease infinite;
+      font-size: 1.25rem;
     }
 
   </style>
@@ -115,14 +173,34 @@
    <section id="inicio" class="pt-20 pb-20 px-4 sm:px-6 lg:px-8">
     <div class="max-w-7xl mx-auto relative z-10"><!-- Título e CTA (Topo) -->
      <div class="mb-16">
-      <h1 id="hero-title" class="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight"><span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">Gestão Empresarial</span> <br><span class="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Completa e Inteligente</span></h1>
-      <p id="hero-subtitle" class="text-lg text-slate-300 mb-8">Simplifique todos os processos da sua empresa em uma unica plataforma.</p><a href="https://gaveblue.com/recibos" target="_blank" rel="noopener noreferrer" class="inline-flex px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl pulse-glow items-center gap-2 w-fit">
-       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-       </svg> Teste Gerador de Recibos </a>
+      <h1 id="hero-title" class="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-6 leading-tight text-center whitespace-nowrap"><span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">Gestão Empresarial</span> <span class="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent"> Completa e Inteligente</span></h1>
+      <p id="hero-subtitle" class="text-lg text-slate-300 mb-8 leading-relaxed text-center">Acesse um sistema desenvolvido especialmente para você, reunindo em um só lugar módulos financeiros, gestão de frotas e geração de documentos essenciais. Tudo pensado para oferecer praticidade, rapidez e mais eficiência no dia a dia do seu negócio.</p>
+      <div class="flex justify-center"><a href="https://gaveblue.com/recibos" target="_blank" rel="noopener noreferrer" class="inline-flex px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl pulse-glow items-center gap-2 w-fit">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg> Testar Grátis - Gerador de Recibos </a>
+      </div>
+      <div class="flex justify-center items-center gap-2 mt-4">
+       <div class="flex gap-1">
+        <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewbox="0 0 24 24">
+         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+        <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewbox="0 0 24 24">
+         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+        <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewbox="0 0 24 24">
+         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+        <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewbox="0 0 24 24">
+         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+        <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewbox="0 0 24 24">
+         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+       </div><span class="text-sm text-slate-300 font-medium">4.99/5</span>
+      </div>
      </div><!-- Ferramentas (Embaixo) -->
      <div>
-      <h2 class="text-3xl font-bold mb-8 text-slate-200">Nossas Ferramentas</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"><!-- Card 1 --> <button onclick="window.open('https://gaveblue.com/recibos', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-blue-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56"> <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
         <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 flex items-center justify-center mb-4">
          <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
@@ -141,44 +219,100 @@
          <svg class="w-7 h-7 text-purple-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
          </svg>
-        </div><h3 class="font-bold text-white text-lg mb-2">WeCEP</h3><p class="text-sm text-slate-400">Consulte endereços por CEP</p></button> <!-- Card 4 - WeDevs --> <button onclick="window.open('https://gaveblue.com/testar-html', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-cyan-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56"> <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
+        </div><h3 class="font-bold text-white text-lg mb-2">WeConsultas</h3><p class="text-sm text-slate-400">Consulte CNPJ, CEP e muito mais</p></button> <!-- Card 4 - WeDevs --> <button onclick="window.open('https://gaveblue.com/testar-html', '_blank')" class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-pointer transition-all hover:border-cyan-500/70 hover:shadow-2xl active:scale-95 flex flex-col items-start justify-start relative h-full min-h-56"> <span class="absolute top-4 right-4 px-3 py-1 bg-green-500/80 text-white text-xs font-semibold rounded-lg">Grátis</span>
         <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 border border-cyan-500/30 flex items-center justify-center mb-4">
          <svg class="w-7 h-7 text-cyan-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4m0 0l-4 4m4-4H3" />
          </svg>
-        </div><h3 class="font-bold text-white text-lg mb-2">WeDevs</h3><p class="text-sm text-slate-400">Plataforma para desenvolvedores testar HTML</p></button>
+        </div><h3 class="font-bold text-white text-lg mb-2">WeDevs</h3><p class="text-sm text-slate-400">Plataforma para desenvolvedores testar HTML</p></button> <!-- Card 5 - WeFrotas (Bloqueado) -->
+       <div class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-not-allowed flex flex-col items-start justify-start relative h-full min-h-56 opacity-60"><span class="absolute top-4 right-4 px-3 py-1 bg-slate-600/80 text-white text-xs font-semibold rounded-lg">Em Breve</span>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+         <svg class="w-12 h-12 text-slate-500" fill="currentColor" viewbox="0 0 24 24">
+          <path d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9 9 0 0 1-9 9zm3.5-9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5zm-5 0a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z" />
+         </svg>
+        </div>
+        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/20 border border-orange-500/30 flex items-center justify-center mb-4">
+         <svg class="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+         </svg>
+        </div>
+        <h3 class="font-bold text-slate-300 text-lg mb-2">WeFrotas</h3>
+        <p class="text-sm text-slate-500">Gestão completa de frotas</p>
+       </div><!-- Card 6 - WeFinance (Bloqueado) -->
+       <div class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-not-allowed flex flex-col items-start justify-start relative h-full min-h-56 opacity-60"><span class="absolute top-4 right-4 px-3 py-1 bg-slate-600/80 text-white text-xs font-semibold rounded-lg">Em Breve</span>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+         <svg class="w-12 h-12 text-slate-500" fill="currentColor" viewbox="0 0 24 24">
+          <path d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9 9 0 0 1-9 9zm3.5-9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5zm-5 0a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z" />
+         </svg>
+        </div>
+        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 border border-emerald-500/30 flex items-center justify-center mb-4">
+         <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+         </svg>
+        </div>
+        <h3 class="font-bold text-slate-300 text-lg mb-2">WeFinance</h3>
+        <p class="text-sm text-slate-500">Módulo financeiro avançado</p>
+       </div><!-- Card 7 - WePeople (Bloqueado) -->
+       <div class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-not-allowed flex flex-col items-start justify-start relative h-full min-h-56 opacity-60"><span class="absolute top-4 right-4 px-3 py-1 bg-slate-600/80 text-white text-xs font-semibold rounded-lg">Em Breve</span>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+         <svg class="w-12 h-12 text-slate-500" fill="currentColor" viewbox="0 0 24 24">
+          <path d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9 9 0 0 1-9 9zm3.5-9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5zm-5 0a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z" />
+         </svg>
+        </div>
+        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-pink-500/20 to-pink-600/20 border border-pink-500/30 flex items-center justify-center mb-4">
+         <svg class="w-7 h-7 text-pink-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h.01" />
+         </svg>
+        </div>
+        <h3 class="font-bold text-slate-300 text-lg mb-2">WePeople</h3>
+        <p class="text-sm text-slate-500">Gestão de recursos humanos</p>
+       </div><!-- Card 8 - WeDocs (Bloqueado) -->
+       <div class="feature-card card-gradient border border-slate-700/50 rounded-2xl p-8 cursor-not-allowed flex flex-col items-start justify-start relative h-full min-h-56 opacity-60"><span class="absolute top-4 right-4 px-3 py-1 bg-slate-600/80 text-white text-xs font-semibold rounded-lg">Em Breve</span>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+         <svg class="w-12 h-12 text-slate-500" fill="currentColor" viewbox="0 0 24 24">
+          <path d="M12 1a11 11 0 1 0 11 11A11 11 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9 9 0 0 1-9 9zm3.5-9a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5zm-5 0a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z" />
+         </svg>
+        </div>
+        <div class="icon-container w-14 h-14 rounded-lg bg-gradient-to-br from-indigo-500/20 to-indigo-600/20 border border-indigo-500/30 flex items-center justify-center mb-4">
+         <svg class="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+         </svg>
+        </div>
+        <h3 class="font-bold text-slate-300 text-lg mb-2">WeDocs</h3>
+        <p class="text-sm text-slate-500">Gerador de documentos</p>
+       </div>
       </div>
      </div><!-- Parceiros Section -->
      <div class="mt-20">
       <h2 class="text-3xl font-bold mb-8 text-slate-200">Nossos Parceiros</h2>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 items-center justify-center"><!-- Parceiro 1 -->
-       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><img src="https://i.ibb.co/fGzJKxy8/Grupo-Covre-0000.png" alt="Grupo Covre" class="max-h-16 max-w-full object-contain" loading="lazy">
+       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><img src="https://i.ibb.co/fGzJKxy8/Grupo-Covre-0000.png" alt="Grupo Covre" class="max-h-24 max-w-full object-contain" loading="lazy">
        </div><!-- Parceiro 2 -->
-       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><img src="https://i.imgur.com/igxq7oF.png" alt="Parceiro 2" class="max-h-16 max-w-full object-contain" loading="lazy">
+       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><img src="https://i.imgur.com/vxKwUzB.png" alt="Parceiro 2" class="max-h-28 max-w-full object-contain" loading="lazy">
        </div><!-- Parceiro 3 -->
-       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><span class="text-slate-500 font-semibold text-center">Sua Marca</span>
+       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><span class="gradient-text text-center">SUA MARCA AQUI</span>
        </div><!-- Parceiro 4 -->
-       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><img src="https://i.imgur.com/vxKwUzB.png" alt="Parceiro 4" class="max-h-16 max-w-full object-contain" loading="lazy">
+       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><span class="gradient-text text-center">SUA MARCA AQUI</span>
        </div><!-- Parceiro 5 -->
-       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><img src="https://i.imgur.com/cQiPodD.png" alt="Parceiro 5" class="max-h-16 max-w-full object-contain" loading="lazy">
+       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><span class="gradient-text text-center">SUA MARCA AQUI</span>
        </div><!-- Parceiro 6 -->
-       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><span class="text-slate-500 font-semibold text-center">Sua Marca</span>
+       <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);"><span class="gradient-text text-center">SUA MARCA AQUI</span>
        </div>
       </div>
      </div>
     </div>
    </section><!-- Footer -->
-   <footer class="border-t border-slate-700/50 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-7xl mx-auto py-8">
-     <div class="flex flex-col items-center justify-center gap-4 text-center"><!-- Logo Maior --> <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo" class="h-10 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" onclick="goToSection('inicio');"> <!-- Redes Sociais -->
-      <div class="flex items-center justify-center gap-3"><a href="https://instagram.com/gaveblue" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg" title="Instagram">
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+   <footer class="border-t border-slate-700/50 px-4 sm:px-6 lg:px-8 mt-20">
+    <div class="max-w-7xl mx-auto py-12">
+     <div class="flex flex-col items-center justify-center gap-4 text-center"><!-- Logo Maior --> <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo" class="h-16 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" onclick="goToSection('inicio');"> <!-- Redes Sociais -->
+      <div class="flex items-center justify-center gap-3"><a href="https://instagram.com/gaveblue" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-10 h-10 rounded-lg backdrop-blur-md bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all shadow-lg group" title="Instagram">
+        <svg class="w-5 h-5 text-white group-hover:text-pink-300 transition-colors" fill="none" stroke="currentColor" viewbox="0 0 24 24">
          <rect x="3" y="3" width="18" height="18" rx="5" ry="5" stroke-width="2"></rect><circle cx="12" cy="12" r="4" stroke-width="2"></circle><circle cx="17" cy="7" r="1.2" fill="currentColor"></circle>
-        </svg></a> <a href="https://wa.me/5527988790381" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-green-400 to-emerald-600 hover:from-green-500 hover:to-emerald-700 transition-all shadow-lg" title="WhatsApp">
-        <svg class="w-4 h-4 text-white" fill="currentColor" viewbox="0 0 24 24">
+        </svg></a> <a href="https://wa.me/5527988790381" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-10 h-10 rounded-lg backdrop-blur-md bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all shadow-lg group" title="WhatsApp">
+        <svg class="w-5 h-5 text-white group-hover:text-green-300 transition-colors" fill="currentColor" viewbox="0 0 24 24">
          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-        </svg></a> <a href="mailto:contato@gaveblue.com" class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-red-600 hover:from-orange-500 hover:to-red-700 transition-all shadow-lg" title="E-mail">
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+        </svg></a> <a href="mailto:contato@gaveblue.com" class="flex items-center justify-center w-10 h-10 rounded-lg backdrop-blur-md bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all shadow-lg group" title="E-mail">
+        <svg class="w-5 h-5 text-white group-hover:text-orange-300 transition-colors" fill="none" stroke="currentColor" viewbox="0 0 24 24">
          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg></a>
       </div><!-- Website --> <a href="https://gaveblue.com" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white transition-colors text-sm">gaveblue.com</a> <!-- Copyright -->
@@ -201,11 +335,26 @@
       mouseX = e.clientX;
       mouseY = e.clientY;
       mouseGlow.classList.add('active');
+      
+      // Create sparkles occasionally
+      if (Math.random() > 0.7) {
+        createSparkle(mouseX, mouseY);
+      }
     });
 
     document.addEventListener('mouseleave', () => {
       mouseGlow.classList.remove('active');
     });
+
+    function createSparkle(x, y) {
+      const sparkle = document.createElement('div');
+      sparkle.className = 'sparkle';
+      sparkle.style.left = (x + (Math.random() - 0.5) * 40) + 'px';
+      sparkle.style.top = (y + (Math.random() - 0.5) * 40) + 'px';
+      document.body.appendChild(sparkle);
+      
+      setTimeout(() => sparkle.remove(), 800);
+    }
 
     function updateGlow() {
       glowX += (mouseX - glowX) * 0.15;
@@ -237,7 +386,7 @@
     const defaultConfig = {
       company_name: 'GestãoPro',
       hero_title: 'Gestão Empresarial Completa e Inteligente',
-      hero_subtitle: 'Simplifique todos os processos da sua empresa em uma unica plataforma.',
+      hero_subtitle: 'Acesse um sistema desenvolvido especialmente para você, reunindo em um só lugar módulos financeiros, gestão de frotas e geração de documentos essenciais. Tudo pensado para oferecer praticidade, rapidez e mais eficiência no dia a dia do seu negócio.',
       primary_color: '#3b82f6',
       secondary_color: '#8b5cf6'
     };
@@ -308,5 +457,5 @@
       });
     }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb0a9ede7e398e7',t:'MTc3MDYxMTc2NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb7c3901107055f',t:'MTc3MDY4NjIxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
