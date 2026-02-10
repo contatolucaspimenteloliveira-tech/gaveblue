@@ -56,6 +56,7 @@
       .bg-layer {
         animation: none !important;
         background-attachment: fixed;
+        background-image: linear-gradient(135deg, #0a0f1f 0%, #0f172a 50%, #1a1f3a 100%) !important;
       }
     }
     .w-full.min-h-full {
@@ -210,7 +211,7 @@
   <div class="w-full min-h-full"><!-- Header Fixo -->
    <header class="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 h-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between"><img src="https://i.imgur.com/Zih5jH8.png" alt="Logo" class="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" onclick="goToSection('inicio');">
-     <div class="flex items-center gap-3"><a href="https://gaveblue.com/login" target="_blank" rel="noopener noreferrer" class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">Entrar</a> <a href="https://wa.me/5527988790381" target="_blank" rel="noopener noreferrer" class="px-5 py-2 text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg">Comece Gratis</a>
+     <div class="flex items-center gap-3"><a href="https://wa.me/5527988790381" target="_blank" rel="noopener noreferrer" class="px-5 py-2 text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg">Fazer Login</a>
      </div>
     </div>
    </header><!-- Main Content Area -->
@@ -349,25 +350,16 @@
         </div>
         <div class="mt-2">
           <h2 class="text-3xl font-bold mb-4 text-slate-200">Nossos Parceiros</h2>
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 items-center justify-center">
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-6 items-center justify-center">
             <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
               <img src="https://i.ibb.co/fGzJKxy8/Grupo-Covre-0000.png" alt="Grupo Covre" class="max-h-24 max-w-full object-contain" loading="lazy">
             </div>
             <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
               <img src="https://i.imgur.com/vxKwUzB.png" alt="Parceiro 2" class="max-h-28 max-w-full object-contain" loading="lazy">
             </div>
-            <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
-              <span class="gradient-text text-center">SUA MARCA AQUI</span>
-            </div>
-            <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
-              <span class="gradient-text text-center">SUA MARCA AQUI</span>
-            </div>
-            <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
-              <span class="gradient-text text-center">SUA MARCA AQUI</span>
-            </div>
-            <div class="border border-slate-600/50 rounded-xl p-6 flex items-center justify-center h-32 hover:border-slate-500 transition-all" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
-              <span class="gradient-text text-center">SUA MARCA AQUI</span>
-            </div>
+            <a href="https://v0-graphic-design-site.vercel.app/?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAb21jcAP4GRBleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA01NjcwNjczNDMzNTI0MjcAAaexSP5OoLD8P_xSsRZG22fB_zsHEiO_tLP0SpzYN7Y90Dp2k674aBvQK64p5Q_aem_7ZTHnNm_86CRQNOMoRKzgg" target="_blank" rel="noopener noreferrer" class="border border-slate-600/50 rounded-xl flex items-center justify-center h-32 hover:border-slate-500 transition-all overflow-hidden cursor-pointer" style="background: linear-gradient(135deg, #e8f1ff 0%, #d4e6f9 50%, #c0d9f1 100%);">
+              <img src="https://imgur.com/BU7PU0Y.png" alt="Parceiro 3" class="h-full w-full object-cover" loading="lazy">
+            </a>
           </div>
         </div>
       `
@@ -526,5 +518,5 @@
       });
     }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb8a0dcd37b1a97',t:'MTc3MDY5NTI4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cbcad07b5d66497',t:'MTc3MDczNzcyMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
