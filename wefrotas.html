@@ -503,7 +503,7 @@
     }
 
     // ==================== API ====================
-    const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbydnRqHpWuDbTt2Rb5_fYPjLsWwCXdUulbpNXLn3W6wX6cwC4KCYxJRRbZ0ccJvp0MJ3Q/exec";
+    const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbz5uNvgiqYt1UHBw8f3lZcPFesvTZs_0sCAJ540iEPOM5NJXmEcARgDN2SN3sW9v5Emig/exec";
 
     async function apiListVeiculos() {
       try {
@@ -569,7 +569,7 @@
       });
 
       const txt = await res.text();
-      console.log("📥 [API] Resposta DELETE:", txt);
+      console.log("��� [API] Resposta DELETE:", txt);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return JSON.parse(txt);
     }
@@ -767,5 +767,5 @@
     console.log("🚀 Sistema iniciado!");
     selectView('dashboard');
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cc025e804551b1a',t:'MTc3MDc3NDEzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cc03869c7ca9ca9',t:'MTc3MDc3NDg4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
