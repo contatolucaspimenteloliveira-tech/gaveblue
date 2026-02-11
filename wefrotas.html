@@ -429,6 +429,8 @@
    </main>
   </div>
   <script>
+    console.log("=== WEFROTAS INICIADO ===");
+    
     const defaultConfig = {
       system_title: 'WeFrotas',
       system_subtitle: 'Gestão de Frotas'
@@ -453,12 +455,16 @@
         if (activeTab) {
           activeTab.setAttribute('aria-current', 'page');
         }
+
+        if (viewId === 'veiculos') {
+          console.log("🎯 Aba Veículos ativada!");
+          renderizarVeiculos();
+        }
       }
     }
 
     function handleLogout() {
-      const confirmed = confirm('Tem certeza que deseja sair do sistema?');
-      if (confirmed) {
+      if (confirm('Tem certeza que deseja sair do sistema?')) {
         window.open('https://gaveblue.com', '_blank');
       }
     }
@@ -496,19 +502,26 @@
       });
     }
 
+    // ==================== API ====================
     const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbydnRqHpWuDbTt2Rb5_fYPjLsWwCXdUulbpNXLn3W6wX6cwC4KCYxJRRbZ0ccJvp0MJ3Q/exec";
 
     async function apiListVeiculos() {
       try {
+        console.log("🔌 [API] Conectando a:", SHEETS_API_URL);
         const res = await fetch(`${SHEETS_API_URL}?action=list`, { method: "GET" });
+        console.log("✅ [API] Status HTTP:", res.status);
+        
         const txt = await res.text();
-        console.log("📡 LIST response:", { status: res.status, body: txt });
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${txt}`);
+        console.log("📝 [API] Resposta bruta:", txt);
+        console.log("📏 [API] Tamanho:", txt.length, "bytes");
+        
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
         const json = JSON.parse(txt);
-        console.log("📦 Parsed JSON:", json);
+        console.log("✅ [API] JSON parseado:", json);
         return json;
       } catch (e) {
-        console.error("❌ apiListVeiculos:", e);
+        console.error("❌ [API] ERRO:", e.message);
         throw e;
       }
     }
@@ -522,6 +535,8 @@
       body.append("ano", String(veiculo.ano));
       body.append("km", String(veiculo.km || 0));
 
+      console.log("📤 [API] Enviando UPSERT:", Object.fromEntries(body));
+
       const res = await fetch(SHEETS_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
@@ -529,8 +544,8 @@
       });
 
       const txt = await res.text();
-      console.log("✍️ UPSERT response:", { status: res.status, body: txt });
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${txt}`);
+      console.log("📥 [API] Resposta UPSERT:", txt);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return JSON.parse(txt);
     }
 
@@ -539,6 +554,8 @@
       body.append("action", "delete");
       body.append("placa", placa);
 
+      console.log("🗑️ [API] Enviando DELETE:", placa);
+
       const res = await fetch(SHEETS_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
@@ -546,50 +563,51 @@
       });
 
       const txt = await res.text();
-      console.log("🗑️ DELETE response:", { status: res.status, body: txt });
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${txt}`);
+      console.log("📥 [API] Resposta DELETE:", txt);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return JSON.parse(txt);
     }
 
+    // ==================== UI ====================
     let veiculoSelecionado = null;
     let veiculosCache = [];
 
     async function carregarVeiculos() {
       try {
+        console.log("📡 [Carregamento] Iniciando...");
         const json = await apiListVeiculos();
-        console.log("🔍 Checking json.data:", json.data);
-        console.log("🔍 Is array?", Array.isArray(json.data));
         
-        if (Array.isArray(json.data)) {
-          return json.data;
-        } else if (json.data && typeof json.data === 'object') {
-          // Se for objeto, converte pra array
-          const arr = Object.values(json.data);
-          console.log("🔄 Converted to array:", arr);
-          return arr;
+        if (!json.ok) {
+          console.warn("⚠️ [Carregamento] API retornou ok=false:", json.error);
+          return [];
         }
-        return [];
+
+        if (!Array.isArray(json.data)) {
+          console.warn("⚠️ [Carregamento] data não é array:", typeof json.data);
+          return [];
+        }
+
+        console.log("✅ [Carregamento] " + json.data.length + " veículos carregados");
+        return json.data;
       } catch (e) {
-        console.error("❌ carregarVeiculos:", e);
+        console.error("❌ [Carregamento] Erro:", e.message);
         return [];
       }
     }
 
     async function renderizarVeiculos() {
       try {
-        console.log("🎬 Renderizando veículos...");
+        console.log("🎨 [Renderização] Iniciando...");
         veiculosCache = await carregarVeiculos();
-        console.log("📋 veiculosCache:", veiculosCache);
-
         const container = document.getElementById("lista-veiculos");
         
         if (!veiculosCache || veiculosCache.length === 0) {
-          console.log("⚠️ Nenhum veículo encontrado");
+          console.log("📭 [Renderização] Lista vazia");
           container.innerHTML = '<div class="text-center py-16 text-gray-500">Nenhum veículo cadastrado.</div>';
           return;
         }
 
-        console.log(`✅ Renderizando ${veiculosCache.length} veículos`);
+        console.log("🎨 [Renderização] Renderizando " + veiculosCache.length + " veículos");
         container.innerHTML = veiculosCache.map((v, index) => `
           <div class="card p-5 cursor-pointer hover:shadow-lg transition-all"
                data-index="${index}"
@@ -616,7 +634,7 @@
         `).join("");
 
       } catch (err) {
-        console.error("❌ renderizarVeiculos:", err);
+        console.error("❌ [Renderização] Erro:", err);
         document.getElementById("lista-veiculos").innerHTML =
           '<div class="text-center py-16 text-red-600 font-bold">Erro: ' + err.message + '</div>';
       }
@@ -627,6 +645,7 @@
       if (!v) return;
 
       veiculoSelecionado = { index, ...v };
+      console.log("✅ [Seleção] Veículo selecionado:", v.placa);
 
       document.querySelectorAll('#lista-veiculos > div').forEach((el, i) => {
         if (i === index) {
@@ -729,6 +748,7 @@
       setTimeout(() => toast.remove(), 3000);
     }
 
+    // ==================== EVENTOS ====================
     document.getElementById('btn-novo-veiculo').addEventListener('click', abrirModalNovoVeiculo);
     document.getElementById('btn-editar-veiculo').addEventListener('click', abrirModalEditarVeiculo);
     document.getElementById('btn-excluir-veiculo').addEventListener('click', excluirVeiculo);
@@ -737,10 +757,9 @@
       if (e.target.id === 'modal-veiculo') fecharModalVeiculo();
     });
 
-    // INICIA
-    console.log("🚀 Iniciando renderização de veículos...");
-    renderizarVeiculos();
+    // ==================== INIT ====================
+    console.log("🚀 Sistema iniciado!");
     selectView('dashboard');
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cbfe35056fda405',t:'MTc3MDc3MTQwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cc009f4939d00ee',t:'MTc3MDc3Mjk4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
