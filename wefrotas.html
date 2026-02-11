@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>WeFrotas - Gestão de Frotas</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/_sdk/element_sdk.js"></script>
   <style>
     body {
       box-sizing: border-box;
@@ -50,6 +49,7 @@
   </style>
   <style>@view-transition { navigation: auto; }</style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
  </head>
  <body class="min-h-screen">
   <div id="app" class="min-h-screen flex flex-col overflow-auto"><!-- Header -->
@@ -553,30 +553,25 @@
     const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbz5uNvgiqYt1UHBw8f3lZcPFesvTZs_0sCAJ540iEPOM5NJXmEcARgDN2SN3sW9v5Emig/exec";
 
     async function apiListVeiculos() {
-      try {
-        console.log("🔌 [API] Conectando a:", SHEETS_API_URL);
-        const res = await fetch(`${SHEETS_API_URL}?action=list`, { method: "GET" });
-        console.log("✅ [API] Status HTTP:", res.status);
-        
-        const txt = await res.text();
-        console.log("📝 [API] Resposta bruta:", txt);
-        console.log("📏 [API] Tamanho:", txt.length, "bytes");
-        
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        
-        // Google Apps Script às vezes retorna "OK" ou texto simples
-        if (txt.trim() === "OK" || txt.trim() === "ok") {
-          console.log("⚠️ [API] Recebeu 'OK' sem dados, retornando vazio");
-          return { ok: true, data: [] };
-        }
-        
-        const json = JSON.parse(txt);
-        console.log("✅ [API] JSON parseado:", json);
-        return json;
-      } catch (e) {
-        console.error("❌ [API] ERRO:", e.message);
-        throw e;
+      console.log("🔌 [API] Conectando a:", SHEETS_API_URL);
+      const res = await fetch(`${SHEETS_API_URL}?action=list`, { method: "GET" });
+      console.log("✅ [API] Status HTTP:", res.status);
+      
+      const txt = await res.text();
+      console.log("📝 [API] Resposta bruta:", txt);
+      console.log("📏 [API] Tamanho:", txt.length, "bytes");
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      // Google Apps Script às vezes retorna "OK" ou texto simples
+      if (txt.trim() === "OK" || txt.trim() === "ok") {
+        console.log("⚠️ [API] Recebeu 'OK' sem dados, retornando vazio");
+        return { ok: true, data: [] };
       }
+      
+      const json = JSON.parse(txt);
+      console.log("✅ [API] JSON parseado:", json);
+      return json;
     }
 
     async function apiUpsertVeiculo(veiculo) {
@@ -588,7 +583,16 @@
       body.append("ano", String(veiculo.ano));
       body.append("km", String(veiculo.km || 0));
 
-      console.log("📤 [API] Enviando UPSERT:", Object.fromEntries(body));
+      console.log("📤 [API] Dados que serão enviados:", {
+        action: "upsert",
+        placa: veiculo.placa,
+        marca: veiculo.marca,
+        modelo: veiculo.modelo,
+        ano: veiculo.ano,
+        km: veiculo.km
+      });
+      console.log("📤 [API] URL:", SHEETS_API_URL);
+      console.log("📤 [API] Body string:", body.toString());
 
       const res = await fetch(SHEETS_API_URL, {
         method: "POST",
@@ -596,10 +600,17 @@
         body
       });
 
+      console.log("📥 [API] Status da resposta:", res.status);
       const txt = await res.text();
       console.log("📥 [API] Resposta UPSERT:", txt);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return JSON.parse(txt);
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${txt}`);
+      
+      try {
+        return JSON.parse(txt);
+      } catch (e) {
+        console.error("❌ [API] Erro ao parsear JSON:", e);
+        throw new Error("Resposta inválida do servidor: " + txt);
+      }
     }
 
     async function apiDeleteVeiculo(placa) {
@@ -938,7 +949,7 @@
           select.appendChild(opt);
         });
         
-        console.log("✅ [Dropdown] Dropdown preenchido com " + veiculos.length + " opções");
+        console.log("✅ [Dropdown] Dropdown preenchido com " + veiculos.length + " opç����es");
       } catch (err) {
         console.error("❌ [Dropdown] Erro:", err);
         select.innerHTML = '<option value="">❌ Erro ao carregar veículos</option>';
@@ -948,10 +959,12 @@
     async function carregarMotoristas() {
       try {
         console.log("📡 [Carregamento Motoristas] Iniciando...");
-        const res = await fetch(`${SHEETS_API_URL}?action=list_motoristas`, { method: "GET" });
+        const res = await fetch(`${SHEETS_API_URL}?action=list&sheet=motoristas`, { method: "GET" });
+        console.log("✅ [Carregamento Motoristas] Status HTTP:", res.status);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         
         const txt = await res.text();
+        console.log("📝 [Carregamento Motoristas] Resposta bruta:", txt);
         if (txt.trim() === "OK" || txt.trim() === "ok") return [];
         
         const json = JSON.parse(txt);
@@ -984,7 +997,7 @@
           const hoje = new Date();
           const diasRestantes = Math.floor((cnhValidade - hoje) / (1000 * 60 * 60 * 24));
           const statusCNH = diasRestantes < 0 ? 'chip-bad' : diasRestantes < 30 ? 'chip-warn' : 'chip-ok';
-          const textoCNH = diasRestantes < 0 ? 'Vencida' : diasRestantes < 30 ? 'Próximo Vencer' : 'Válida';
+          const textoCNH = diasRestantes < 0 ? 'Vencida' : diasRestantes < 30 ? 'Pr��ximo Vencer' : 'Válida';
 
           return `
             <div class="card p-5 cursor-pointer hover:shadow-lg transition-all"
@@ -1188,5 +1201,5 @@
     console.log("🚀 Sistema iniciado!");
     selectView('dashboard');
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cc077aa83f1a405',t:'MTc3MDc3NzQ3OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cc07e5a90f5a405',t:'MTc3MDc3Nzc1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
