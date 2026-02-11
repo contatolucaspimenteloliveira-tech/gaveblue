@@ -512,23 +512,41 @@
     }
 
     async function apiUpsertVeiculo(veiculo) {
+      const body = new URLSearchParams();
+      body.append("action", "upsert");
+      body.append("placa", veiculo.placa);
+      body.append("marca", veiculo.marca);
+      body.append("modelo", veiculo.modelo);
+      body.append("ano", String(veiculo.ano));
+      body.append("km", String(veiculo.km || 0));
+
       const res = await fetch(SHEETS_API_URL, {
         method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "upsert", data: veiculo })
+        body
       });
-      if (!res.ok) throw new Error("Falha ao salvar veículo");
-      return await res.json();
+
+      const txt = await res.text();
+      console.log("status", res.status, "resp", txt);
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return JSON.parse(txt);
     }
 
     async function apiDeleteVeiculo(placa) {
+      const body = new URLSearchParams();
+      body.append("action", "delete");
+      body.append("placa", placa);
+
       const res = await fetch(SHEETS_API_URL, {
         method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "delete", placa })
+        body
       });
-      if (!res.ok) throw new Error("Falha ao excluir veículo");
-      return await res.json();
+
+      const txt = await res.text();
+      console.log("status", res.status, "resp", txt);
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return JSON.parse(txt);
     }
 
     // ========== GERENCIAMENTO DE VEÍCULOS ==========
@@ -710,5 +728,5 @@
     // Set initial view
     selectView('dashboard');
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cbf9af5829aae9f',t:'MTc3MDc2ODQzOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cbfabdde03d9ca9',t:'MTc3MDc2OTEzMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
