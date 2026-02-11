@@ -503,12 +503,13 @@
     }
 
     // ========== GOOGLE SHEETS API ==========
-    const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycby6JQW8ggHhYNXD9rG4xOfiA2BfDXVvlIDc8U_qJLagKbvxYqcWpQvc5KYbOwLT_lq5wA/exec";
+    const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbydnRqHpWuDbTt2Rb5_fYPjLsWwCXdUulbpNXLn3W6wX6cwC4KCYxJRRbZ0ccJvp0MJ3Q/exec";
 
     async function apiListVeiculos() {
       const res = await fetch(`${SHEETS_API_URL}?action=list`, { method: "GET" });
-      if (!res.ok) throw new Error("Falha ao listar veículos");
-      return await res.json();
+      const txt = await res.text();
+      if (!res.ok) throw new Error(`List HTTP ${res.status}: ${txt}`);
+      return JSON.parse(txt);
     }
 
     async function apiUpsertVeiculo(veiculo) {
@@ -522,13 +523,12 @@
 
       const res = await fetch(SHEETS_API_URL, {
         method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body
       });
 
       const txt = await res.text();
-      console.log("status", res.status, "resp", txt);
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`Upsert HTTP ${res.status}: ${txt}`);
       return JSON.parse(txt);
     }
 
@@ -539,70 +539,72 @@
 
       const res = await fetch(SHEETS_API_URL, {
         method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body
       });
 
       const txt = await res.text();
-      console.log("status", res.status, "resp", txt);
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`Delete HTTP ${res.status}: ${txt}`);
       return JSON.parse(txt);
     }
 
     // ========== GERENCIAMENTO DE VEÍCULOS ==========
     let veiculoSelecionado = null;
+    let veiculosCache = [];
 
-    // Carrega veículos do Google Sheets
     async function carregarVeiculos() {
-      try {
-        const json = await apiListVeiculos();
-        return json.data || [];
-      } catch (error) {
-        console.error('Erro ao carregar veículos (Sheets):', error);
-        return [];
-      }
+      const json = await apiListVeiculos();
+      return Array.isArray(json.data) ? json.data : [];
     }
 
-    // Renderiza a lista de veículos
     async function renderizarVeiculos() {
-      const veiculos = await carregarVeiculos();
-      const container = document.getElementById('lista-veiculos');
+      try {
+        veiculosCache = await carregarVeiculos();
 
-      if (veiculos.length === 0) {
-        container.innerHTML = '<div class="text-center py-16 text-gray-500">Nenhum veículo cadastrado.</div>';
-        return;
-      }
+        const container = document.getElementById("lista-veiculos");
+        if (!veiculosCache.length) {
+          container.innerHTML = '<div class="text-center py-16 text-gray-500">Nenhum veículo cadastrado.</div>';
+          return;
+        }
 
-      container.innerHTML = veiculos.map((veiculo, index) => `
-        <div class="card p-5 cursor-pointer hover:shadow-lg transition-all" data-id="${index}" onclick="selecionarVeiculo(${index})">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <div class="flex items-center gap-3">
-                <div class="text-2xl">🚗</div>
-                <div>
-                  <h4 class="font-extrabold text-gray-900">${veiculo.placa}</h4>
-                  <p class="text-sm text-gray-600">${veiculo.marca} ${veiculo.modelo}</p>
+        container.innerHTML = veiculosCache.map((v, index) => `
+          <div class="card p-5 cursor-pointer hover:shadow-lg transition-all"
+               data-index="${index}"
+               onclick="selecionarVeiculo(${index})">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center gap-3">
+                  <div class="text-2xl">🚗</div>
+                  <div>
+                    <h4 class="font-extrabold text-gray-900">${v.placa}</h4>
+                    <p class="text-sm text-gray-600">${v.marca} ${v.modelo}</p>
+                  </div>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-4 text-sm">
+                  <span class="text-gray-600"><strong>Ano:</strong> ${v.ano}</span>
+                  <span class="text-gray-600"><strong>KM:</strong> ${v.km || 0}</span>
                 </div>
               </div>
-              <div class="mt-3 flex flex-wrap gap-4 text-sm">
-                <span class="text-gray-600"><strong>Ano:</strong> ${veiculo.ano}</span>
-                <span class="text-gray-600"><strong>KM:</strong> ${veiculo.km || '0'}</span>
+              <div class="text-right">
+                <div class="chip chip-ok">Ativo</div>
               </div>
             </div>
-            <div class="text-right">
-              <div id="status-veiculo-${index}" class="chip chip-ok">Ativo</div>
-            </div>
           </div>
-        </div>
-      `).join('');
+        `).join("");
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById("lista-veiculos").innerHTML =
+          '<div class="text-center py-16 text-red-600 font-bold">Erro ao carregar do Sheets.</div>';
+      }
     }
 
-    // Seleciona um veículo
     function selecionarVeiculo(index) {
-      const veiculos = carregarVeiculos();
-      veiculoSelecionado = { index, ...veiculos[index] };
+      const v = veiculosCache[index];
+      if (!v) return;
 
-      // Atualiza visual da seleção
+      veiculoSelecionado = { index, ...v };
+
       document.querySelectorAll('#lista-veiculos > div').forEach((el, i) => {
         if (i === index) {
           el.style.background = 'linear-gradient(135deg,rgba(102,126,234,.15),rgba(118,75,162,.15))';
@@ -613,12 +615,10 @@
         }
       });
 
-      // Habilita botões de editar e excluir
       document.getElementById('btn-editar-veiculo').disabled = false;
       document.getElementById('btn-excluir-veiculo').disabled = false;
     }
 
-    // Abre modal para novo veículo
     function abrirModalNovoVeiculo() {
       veiculoSelecionado = null;
       document.getElementById('modal-veiculo-titulo').textContent = 'Novo Veículo';
@@ -626,20 +626,18 @@
       document.getElementById('modal-veiculo').classList.remove('hidden');
     }
 
-    // Abre modal para editar veículo
     function abrirModalEditarVeiculo() {
       if (!veiculoSelecionado) return;
 
       document.getElementById('modal-veiculo-titulo').textContent = 'Editar Veículo';
-      document.getElementById('veiculo-placa').value = veiculoSelecionado.placa;
-      document.getElementById('veiculo-marca').value = veiculoSelecionado.marca;
-      document.getElementById('veiculo-modelo').value = veiculoSelecionado.modelo;
-      document.getElementById('veiculo-ano').value = veiculoSelecionado.ano;
+      document.getElementById('veiculo-placa').value = veiculoSelecionado.placa || '';
+      document.getElementById('veiculo-marca').value = veiculoSelecionado.marca || '';
+      document.getElementById('veiculo-modelo').value = veiculoSelecionado.modelo || '';
+      document.getElementById('veiculo-ano').value = veiculoSelecionado.ano || '';
       document.getElementById('veiculo-km').value = veiculoSelecionado.km || '';
       document.getElementById('modal-veiculo').classList.remove('hidden');
     }
 
-    // Fecha modal
     function fecharModalVeiculo() {
       document.getElementById('modal-veiculo').classList.add('hidden');
       veiculoSelecionado = null;
@@ -647,16 +645,15 @@
       document.getElementById('btn-excluir-veiculo').disabled = true;
     }
 
-    // Salva novo ou edita veículo
     document.getElementById('form-veiculo').addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const novoVeiculo = {
-        placa: document.getElementById('veiculo-placa').value.toUpperCase(),
-        marca: document.getElementById('veiculo-marca').value,
-        modelo: document.getElementById('veiculo-modelo').value,
-        ano: parseInt(document.getElementById('veiculo-ano').value),
-        km: document.getElementById('veiculo-km').value ? parseInt(document.getElementById('veiculo-km').value) : 0
+        placa: document.getElementById('veiculo-placa').value.trim().toUpperCase(),
+        marca: document.getElementById('veiculo-marca').value.trim(),
+        modelo: document.getElementById('veiculo-modelo').value.trim(),
+        ano: Number(document.getElementById('veiculo-ano').value),
+        km: document.getElementById('veiculo-km').value ? Number(document.getElementById('veiculo-km').value) : 0
       };
 
       try {
@@ -670,21 +667,19 @@
       }
     });
 
-    // Exclui veículo
     async function excluirVeiculo() {
       if (!veiculoSelecionado) return;
 
-      // Confirmação inline
       const botao = document.getElementById('btn-excluir-veiculo');
       if (botao.textContent.includes('Confirmar')) {
         try {
           await apiDeleteVeiculo(veiculoSelecionado.placa);
           await renderizarVeiculos();
-
-          veiculoSelecionado = null;
-          document.getElementById('btn-editar-veiculo').disabled = true;
-          document.getElementById('btn-excluir-veiculo').disabled = true;
-          document.getElementById('btn-excluir-veiculo').innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+          fecharModalVeiculo();
+          botao.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>`;
           mostrarToast('Veículo excluído com sucesso!', 'success');
         } catch (err) {
           console.error(err);
@@ -693,12 +688,14 @@
       } else {
         botao.innerHTML = '⚠️ Confirmar?';
         setTimeout(() => {
-          botao.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+          botao.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>`;
         }, 2000);
       }
     }
 
-    // Toast de notificação
     function mostrarToast(mensagem, tipo = 'info') {
       const toast = document.createElement('div');
       toast.className = `fixed bottom-6 right-6 card p-4 max-w-sm z-50 animate-pulse ${
@@ -706,27 +703,19 @@
       }`;
       toast.textContent = mensagem;
       document.body.appendChild(toast);
-
       setTimeout(() => toast.remove(), 3000);
     }
 
-    // Event listeners dos botões de veículo
     document.getElementById('btn-novo-veiculo').addEventListener('click', abrirModalNovoVeiculo);
     document.getElementById('btn-editar-veiculo').addEventListener('click', abrirModalEditarVeiculo);
     document.getElementById('btn-excluir-veiculo').addEventListener('click', excluirVeiculo);
 
-    // Fecha modal ao clicar fora
     document.getElementById('modal-veiculo').addEventListener('click', (e) => {
-      if (e.target.id === 'modal-veiculo') {
-        fecharModalVeiculo();
-      }
+      if (e.target.id === 'modal-veiculo') fecharModalVeiculo();
     });
 
-    // Carrega veículos ao iniciar
     renderizarVeiculos();
-
-    // Set initial view
     selectView('dashboard');
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cbfabdde03d9ca9',t:'MTc3MDc2OTEzMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cbfd2c970e7f203',t:'MTc3MDc3MDcyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
