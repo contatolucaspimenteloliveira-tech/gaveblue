@@ -302,7 +302,7 @@
        <div class="card p-6" style="background:linear-gradient(135deg,rgba(132,250,176,.1),rgba(143,211,244,.1))">
         <div class="flex items-center gap-4">
          <div class="ico">
-          ⛽
+          ��
          </div>
          <div>
           <h3 class="text-lg font-extrabold text-gray-900">Abastecimento</h3>
@@ -316,7 +316,7 @@
        <div class="card p-6" style="background:linear-gradient(135deg,rgba(246,211,101,.1),rgba(253,160,133,.1))">
         <div class="flex items-center gap-4">
          <div class="ico">
-          💸
+          ��
          </div>
          <div>
           <h3 class="text-lg font-extrabold text-gray-900">Despesa</h3>
@@ -344,6 +344,9 @@
          </svg></button> <button id="btn-editar-veiculo" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 transition-all" type="button" title="Editar" disabled>
          <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+         </svg></button> <button id="btn-duplicar-veiculo" class="w-10 h-10 flex items-center justify-center rounded-xl text-green-600 hover:bg-green-50 transition-all" type="button" title="Duplicar" disabled>
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /><rect x="8" y="2" width="12" height="14" rx="2" />
          </svg></button> <button id="btn-excluir-veiculo" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 transition-all" type="button" title="Excluir" disabled>
          <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -356,7 +359,15 @@
        </div>
       </div>
      </div>
-    </section><!-- MODAL: Cadastro/Edição de Veículo -->
+    </section><!-- MODAL: Confirmação de Exclusão -->
+    <div id="modal-confirmacao" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999] p-4">
+     <div class="card p-8 w-full max-w-sm">
+      <h3 class="text-2xl font-extrabold text-gray-900 mb-3">🗑️ Excluir Veículo</h3>
+      <p class="text-gray-700 mb-8 leading-relaxed">Tem certeza que deseja excluir o veículo <strong id="confirmacao-placa">---</strong>? Esta ação não pode ser desfeita.</p>
+      <div class="flex gap-3"><button type="button" class="btn2 flex-1" onclick="fecharModalConfirmacao()">Cancelar</button> <button type="button" class="btn flex-1" id="btn-confirmar-excluir" onclick="confirmarExclusao()">Excluir</button>
+      </div>
+     </div>
+    </div><!-- MODAL: Cadastro/Edição de Ve��culo -->
     <div id="modal-veiculo" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
      <div class="card p-8 w-full max-w-md max-h-[90vh] overflow-y-auto">
       <h3 id="modal-veiculo-titulo" class="text-2xl font-extrabold text-gray-900 mb-6">Novo Veículo</h3>
@@ -380,23 +391,56 @@
      <div class="card p-8">
       <div class="flex items-center justify-between mb-8">
        <h2 class="text-2xl font-extrabold text-gray-900">Lista de Motoristas</h2>
-       <div class="flex items-center gap-3"><button class="w-10 h-10 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 transition-all" type="button" title="Novo">
+       <div class="flex items-center gap-3"><button id="btn-novo-motorista" class="w-10 h-10 flex items-center justify-center rounded-xl text-purple-600 hover:bg-purple-50 transition-all" type="button" title="Novo">
          <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-         </svg></button> <button class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 transition-all" type="button" title="Editar">
+         </svg></button> <button id="btn-editar-motorista" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 transition-all" type="button" title="Editar" disabled>
          <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-         </svg></button> <button class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 transition-all" type="button" title="Excluir">
+         </svg></button> <button id="btn-excluir-motorista" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 transition-all" type="button" title="Excluir" disabled>
          <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
          </svg></button>
        </div>
-      </div>
-      <div class="text-center py-16 text-gray-500">
-       Nenhum motorista cadastrado.
+      </div><!-- Listagem de Motoristas -->
+      <div id="lista-motoristas" class="space-y-3">
+       <div class="text-center py-16 text-gray-500">
+        Carregando...
+       </div>
       </div>
      </div>
-    </section><!-- FORNECEDORES -->
+    </section><!-- MODAL: Cadastro/Edição de Motorista -->
+    <div id="modal-motorista" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+     <div class="card p-8 w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <h3 id="modal-motorista-titulo" class="text-2xl font-extrabold text-gray-900 mb-6">Novo Motorista</h3>
+      <form id="form-motorista" class="space-y-5">
+       <div><label for="motorista-nome" class="block text-xs font-extrabold text-gray-700 mb-2 uppercase tracking-wide">Nome Completo *</label> <input id="motorista-nome" type="text" class="input w-full" placeholder="Ex: João Silva" required>
+       </div>
+       <div><label for="motorista-cpf" class="block text-xs font-extrabold text-gray-700 mb-2 uppercase tracking-wide">CPF</label> <input id="motorista-cpf" type="text" class="input w-full" placeholder="Ex: 123.456.789-00">
+       </div>
+       <div><label for="motorista-nascimento" class="block text-xs font-extrabold text-gray-700 mb-2 uppercase tracking-wide">Data de Nascimento</label> <input id="motorista-nascimento" type="date" class="input w-full">
+       </div>
+       <div><label for="motorista-cnh" class="block text-xs font-extrabold text-gray-700 mb-2 uppercase tracking-wide">CNH *</label> <input id="motorista-cnh" type="text" class="input w-full" placeholder="Ex: 1234567890" required>
+       </div>
+       <div><label for="motorista-categoria" class="block text-xs font-extrabold text-gray-700 mb-2 uppercase tracking-wide">Categoria CNH *</label> <select id="motorista-categoria" class="input w-full" required> <option value="">Selecione...</option> <option value="A">A</option> <option value="B">B</option> <option value="C">C</option> <option value="D">D</option> <option value="E">E</option> </select>
+       </div>
+       <div><label for="motorista-validade" class="block text-xs font-extrabold text-gray-700 mb-2 uppercase tracking-wide">Validade da CNH *</label> <input id="motorista-validade" type="date" class="input w-full" required>
+       </div>
+       <div><label for="motorista-veiculo" class="block text-xs font-extrabold text-gray-700 mb-2 uppercase tracking-wide">Veículo *</label> <select id="motorista-veiculo" class="input w-full" required> <option value="">Carregando veículos...</option> </select>
+       </div>
+       <div class="flex gap-3 pt-4"><button type="button" onclick="fecharModalMotorista()" class="btn2 flex-1">Cancelar</button> <button type="button" onclick="salvarMotorista()" class="btn flex-1">Salvar</button>
+       </div>
+      </form>
+     </div>
+    </div><!-- MODAL: Confirmação de Exclus��o de Motorista -->
+    <div id="modal-confirmacao-motorista" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999] p-4">
+     <div class="card p-8 w-full max-w-sm">
+      <h3 class="text-2xl font-extrabold text-gray-900 mb-3">🗑️ Excluir Motorista</h3>
+      <p class="text-gray-700 mb-8 leading-relaxed">Tem certeza que deseja excluir o motorista <strong id="confirmacao-motorista-nome">---</strong>? Esta ação não pode ser desfeita.</p>
+      <div class="flex gap-3"><button type="button" class="btn2 flex-1" onclick="fecharModalConfirmacaoMotorista()">Cancelar</button> <button type="button" class="btn flex-1" id="btn-confirmar-excluir-motorista" onclick="confirmarExclusaoMotorista()">Excluir</button>
+      </div>
+     </div>
+    </div><!-- FORNECEDORES -->
     <section id="fornecedores" class="view">
      <div class="card p-8">
       <div class="flex items-center justify-between mb-8">
@@ -421,7 +465,7 @@
     <section id="ajuda" class="view">
      <div class="card p-8">
       <h2 class="text-2xl font-extrabold text-gray-900 mb-4">Ajuda</h2>
-      <p class="text-gray-700 leading-relaxed">Bem-vindo ao WeFrotas! Este é um sistema de gestão de frotas com navegação intuitiva. Use os ícones acima para navegar entre as diferentes seções.</p>
+      <p class="text-gray-700 leading-relaxed">Bem-vindo ao WeFrotas! Este �������� um sistema de gestão de frotas com navegação intuitiva. Use os ícones acima para navegar entre as diferentes seções.</p>
       <div class="mt-6 flex flex-wrap gap-3"><button class="btn2" onclick="selectView('dashboard')">Ir para Dashboard</button> <button class="btn2" onclick="selectView('orders')">Ir para OS</button> <button class="btn2" onclick="selectView('contas')">Ir para Contas</button>
       </div>
      </div>
@@ -459,6 +503,9 @@
         if (viewId === 'veiculos') {
           console.log("🎯 Aba Veículos ativada!");
           renderizarVeiculos();
+        } else if (viewId === 'motoristas') {
+          console.log("🎯 Aba Motoristas ativada!");
+          renderizarMotoristas();
         }
       }
     }
@@ -603,7 +650,7 @@
 
     async function renderizarVeiculos() {
       try {
-        console.log("🎨 [Renderização] Iniciando...");
+        console.log("��� [Renderização] Iniciando...");
         veiculosCache = await carregarVeiculos();
         const container = document.getElementById("lista-veiculos");
         
@@ -664,6 +711,7 @@
       });
 
       document.getElementById('btn-editar-veiculo').disabled = false;
+      document.getElementById('btn-duplicar-veiculo').disabled = false;
       document.getElementById('btn-excluir-veiculo').disabled = false;
     }
 
@@ -690,11 +738,17 @@
       document.getElementById('modal-veiculo').classList.add('hidden');
       veiculoSelecionado = null;
       document.getElementById('btn-editar-veiculo').disabled = true;
+      document.getElementById('btn-duplicar-veiculo').disabled = true;
       document.getElementById('btn-excluir-veiculo').disabled = true;
     }
 
     document.getElementById('form-veiculo').addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      const botaoSalvar = e.target.querySelector('button[type="submit"]');
+      const textOriginal = botaoSalvar.innerHTML;
+      botaoSalvar.disabled = true;
+      botaoSalvar.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span>Salvando...';
 
       const novoVeiculo = {
         placa: document.getElementById('veiculo-placa').value.trim().toUpperCase(),
@@ -712,35 +766,39 @@
       } catch (err) {
         console.error(err);
         mostrarToast('Erro ao salvar: ' + err.message, 'error');
+        botaoSalvar.disabled = false;
+        botaoSalvar.innerHTML = textOriginal;
       }
     });
 
-    async function excluirVeiculo() {
+    function excluirVeiculo() {
       if (!veiculoSelecionado) return;
 
-      const botao = document.getElementById('btn-excluir-veiculo');
-      if (botao.textContent.includes('Confirmar')) {
-        try {
-          await apiDeleteVeiculo(veiculoSelecionado.placa);
-          await renderizarVeiculos();
-          fecharModalVeiculo();
-          botao.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>`;
-          mostrarToast('Veículo excluído com sucesso!', 'success');
-        } catch (err) {
-          console.error(err);
-          mostrarToast('Erro ao excluir: ' + err.message, 'error');
-        }
-      } else {
-        botao.innerHTML = '⚠️ Confirmar?';
-        setTimeout(() => {
-          botao.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>`;
-        }, 2000);
+      document.getElementById('confirmacao-placa').textContent = veiculoSelecionado.placa;
+      document.getElementById('modal-confirmacao').classList.remove('hidden');
+    }
+
+    function fecharModalConfirmacao() {
+      document.getElementById('modal-confirmacao').classList.add('hidden');
+    }
+
+    async function confirmarExclusao() {
+      const botao = document.getElementById('btn-confirmar-excluir');
+      botao.disabled = true;
+      botao.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span>Excluindo...';
+
+      try {
+        await apiDeleteVeiculo(veiculoSelecionado.placa);
+        await renderizarVeiculos();
+        fecharModalVeiculo();
+        fecharModalConfirmacao();
+        mostrarToast('✅ Veículo excluído com sucesso!', 'success');
+      } catch (err) {
+        console.error(err);
+        mostrarToast('❌ Erro ao excluir: ' + err.message, 'error');
+      } finally {
+        botao.disabled = false;
+        botao.innerHTML = 'Excluir';
       }
     }
 
@@ -754,18 +812,381 @@
       setTimeout(() => toast.remove(), 3000);
     }
 
+    function duplicarVeiculo() {
+      if (!veiculoSelecionado) return;
+
+      document.getElementById('modal-veiculo-titulo').textContent = 'Duplicar Veículo';
+      document.getElementById('veiculo-placa').value = '';
+      document.getElementById('veiculo-marca').value = veiculoSelecionado.marca || '';
+      document.getElementById('veiculo-modelo').value = veiculoSelecionado.modelo || '';
+      document.getElementById('veiculo-ano').value = veiculoSelecionado.ano || '';
+      document.getElementById('veiculo-km').value = veiculoSelecionado.km || '';
+      document.getElementById('modal-veiculo').classList.remove('hidden');
+    }
+
+    // ==================== MOTORISTAS ====================
+    let motoristasSelecionado = null;
+    let motoristasCache = [];
+    let veiculosSelect = [];
+
+    async function salvarMotorista() {
+      const nome = document.getElementById('motorista-nome').value.trim();
+      const cpf = document.getElementById('motorista-cpf').value.trim();
+      const nascimento = document.getElementById('motorista-nascimento').value;
+      const cnh = document.getElementById('motorista-cnh').value.trim();
+      const categoria = document.getElementById('motorista-categoria').value;
+      const validade = document.getElementById('motorista-validade').value;
+      const veiculo = document.getElementById('motorista-veiculo').value;
+
+      // Validação básica
+      if (!nome || !cnh || !categoria || !validade || !veiculo) {
+        mostrarToast('❌ Preencha todos os campos obrigatórios!', 'error');
+        return;
+      }
+
+      const botao = document.querySelector('#modal-motorista button[onclick="salvarMotorista()"]');
+      const textOriginal = botao.innerHTML;
+      botao.disabled = true;
+      botao.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span>Salvando...';
+
+      try {
+        const body = new URLSearchParams();
+        body.append("action", "upsert_motorista");
+        body.append("nome_completo", nome);
+        body.append("cpf", cpf);
+        body.append("data_nascimento", nascimento);
+        body.append("cnh_numero", cnh);
+        body.append("cnh_categoria", categoria);
+        body.append("cnh_validade", validade);
+        body.append("placa_veiculo", veiculo);
+
+        const res = await fetch(SHEETS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+          body
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        console.log("✅ Motorista salvo com sucesso!");
+        await renderizarMotoristas();
+        fecharModalMotorista();
+        mostrarToast('✅ Motorista salvo com sucesso!', 'success');
+      } catch (err) {
+        console.error("❌ Erro ao salvar:", err);
+        mostrarToast('❌ Erro ao salvar: ' + err.message, 'error');
+      } finally {
+        botao.disabled = false;
+        botao.innerHTML = textOriginal;
+      }
+    }
+
+    async function carregarVeiculosSelect() {
+      try {
+        console.log("📡 [Carregamento Veículos] Iniciando com lista padrão...");
+        // Usar os veículos já carregados em cache
+        if (veiculosCache && veiculosCache.length > 0) {
+          console.log("✅ [Carregamento Veículos] " + veiculosCache.length + " veículos do cache");
+          return veiculosCache;
+        }
+
+        // Se não tiver no cache, carregar manualmente
+        const veiculos = await carregarVeiculos();
+        veiculosSelect = veiculos || [];
+        console.log("✅ [Carregamento Veículos] " + veiculosSelect.length + " veículos carregados");
+        return veiculosSelect;
+      } catch (e) {
+        console.error("❌ [Carregamento Veículos] Erro:", e.message);
+        return [];
+      }
+    }
+
+    async function populateSelectVeiculos() {
+      const select = document.getElementById('motorista-veiculo');
+      select.innerHTML = '<option value="">Carregando veículos...</option>';
+      
+      try {
+        console.log("📡 [Dropdown] Carregando veículos do Sheets...");
+        
+        // Sempre carrega direto do Sheets
+        const res = await fetch(`${SHEETS_API_URL}?action=list`, { method: "GET" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        const txt = await res.text();
+        if (txt.trim() === "OK" || txt.trim() === "ok") {
+          console.log("⚠️ [Dropdown] API retornou 'OK' sem dados");
+          select.innerHTML = '<option value="">❌ Nenhum veículo cadastrado</option>';
+          return;
+        }
+        
+        const json = JSON.parse(txt);
+        if (!json.ok) throw new Error(json.error);
+
+        const veiculos = json.data || [];
+        console.log("🚗 [Dropdown] " + veiculos.length + " veículos carregados do Sheets");
+
+        if (veiculos.length === 0) {
+          select.innerHTML = '<option value="">❌ Nenhum veículo cadastrado</option>';
+          return;
+        }
+
+        select.innerHTML = '<option value="">Selecione um veículo...</option>';
+        veiculos.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.placa || '';
+          opt.textContent = `${v.placa || 'N/A'} - ${v.marca || ''} ${v.modelo || ''}`.trim();
+          select.appendChild(opt);
+        });
+        
+        console.log("✅ [Dropdown] Dropdown preenchido com " + veiculos.length + " opções");
+      } catch (err) {
+        console.error("❌ [Dropdown] Erro:", err);
+        select.innerHTML = '<option value="">❌ Erro ao carregar veículos</option>';
+      }
+    }
+
+    async function carregarMotoristas() {
+      try {
+        console.log("📡 [Carregamento Motoristas] Iniciando...");
+        const res = await fetch(`${SHEETS_API_URL}?action=list_motoristas`, { method: "GET" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        const txt = await res.text();
+        if (txt.trim() === "OK" || txt.trim() === "ok") return [];
+        
+        const json = JSON.parse(txt);
+        if (!json.ok) throw new Error(json.error);
+
+        motoristasCache = json.data || [];
+        console.log("✅ [Carregamento Motoristas] " + motoristasCache.length + " motoristas carregados");
+        return motoristasCache;
+      } catch (e) {
+        console.error("❌ [Carregamento Motoristas] Erro:", e.message);
+        return [];
+      }
+    }
+
+    async function renderizarMotoristas() {
+      try {
+        console.log("🎨 [Renderização Motoristas] Iniciando...");
+        motoristasCache = await carregarMotoristas();
+        const container = document.getElementById("lista-motoristas");
+        
+        if (!motoristasCache || motoristasCache.length === 0) {
+          console.log("📭 [Renderização Motoristas] Lista vazia");
+          container.innerHTML = '<div class="text-center py-16 text-gray-500">Nenhum motorista cadastrado.</div>';
+          return;
+        }
+
+        console.log("🎨 [Renderização Motoristas] Renderizando " + motoristasCache.length + " motoristas");
+        container.innerHTML = motoristasCache.map((m, index) => {
+          const cnhValidade = new Date(m.cnh_validade);
+          const hoje = new Date();
+          const diasRestantes = Math.floor((cnhValidade - hoje) / (1000 * 60 * 60 * 24));
+          const statusCNH = diasRestantes < 0 ? 'chip-bad' : diasRestantes < 30 ? 'chip-warn' : 'chip-ok';
+          const textoCNH = diasRestantes < 0 ? 'Vencida' : diasRestantes < 30 ? 'Próximo Vencer' : 'Válida';
+
+          return `
+            <div class="card p-5 cursor-pointer hover:shadow-lg transition-all"
+                 data-index="${index}"
+                 onclick="selecionarMotorista(${index})">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center gap-3">
+                    <div class="text-2xl">👤</div>
+                    <div>
+                      <h4 class="font-extrabold text-gray-900">${m.nome_completo || 'N/A'}</h4>
+                      <p class="text-sm text-gray-600">CNH: ${m.cnh_numero || 'N/A'} | Cat. ${m.cnh_categoria || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div class="mt-3 flex flex-wrap gap-4 text-sm">
+                    <span class="text-gray-600"><strong>CPF:</strong> ${m.cpf || 'N/A'}</span>
+                    <span class="text-gray-600"><strong>Veículo:</strong> ${m.placa_veiculo || 'N/A'}</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="chip ${statusCNH}">${textoCNH}</div>
+                  <div class="text-xs text-gray-500 mt-2">${m.cnh_validade || 'N/A'}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+      } catch (err) {
+        console.error("❌ [Renderização Motoristas] Erro:", err);
+        document.getElementById("lista-motoristas").innerHTML =
+          '<div class="text-center py-16 text-red-600 font-bold">Erro: ' + err.message + '</div>';
+      }
+    }
+
+    function selecionarMotorista(index) {
+      const m = motoristasCache[index];
+      if (!m) return;
+
+      motoristasSelecionado = { index, ...m };
+      console.log("✅ [Seleção Motorista] Motorista selecionado:", m.nome_completo);
+
+      document.querySelectorAll('#lista-motoristas > div').forEach((el, i) => {
+        if (i === index) {
+          el.style.background = 'linear-gradient(135deg,rgba(102,126,234,.15),rgba(118,75,162,.15))';
+          el.style.borderColor = 'rgba(102,126,234,.3)';
+        } else {
+          el.style.background = '';
+          el.style.borderColor = '';
+        }
+      });
+
+      document.getElementById('btn-editar-motorista').disabled = false;
+      document.getElementById('btn-excluir-motorista').disabled = false;
+    }
+
+    function abrirModalNovoMotorista() {
+      motoristasSelecionado = null;
+      document.getElementById('modal-motorista-titulo').textContent = 'Novo Motorista';
+      document.getElementById('form-motorista').reset();
+      populateSelectVeiculos();
+      document.getElementById('modal-motorista').classList.remove('hidden');
+    }
+
+    function abrirModalEditarMotorista() {
+      if (!motoristasSelecionado) return;
+
+      document.getElementById('modal-motorista-titulo').textContent = 'Editar Motorista';
+      document.getElementById('motorista-nome').value = motoristasSelecionado.nome_completo || '';
+      document.getElementById('motorista-cpf').value = motoristasSelecionado.cpf || '';
+      document.getElementById('motorista-nascimento').value = motoristasSelecionado.data_nascimento || '';
+      document.getElementById('motorista-cnh').value = motoristasSelecionado.cnh_numero || '';
+      document.getElementById('motorista-categoria').value = motoristasSelecionado.cnh_categoria || '';
+      document.getElementById('motorista-validade').value = motoristasSelecionado.cnh_validade || '';
+      document.getElementById('motorista-veiculo').value = motoristasSelecionado.placa_veiculo || '';
+      document.getElementById('modal-motorista').classList.remove('hidden');
+    }
+
+    function fecharModalMotorista() {
+      document.getElementById('modal-motorista').classList.add('hidden');
+      motoristasSelecionado = null;
+      document.getElementById('btn-editar-motorista').disabled = true;
+      document.getElementById('btn-excluir-motorista').disabled = true;
+    }
+
+    document.getElementById('form-motorista').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const botaoSalvar = e.target.querySelector('button[type="submit"]');
+      const textOriginal = botaoSalvar.innerHTML;
+      botaoSalvar.disabled = true;
+      botaoSalvar.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span>Salvando...';
+
+      const novoMotorista = {
+        nome_completo: document.getElementById('motorista-nome').value.trim(),
+        cpf: document.getElementById('motorista-cpf').value.trim(),
+        data_nascimento: document.getElementById('motorista-nascimento').value,
+        cnh_numero: document.getElementById('motorista-cnh').value.trim(),
+        cnh_categoria: document.getElementById('motorista-categoria').value,
+        cnh_validade: document.getElementById('motorista-validade').value,
+        placa_veiculo: document.getElementById('motorista-veiculo').value
+      };
+
+      try {
+        const body = new URLSearchParams();
+        body.append("action", "upsert_motorista");
+        body.append("nome_completo", novoMotorista.nome_completo);
+        body.append("cpf", novoMotorista.cpf);
+        body.append("data_nascimento", novoMotorista.data_nascimento);
+        body.append("cnh_numero", novoMotorista.cnh_numero);
+        body.append("cnh_categoria", novoMotorista.cnh_categoria);
+        body.append("cnh_validade", novoMotorista.cnh_validade);
+        body.append("placa_veiculo", novoMotorista.placa_veiculo);
+
+        const res = await fetch(SHEETS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+          body
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await renderizarMotoristas();
+        fecharModalMotorista();
+        mostrarToast('✅ Motorista salvo com sucesso!', 'success');
+      } catch (err) {
+        console.error(err);
+        mostrarToast('❌ Erro ao salvar: ' + err.message, 'error');
+        botaoSalvar.disabled = false;
+        botaoSalvar.innerHTML = textOriginal;
+      }
+    });
+
+    function excluirMotorista() {
+      if (!motoristasSelecionado) return;
+
+      document.getElementById('confirmacao-motorista-nome').textContent = motoristasSelecionado.nome_completo;
+      document.getElementById('modal-confirmacao-motorista').classList.remove('hidden');
+    }
+
+    function fecharModalConfirmacaoMotorista() {
+      document.getElementById('modal-confirmacao-motorista').classList.add('hidden');
+    }
+
+    async function confirmarExclusaoMotorista() {
+      const botao = document.getElementById('btn-confirmar-excluir-motorista');
+      botao.disabled = true;
+      botao.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span>Excluindo...';
+
+      try {
+        const body = new URLSearchParams();
+        body.append("action", "delete_motorista");
+        body.append("cnh_numero", motoristasSelecionado.cnh_numero);
+
+        const res = await fetch(SHEETS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+          body
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await renderizarMotoristas();
+        fecharModalMotorista();
+        fecharModalConfirmacaoMotorista();
+        mostrarToast('✅ Motorista excluído com sucesso!', 'success');
+      } catch (err) {
+        console.error(err);
+        mostrarToast('❌ Erro ao excluir: ' + err.message, 'error');
+      } finally {
+        botao.disabled = false;
+        botao.innerHTML = 'Excluir';
+      }
+    }
+
     // ==================== EVENTOS ====================
     document.getElementById('btn-novo-veiculo').addEventListener('click', abrirModalNovoVeiculo);
     document.getElementById('btn-editar-veiculo').addEventListener('click', abrirModalEditarVeiculo);
+    document.getElementById('btn-duplicar-veiculo').addEventListener('click', duplicarVeiculo);
     document.getElementById('btn-excluir-veiculo').addEventListener('click', excluirVeiculo);
+
+    document.getElementById('btn-novo-motorista').addEventListener('click', abrirModalNovoMotorista);
+    document.getElementById('btn-editar-motorista').addEventListener('click', abrirModalEditarMotorista);
+    document.getElementById('btn-excluir-motorista').addEventListener('click', excluirMotorista);
 
     document.getElementById('modal-veiculo').addEventListener('click', (e) => {
       if (e.target.id === 'modal-veiculo') fecharModalVeiculo();
+    });
+
+    document.getElementById('modal-motorista').addEventListener('click', (e) => {
+      if (e.target.id === 'modal-motorista') fecharModalMotorista();
+    });
+
+    document.getElementById('modal-confirmacao').addEventListener('click', (e) => {
+      if (e.target.id === 'modal-confirmacao') fecharModalConfirmacao();
+    });
+
+    document.getElementById('modal-confirmacao-motorista').addEventListener('click', (e) => {
+      if (e.target.id === 'modal-confirmacao-motorista') fecharModalConfirmacaoMotorista();
     });
 
     // ==================== INIT ====================
     console.log("🚀 Sistema iniciado!");
     selectView('dashboard');
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cc03869c7ca9ca9',t:'MTc3MDc3NDg4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cc077aa83f1a405',t:'MTc3MDc3NzQ3OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
