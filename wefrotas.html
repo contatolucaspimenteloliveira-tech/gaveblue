@@ -362,7 +362,7 @@
     </section><!-- MODAL: Confirmação de Exclusão -->
     <div id="modal-confirmacao" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999] p-4">
      <div class="card p-8 w-full max-w-sm">
-      <h3 class="text-2xl font-extrabold text-gray-900 mb-3">🗑️ Excluir Veículo</h3>
+      <h3 class="text-2xl font-extrabold text-gray-900 mb-3">🗑��� Excluir Veículo</h3>
       <p class="text-gray-700 mb-8 leading-relaxed">Tem certeza que deseja excluir o veículo <strong id="confirmacao-placa">---</strong>? Esta ação não pode ser desfeita.</p>
       <div class="flex gap-3"><button type="button" class="btn2 flex-1" onclick="fecharModalConfirmacao()">Cancelar</button> <button type="button" class="btn flex-1" id="btn-confirmar-excluir" onclick="confirmarExclusao()">Excluir</button>
       </div>
@@ -501,7 +501,7 @@
         }
 
         if (viewId === 'veiculos') {
-          console.log("🎯 Aba Veículos ativada!");
+          console.log("��� Aba Veículos ativada!");
           renderizarVeiculos();
         } else if (viewId === 'motoristas') {
           console.log("🎯 Aba Motoristas ativada!");
@@ -550,28 +550,53 @@
     }
 
     // ==================== API ====================
-    const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbwRiKKse2sh97TkOsGTOL6pVuYk7gZ_8w7TQLKuMQjk/dev";
+    const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbz1okpwRj8S_k4hPF3f1_TA53zSOGlemlX67emhPjCTqCM4OoyrlfyGEiyv-2W83YVECQ/exec";
 
     async function apiListVeiculos() {
       console.log("🔌 [API] Conectando a:", SHEETS_API_URL);
-      const res = await fetch(`${SHEETS_API_URL}?action=list`, { method: "GET" });
-      console.log("✅ [API] Status HTTP:", res.status);
-      
-      const txt = await res.text();
-      console.log("📝 [API] Resposta bruta:", txt);
-      console.log("📏 [API] Tamanho:", txt.length, "bytes");
-      
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      // Google Apps Script às vezes retorna "OK" ou texto simples
-      if (txt.trim() === "OK" || txt.trim() === "ok") {
-        console.log("⚠️ [API] Recebeu 'OK' sem dados, retornando vazio");
-        return { ok: true, data: [] };
+      try {
+        // Usando modo dev sem ?dev para evitar CORS
+        const url = `${SHEETS_API_URL}?action=list`;
+        console.log("📡 [API] URL:", url);
+        
+        const res = await fetch(url, { 
+          method: "GET",
+          mode: 'cors',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        
+        console.log("✅ [API] Status HTTP:", res.status);
+        
+        const txt = await res.text();
+        console.log("📝 [API] Resposta bruta:", txt);
+        console.log("📏 [API] Tamanho:", txt.length, "bytes");
+        
+        if (!res.ok) {
+          console.error("❌ [API] HTTP Error:", res.status, res.statusText);
+          throw new Error(`HTTP ${res.status}: ${txt}`);
+        }
+        
+        // Google Apps Script às vezes retorna "OK" ou texto simples
+        if (txt.trim() === "OK" || txt.trim() === "ok") {
+          console.log("⚠️ [API] Recebeu 'OK' sem dados, retornando vazio");
+          return { ok: true, data: [] };
+        }
+        
+        if (!txt.trim()) {
+          console.warn("⚠️ [API] Resposta vazia!");
+          return { ok: true, data: [] };
+        }
+        
+        const json = JSON.parse(txt);
+        console.log("✅ [API] JSON parseado:", json);
+        return json;
+      } catch (e) {
+        console.error("❌ [API] Erro crítico:", e.message);
+        console.error("💡 [API] Dica: Verifique se a API está publicada como 'Execute as me' no Apps Script");
+        throw e;
       }
-      
-      const json = JSON.parse(txt);
-      console.log("✅ [API] JSON parseado:", json);
-      return json;
     }
 
     async function apiUpsertVeiculo(veiculo) {
@@ -1208,5 +1233,5 @@
     console.log("🚀 Sistema iniciado!");
     selectView('dashboard');
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cc09a9ca1f21a9e',t:'MTc3MDc3ODkxMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cc09ea4b2de1a9e',t:'MTc3MDc3OTA3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
