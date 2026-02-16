@@ -19,20 +19,12 @@
     }
     body {
       background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 25%, #2d1b4e 50%, #1a1f3a 75%, #0a0e27 100%);
+      background-attachment: fixed;
       position: relative;
       overflow-x: hidden;
+      min-height: 100vh;
     }
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(600px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.05), transparent 80%);
-      pointer-events: none;
-      z-index: 1;
-    }
+
     main {
       position: relative;
       z-index: 2;
@@ -147,35 +139,64 @@
       from { opacity: 0; transform: translateX(-50%) translateY(20px); }
       to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
+    .gradient-text {
+      background: linear-gradient(90deg, 
+        #3b82f6 0%, 
+        #8b5cf6 25%,
+        #3b82f6 50%,
+        #8b5cf6 75%,
+        #3b82f6 100%);
+      background-size: 200% 100%;
+      animation: titleGradientShift 8s ease infinite;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    @keyframes titleGradientShift {
+      0% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+      100% { background-position: 0% center; }
+    }
   </style>
-  <style>@view-transition { navigation: auto; }</style>
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="text-white flex flex-col min-h-full"><!-- HEADER -->
   <header class="w-full h-40 bg-slate-900/90 backdrop-blur border-b border-slate-700/30">
    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-3 sm:gap-4">
     <div class="flex items-center gap-3 sm:gap-4"><a href="https://gaveblue.com" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition-opacity flex-shrink-0"> <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo" class="h-8 sm:h-10 w-auto" loading="lazy"> </a>
-     <div class="w-px h-5 sm:h-6 bg-slate-600/50"></div><span class="font-bold text-lg sm:text-xl bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent truncate">WeConsultas</span>
+     <div class="w-px h-5 sm:h-6 bg-slate-600/50"></div><span class="font-bold text-lg sm:text-xl gradient-text truncate">WeConsultas</span>
     </div><button onclick="sairApp()" class="flex items-center gap-2 px-4 sm:px-6 py-2 bg-slate-700/50 hover:bg-slate-600/70 rounded-lg transition-colors text-slate-300 hover:text-white text-sm sm:text-base font-medium flex-shrink-0">
      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
      </svg><span class="hidden sm:inline">Sair</span> </button>
    </div>
-  </header><!-- CONTEÚDO PRINCIPAL -->
+  </header><!-- CONTE��DO PRINCIPAL -->
   <main class="flex-1 pt-8 pb-6 px-4 sm:px-6">
    <div class="max-w-7xl mx-auto"><!-- HERO -->
     <div class="mb-6">
-     <h1 id="hero-title" class="text-2xl sm:text-3xl font-extrabold text-center mb-2 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Consulte CPF, CNPJ, CEP e Placa</h1>
-     <p id="hero-subtitle" class="text-center text-slate-300 text-lg">Tudo em um só lugar. Rápido, simples e gratuito.</p>
+     <h1 id="hero-title" class="text-4xl sm:text-5xl font-extrabold text-center mb-2">Dados empresariais, <span id="hero-gradient" class="gradient-text">do jeito certo</span></h1>
+     <p id="hero-subtitle" class="text-center text-slate-300 text-lg">Consulte CEP, CNPJ e informações essenciais com rapidez e confiabilidade.</p>
     </div><!-- CARDS DE SELEÇÃO -->
     <section id="cards-container" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12"><button onclick="openScreen('cep')" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-pointer">
       <svg class="w-8 h-8 text-blue-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-      </svg><h3 class="font-bold text-lg">CEP</h3><p class="text-slate-400 text-sm">Consultar endereços</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
-      <svg class="w-8 h-8 text-green-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v10a2 2 0 002 2h5m0-4h10m-10 4h10m-10-4V8" />
-      </svg><h3 class="font-bold text-lg">CPF</h3><p class="text-slate-400 text-sm">Em breve</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
+      </svg><h3 class="font-bold text-lg">CEP</h3><p class="text-slate-400 text-sm">Consultar endereços</p></button> <button onclick="openScreen('cnpj')" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-pointer">
       <svg class="w-8 h-8 text-purple-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-      </svg><h3 class="font-bold text-lg">CNPJ</h3><p class="text-slate-400 text-sm">Em breve</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
-      <svg class="w-8 h-8 text-cyan-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg><h3 class="font-bold text-lg">Placa</h3><p class="text-slate-400 text-sm">Em breve</p></button>
+      </svg><h3 class="font-bold text-lg">CNPJ</h3><p class="text-slate-400 text-sm">Consultar empresas</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
+      <svg class="w-8 h-8 text-cyan-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg><h3 class="font-bold text-lg">CFOP</h3><p class="text-slate-400 text-sm">Em breve</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
+      <svg class="w-8 h-8 text-red-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+      </svg><h3 class="font-bold text-lg">CNAE</h3><p class="text-slate-400 text-sm">Em breve</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
+      <svg class="w-8 h-8 text-yellow-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg><h3 class="font-bold text-lg">Bancos</h3><p class="text-slate-400 text-sm">Em breve</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
+      <svg class="w-8 h-8 text-orange-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg><h3 class="font-bold text-lg">IBGE</h3><p class="text-slate-400 text-sm">Em breve</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
+      <svg class="w-8 h-8 text-pink-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg><h3 class="font-bold text-lg">Feriados</h3><p class="text-slate-400 text-sm">Em breve</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
+      <svg class="w-8 h-8 text-indigo-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg><h3 class="font-bold text-lg">Tabela NCM</h3><p class="text-slate-400 text-sm">Em breve</p></button> <button onclick="showComingSoon()" class="feature-card card-gradient rounded-2xl p-6 text-left cursor-not-allowed opacity-60">
+      <svg class="w-8 h-8 text-teal-400 mb-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+      </svg><h3 class="font-bold text-lg">Insc. Estadual</h3><p class="text-slate-400 text-sm">Em breve</p></button>
     </section><!-- HOME SCREEN -->
     <section id="home-screen" class="block"><!-- Hero já está acima -->
     </section><!-- CEP SCREEN -->
@@ -244,7 +265,7 @@
        </svg></a>
      </div><!-- Website e Copyright -->
      <div class="text-center sm:text-right"><a href="https://gaveblue.com" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm block">gaveblue.com</a>
-      <p class="text-slate-500 text-xs mt-1">© 2026 GaveBlue • Todos os direitos reservados</p>
+      <p class="text-slate-500 text-xs mt-1">© 2026 GaveBlue ������� Todos os direitos reservados</p>
      </div>
     </div>
    </div>
@@ -272,8 +293,8 @@
     });
 
     const defaultConfig = {
-      hero_title: 'Consulte CPF, CNPJ, CEP e Placa',
-      hero_subtitle: 'Tudo em um só lugar. Rápido, simples e gratuito.'
+      hero_title: 'Dados empresariais, do jeito certo',
+      hero_subtitle: 'Consulte CEP, CNPJ e informações essenciais com rapidez e confiabilidade.'
     };
 
     let config = { ...defaultConfig };
@@ -350,7 +371,7 @@
     }
 
     function showComingSoon() {
-      showError('Este recurso estará disponível em breve! 🚀');
+      showError('Este recurso estará dispon������vel em breve! 🚀');
     }
 
     function sairApp() {
@@ -369,7 +390,7 @@
     async function consultCEP() {
       const input = document.getElementById('cep-input').value.replace(/\D/g, '');
       if (input.length !== 8) {
-        showError('Por favor, digite um CEP válido com 8 dígitos');
+        showError('Por favor, digite um CEP v��lido com 8 dígitos');
         return;
       }
 
@@ -379,6 +400,8 @@
 
       try {
         const response = await fetch(`https://viacep.com.br/ws/${input}/json/`);
+        if (!response.ok) throw new Error('Erro na requisição');
+        
         const data = await response.json();
 
         if (data.erro) {
@@ -401,12 +424,14 @@
             <div><span class="text-xs text-slate-500 uppercase">Cidade</span><p class="text-slate-200 font-medium">${data.localidade || 'N/A'}</p></div>
           </div>
         `;
+        btn.disabled = false;
+        btn.textContent = 'Consultar CEP';
       } catch (error) {
-        showError('Erro ao consultar CEP');
+        console.error('Erro CEP:', error);
+        showError('Erro ao consultar CEP. Verifique sua conexão.');
+        btn.disabled = false;
+        btn.textContent = 'Consultar CEP';
       }
-
-      btn.disabled = false;
-      btn.textContent = 'Consultar CEP';
     }
 
     function maskCPF(input) {
@@ -482,6 +507,12 @@
       input.value = value;
     }
 
+    function formatarCNPJResult(cnpj) {
+      const limpo = cnpj.replace(/\D/g, '');
+      if (limpo.length !== 14) return cnpj;
+      return limpo.substring(0, 2) + '.' + limpo.substring(2, 5) + '.' + limpo.substring(5, 8) + '/' + limpo.substring(8, 12) + '-' + limpo.substring(12, 14);
+    }
+
     async function consultarCNPJ() {
       const cnpj = document.getElementById('cnpj-input').value.replace(/\D/g, '');
       if (cnpj.length !== 14) {
@@ -494,52 +525,1147 @@
       btn.textContent = 'Consultando...';
 
       try {
-        const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          showError('CNPJ não encontrado');
+        // BrasilAPI - funciona direto com CORS
+        const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          exibirDadosBrasilAPI(data, cnpj);
           btn.disabled = false;
           btn.textContent = 'Consultar CNPJ';
           return;
+        } else if (response.status === 404) {
+          showError('CNPJ não encontrado na base de dados');
+        } else {
+          showError('Erro ao consultar. Tente novamente em alguns momentos.');
         }
-
-        const resultDiv = document.getElementById('result-cnpj');
-        resultDiv.classList.remove('result-hidden');
-        document.getElementById('cnpj-data').innerHTML = `
-          <div class="space-y-3">
-            <div><span class="text-xs text-slate-500 uppercase">Razão Social</span><p class="text-slate-200 font-medium text-lg">${data.name || 'N/A'}</p></div>
-            <div class="grid grid-cols-2 gap-4">
-              <div><span class="text-xs text-slate-500 uppercase">CNPJ</span><p class="text-slate-200 font-medium">${cnpj}</p></div>
-              <div><span class="text-xs text-slate-500 uppercase">Situação</span><p class="text-slate-200 font-medium">${data.status || 'N/A'}</p></div>
-            </div>
-            <div><span class="text-xs text-slate-500 uppercase">Endereço</span><p class="text-slate-200 font-medium">${data.street || 'N/A'}, ${data.number || 'N/A'} - ${data.city || 'N/A'}</p></div>
-          </div>
-        `;
+        
+        btn.disabled = false;
+        btn.textContent = 'Consultar CNPJ';
       } catch (error) {
-        showError('Erro ao consultar CNPJ');
+        console.error('Erro CNPJ:', error);
+        showError('Erro de conexão. Verifique sua internet e tente novamente.');
+        btn.disabled = false;
+        btn.textContent = 'Consultar CNPJ';
       }
+    }
 
-      btn.disabled = false;
-      btn.textContent = 'Consultar CNPJ';
+    function exibirDadosCNPJ(data, cnpj) {
+      const resultDiv = document.getElementById('result-cnpj');
+      resultDiv.classList.remove('result-hidden');
+
+      // Extrai dados
+      const razaoSocial = data.company?.name || 'Informação não disponível';
+      const statusText = data.status?.text || 'Ativa';
+      const naturezaJuridica = data.company?.nature?.text || '';
+      const capital_social = data.company?.equity > 0 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.company.equity) : '';
+      const porte = data.company?.size?.text || '';
+      const founded = data.founded ? new Date(data.founded).toLocaleDateString('pt-BR') : 'Não informada';
+      const statusDate = data.statusDate ? new Date(data.statusDate).toLocaleDateString('pt-BR') : '';
+
+      // Endereço
+      const logradouro = data.address?.street || 'Não informado';
+      const numero = data.address?.number || 'S/N';
+      const complemento = data.address?.details || '';
+      const bairro = data.address?.district || 'Não informado';
+      const municipio = data.address?.city || 'Não informado';
+      const uf = data.address?.state || 'BR';
+      const cep = data.address?.zip || 'Não informado';
+
+      // Atividades
+      const ativPrincipal = data.mainActivity?.text || '';
+      const ativSecundarias = data.sideActivities || [];
+
+      // Diretores
+      const diretores = data.company?.members || [];
+
+      // Contatos
+      const telefones = data.phones || [];
+      const emails = data.emails || [];
+
+      // Inscrições Estaduais
+      const inscricoes = data.registrations || [];
+
+      // SUFRAMA
+      const suframa = data.suframa || [];
+
+      // Regime
+      const simples = data.company?.simples?.optant ? 'Sim' : 'Não';
+      const simei = data.company?.simei?.optant ? 'Sim' : 'Não';
+
+      let html = `
+        <div class="space-y-3 text-sm">
+          <!-- IDENTIFICAÇÃO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-purple-400 font-semibold text-xs uppercase mb-2">Identificação</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">CNPJ</span>
+                <p class="text-slate-200 font-medium">${cnpj}</p>
+              </div>
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Situação</span>
+                <p class="text-slate-200 font-medium">${statusText}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- EMPRESA -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-blue-400 font-semibold text-xs uppercase mb-2">Dados da Empresa</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Razão Social</span>
+                <p class="text-slate-200 font-medium">${razaoSocial}</p>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Fundação</span>
+                  <p class="text-slate-200 font-medium text-xs">${founded}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Data Status</span>
+                  <p class="text-slate-200 font-medium text-xs">${statusDate}</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Porte</span>
+                  <p class="text-slate-200 font-medium text-xs">${porte}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Capital</span>
+                  <p class="text-slate-200 font-medium text-xs">${capital_social}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- NATUREZA JURÍDICA -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-green-400 font-semibold text-xs uppercase mb-2">Natureza Jurídica</h4>
+            <p class="text-slate-200 font-medium text-xs">${naturezaJuridica}</p>
+          </div>
+
+          <!-- REGIME TRIBUT����RIO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-orange-400 font-semibold text-xs uppercase mb-2">Regime Tribut��rio</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Simples Nacional</span>
+                <p class="text-slate-200 font-medium text-xs">${simples}</p>
+              </div>
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">SIMEI</span>
+                <p class="text-slate-200 font-medium text-xs">${simei}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ATIVIDADES -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-cyan-400 font-semibold text-xs uppercase mb-2">Atividades Econômicas</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Principal</span>
+                <p class="text-slate-200 font-medium text-xs">${ativPrincipal}</p>
+              </div>
+              ${ativSecundarias.length > 0 ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Secundárias</span>
+                <ul class="text-slate-200 text-xs space-y-1">
+                  ${ativSecundarias.map(a => `<li class="ml-2">• ${a.text}</li>`).join('')}
+                </ul>
+              </div>` : ''}
+            </div>
+          </div>
+
+          <!-- ENDEREÇO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-amber-400 font-semibold text-xs uppercase mb-2">Localização</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Endereço</span>
+                <p class="text-slate-200 font-medium">${logradouro}, ${numero}${complemento ? ' - ' + complemento : ''}</p>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Bairro</span>
+                  <p class="text-slate-200 font-medium text-xs">${bairro}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">CEP</span>
+                  <p class="text-slate-200 font-medium text-xs">${cep}</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Cidade</span>
+                  <p class="text-slate-200 font-medium text-xs">${municipio}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">UF</span>
+                  <p class="text-slate-200 font-medium text-xs">${uf}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTATOS -->
+          ${telefones.length > 0 || emails.length > 0 ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-red-400 font-semibold text-xs uppercase mb-2">Contatos</h4>
+            <div class="space-y-2">
+              ${telefones.map(t => `<div>
+                <span class="text-xs text-slate-500 uppercase block">${t.type === 'LANDLINE' ? 'Telefone' : 'Celular'} (${t.area})</span>
+                <p class="text-slate-200 font-medium text-xs">${t.number}</p>
+              </div>`).join('')}
+              ${emails.map(e => `<div>
+                <span class="text-xs text-slate-500 uppercase block">E-mail</span>
+                <p class="text-slate-200 font-medium text-xs break-all">${e.address}</p>
+              </div>`).join('')}
+            </div>
+          </div>` : ''}
+
+          <!-- INSCRIÇÕES ESTADUAIS -->
+          ${inscricoes.length > 0 ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-pink-400 font-semibold text-xs uppercase mb-2">Inscri��ões Estaduais</h4>
+            <div class="space-y-2 max-h-40 overflow-y-auto">
+              ${inscricoes.map(i => `<div class="border-l-2 border-pink-400/30 pl-2">
+                <span class="text-xs text-slate-500 uppercase block">${i.state} - ${i.type?.text}</span>
+                <p class="text-slate-200 font-medium text-xs">${i.number}</p>
+                <p class="text-xs text-slate-400">${i.status?.text}</p>
+              </div>`).join('')}
+            </div>
+          </div>` : ''}
+
+          <!-- SUFRAMA -->
+          ${suframa.length > 0 ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-indigo-400 font-semibold text-xs uppercase mb-2">SUFRAMA</h4>
+            <div class="space-y-2">
+              ${suframa.map(s => `<div>
+                <span class="text-xs text-slate-500 uppercase block">Número: ${s.number}</span>
+                <p class="text-slate-200 font-medium text-xs">${s.status?.text}</p>
+                ${s.incentives && s.incentives.length > 0 ? `<p class="text-xs text-slate-400 mt-1">${s.incentives.length} incentivo(s)</p>` : ''}
+              </div>`).join('')}
+            </div>
+          </div>` : ''}
+
+          <!-- DIRETORES -->
+          ${diretores.length > 0 ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-teal-400 font-semibold text-xs uppercase mb-2">Diretores (${diretores.length})</h4>
+            <div class="space-y-2 max-h-48 overflow-y-auto">
+              ${diretores.map(d => `<div class="border-l-2 border-teal-400/30 pl-2">
+                <span class="text-xs text-slate-500 uppercase block">${d.role?.text}</span>
+                <p class="text-slate-200 font-medium text-xs">${d.person?.name}</p>
+                <p class="text-xs text-slate-400">Desde ${new Date(d.since).toLocaleDateString('pt-BR')}</p>
+              </div>`).join('')}
+            </div>
+          </div>` : ''}
+        </div>
+      `;
+
+      document.getElementById('cnpj-data').innerHTML = html;
+    }
+
+    function exibirDadosReceitaWS(data, cnpj) {
+      const resultDiv = document.getElementById('result-cnpj');
+      resultDiv.classList.remove('result-hidden');
+
+      // Dados básicos
+      const razaoSocial = data.nome || 'Informação não disponível';
+      const nomeFantasia = data.fantasia || '';
+      const dataAbertura = data.abertura ? new Date(data.abertura).toLocaleDateString('pt-BR') : 'Não informada';
+      const tipo = data.tipo || 'MATRIZ';
+      
+      // Localização
+      const logradouro = data.logradouro || 'Não informado';
+      const numero = data.numero || 'S/N';
+      const complemento = data.complemento || '';
+      const bairro = data.bairro || 'Não informado';
+      const municipio = data.municipio || 'Não informado';
+      const uf = data.uf || 'BR';
+      const cep = data.cep || 'Não informado';
+      
+      // Contatos
+      const telefone = data.telefone || '';
+      const email = data.email || '';
+      
+      // Classificação
+      const naturezaJuridica = data.natureza_juridica || '';
+      const porte = data.porte || '';
+      const situacao = data.situacao || 'Ativa';
+      const dataSituacao = data.data_situacao ? new Date(data.data_situacao).toLocaleDateString('pt-BR') : '';
+      const motivoSituacao = data.motivo_situacao || '';
+      
+      // Capital Social
+      const capitalSocial = data.capital_social ? 
+        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.capital_social) : '';
+      
+      // Atividades
+      const atividadePrincipal = data.atividade_principal?.[0] || null;
+      const atividadesSecundarias = data.atividades_secundarias || [];
+      
+      // Regime Tributário
+      const simples = data.simples?.optante ? 'Sim' : 'Não';
+      const dataSimples = data.simples?.data_opcao ? new Date(data.simples.data_opcao).toLocaleDateString('pt-BR') : '';
+      const simei = data.simei?.optante ? 'Sim' : 'Não';
+      const dataSimei = data.simei?.data_opcao ? new Date(data.simei.data_opcao).toLocaleDateString('pt-BR') : '';
+      
+      // QSA (Quadro de Sócios)
+      const qsa = data.qsa || [];
+      
+      // Situação Especial
+      const situacaoEspecial = data.situacao_especial || '';
+      const dataSituacaoEspecial = data.data_situacao_especial ? new Date(data.data_situacao_especial).toLocaleDateString('pt-BR') : '';
+
+      const html = `
+        <div class="space-y-3 text-sm max-h-96 overflow-y-auto pr-2">
+          <!-- IDENTIFICA����ÃO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-purple-400 font-semibold text-xs uppercase mb-3">�� Identificação</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">CNPJ</span>
+                <p class="text-slate-200 font-mono font-bold">${formatarCNPJResult(cnpj)}</p>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Tipo</span>
+                  <p class="text-slate-200 font-medium text-xs">${tipo}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Porte</span>
+                  <p class="text-slate-200 font-medium text-xs">${porte}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DADOS DA EMPRESA -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-blue-400 font-semibold text-xs uppercase mb-3">��� Dados da Empresa</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Razão Social</span>
+                <p class="text-slate-200 font-medium">${razaoSocial}</p>
+              </div>
+              ${nomeFantasia ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Nome Fantasia</span>
+                <p class="text-slate-200 font-medium">${nomeFantasia}</p>
+              </div>` : ''}
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Data Abertura</span>
+                  <p class="text-slate-200 font-medium text-xs">${dataAbertura}</p>
+                </div>
+                ${capitalSocial ? `<div>
+                  <span class="text-xs text-slate-500 uppercase block">Capital Social</span>
+                  <p class="text-slate-200 font-medium text-xs">${capitalSocial}</p>
+                </div>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <!-- NATUREZA JURÍDICA -->
+          ${naturezaJuridica ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-green-400 font-semibold text-xs uppercase mb-2">⚖️ Natureza Jurídica</h4>
+            <p class="text-slate-200 font-medium text-xs">${naturezaJuridica}</p>
+          </div>` : ''}
+
+          <!-- SITUAÇÃO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-orange-400 font-semibold text-xs uppercase mb-3">📊 Situação</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Status</span>
+                <p class="text-slate-200 font-medium text-xs">${situacao}</p>
+              </div>
+              ${dataSituacao ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Data</span>
+                <p class="text-slate-200 font-medium text-xs">${dataSituacao}</p>
+              </div>` : ''}
+              ${motivoSituacao ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Motivo</span>
+                <p class="text-slate-200 font-medium text-xs">${motivoSituacao}</p>
+              </div>` : ''}
+              ${situacaoEspecial ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Situação Especial</span>
+                <p class="text-slate-200 font-medium text-xs">${situacaoEspecial}</p>
+                ${dataSituacaoEspecial ? `<p class="text-slate-400 text-xs mt-1">${dataSituacaoEspecial}</p>` : ''}
+              </div>` : ''}
+            </div>
+          </div>
+
+          <!-- REGIME TRIBUTÁRIO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-cyan-400 font-semibold text-xs uppercase mb-3">����� Regime Tributário</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-slate-600/20 rounded p-2">
+                <span class="text-xs text-slate-500 uppercase block">Simples Nacional</span>
+                <p class="text-slate-200 font-medium text-xs">${simples}</p>
+                ${dataSimples ? `<p class="text-slate-400 text-xs mt-1">${dataSimples}</p>` : ''}
+              </div>
+              <div class="bg-slate-600/20 rounded p-2">
+                <span class="text-xs text-slate-500 uppercase block">SIMEI</span>
+                <p class="text-slate-200 font-medium text-xs">${simei}</p>
+                ${dataSimei ? `<p class="text-slate-400 text-xs mt-1">${dataSimei}</p>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <!-- ATIVIDADES -->
+          ${atividadePrincipal ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-amber-400 font-semibold text-xs uppercase mb-3">��� Atividades Econômicas</h4>
+            <div class="space-y-2">
+              <div class="bg-slate-600/20 rounded p-2 border-l-2 border-amber-400">
+                <span class="text-xs text-slate-400 uppercase block">Principal</span>
+                <p class="text-slate-200 font-medium text-xs mt-1">${atividadePrincipal.text || ''}</p>
+                <p class="text-slate-500 text-xs mt-1">CNAE: ${atividadePrincipal.code || 'N/A'}</p>
+              </div>
+              ${atividadesSecundarias.length > 0 ? `<div>
+                <span class="text-xs text-slate-400 uppercase block mb-2">Secundárias (${atividadesSecundarias.length})</span>
+                <div class="space-y-1 max-h-32 overflow-y-auto">
+                  ${atividadesSecundarias.map(a => `<div class="bg-slate-600/20 rounded p-2 text-xs">
+                    <p class="text-slate-200">${a.text || ''}</p>
+                    <p class="text-slate-500">CNAE: ${a.code || 'N/A'}</p>
+                  </div>`).join('')}
+                </div>
+              </div>` : ''}
+            </div>
+          </div>` : ''}
+
+          <!-- LOCALIZAÇÃO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-red-400 font-semibold text-xs uppercase mb-3">📍 Localização</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Logradouro</span>
+                <p class="text-slate-200 font-medium">${logradouro}</p>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Número</span>
+                  <p class="text-slate-200 font-medium text-xs">${numero}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Complemento</span>
+                  <p class="text-slate-200 font-medium text-xs">${complemento || 'N/A'}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Bairro</span>
+                  <p class="text-slate-200 font-medium text-xs">${bairro}</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">CEP</span>
+                  <p class="text-slate-200 font-medium text-xs">${cep}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Cidade</span>
+                  <p class="text-slate-200 font-medium text-xs">${municipio}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">UF</span>
+                  <p class="text-slate-200 font-medium text-xs font-bold">${uf}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTATOS -->
+          ${telefone || email ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-pink-400 font-semibold text-xs uppercase mb-3">📞 Contatos</h4>
+            <div class="space-y-2">
+              ${telefone ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Telefone</span>
+                <p class="text-slate-200 font-medium">${telefone}</p>
+              </div>` : ''}
+              ${email ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">E-mail</span>
+                <p class="text-slate-200 font-medium text-xs break-all">${email}</p>
+              </div>` : ''}
+            </div>
+          </div>` : ''}
+
+          <!-- SÓCIOS/QSA -->
+          ${qsa.length > 0 ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-indigo-400 font-semibold text-xs uppercase mb-3">���� Sócios (${qsa.length})</h4>
+            <div class="space-y-2 max-h-40 overflow-y-auto">
+              ${qsa.map((socio, i) => `<div class="bg-slate-600/20 rounded p-2 border-l-2 border-indigo-400">
+                <p class="text-slate-200 font-medium text-xs">${socio.nome}</p>
+                <p class="text-slate-400 text-xs mt-1">Qualificação: ${socio.qual}</p>
+                ${socio.pais_origem ? `<p class="text-slate-400 text-xs">Origem: ${socio.pais_origem}</p>` : ''}
+                ${socio.nome_rep_legal ? `<p class="text-slate-400 text-xs">Rep. Legal: ${socio.nome_rep_legal}</p>` : ''}
+              </div>`).join('')}
+            </div>
+          </div>` : ''}
+        </div>
+      `;
+
+      document.getElementById('cnpj-data').innerHTML = html;
+    }
+
+    function calcularTempoOperacao(dataAbertura) {
+      if (dataAbertura === 'Não informada') return 'N/A';
+      try {
+        const data = new Date(dataAbertura.split('/').reverse().join('-'));
+        const hoje = new Date();
+        const diff = Math.floor((hoje - data) / (1000 * 60 * 60 * 24 * 365.25));
+        return diff > 0 ? `${diff} ano${diff > 1 ? 's' : ''}` : 'Recente';
+      } catch {
+        return 'N/A';
+      }
+    }
+
+    function exibirDadosBrasilAPI(data, cnpj) {
+      const resultDiv = document.getElementById('result-cnpj');
+      resultDiv.classList.remove('result-hidden');
+
+      const razaoSocial = data.razao_social || 'Informação não disponível';
+      const nomeFantasia = data.nome_fantasia || '';
+      const dataAbertura = data.data_abertura ? new Date(data.data_abertura).toLocaleDateString('pt-BR') : 'Não informada';
+      const logradouro = data.logradouro || 'Não informado';
+      const numero = data.numero || 'S/N';
+      const complemento = data.complemento || '';
+      const bairro = data.bairro || 'Não informado';
+      const municipio = data.municipio || 'Não informado';
+      const uf = data.uf || 'BR';
+      const cep = data.cep || 'Não informado';
+      const naturezaJuridica = data.natureza_juridica?.descricao || '';
+      const situacao = data.situacao || 'Ativa';
+      const porte = data.porte?.descricao || '';
+      const capitalSocial = data.capital_social > 0 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.capital_social) : '';
+      const codigoNatureza = data.natureza_juridica?.codigo || '';
+      const codigoPorte = data.porte?.codigo || '';
+      
+      // Atividades principais e secundárias
+      const atividadePrincipal = data.atividades?.[0] || null;
+      const atividadesSecundarias = data.atividades?.slice(1) || [];
+
+      const html = `
+        <div class="space-y-3 text-sm max-h-96 overflow-y-auto pr-2">
+          <!-- IDENTIFICAÇÃO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-purple-400 font-semibold text-xs uppercase mb-3">📋 Identificação</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">CNPJ</span>
+                <p class="text-slate-200 font-mono text-sm font-bold">${formatarCNPJResult(cnpj)}</p>
+              </div>
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Situação</span>
+                <p class="text-slate-200 font-medium text-xs">${situacao}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- DADOS DA EMPRESA -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-blue-400 font-semibold text-xs uppercase mb-3">🏢 Dados da Empresa</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Razão Social</span>
+                <p class="text-slate-200 font-medium">${razaoSocial}</p>
+              </div>
+              ${nomeFantasia ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Nome Fantasia</span>
+                <p class="text-slate-200 font-medium">${nomeFantasia}</p>
+              </div>` : ''}
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Porte</span>
+                  <p class="text-slate-200 font-medium text-xs">${porte}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Data Abertura</span>
+                  <p class="text-slate-200 font-medium text-xs">${dataAbertura}</p>
+                </div>
+              </div>
+              ${capitalSocial ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Capital Social</span>
+                <p class="text-slate-200 font-medium text-xs">${capitalSocial}</p>
+              </div>` : ''}
+            </div>
+          </div>
+
+          <!-- NATUREZA JURÍDICA -->
+          ${naturezaJuridica ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-green-400 font-semibold text-xs uppercase mb-2">⚖����������� Natureza Jurídica</h4>
+            <div class="space-y-1">
+              <p class="text-slate-200 font-medium text-xs">${naturezaJuridica}</p>
+              ${codigoNatureza ? `<p class="text-slate-400 text-xs">Código: ${codigoNatureza}</p>` : ''}
+            </div>
+          </div>` : ''}
+
+          <!-- CLASSIFICAÇÃO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-orange-400 font-semibold text-xs uppercase mb-3">📊 Classificação</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Porte Empresa</span>
+                <p class="text-slate-200 font-medium text-xs">${porte || 'N/A'}</p>
+                ${codigoPorte ? `<p class="text-slate-400 text-xs mt-1">Código: ${codigoPorte}</p>` : ''}
+              </div>
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Tempo Operação</span>
+                <p class="text-slate-200 font-medium text-xs">${calcularTempoOperacao(dataAbertura)}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ATIVIDADES -->
+          ${atividadePrincipal ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-cyan-400 font-semibold text-xs uppercase mb-3">💼 Atividades Econômicas</h4>
+            <div class="space-y-2">
+              <div class="bg-slate-600/20 rounded p-2 border-l-2 border-cyan-400">
+                <span class="text-xs text-slate-400 uppercase block">Principal</span>
+                <p class="text-slate-200 font-medium text-xs mt-1">${atividadePrincipal.descricao || ''}</p>
+                <p class="text-slate-500 text-xs mt-1">CNAE: ${atividadePrincipal.codigo || 'N/A'}</p>
+              </div>
+              ${atividadesSecundarias.length > 0 ? `<div>
+                <span class="text-xs text-slate-400 uppercase block mb-2">Secundárias (${atividadesSecundarias.length})</span>
+                <div class="space-y-1 max-h-32 overflow-y-auto">
+                  ${atividadesSecundarias.map(a => `<div class="bg-slate-600/20 rounded p-2 text-xs">
+                    <p class="text-slate-200">${a.descricao || ''}</p>
+                    <p class="text-slate-500">CNAE: ${a.codigo || 'N/A'}</p>
+                  </div>`).join('')}
+                </div>
+              </div>` : ''}
+            </div>
+          </div>` : ''}
+
+          <!-- LOCALIZAÇÃO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-amber-400 font-semibold text-xs uppercase mb-3">📍 Localização</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Logradouro</span>
+                <p class="text-slate-200 font-medium">${logradouro}</p>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Número</span>
+                  <p class="text-slate-200 font-medium text-xs">${numero}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Complemento</span>
+                  <p class="text-slate-200 font-medium text-xs">${complemento || 'N/A'}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Bairro</span>
+                  <p class="text-slate-200 font-medium text-xs">${bairro}</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">CEP</span>
+                  <p class="text-slate-200 font-medium text-xs">${cep}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Cidade</span>
+                  <p class="text-slate-200 font-medium text-xs">${municipio}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">UF</span>
+                  <p class="text-slate-200 font-medium text-xs font-bold">${uf}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RESUMO OPERACIONAL -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-indigo-400 font-semibold text-xs uppercase mb-3">📈 Resumo</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-slate-600/20 rounded p-2">
+                <span class="text-xs text-slate-500 uppercase block">Tipo</span>
+                <p class="text-slate-200 font-medium text-xs">Pessoa Jurídica</p>
+              </div>
+              <div class="bg-slate-600/20 rounded p-2">
+                <span class="text-xs text-slate-500 uppercase block">Regime</span>
+                <p class="text-slate-200 font-medium text-xs">${data.simples?.optante ? 'Simples Nacional' : 'Outro'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('cnpj-data').innerHTML = html;
+    }
+
+    function calcularTempoOperacao(dataAbertura) {
+      if (dataAbertura === 'Não informada') return 'N/A';
+      try {
+        const data = new Date(dataAbertura.split('/').reverse().join('-'));
+        const hoje = new Date();
+        const diff = Math.floor((hoje - data) / (1000 * 60 * 60 * 24 * 365.25));
+        return diff > 0 ? `${diff} ano${diff > 1 ? 's' : ''}` : 'Recente';
+      } catch {
+        return 'N/A';
+      }
+    }
+
+    function exibirDadosReceitaWS(data, cnpj) {
+      const resultDiv = document.getElementById('result-cnpj');
+      resultDiv.classList.remove('result-hidden');
+
+      const razaoSocial = data.nome || 'Informação não disponível';
+      const nomeFantasia = data.fantasia || '';
+      const dataAbertura = data.abertura ? new Date(data.abertura).toLocaleDateString('pt-BR') : 'Não informada';
+      const logradouro = data.logradouro || 'Não informado';
+      const numero = data.numero || 'S/N';
+      const complemento = data.complemento || '';
+      const bairro = data.bairro || 'Não informado';
+      const municipio = data.municipio || 'Não informado';
+      const uf = data.uf || 'BR';
+      const cep = data.cep || 'Não informado';
+      const telefone = data.telefone || '';
+      const email = data.email || '';
+      const naturezaJuridica = data.natureza_juridica || '';
+      const situacao = data.situacao || 'Ativa';
+      const porte = data.porte || '';
+
+      const html = `
+        <div class="space-y-3 text-sm">
+          <div class="bg-yellow-500/20 rounded-lg p-3 border border-yellow-500/30 mb-3">
+            <p class="text-yellow-300 text-xs">��️ Dados parciais de fonte alternativa</p>
+          </div>
+
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-purple-400 font-semibold text-xs uppercase mb-2">Identificação</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">CNPJ</span>
+                <p class="text-slate-200 font-medium">${cnpj}</p>
+              </div>
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Situação</span>
+                <p class="text-slate-200 font-medium">${situacao}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-blue-400 font-semibold text-xs uppercase mb-2">Empresa</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Razão Social</span>
+                <p class="text-slate-200 font-medium">${razaoSocial}</p>
+              </div>
+              ${nomeFantasia ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Nome Fantasia</span>
+                <p class="text-slate-200 font-medium">${nomeFantasia}</p>
+              </div>` : ''}
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Porte</span>
+                  <p class="text-slate-200 font-medium text-xs">${porte}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Abertura</span>
+                  <p class="text-slate-200 font-medium text-xs">${dataAbertura}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-green-400 font-semibold text-xs uppercase mb-2">Natureza Jurídica</h4>
+            <p class="text-slate-200 font-medium text-xs">${naturezaJuridica}</p>
+          </div>
+
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-amber-400 font-semibold text-xs uppercase mb-2">Localização</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Endereço</span>
+                <p class="text-slate-200 font-medium">${logradouro}, ${numero}${complemento ? ' - ' + complemento : ''}</p>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Bairro</span>
+                  <p class="text-slate-200 font-medium text-xs">${bairro}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">CEP</span>
+                  <p class="text-slate-200 font-medium text-xs">${cep}</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Cidade</span>
+                  <p class="text-slate-200 font-medium text-xs">${municipio}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">UF</span>
+                  <p class="text-slate-200 font-medium text-xs">${uf}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          ${telefone || email ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-red-400 font-semibold text-xs uppercase mb-2">Contatos</h4>
+            <div class="space-y-2">
+              ${telefone ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Telefone</span>
+                <p class="text-slate-200 font-medium">${telefone}</p>
+              </div>` : ''}
+              ${email ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">E-mail</span>
+                <p class="text-slate-200 font-medium text-xs break-all">${email}</p>
+              </div>` : ''}
+            </div>
+          </div>` : ''}
+        </div>
+      `;
+
+      document.getElementById('cnpj-data').innerHTML = html;
     }
 
     async function consultarPlaca() {
-      const placa = document.getElementById('placa-input').value.toUpperCase();
+      const placa = document.getElementById('placa-input').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
       if (placa.length !== 7) {
-        showError('Placa deve conter 7 caracteres');
+        showError('Placa deve conter 7 caracteres (ex: ABC1234 ou ABC1D23)');
         return;
       }
 
+      const btn = document.getElementById('btn-placa');
+      btn.disabled = true;
+      btn.textContent = 'Consultando...';
+
+      try {
+        // Tentativa 1: API 4devs (a mais confiável)
+        const response1 = await Promise.race([
+          fetch(`https://www.4devs.com.br/api/veiculo?placa=${placa}`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+        ]);
+        
+        if (response1.ok) {
+          const data = await response1.json();
+          if (data && data.placa) {
+            exibirDadosPlacaAlternativa(data);
+            btn.disabled = false;
+            btn.textContent = 'Consultar Placa';
+            return;
+          }
+        }
+        
+        showError('Placa não encontrada. Verifique o número digitado.');
+        btn.disabled = false;
+        btn.textContent = 'Consultar Placa';
+        
+      } catch (error) {
+        console.error('Erro ao consultar placa:', error);
+        showError('Erro ao consultar. Verifique se digitou corretamente e tente novamente.');
+        btn.disabled = false;
+        btn.textContent = 'Consultar Placa';
+      }
+    }
+
+    function exibirDadosPlacaAlternativa(dados) {
       const resultDiv = document.getElementById('result-placa');
       resultDiv.classList.remove('result-hidden');
-      document.getElementById('placa-data').innerHTML = `
-        <div class="text-center p-4 bg-yellow-500/20 rounded-lg border border-yellow-500/30">
-          <p class="text-yellow-300 font-medium">Recurso em desenvolvimento</p>
-          <p class="text-slate-400 text-sm mt-2">Em breve será possível consultar informações de placas</p>
+
+      // Formatar placa
+      const placa = dados.placa || 'N/A';
+      const placaFormatada = placa.substring(0, 3) + placa.substring(3, 7);
+
+      const html = `
+        <div class="space-y-3 text-sm max-h-96 overflow-y-auto pr-2">
+          <!-- IDENTIFICAÇÃO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-cyan-400 font-semibold text-xs uppercase mb-3">������ Identificação do Veículo</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Placa</span>
+                <p class="text-slate-200 font-mono text-lg font-bold bg-slate-600/50 p-2 rounded text-center">${placaFormatada}</p>
+              </div>
+              ${dados.chassi ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Chassi</span>
+                <p class="text-slate-200 font-mono text-xs break-all">${dados.chassi}</p>
+              </div>` : ''}
+            </div>
+          </div>
+
+          <!-- DADOS PRINCIPAIS -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-blue-400 font-semibold text-xs uppercase mb-3">ℹ️ Dados do Veículo</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Marca / Modelo</span>
+                <p class="text-slate-200 font-medium">${dados.marca || 'N/A'}</p>
+                <p class="text-slate-300 text-xs mt-1">${dados.modelo || 'N/A'}</p>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Fab.</span>
+                  <p class="text-slate-200 font-bold text-lg">${dados.ano_fabricacao || dados.year || 'N/A'}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Cor</span>
+                  <p class="text-slate-200 font-medium text-xs">${dados.cor || dados.color || 'N/A'}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Tipo</span>
+                  <p class="text-slate-200 font-medium text-xs">${dados.tipo || dados.tipo_veiculo || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DADOS TÉCNICOS -->
+          ${dados.combustivel || dados.cilindradas ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-purple-400 font-semibold text-xs uppercase mb-3">���️ Dados Técnicos</h4>
+            <div class="space-y-2">
+              ${dados.combustivel ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Combustível</span>
+                <p class="text-slate-200 font-medium text-xs">${dados.combustivel}</p>
+              </div>` : ''}
+              ${dados.cilindradas ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Cilindradas</span>
+                <p class="text-slate-200 font-medium text-xs">${dados.cilindradas} cc</p>
+              </div>` : ''}
+              ${dados.potencia ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Potência</span>
+                <p class="text-slate-200 font-medium text-xs">${dados.potencia} cv</p>
+              </div>` : ''}
+            </div>
+          </div>` : ''}
+
+          <!-- CAPACIDADE -->
+          ${dados.numero_passageiros || dados.passageiros ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-orange-400 font-semibold text-xs uppercase mb-3">📦 Capacidade</h4>
+            <div>
+              <span class="text-xs text-slate-500 uppercase block">Passageiros</span>
+              <p class="text-slate-200 font-bold text-lg">${dados.numero_passageiros || dados.passageiros || 'N/A'}</p>
+            </div>
+          </div>` : ''}
+
+          <!-- PROCEDÊNCIA -->
+          ${dados.procedencia ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-green-400 font-semibold text-xs uppercase mb-3">🌍 Procedência</h4>
+            <p class="text-slate-200 font-medium text-xs">${dados.procedencia}</p>
+          </div>` : ''}
+
+          <!-- LOCALIZAÇÃO -->
+          ${dados.municipio || dados.uf ? `<div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-amber-400 font-semibold text-xs uppercase mb-3">📍 Localização</h4>
+            <div class="space-y-2">
+              ${dados.municipio ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Município</span>
+                <p class="text-slate-200 font-medium text-xs">${dados.municipio}</p>
+              </div>` : ''}
+              ${dados.uf ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">UF</span>
+                <p class="text-slate-200 font-bold text-lg">${dados.uf}</p>
+              </div>` : ''}
+            </div>
+          </div>` : ''}
+
+          <!-- INFORMAÇÕES ADICIONAIS -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-pink-400 font-semibold text-xs uppercase mb-2">ℹ️ Informações Adicionais</h4>
+            <p class="text-slate-300 text-xs">Dados consultados com sucesso ✓</p>
+          </div>
         </div>
       `;
+
+      document.getElementById('placa-data').innerHTML = html;
+    }
+
+    function exibirDadosPlaca(dados, placa) {
+      const resultDiv = document.getElementById('result-placa');
+      resultDiv.classList.remove('result-hidden');
+
+      const veiculo = dados.informacoes_veiculo?.dados_veiculo || {};
+      const tecnico = dados.informacoes_veiculo?.dados_tecnicos || {};
+      const carga = dados.informacoes_veiculo?.dados_carga || {};
+
+      // Formatar placa
+      const placaFormatada = placa.substring(0, 3) + placa.substring(3, 7);
+
+      const html = `
+        <div class="space-y-3 text-sm max-h-96 overflow-y-auto pr-2">
+          <!-- IDENTIFICAÇÃO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-cyan-400 font-semibold text-xs uppercase mb-3">🚗 Identificação do Veículo</h4>
+            <div class="space-y-2">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Placa</span>
+                  <p class="text-slate-200 font-mono text-lg font-bold bg-slate-600/50 p-2 rounded text-center">${placaFormatada}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Chassi</span>
+                  <p class="text-slate-200 font-mono text-xs break-all">${veiculo.chassi || 'N/A'}</p>
+                </div>
+              </div>
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Motor</span>
+                <p class="text-slate-200 font-mono text-xs">${tecnico.numero_motor || 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- DADOS PRINCIPAIS -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-blue-400 font-semibold text-xs uppercase mb-3">ℹ️ Dados do Veículo</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Marca / Modelo</span>
+                <p class="text-slate-200 font-medium">${veiculo.marca || 'N/A'}</p>
+                <p class="text-slate-300 text-xs mt-1">${veiculo.modelo || 'N/A'}</p>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Fab.</span>
+                  <p class="text-slate-200 font-bold text-lg">${veiculo.ano_fabricacao || 'N/A'}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Modelo</span>
+                  <p class="text-slate-200 font-bold text-lg">${veiculo.ano_modelo || 'N/A'}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Cor</span>
+                  <p class="text-slate-200 font-medium text-xs">${veiculo.cor || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DADOS TÉCNICOS -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-purple-400 font-semibold text-xs uppercase mb-3">���️ Dados Técnicos</h4>
+            <div class="space-y-2">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Tipo</span>
+                  <p class="text-slate-200 font-medium text-xs">${tecnico.tipo_veiculo || 'N/A'}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Segmento</span>
+                  <p class="text-slate-200 font-medium text-xs">${tecnico.sub_segmento || veiculo.segmento || 'N/A'}</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Potência</span>
+                  <p class="text-slate-200 font-medium text-xs">${tecnico.potencia || 'N/A'} cv</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Cilindradas</span>
+                  <p class="text-slate-200 font-medium text-xs">${tecnico.cilindradas || 'N/A'} cc</p>
+                </div>
+              </div>
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">C��mbio</span>
+                <p class="text-slate-200 font-medium text-xs">${tecnico.numero_caixa_cambio || 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- COMBUSTÍVEL E PROCEDÊNCIA -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-green-400 font-semibold text-xs uppercase mb-3">⛽ Combustível</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Tipo</span>
+                <p class="text-slate-200 font-medium text-xs">${veiculo.combustivel || 'N/A'}</p>
+              </div>
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Procedência</span>
+                <p class="text-slate-200 font-medium text-xs">${veiculo.procedencia || 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- CAPACIDADE E CARGA -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-orange-400 font-semibold text-xs uppercase mb-3">������ Capacidade</h4>
+            <div class="space-y-2">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Passageiros</span>
+                  <p class="text-slate-200 font-bold text-lg">${carga.capacidade_passageiro || 'N/A'}</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase block">Eixos</span>
+                  <p class="text-slate-200 font-bold text-lg">${carga.numero_eixos || 'N/A'}</p>
+                </div>
+              </div>
+              ${carga.capacidade_maxima_tracao ? `<div>
+                <span class="text-xs text-slate-500 uppercase block">Cap. Máx. Tração</span>
+                <p class="text-slate-200 font-medium text-xs">${carga.capacidade_maxima_tracao} kg</p>
+              </div>` : ''}
+            </div>
+          </div>
+
+          <!-- LOCALIZAÇÃO -->
+          <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50">
+            <h4 class="text-amber-400 font-semibold text-xs uppercase mb-3">📍 Localização</h4>
+            <div class="space-y-2">
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">Município</span>
+                <p class="text-slate-200 font-medium text-xs">${veiculo.municipio || 'N/A'}</p>
+              </div>
+              <div>
+                <span class="text-xs text-slate-500 uppercase block">UF</span>
+                <p class="text-slate-200 font-bold text-lg">${veiculo.uf_municipio || 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('placa-data').innerHTML = html;
+    }
+
+    function maskCEP(input) {
+      let value = input.value.replace(/\D/g, '');
+      if (value.length > 5) {
+        value = value.substring(0, 5) + '-' + value.substring(5, 8);
+      }
+      input.value = value;
+    }
+
+    function maskCPF(input) {
+      let value = input.value.replace(/\D/g, '');
+      if (value.length > 9) {
+        value = value.substring(0, 3) + '.' + value.substring(3, 6) + '.' + value.substring(6, 9) + '-' + value.substring(9, 11);
+      } else if (value.length > 6) {
+        value = value.substring(0, 3) + '.' + value.substring(3, 6) + '.' + value.substring(6);
+      } else if (value.length > 3) {
+        value = value.substring(0, 3) + '.' + value.substring(3);
+      }
+      input.value = value;
+    }
+
+    function maskCNPJ(input) {
+      let value = input.value.replace(/\D/g, '');
+      if (value.length > 12) {
+        value = value.substring(0, 2) + '.' + value.substring(2, 5) + '.' + value.substring(5, 8) + '/' + value.substring(8, 12) + '-' + value.substring(12, 14);
+      } else if (value.length > 8) {
+        value = value.substring(0, 2) + '.' + value.substring(2, 5) + '.' + value.substring(5, 8) + '/' + value.substring(8);
+      } else if (value.length > 5) {
+        value = value.substring(0, 2) + '.' + value.substring(2, 5) + '.' + value.substring(5);
+      } else if (value.length > 2) {
+        value = value.substring(0, 2) + '.' + value.substring(2);
+      }
+      input.value = value;
+    }
+
+    function formatarCNPJResult(cnpj) {
+      const limpo = cnpj.replace(/\D/g, '');
+      if (limpo.length !== 14) return cnpj;
+      return limpo.substring(0, 2) + '.' + limpo.substring(2, 5) + '.' + limpo.substring(5, 8) + '/' + limpo.substring(8, 12) + '-' + limpo.substring(12, 14);
     }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cb857b4f6ffc65f',t:'MTc3MDY5MjI4My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cea8169c1156497',t:'MTc3MTIxODI4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
