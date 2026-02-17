@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Conversor de Câmbio</title>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #0b1220;
+      color: #eaf0ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+
+    .container {
+      background: #101a33;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 6px;
+      color: #8aa0c6;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.25);
+      color: #fff;
+      margin-bottom: 14px;
+      outline: none;
+    }
+
+    button {
+      background: #2b6cff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .swap {
+      background: #1b2a55;
+      margin-bottom: 10px;
+    }
+
+    .result {
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.05);
+      border: 1px dashed rgba(255,255,255,.2);
+      text-align: center;
+    }
+
+    .rate {
+      font-size: 13px;
+      color: #8aa0c6;
+    }
+
+    .value {
+      font-size: 22px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #8aa0c6;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Conversor de Câmbio</h1>
+
+    <label>Valor</label>
+    <input type="number" id="amount" value="100" step="0.01" min="0">
+
+    <label>Moeda base</label>
+    <select id="base"></select>
+
+    <button class="swap" id="swap">Inverter moedas</button>
+
+    <label>Moeda destino</label>
+    <select id="target"></select>
+
+    <div class="result">
+      <div class="rate" id="rate">—</div>
+      <div class="value" id="result">—</div>
+    </div>
+
+    <div class="status" id="status">Carregando cotações…</div>
+  </div>
+
+  <script>
+    const API = 'https://open.er-api.com/v6/latest/';
+
+    const amountEl = document.getElementById('amount');
+    const baseEl   = document.getElementById('base');
+    const targetEl = document.getElementById('target');
+    const rateEl   = document.getElementById('rate');
+    const resultEl = document.getElementById('result');
+    const statusEl = document.getElementById('status');
+    const swapBtn  = document.getElementById('swap');
+
+    let ratesCache = {};
+
+    function format(n) {
+      return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 6 }).format(n);
+    }
+
+    async function loadRates(base) {
+      statusEl.textContent = 'Buscando cotações…';
+
+      const res = await fetch(API + base);
+      const data = await res.json();
+
+      if (!data || !data.rates) {
+        throw new Error('Erro ao carregar dados');
+      }
+
+      ratesCache = data.rates;
+
+      return data;
+    }
+
+    function fillSelects(codes, base = 'USD', target = 'BRL') {
+      baseEl.innerHTML = '';
+      targetEl.innerHTML = '';
+
+      codes.sort().forEach(code => {
+        baseEl.add(new Option(code, code));
+        targetEl.add(new Option(code, code));
+      });
+
+      baseEl.value = base;
+      targetEl.value = target === base ? 'EUR' : target;
+    }
+
+    function calculate() {
+      const amount = Number(amountEl.value || 0);
+      const rate = ratesCache[targetEl.value];
+
+      if (!rate) return;
+
+      rateEl.textContent = `1 ${baseEl.value} = ${format(rate)} ${targetEl.value}`;
+      resultEl.textContent = `${format(amount * rate)} ${targetEl.value}`;
+    }
+
+    async function init() {
+      try {
+        const data = await loadRates('USD');
+
+        const codes = Object.keys(data.rates);
+        if (!codes.includes(data.base_code)) {
+          codes.push(data.base_code);
+        }
+
+        fillSelects(codes, data.base_code, 'BRL');
+        calculate();
+
+        statusEl.textContent = `Atualizado: ${data.time_last_update_utc || 'agora'}`;
+      } catch (e) {
+        statusEl.textContent = 'Erro ao carregar cotações';
+        console.error(e);
+      }
+    }
+
+    baseEl.addEventListener('change', async () => {
+      try {
+        await loadRates(baseEl.value);
+        calculate();
+      } catch {
+        statusEl.textContent = 'Erro ao atualizar moeda base';
+      }
+    });
+
+    targetEl.addEventListener('change', calculate);
+    amountEl.addEventListener('input', calculate);
+
+    swapBtn.addEventListener('click', async () => {
+      const a = baseEl.value;
+      baseEl.value = targetEl.value;
+      targetEl.value = a;
+      await loadRates(baseEl.value);
+      calculate();
+    });
+
+    init();
+  </script>
+
+</body>
+</html>
