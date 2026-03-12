@@ -1766,7 +1766,7 @@
   <div class="manutencao-banner">
    <div style="display: flex; align-items: center; gap: 12px; justify-content: center;">
     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01" />
-    </svg><span style="font-weight: 600; font-size: 15px;">🔧 Sistema em manutenção - Alternar modelo indisponível</span>
+    </svg><span style="font-weight: 600; font-size: 15px;">⚠️ Alternar modelo com instabilidade - Estamos trabalhando para resolver!</span>
     <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01" />
     </svg>
    </div>
@@ -2181,7 +2181,37 @@
 
     // Função para alternar entre modelos
     function alternarModelo() {
-      mostrarMensagem('🔧 Alternar modelo está temporariamente indisponível durante manutenção!', 'erro');
+      const reciboPadrao = document.getElementById('recibo');
+      const reciboSimplificado = document.getElementById('recibo-simplificado');
+      const reciboCovre = document.getElementById('recibo-moyses');
+      
+      // Ciclar entre os três modelos: padrão → simplificado → covre → padrão
+      if (modeloAtual === 'padrao') {
+        modeloAtual = 'simplificado';
+        reciboPadrao.style.display = 'none';
+        reciboSimplificado.style.display = 'block';
+        reciboCovre.style.display = 'none';
+        mostrarMensagem('📋 Modelo Simplificado ativado!', 'sucesso');
+      } else if (modeloAtual === 'simplificado') {
+        modeloAtual = 'covre';
+        reciboPadrao.style.display = 'none';
+        reciboSimplificado.style.display = 'none';
+        reciboCovre.style.display = 'block';
+        mostrarMensagem('📄 Modelo COVRE ativado!', 'sucesso');
+      } else {
+        modeloAtual = 'padrao';
+        reciboPadrao.style.display = 'block';
+        reciboSimplificado.style.display = 'none';
+        reciboCovre.style.display = 'none';
+        mostrarMensagem('📋 Modelo Padrão ativado!', 'sucesso');
+      }
+      
+      localStorage.setItem('modeloRecibo', modeloAtual);
+      
+      setTimeout(() => {
+        const reciboVisivel = modeloAtual === 'simplificado' ? reciboSimplificado : (modeloAtual === 'covre' ? reciboCovre : reciboPadrao);
+        reciboVisivel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
     }
 
     // Função para mostrar toast de alternância de modelo
@@ -2218,6 +2248,12 @@
       const reciboPadrao = document.getElementById('recibo');
       const reciboSimplificado = document.getElementById('recibo-simplificado');
       const reciboCovre = document.getElementById('recibo-moyses');
+      
+      // Sempre começar com modelo padrão como padrão
+      reciboPadrao.style.display = 'block';
+      reciboSimplificado.style.display = 'none';
+      reciboCovre.style.display = 'none';
+      modeloAtual = 'padrao';
       
       if (modeloSalvo === 'simplificado') {
         reciboPadrao.style.display = 'none';
@@ -3674,5 +3710,5 @@
       applyConfig(window.elementSdk.config || defaultConfig);
     })();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dafe42213e0a6c6',t:'MTc3MzI4ODAxOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9db22a54a6e28a23',t:'MTc3MzMxMTg2NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
