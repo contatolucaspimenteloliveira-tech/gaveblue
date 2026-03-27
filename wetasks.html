@@ -26,10 +26,9 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 .nav-btn{transition:all .2s;position:relative}
 .nav-btn.active::after{content:'';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:20px;height:3px;border-radius:2px;background:var(--primary)}
 .badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:var(--urgent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
-.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.4);backdrop-filter:blur(4px);z-index:50;display:flex;align-items:flex-end;justify-content:center}
-@media(min-width:640px){.modal-overlay{align-items:center}}
-.modal-content{background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:500px;max-height:90%;overflow:auto;padding:24px}
-@media(min-width:640px){.modal-content{border-radius:24px}}
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.4);backdrop-filter:blur(4px);z-index:50;display:flex;align-items:center;justify-content:center}
+.modal-content{background:var(--surface);border-radius:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:28px}
+@media(max-width:640px){.modal-content{border-radius:20px 20px 0 0;max-height:85vh}}
 input,textarea,select{border:1.5px solid #E2E8F0;border-radius:12px;padding:10px 14px;font-family:inherit;font-size:14px;width:100%;transition:border .2s;background:#F8FAFC}
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary);background:#fff}
 .btn{border:none;border-radius:12px;padding:10px 20px;font-family:inherit;font-weight:600;font-size:14px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
@@ -58,19 +57,22 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary)
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full">
-  <div class="app-wrapper" id="app"><!-- Toast container -->
+  <div class="app-wrapper" id="app">
+   <!-- Toast container -->
    <div id="toast-container"></div><!-- Header -->
    <header style="background:linear-gradient(135deg,#2563EB 0%,#3B82F6 50%,#60A5FA 100%);color:#fff;padding:20px 20px 60px;position:relative">
     <div style="max-width:600px;margin:0 auto">
      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div>
+      <div style="display:flex;flex-direction:column;gap:3px">
        <p style="font-size:13px;opacity:.8" id="greeting-text">Olá! Bem-vindo 👋</p>
-       <h1 style="font-size:22px;font-weight:800;letter-spacing:-.3px" id="app-title">Minha Agenda</h1>
+       <h1 style="font-size:22px;font-weight:800;letter-spacing:-.3px" id="app-title">${userName || 'Minha Agenda'}</h1>
       </div>
-      <div style="display:flex;gap:10px;align-items:center"><button onclick="toggleNotifications()" style="background:rgba(255,255,255,.15);border:none;border-radius:12px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;color:#fff"> <i data-lucide="bell" style="width:20px;height:20px"></i> <span class="badge" id="notif-badge" style="display:none">0</span> </button>
+      <div style="display:flex;gap:10px;align-items:center">
+       <button onclick="toggleSettings()" style="background:rgba(255,255,255,.15);border:none;border-radius:12px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff"> <i data-lucide="settings" style="width:20px;height:20px"></i> </button> <button onclick="toggleNotifications()" style="background:rgba(255,255,255,.15);border:none;border-radius:12px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;color:#fff"> <i data-lucide="bell" style="width:20px;height:20px"></i> <span class="badge" id="notif-badge" style="display:none">0</span> </button>
       </div>
      </div>
-     <div style="display:flex;gap:6px;align-items:center;font-size:14px;opacity:.9"><i data-lucide="calendar" style="width:16px;height:16px"></i> <span id="header-date"></span>
+     <div style="display:flex;gap:6px;align-items:center;font-size:14px;opacity:.9">
+      <i data-lucide="calendar" style="width:16px;height:16px"></i> <span id="header-date"></span> <span style="opacity:.6">•</span> <span id="header-time"></span>
      </div>
     </div>
    </header><!-- Summary Cards -->
@@ -91,20 +93,25 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary)
     </div>
    </div><!-- Navigation Tabs -->
    <div style="max-width:600px;margin:16px auto 0;padding:0 16px">
-    <div style="display:flex;gap:6px;background:var(--surface);border-radius:14px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,.05)"><button class="tab-btn active" onclick="switchTab('tasks')" id="tab-tasks">Tarefas</button> <button class="tab-btn" onclick="switchTab('calendar')" id="tab-calendar">Calendário</button>
+    <div style="display:flex;gap:6px;background:var(--surface);border-radius:14px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+     <button class="tab-btn active" onclick="switchTab('tasks')" id="tab-tasks">Tarefas</button> <button class="tab-btn" onclick="switchTab('calendar')" id="tab-calendar">Calendário</button>
     </div>
    </div><!-- Tasks View -->
-   <div id="view-tasks" style="max-width:600px;margin:12px auto 100px;padding:0 16px"><!-- Filter -->
-    <div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding:4px 0"><button class="tab-btn active" onclick="filterTasks('all')" data-filter="all" style="font-size:12px;white-space:nowrap">Todas</button> <button class="tab-btn" onclick="filterTasks('pending')" data-filter="pending" style="font-size:12px;white-space:nowrap">Pendentes</button> <button class="tab-btn" onclick="filterTasks('done')" data-filter="done" style="font-size:12px;white-space:nowrap">Concluídas</button> <button class="tab-btn" onclick="filterTasks('urgent')" data-filter="urgent" style="font-size:12px;white-space:nowrap">Urgentes</button>
+   <div id="view-tasks" style="max-width:600px;margin:12px auto 100px;padding:0 16px">
+    <!-- Filter -->
+    <div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding:4px 0">
+     <button class="tab-btn active" onclick="filterTasks('all')" data-filter="all" style="font-size:12px;white-space:nowrap">Todas</button> <button class="tab-btn" onclick="filterTasks('pending')" data-filter="pending" style="font-size:12px;white-space:nowrap">Pendentes</button> <button class="tab-btn" onclick="filterTasks('done')" data-filter="done" style="font-size:12px;white-space:nowrap">Concluídas</button> <button class="tab-btn" onclick="filterTasks('urgent')" data-filter="urgent" style="font-size:12px;white-space:nowrap">Urgentes</button>
     </div>
     <div id="tasks-list"></div>
    </div><!-- Calendar View -->
    <div id="view-calendar" style="max-width:600px;margin:12px auto 100px;padding:0 16px;display:none">
     <div class="card" style="padding:20px;margin-bottom:16px">
-     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><button onclick="changeMonth(-1)" class="btn btn-ghost" style="padding:8px"><i data-lucide="chevron-left" style="width:18px;height:18px"></i></button>
+     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <button onclick="changeMonth(-1)" class="btn btn-ghost" style="padding:8px"><i data-lucide="chevron-left" style="width:18px;height:18px"></i></button>
       <h3 style="font-weight:700;font-size:16px" id="cal-month-label"></h3><button onclick="changeMonth(1)" class="btn btn-ghost" style="padding:8px"><i data-lucide="chevron-right" style="width:18px;height:18px"></i></button>
      </div>
-     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;margin-bottom:8px"><span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Dom</span> <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Seg</span> <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Ter</span> <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Qua</span> <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Qui</span> <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Sex</span> <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Sáb</span>
+     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;margin-bottom:8px">
+      <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Dom</span> <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Seg</span> <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Ter</span> <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Qua</span> <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Qui</span> <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Sex</span> <span style="font-size:11px;font-weight:600;color:var(--secondary);padding:4px">Sáb</span>
      </div>
      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
     </div>
@@ -119,37 +126,62 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary)
      <div id="notif-list"></div>
     </div>
    </div>
-   <div id="notif-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:55" onclick="toggleNotifications()"></div><!-- FAB --> <button onclick="openTaskModal()" style="position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:16px;background:var(--primary);color:#fff;border:none;box-shadow:0 4px 16px rgba(37,99,235,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;transition:all .2s" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'"> <i data-lucide="plus" style="width:24px;height:24px"></i> </button> <!-- Task Modal -->
+   <div id="notif-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:55" onclick="toggleNotifications()"></div><!-- Settings Panel -->
+   <div id="settings-panel" style="display:none;position:fixed;top:0;right:0;bottom:0;width:100%;max-width:360px;background:var(--surface);z-index:60;box-shadow:-4px 0 24px rgba(0,0,0,.1);overflow:auto" class="slide-up">
+    <div style="padding:20px">
+     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2 style="font-weight:800;font-size:18px">Configurações</h2><button onclick="toggleSettings()" class="btn btn-ghost" style="padding:8px"><i data-lucide="x" style="width:20px;height:20px"></i></button>
+     </div><!-- Name Section -->
+     <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #F1F5F9">
+      <p style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:8px">Seu Nome</p>
+      <div style="display:flex;gap:8px">
+       <input type="text" id="settings-name-input" placeholder="Digite seu nome" style="border:1.5px solid #E2E8F0;border-radius:12px;padding:10px 14px;font-family:inherit;font-size:14px;flex:1;background:#F8FAFC"> <button onclick="updateUserName()" class="btn btn-primary" style="padding:10px 16px"><i data-lucide="check" style="width:16px;height:16px"></i></button>
+      </div>
+     </div><!-- Theme Section -->
+     <div>
+      <p style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:12px">Tema</p>
+      <div style="display:flex;gap:8px">
+       <button onclick="setTheme('light')" id="theme-light" class="btn" style="flex:1;justify-content:center;border:2px solid #E2E8F0;background:transparent;color:var(--secondary)"><i data-lucide="sun" style="width:16px;height:16px"></i> Claro</button> <button onclick="setTheme('dark')" id="theme-dark" class="btn" style="flex:1;justify-content:center;border:2px solid #E2E8F0;background:transparent;color:var(--secondary)"><i data-lucide="moon" style="width:16px;height:16px"></i> Escuro</button>
+      </div>
+     </div>
+    </div>
+   </div>
+   <div id="settings-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:55" onclick="toggleSettings()"></div><!-- FAB --> <button onclick="openTaskModal()" style="position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:16px;background:var(--primary);color:#fff;border:none;box-shadow:0 4px 16px rgba(37,99,235,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;transition:all .2s" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'"> <i data-lucide="plus" style="width:24px;height:24px"></i> </button> <!-- Task Modal -->
    <div id="task-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeTaskModal()">
     <div class="modal-content slide-up">
      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
       <h2 style="font-weight:800;font-size:18px" id="modal-title">Nova Tarefa</h2><button onclick="closeTaskModal()" class="btn btn-ghost" style="padding:8px"><i data-lucide="x" style="width:20px;height:20px"></i></button>
      </div>
-     <form id="task-form" onsubmit="handleFormSubmit(event)"><input type="hidden" id="task-id">
+     <form id="task-form" onsubmit="handleFormSubmit(event)">
+      <input type="hidden" id="task-id">
       <div style="display:flex;flex-direction:column;gap:14px">
-       <div><label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Título *</label> <input type="text" id="f-title" required placeholder="Nome da tarefa">
+       <div>
+        <label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Título *</label> <input type="text" id="f-title" required placeholder="Nome da tarefa">
        </div>
-       <div><label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Descrição</label> <textarea id="f-desc" rows="2" placeholder="Detalhes da tarefa" style="resize:vertical"></textarea>
-       </div>
-       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Data *</label> <input type="date" id="f-date" required>
-        </div>
-        <div><label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Horário</label> <input type="time" id="f-time">
-        </div>
+       <div>
+        <label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Descrição</label> <textarea id="f-desc" rows="2" placeholder="Detalhes da tarefa" style="resize:vertical"></textarea>
        </div>
        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Prioridade</label> <select id="f-priority"> <option value="low">🟢 Baixa</option> <option value="medium">🟡 Média</option> <option value="high">🔵 Alta</option> <option value="urgent">🔴 Urgente</option> </select>
+        <div>
+         <label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Data *</label> <input type="date" id="f-date" required>
         </div>
-        <div><label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Categoria</label> <select id="f-category"> <option value="geral">Geral</option> <option value="trabalho">Trabalho</option> <option value="pessoal">Pessoal</option> <option value="estudo">Estudo</option> <option value="saude">Saúde</option> </select>
-        </div>
-       </div>
-       <div><label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Observações</label> <textarea id="f-notes" rows="2" placeholder="Notas adicionais..." style="resize:vertical"></textarea>
-       </div><!-- Confirm bar for editing -->
-       <div id="confirm-save-bar" style="display:none" class="confirm-bar"><i data-lucide="alert-triangle" style="width:16px;height:16px;color:#D97706;flex-shrink:0"></i> <span>Confirma salvar as alterações?</span>
-        <div style="margin-left:auto;display:flex;gap:6px"><button type="button" onclick="cancelConfirm()" class="btn btn-ghost" style="padding:6px 12px;font-size:12px">Não</button> <button type="submit" class="btn btn-primary" style="padding:6px 12px;font-size:12px">Sim</button>
+        <div>
+         <label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Horário</label> <input type="time" id="f-time">
         </div>
        </div>
-       <div id="form-actions" style="display:flex;gap:10px;justify-content:flex-end"><button type="button" onclick="closeTaskModal()" class="btn btn-ghost">Cancelar</button> <button type="button" onclick="requestSaveConfirm()" class="btn btn-primary" id="save-btn"> <i data-lucide="check" style="width:16px;height:16px"></i> Salvar </button>
+       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+         <label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Prioridade</label> <select id="f-priority"> <option value="low">🟢 Baixa</option> <option value="medium">🟡 Média</option> <option value="high">🔵 Alta</option> <option value="urgent">🔴 Urgente</option> </select>
+        </div>
+        <div>
+         <label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Categoria</label> <select id="f-category"> <option value="geral">Geral</option> <option value="trabalho">Trabalho</option> <option value="pessoal">Pessoal</option> <option value="estudo">Estudo</option> <option value="saude">Saúde</option> </select>
+        </div>
+       </div>
+       <div>
+        <label style="font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:4px;display:block">Observações</label> <textarea id="f-notes" rows="2" placeholder="Notas adicionais..." style="resize:vertical"></textarea>
+       </div>
+       <div id="form-actions" style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" onclick="closeTaskModal()" class="btn btn-ghost">Cancelar</button> <button type="button" onclick="requestSaveConfirm()" class="btn btn-primary" id="save-btn"> <i data-lucide="check" style="width:16px;height:16px"></i> Salvar </button>
        </div>
       </div>
      </form>
@@ -157,21 +189,37 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary)
    </div><!-- Delete Confirm Modal -->
    <div id="delete-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeDeleteModal()">
     <div class="modal-content slide-up" style="max-width:380px;text-align:center">
-     <div style="width:56px;height:56px;border-radius:16px;background:#FEE2E2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><i data-lucide="trash-2" style="width:24px;height:24px;color:var(--urgent)"></i>
+     <div style="width:56px;height:56px;border-radius:16px;background:#FEE2E2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+      <i data-lucide="trash-2" style="width:24px;height:24px;color:var(--urgent)"></i>
      </div>
      <h3 style="font-weight:700;font-size:17px;margin-bottom:8px">Excluir tarefa?</h3>
      <p style="font-size:13px;color:var(--secondary);margin-bottom:20px" id="delete-task-name"></p>
-     <div style="display:flex;gap:10px;justify-content:center"><button onclick="closeDeleteModal()" class="btn btn-ghost">Cancelar</button> <button onclick="confirmDelete()" class="btn btn-danger"><i data-lucide="trash-2" style="width:14px;height:14px"></i> Excluir</button>
+     <div style="display:flex;gap:10px;justify-content:center">
+      <button onclick="closeDeleteModal()" class="btn btn-ghost">Cancelar</button> <button onclick="confirmDelete()" class="btn btn-danger"><i data-lucide="trash-2" style="width:14px;height:14px"></i> Excluir</button>
      </div>
     </div>
    </div><!-- Complete Confirm Modal -->
    <div id="complete-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeCompleteModal()">
     <div class="modal-content slide-up" style="max-width:380px;text-align:center">
-     <div style="width:56px;height:56px;border-radius:16px;background:#D1FAE5;display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><i data-lucide="check-circle" style="width:24px;height:24px;color:var(--low)"></i>
+     <div style="width:56px;height:56px;border-radius:16px;background:#D1FAE5;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+      <i data-lucide="check-circle" style="width:24px;height:24px;color:var(--low)"></i>
      </div>
      <h3 style="font-weight:700;font-size:17px;margin-bottom:8px" id="complete-modal-title">Concluir tarefa?</h3>
      <p style="font-size:13px;color:var(--secondary);margin-bottom:20px" id="complete-task-name"></p>
-     <div style="display:flex;gap:10px;justify-content:center"><button onclick="closeCompleteModal()" class="btn btn-ghost">Cancelar</button> <button onclick="confirmComplete()" class="btn btn-primary"><i data-lucide="check" style="width:14px;height:14px"></i> Confirmar</button>
+     <div style="display:flex;gap:10px;justify-content:center">
+      <button onclick="closeCompleteModal()" class="btn btn-ghost">Cancelar</button> <button onclick="confirmComplete()" class="btn btn-primary"><i data-lucide="check" style="width:14px;height:14px"></i> Confirmar</button>
+     </div>
+    </div>
+   </div><!-- Save Confirm Modal -->
+   <div id="confirm-save-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)cancelConfirm()">
+    <div class="modal-content slide-up" style="max-width:380px;text-align:center">
+     <div style="width:56px;height:56px;border-radius:16px;background:#D1FAE5;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+      <i data-lucide="check-circle" style="width:24px;height:24px;color:var(--low)"></i>
+     </div>
+     <h3 style="font-weight:700;font-size:17px;margin-bottom:8px">Salvar tarefa?</h3>
+     <p style="font-size:13px;color:var(--secondary);margin-bottom:20px" id="confirm-task-title"></p>
+     <div style="display:flex;gap:10px;justify-content:center">
+      <button onclick="cancelConfirm()" class="btn btn-ghost">Cancelar</button> <button onclick="submitForm()" class="btn btn-primary"><i data-lucide="check" style="width:14px;height:14px"></i> Confirmar</button>
      </div>
     </div>
    </div>
@@ -180,6 +228,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary)
 // ===== STATE =====
 let tasks = JSON.parse(localStorage.getItem('agenda_tasks') || '[]');
 let notifications = JSON.parse(localStorage.getItem('agenda_notifs') || '[]');
+let userName = localStorage.getItem('user_name') || '';
+let currentTheme = localStorage.getItem('user_theme') || 'light';
 let currentFilter = 'all';
 let currentTab = 'tasks';
 let calMonth = new Date().getMonth();
@@ -188,7 +238,6 @@ let selectedCalDate = null;
 let deleteTargetId = null;
 let completeTargetId = null;
 let editingId = null;
-let needsConfirm = false;
 
 const PRIORITY_COLORS = { urgent:'#EF4444', high:'#2563EB', medium:'#F59E0B', low:'#10B981' };
 const PRIORITY_LABELS = { urgent:'Urgente', high:'Alta', medium:'Média', low:'Baixa' };
@@ -207,6 +256,36 @@ function formatDate(d) {
   return dt.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 }
 
+function getBrasiliaTime() {
+  const formatter = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  return formatter.format(new Date());
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  let greeting = '';
+  let emoji = '';
+  
+  if (h < 12) { greeting = 'Bom dia'; emoji = '☀️'; }
+  else if (h < 18) { greeting = 'Boa tarde'; emoji = '🌤️'; }
+  else { greeting = 'Boa noite'; emoji = '🌙'; }
+  
+  return `${greeting}! ${emoji}`;
+}
+
+function formatTaskDate(dateStr, timeStr) {
+  const [y, m, day] = dateStr.split('-');
+  const dateFormatted = `${day}/${m}/${y}`;
+  const timeFormatted = timeStr ? ` - ${timeStr}` : '';
+  return `${dateFormatted}${timeFormatted}`;
+}
+
 // ===== TOAST =====
 function showToast(msg, type='success') {
   const c = document.getElementById('toast-container');
@@ -220,7 +299,71 @@ function showToast(msg, type='success') {
   setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(100px)'; t.style.transition='all .3s'; setTimeout(() => t.remove(), 300); }, 3000);
 }
 
-// ===== NOTIFICATIONS =====
+// ===== SETTINGS =====
+function toggleSettings() {
+  const p = document.getElementById('settings-panel');
+  const o = document.getElementById('settings-overlay');
+  const show = p.style.display === 'none';
+  p.style.display = show ? 'block' : 'none';
+  o.style.display = show ? 'block' : 'none';
+  if (show) {
+    document.getElementById('settings-name-input').value = userName;
+    updateThemeButtons();
+  }
+}
+
+function updateUserName() {
+  const nameInput = document.getElementById('settings-name-input');
+  const newName = nameInput.value.trim();
+  
+  if (!newName) {
+    nameInput.focus();
+    return;
+  }
+  
+  userName = newName;
+  localStorage.setItem('user_name', userName);
+  
+  document.getElementById('app-title').textContent = userName;
+  renderHeader();
+  toggleSettings();
+  showToast(`Nome atualizado para ${userName}! 👋`);
+}
+
+function setTheme(theme) {
+  currentTheme = theme;
+  localStorage.setItem('user_theme', theme);
+  applyTheme();
+  updateThemeButtons();
+  showToast(`Tema alterado para ${theme === 'dark' ? 'escuro' : 'claro'}!`);
+}
+
+function updateThemeButtons() {
+  const isDark = currentTheme === 'dark';
+  document.getElementById('theme-light').style.borderColor = isDark ? '#E2E8F0' : 'var(--primary)';
+  document.getElementById('theme-light').style.color = isDark ? 'var(--secondary)' : 'var(--primary)';
+  document.getElementById('theme-light').style.background = isDark ? 'transparent' : 'var(--primary)18';
+  
+  document.getElementById('theme-dark').style.borderColor = isDark ? 'var(--primary)' : '#E2E8F0';
+  document.getElementById('theme-dark').style.color = isDark ? 'var(--primary)' : 'var(--secondary)';
+  document.getElementById('theme-dark').style.background = isDark ? 'var(--primary)18' : 'transparent';
+}
+
+function applyTheme() {
+  if (currentTheme === 'dark') {
+    document.documentElement.style.setProperty('--bg', '#0F172A');
+    document.documentElement.style.setProperty('--surface', '#1E293B');
+    document.documentElement.style.setProperty('--text', '#F1F5F9');
+    document.documentElement.style.setProperty('--secondary', '#94A3B8');
+  } else {
+    document.documentElement.style.setProperty('--bg', '#F0F4F8');
+    document.documentElement.style.setProperty('--surface', '#FFFFFF');
+    document.documentElement.style.setProperty('--text', '#1E293B');
+    document.documentElement.style.setProperty('--secondary', '#64748B');
+  }
+}
+
+
 function addNotification(msg, type='info') {
   notifications.unshift({ id: Date.now(), msg, type, time: new Date().toISOString(), read: false });
   if (notifications.length > 50) notifications = notifications.slice(0, 50);
@@ -270,11 +413,13 @@ function renderNotifications() {
 // ===== RENDER HEADER =====
 function renderHeader() {
   document.getElementById('header-date').textContent = formatDate(todayStr());
-  // Greeting based on time
-  const h = new Date().getHours();
-  const greetings = h < 12 ? 'Bom dia! ☀️' : h < 18 ? 'Boa tarde! 🌤️' : 'Boa noite! 🌙';
-  const gt = document.getElementById('greeting-text');
-  if (!gt.dataset.custom) gt.textContent = greetings;
+  document.getElementById('header-time').textContent = getBrasiliaTime();
+  document.getElementById('greeting-text').textContent = getGreeting();
+  // Atualiza hora e saudação a cada segundo
+  setInterval(() => {
+    document.getElementById('header-time').textContent = getBrasiliaTime();
+    document.getElementById('greeting-text').textContent = getGreeting();
+  }, 1000);
 }
 
 // ===== RENDER SUMMARY =====
@@ -299,11 +444,11 @@ function renderTasks(targetTasks, container) {
     else filtered = tasks.filter(t => t.date === today);
   }
 
-  // Sort: pending first, then by priority weight
   const pw = { urgent:0, high:1, medium:2, low:3 };
   filtered.sort((a, b) => {
     if (a.status === 'done' && b.status !== 'done') return 1;
     if (a.status !== 'done' && b.status === 'done') return -1;
+    if (a.status === 'done' && b.status === 'done') return (pw[a.priority]||3) - (pw[b.priority]||3);
     return (pw[a.priority]||3) - (pw[b.priority]||3);
   });
 
@@ -334,7 +479,7 @@ function renderTasks(targetTasks, container) {
           <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;background:${pc}18;color:${pc};white-space:nowrap">${PRIORITY_LABELS[t.priority]}</span>
         </div>
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:11px;color:var(--secondary);display:flex;align-items:center;gap:3px"><i data-lucide="clock" style="width:12px;height:12px"></i>${t.date}${timeStr}</span>
+          <span style="font-size:11px;color:var(--secondary);display:flex;align-items:center;gap:3px"><i data-lucide="calendar-check" style="width:12px;height:12px"></i>${formatTaskDate(t.date, t.time)}</span>
           <span style="font-size:10px;padding:2px 8px;border-radius:6px;background:#F1F5F9;color:var(--secondary);font-weight:500">${CATEGORY_LABELS[t.category]||t.category}</span>
           ${isDone?'<span style="font-size:10px;padding:2px 8px;border-radius:6px;background:#D1FAE5;color:#059669;font-weight:600">✓ Concluída</span>':''}
         </div>
@@ -403,9 +548,6 @@ function changeMonth(dir) {
 // ===== TASK MODAL =====
 function openTaskModal(id) {
   editingId = id || null;
-  needsConfirm = false;
-  document.getElementById('confirm-save-bar').style.display = 'none';
-  document.getElementById('form-actions').style.display = 'flex';
   document.getElementById('modal-title').textContent = id ? 'Editar Tarefa' : 'Nova Tarefa';
   document.getElementById('save-btn').innerHTML = '<i data-lucide="check" style="width:16px;height:16px"></i> ' + (id ? 'Atualizar' : 'Salvar');
 
@@ -432,7 +574,6 @@ function openTaskModal(id) {
 function closeTaskModal() {
   document.getElementById('task-modal').style.display = 'none';
   editingId = null;
-  needsConfirm = false;
 }
 
 function requestSaveConfirm() {
@@ -444,19 +585,13 @@ function requestSaveConfirm() {
     document.getElementById('f-date').focus();
     return;
   }
-  // Show confirm bar
-  document.getElementById('confirm-save-bar').style.display = 'flex';
-  document.getElementById('form-actions').style.display = 'none';
+  const title = document.getElementById('f-title').value;
+  document.getElementById('confirm-task-title').textContent = `"${title}"`;
+  document.getElementById('confirm-save-modal').style.display = 'flex';
   lucide.createIcons();
 }
 
-function cancelConfirm() {
-  document.getElementById('confirm-save-bar').style.display = 'none';
-  document.getElementById('form-actions').style.display = 'flex';
-}
-
-function handleFormSubmit(e) {
-  e.preventDefault();
+function submitForm() {
   const data = {
     title: document.getElementById('f-title').value.trim(),
     description: document.getElementById('f-desc').value.trim(),
@@ -483,8 +618,13 @@ function handleFormSubmit(e) {
   }
 
   save();
+  cancelConfirm();
   closeTaskModal();
   renderAll();
+}
+
+function cancelConfirm() {
+  document.getElementById('confirm-save-modal').style.display = 'none';
 }
 
 function editTask(id) { openTaskModal(id); }
@@ -607,9 +747,66 @@ if (window.elementSdk) {
   });
 }
 
-// Init
-renderAll();
-lucide.createIcons();
+function initApp() {
+  applyTheme();
+  if (!userName) {
+    showNameModal();
+  } else {
+    renderAll();
+    lucide.createIcons();
+  }
+}
+
+function showNameModal() {
+  const modal = `
+    <div class="modal-overlay" id="name-modal" style="z-index:1000" onclick="if(event.target===this)return false">
+      <div class="modal-content slide-up" style="max-width:380px;text-align:center">
+        <h2 style="font-weight:800;font-size:20px;margin-bottom:8px">Bem-vindo ao WeTasks! 👋</h2>
+        <p style="font-size:14px;color:var(--secondary);margin-bottom:20px">Para iniciar sua personalização, por favor, informe seu nome.</p>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <input type="text" id="name-input" placeholder="Digite seu nome aqui..." style="border:1.5px solid #E2E8F0;border-radius:12px;padding:12px 14px;font-family:inherit;font-size:14px;width:100%;box-sizing:border-box;background:#F8FAFC" autofocus>
+          <button onclick="saveName()" class="btn btn-primary" style="width:100%;justify-content:center">
+            <i data-lucide="arrow-right" style="width:16px;height:16px"></i> Começar
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  const container = document.getElementById('app');
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = modal;
+  container.appendChild(tempDiv.firstElementChild);
+  
+  document.getElementById('name-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') saveName();
+  });
+  
+  lucide.createIcons();
+}
+
+function saveName() {
+  const nameInput = document.getElementById('name-input');
+  const name = nameInput.value.trim();
+  
+  if (!name) {
+    nameInput.focus();
+    return;
+  }
+  
+  userName = name;
+  localStorage.setItem('user_name', userName);
+  
+  const modal = document.getElementById('name-modal');
+  modal.parentElement.removeChild(modal);
+  
+  document.getElementById('app-title').textContent = userName;
+  renderAll();
+  lucide.createIcons();
+  showToast(`Bem-vindo, ${userName}! 🎉`);
+}
+
+initApp();
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e2d94d594943522',t:'MTc3NDYwNTk3Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e2dc13bc0d5623c',t:'MTc3NDYwNzc5NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
