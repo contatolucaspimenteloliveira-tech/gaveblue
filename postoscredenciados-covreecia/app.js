@@ -96,6 +96,7 @@ function renderSuggestions(elementId, items, dataAttribute) {
 document.getElementById('fuel-city').addEventListener('change', function() {
   const selectedCity = this.value;
   const stationSelect = document.getElementById('fuel-station');
+  markFuelReceiptUploadDirty();
 
   stationSelect.innerHTML = '';
 
@@ -124,7 +125,26 @@ document.getElementById('fuel-station').addEventListener('keypress', function(e)
   }
 });
 
+document.getElementById('fuel-station').addEventListener('change', function() {
+  markFuelReceiptUploadDirty();
+});
+
 document.getElementById('driver-name').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    document.getElementById('fuel-date').focus();
+  }
+});
+
+document.getElementById('driver-name').addEventListener('change', function() {
+  toggleCustomDriverField();
+  markFuelReceiptUploadDirty();
+});
+
+document.getElementById('custom-driver-name').addEventListener('input', function() {
+  markFuelReceiptUploadDirty();
+});
+
+document.getElementById('custom-driver-name').addEventListener('keypress', function(e) {
   if (e.key === 'Enter') {
     document.getElementById('fuel-date').focus();
   }
@@ -136,10 +156,18 @@ document.getElementById('fuel-date').addEventListener('keypress', function(e) {
   }
 });
 
+document.getElementById('fuel-date').addEventListener('change', function() {
+  markFuelReceiptUploadDirty();
+});
+
 document.getElementById('fuel-km').addEventListener('keypress', function(e) {
   if (e.key === 'Enter') {
     document.getElementById('fuel-photo').click();
   }
+});
+
+document.getElementById('fuel-km').addEventListener('input', function() {
+  markFuelReceiptUploadDirty();
 });
 
 function toggleMenu() {
@@ -195,6 +223,8 @@ function populateDriverOptions() {
   if (currentValue && driverNames.includes(currentValue)) {
     driverSelect.value = currentValue;
   }
+
+  toggleCustomDriverField();
 }
 
 function saveDriverNameSuggestion(driverName) {
@@ -335,6 +365,46 @@ function resetFuelPhotoState() {
   setSaveReceiptButtonVisible(true);
 }
 
+function toggleCustomDriverField() {
+  const driverSelect = document.getElementById('driver-name');
+  const customContainer = document.getElementById('custom-driver-container');
+  const customInput = document.getElementById('custom-driver-name');
+  const shouldShowCustomInput = driverSelect?.value === OTHER_DRIVER_OPTION;
+
+  if (!customContainer || !customInput) {
+    return;
+  }
+
+  customContainer.classList.toggle('hidden', !shouldShowCustomInput);
+  customInput.required = shouldShowCustomInput;
+  if (!shouldShowCustomInput) {
+    customInput.value = '';
+  }
+}
+
+function getSelectedDriverName() {
+  const driverSelect = document.getElementById('driver-name');
+  const customInput = document.getElementById('custom-driver-name');
+
+  if (driverSelect?.value === OTHER_DRIVER_OPTION) {
+    return customInput?.value.trim() || '';
+  }
+
+  return driverSelect?.value.trim() || '';
+}
+
+function markFuelReceiptUploadDirty() {
+  if (!document.getElementById('fuel-photo')?.files?.length) {
+    return;
+  }
+
+  uploadedFuelReceipt = null;
+  fuelReceiptUploadPromise = null;
+  setSaveReceiptButtonVisible(true);
+  setFuelActionButtonsVisible(false);
+  updateReceiptUploadStatus('Dados alterados. Salve o comprovante novamente antes de enviar.', 'neutral');
+}
+
 function prepareFuelForm(options = {}) {
   const { cidade = '', posto = '', useLastEntry = false } = options;
   const citySelect = document.getElementById('fuel-city');
@@ -348,7 +418,13 @@ function prepareFuelForm(options = {}) {
   document.getElementById('fuel-form').reset();
   citySelect.value = selectedCity;
   populateDriverOptions();
-  driverInput.value = selectedDriver;
+  if (selectedDriver && getStoredDriverNames().includes(selectedDriver)) {
+    driverInput.value = selectedDriver;
+  } else if (selectedDriver) {
+    driverInput.value = OTHER_DRIVER_OPTION;
+    document.getElementById('custom-driver-name').value = selectedDriver;
+  }
+  toggleCustomDriverField();
 
   if (selectedCity && postosPorCidade[selectedCity]) {
     stationSelect.innerHTML = '<option value="">Selecione um posto</option>';
@@ -397,13 +473,15 @@ function getFuelFormData() {
   const fileInput = document.getElementById('fuel-photo');
   const data = document.getElementById('fuel-date').value;
   const dateObj = data ? new Date(`${data}T00:00:00`) : null;
+  const now = new Date();
 
   return {
-    motorista: document.getElementById('driver-name').value.trim(),
+    motorista: getSelectedDriverName(),
     cidade: document.getElementById('fuel-city').value,
     posto: document.getElementById('fuel-station').value,
     data,
     dataFormatada: dateObj ? dateObj.toLocaleDateString('pt-BR') : '',
+    horaFormatada: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     km: document.getElementById('fuel-km').value.trim(),
     file: fileInput.files && fileInput.files[0]
   };
@@ -420,7 +498,10 @@ function getFuelReceiptUploadKey(formData) {
     file.size,
     file.lastModified,
     formData.motorista,
-    formData.data
+    formData.cidade,
+    formData.posto,
+    formData.data,
+    formData.km
   ].join('|');
 }
 
@@ -648,13 +729,14 @@ async function submitFuelForm(e) {
   }
 
   const mensagem = [
-    '\u26fd *REGISTRO DE ABASTECIMENTO*',
+    '\u26fd *COMPROVANTE DE ABASTECIMENTO*',
     '',
     `\ud83d\udc64 *Motorista:* ${formData.motorista}`,
     `\ud83c\udfd9\ufe0f *Cidade:* ${formData.cidade}`,
     `\u26fd *Posto:* ${formData.posto}`,
-    `\ud83d\udcc5 *Data:* ${formData.dataFormatada}`,
+    `\ud83d\udcc5 *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
     `\ud83d\udee3\ufe0f *KM:* ${formData.km || 'N\u00e3o informado'}`,
+    '',
     `\ud83e\uddfe *Comprovante:* ${uploadedFuelReceipt.result.secure_url}`
   ].join('\n');
 
