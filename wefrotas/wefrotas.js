@@ -753,11 +753,27 @@
       return true;
     }
 
+    function getOrderCompetenceDate(order) {
+      return order?.dataInicio || order?.dataTermino || '';
+    }
+
+    function getFinanceEntryCompetenceDate(entry) {
+      const linkedOrder = getEntryLinkedOrder(entry);
+      return getOrderCompetenceDate(linkedOrder) || getFinanceEntryDate(entry);
+    }
+
+    function isFinanceEntryInsideCompetencePeriod(entry, start = '', end = '') {
+      const competenceDate = getFinanceEntryCompetenceDate(entry);
+      if (start && (!competenceDate || competenceDate < start)) return false;
+      if (end && (!competenceDate || competenceDate > end)) return false;
+      return true;
+    }
+
     function getVehicleDistributedCostTotal(vehicleId, start = '', end = '') {
       return allFinanceEntries
         .filter(isDistributedCostEntry)
         .filter(entry => getEntryLinkedVehicleId(entry) === vehicleId)
-        .filter(entry => isFinanceEntryInsidePeriod(entry, start, end))
+        .filter(entry => isFinanceEntryInsideCompetencePeriod(entry, start, end))
         .reduce((sum, entry) => sum + getFinanceTotal(entry), 0);
     }
 
@@ -922,6 +938,51 @@
       localStorage.setItem('wefrotas_allow_manual_order_number_editing', allowManualOrderNumberEditing ? 'true' : 'false');
     }
 
+    function getLocalStorageUsageStats() {
+      const safeLimitBytes = 5 * 1024 * 1024;
+      let usedBytes = 0;
+
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (!key || !key.startsWith('wefrotas_')) continue;
+        const value = localStorage.getItem(key) || '';
+        usedBytes += (key.length + value.length) * 2;
+      }
+
+      const usedPercent = Math.min(100, (usedBytes / safeLimitBytes) * 100);
+      return {
+        usedBytes,
+        freeBytes: Math.max(safeLimitBytes - usedBytes, 0),
+        limitBytes: safeLimitBytes,
+        usedPercent
+      };
+    }
+
+    function formatStorageBytes(bytes) {
+      if (bytes >= 1024 * 1024) {
+        return `${(bytes / 1024 / 1024).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} MB`;
+      }
+      return `${(bytes / 1024).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} KB`;
+    }
+
+    function renderStorageDashboard() {
+      const summaryNode = document.getElementById('home-storage-summary');
+      const usedNode = document.getElementById('home-storage-used');
+      const freeNode = document.getElementById('home-storage-free');
+      const fillNode = document.getElementById('home-storage-meter-fill');
+      if (!summaryNode || !usedNode || !freeNode || !fillNode) return;
+
+      const stats = getLocalStorageUsageStats();
+      const percentLabel = stats.usedPercent.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+
+      summaryNode.textContent = `${percentLabel}% da capacidade segura em uso. Limite estimado: ${formatStorageBytes(stats.limitBytes)}.`;
+      usedNode.textContent = `${formatStorageBytes(stats.usedBytes)} usados`;
+      freeNode.textContent = `${formatStorageBytes(stats.freeBytes)} livres`;
+      fillNode.style.width = `${Math.max(stats.usedPercent, stats.usedBytes > 0 ? 2 : 0).toFixed(2)}%`;
+      fillNode.classList.toggle('is-warning', stats.usedPercent >= 60 && stats.usedPercent < 85);
+      fillNode.classList.toggle('is-danger', stats.usedPercent >= 85);
+    }
+
     function loadFromLocalStorage() {
       const savedVehicles = localStorage.getItem('wefrotas_vehicles');
       const savedDrivers = localStorage.getItem('wefrotas_drivers');
@@ -938,7 +999,7 @@
       const legacyAdministratorName = localStorage.getItem('wefrotas_default_administrator_name');
       const savedAllowManualOrderNumberEditing = localStorage.getItem('wefrotas_allow_manual_order_number_editing');
       if (savedVehicles) allVehicles = JSON.parse(savedVehicles).map(normalizeVehicleRecord);
-      if (savedDrivers) allDrivers = JSON.parse(savedDrivers);
+      if (savedDrivers) allDrivers = JSON.parse(savedDrivers).map(normalizeDriverRecord);
       if (savedSuppliers) allSuppliers = JSON.parse(savedSuppliers);
       if (savedOrders) allOrders = JSON.parse(savedOrders);
       if (savedFinance) allFinanceEntries = JSON.parse(savedFinance);
@@ -1240,15 +1301,73 @@
       };
     }
 
+    function normalizeDriverRecord(driver) {
+      const vehicleIds = Array.isArray(driver?.vehicleIds)
+        ? driver.vehicleIds
+        : driver?.vehicleId
+          ? [driver.vehicleId]
+          : [];
+
+      return {
+        ...driver,
+        vehicleIds: Array.from(new Set(vehicleIds.filter(Boolean).map(String)))
+      };
+    }
+
+    function getDriverVehicleIds(driver) {
+      if (!driver) return [];
+      const linkedFromDriver = Array.isArray(driver.vehicleIds) ? driver.vehicleIds : [];
+      const linkedFromVehicles = allVehicles
+        .filter((vehicle) => String(vehicle.motoristaId || '') === String(driver.id))
+        .map((vehicle) => vehicle.id);
+
+      return Array.from(new Set([...linkedFromDriver, ...linkedFromVehicles].filter(Boolean).map(String)));
+    }
+
+    function getSelectedDriverVehicleIds() {
+      const select = document.getElementById('driver-vehicles');
+      if (!select) return [];
+      return Array.from(select.selectedOptions).map(option => option.value).filter(Boolean);
+    }
+
+    function setSelectedDriverVehicleIds(vehicleIds = []) {
+      const select = document.getElementById('driver-vehicles');
+      if (!select) return;
+      const selectedSet = new Set(vehicleIds.map(String));
+      Array.from(select.options).forEach(option => {
+        option.selected = selectedSet.has(String(option.value));
+      });
+    }
+
+    function syncVehiclesWithDriver(driverId, vehicleIds = []) {
+      if (!driverId) return;
+      const selectedSet = new Set(vehicleIds.map(String));
+      allVehicles = allVehicles.map(vehicle => {
+        const currentDriverId = String(vehicle.motoristaId || '');
+        const shouldLink = selectedSet.has(String(vehicle.id));
+        if (shouldLink) return { ...vehicle, motoristaId: driverId };
+        if (currentDriverId === String(driverId)) return { ...vehicle, motoristaId: '' };
+        return vehicle;
+      });
+    }
+
     function findVehicleByLinkedDriverId(driverId) {
       if (!driverId) return null;
-      const matches = allVehicles.filter((vehicle) => String(vehicle?.motoristaId || '') === String(driverId));
+      const driver = allDrivers.find((item) => String(item.id) === String(driverId));
+      const linkedVehicleIds = getDriverVehicleIds(driver);
+      const matches = allVehicles.filter((vehicle) =>
+        linkedVehicleIds.includes(String(vehicle.id)) ||
+        String(vehicle?.motoristaId || '') === String(driverId)
+      );
       return matches.length === 1 ? matches[0] : null;
     }
 
     function resolveVehicleByImportedDriver(importedName, driver = null) {
       const normalizedName = normalizeComparableText(importedName);
       if (!normalizedName) return null;
+
+      const linkedVehicle = findVehicleByLinkedDriverId(driver?.id);
+      if (linkedVehicle) return linkedVehicle;
 
       const mappedPlateEntry = Object.entries(importedDriverVehiclePlateMap).find(([alias]) =>
         normalizedName === alias ||
@@ -1260,9 +1379,6 @@
         const mappedVehicle = allVehicles.find((vehicle) => normalizeComparableText(vehicle?.placa) === normalizeComparableText(mappedPlate));
         if (mappedVehicle) return mappedVehicle;
       }
-
-      const linkedVehicle = findVehicleByLinkedDriverId(driver?.id);
-      if (linkedVehicle) return linkedVehicle;
 
       if (!driver) return null;
 
@@ -1279,12 +1395,36 @@
       return candidateVehicles.length === 1 ? candidateVehicles[0] : null;
     }
 
+    function suggestFinanceVehicleFromDriver() {
+      const driverId = document.getElementById('finance-driver-id')?.value || '';
+      const driver = allDrivers.find((item) => item.id === driverId);
+      const vehicle = findVehicleByLinkedDriverId(driver?.id);
+      if (!vehicle) return;
+
+      const vehicleIdField = document.getElementById('finance-vehicle-id');
+      const vehicleSearchField = document.getElementById('finance-vehicle-search');
+      if (vehicleIdField) vehicleIdField.value = vehicle.id;
+      if (vehicleSearchField) vehicleSearchField.value = getVehicleAutocompleteLabel(vehicle);
+    }
+
+    window.suggestFinanceVehicleFromDriver = suggestFinanceVehicleFromDriver;
+
     function resolveDriverByImportedName(name) {
       const normalized = normalizeComparableText(name);
       if (!normalized) return null;
       const exactMatch = allDrivers.find((driver) => normalizeComparableText(driver.nome) === normalized);
       if (exactMatch) return exactMatch;
-      const partialMatches = allDrivers.filter((driver) => normalizeComparableText(driver.nome).includes(normalized) || normalized.includes(normalizeComparableText(driver.nome)));
+      const importedTokens = normalized.split(/\s+/).filter(Boolean);
+      const importedFirstTwo = importedTokens.slice(0, 2).join(' ');
+      const partialMatches = allDrivers.filter((driver) => {
+        const driverName = normalizeComparableText(driver.nome);
+        const driverTokens = driverName.split(/\s+/).filter(Boolean);
+        const driverFirstTwo = driverTokens.slice(0, 2).join(' ');
+        return driverName.includes(normalized)
+          || normalized.includes(driverName)
+          || (!!importedFirstTwo && importedFirstTwo === driverFirstTwo)
+          || (importedTokens.length === 1 && driverTokens[0] === importedTokens[0]);
+      });
       return partialMatches.length === 1 ? partialMatches[0] : null;
     }
 
@@ -1320,8 +1460,8 @@
         motorista: readField('Motorista'),
         cidade: readField('Cidade'),
         posto: readField('Posto'),
-        dataBr: readField('Data'),
-        dataIso: parseBrazilianDateToIso(readField('Data')),
+        dataBr: readField('Data') || readField('Data/Hora'),
+        dataIso: parseBrazilianDateToIso((readField('Data') || readField('Data/Hora')).slice(0, 10)),
         km: String(readField('KM') || '').replace(/[^\d]/g, ''),
         comprovanteUrl: comprovanteUrlMatch ? comprovanteUrlMatch[0].trim() : ''
       };
@@ -1538,6 +1678,9 @@
       }
       if (document.getElementById('finance-vehicle-id') && vehicle) {
         document.getElementById('finance-vehicle-id').value = vehicle.id;
+      }
+      if (document.getElementById('finance-vehicle-search') && vehicle) {
+        document.getElementById('finance-vehicle-search').value = getVehicleAutocompleteLabel(vehicle);
       }
 
       if (importedData.cidade) {
@@ -2077,6 +2220,13 @@
             <label>Validade da CNH</label>
             <input class="soft-input w-full" id="driver-validade" type="date">
           </div>
+          <div class="field-wrap full">
+            <label>Veículos vinculados</label>
+            <select class="soft-input w-full" id="driver-vehicles" multiple size="${Math.min(Math.max(allVehicles.length, 3), 6)}">
+              ${getSortedVehicles().map(vehicle => `<option value="${vehicle.id}">${escapeHtml(getVehicleAutocompleteLabel(vehicle))}</option>`).join('')}
+            </select>
+            <p class="text-xs text-slate-500 mt-2">Segure Ctrl para selecionar mais de um veículo. A importação do WhatsApp usa esse vínculo como sugestão, mas o veículo continua editável.</p>
+          </div>
         `;
       } else if (type === 'supplier') {
         kicker.textContent = 'Fornecedores';
@@ -2271,8 +2421,8 @@
           if (!Array.isArray(parsed.vehicles) || !Array.isArray(parsed.drivers) || !Array.isArray(parsed.suppliers) || !Array.isArray(parsed.orders) || !Array.isArray(parsed.finance)) {
             throw new Error('Estrutura inválida');
           }
-          allVehicles = parsed.vehicles;
-          allDrivers = parsed.drivers;
+          allVehicles = parsed.vehicles.map(normalizeVehicleRecord);
+          allDrivers = parsed.drivers.map(normalizeDriverRecord);
           allSuppliers = parsed.suppliers.map((supplier) => ({
             ...supplier,
             tipoLabel: getSupplierTypeLabel(supplier.tipo)
@@ -2469,8 +2619,8 @@
       }
       if (entity === 'driver') {
         return [
-          ['Nome', 'CPF', 'CNH', 'Categoria', 'Telefone', 'ValidadeCNH'],
-          ['João da Silva', '123.456.789-09', '12345678900', 'AB', '(27) 99999-0000', '2027-05-17']
+          ['Nome', 'CPF', 'CNH', 'Categoria', 'Telefone', 'ValidadeCNH', 'Veiculos'],
+          ['João da Silva', '123.456.789-09', '12345678900', 'AB', '(27) 99999-0000', '2027-05-17', '015, ABC1D23']
         ];
       }
       if (entity === 'supplier') {
@@ -2567,6 +2717,23 @@
       return { created, updated, skipped, duplicates, label: 'veículos' };
     }
 
+    function resolveImportedVehicleIds(value) {
+      return String(value || '')
+        .split(/[,;|]/)
+        .map(item => item.trim())
+        .filter(Boolean)
+        .map((token) => {
+          const normalizedToken = normalizeComparableText(token);
+          const exactVehicle = allVehicles.find((vehicle) =>
+            normalizeComparableText(vehicle.numeroFrota) === normalizedToken ||
+            normalizeComparableText(vehicle.placa) === normalizedToken ||
+            normalizeComparableText(getVehicleAutocompleteLabel(vehicle)) === normalizedToken
+          );
+          return exactVehicle?.id || '';
+        })
+        .filter(Boolean);
+    }
+
     function importDriversFromRows(rows) {
       let created = 0;
       let updated = 0;
@@ -2580,11 +2747,14 @@
         const categoria = getMappedValue(row, ['Categoria', 'CategoriaCNH']).toUpperCase();
         const telefone = String(getMappedValue(row, ['Telefone', 'Celular', 'Contato'])).trim();
         const validade = normalizeImportedDate(getMappedValue(row, ['ValidadeCNH', 'Validade', 'DataValidadeCNH']));
+        const vehicleLinksValue = getMappedValue(row, ['Veiculos', 'Veículos', 'Frotas', 'Placas']);
+        const hasVehicleLinksValue = String(vehicleLinksValue || '').trim() !== '';
+        const vehicleIds = hasVehicleLinksValue ? resolveImportedVehicleIds(vehicleLinksValue) : [];
         if (!nome || !cpf || !cnh || !categoria || !isValidCpf(cpf)) {
           skipped += 1;
           return;
         }
-        const payload = { nome, cpf, cnh, categoria, telefone, validade };
+        const payload = { nome, cpf, cnh, categoria, telefone, validade, ...(hasVehicleLinksValue ? { vehicleIds } : {}) };
         const existingIndex = allDrivers.findIndex((item) => onlyDigits(item.cpf) === onlyDigits(cpf) || item.cnh === cnh);
         if (existingIndex >= 0) {
           const duplicate = findDriverDuplicate(payload, allDrivers[existingIndex].id);
@@ -2597,6 +2767,9 @@
             duplicates += 1;
           } else {
             allDrivers[existingIndex] = { ...allDrivers[existingIndex], ...payload };
+            if (hasVehicleLinksValue) {
+              syncVehiclesWithDriver(allDrivers[existingIndex].id, vehicleIds);
+            }
             updated += 1;
           }
         } else {
@@ -2604,7 +2777,11 @@
             duplicates += 1;
             return;
           }
-          allDrivers.unshift({ id: generateId(), ...payload });
+          const newDriverId = generateId();
+          allDrivers.unshift({ id: newDriverId, ...payload });
+          if (hasVehicleLinksValue) {
+            syncVehiclesWithDriver(newDriverId, vehicleIds);
+          }
           created += 1;
         }
       });
@@ -2887,7 +3064,7 @@
         .forEach(entry => {
           const currentVehicleId = getEntryLinkedVehicleId(entry);
           if (!currentVehicleId) return;
-          const entryDate = getFinanceEntryDate(entry);
+          const entryDate = getFinanceEntryCompetenceDate(entry);
           if (vehicleId && currentVehicleId !== vehicleId) return;
           if (start && (!entryDate || entryDate < start)) return;
           if (end && (!entryDate || entryDate > end)) return;
@@ -2997,7 +3174,7 @@
       const rows = getVehicleMonthlyCosts(monthKey);
       const maxValue = Math.max(...rows.map(item => item.total), 0);
       cardNode.classList.remove('hidden');
-      if (labelNode) labelNode.textContent = `Valores de ${getMonthLabel(monthKey)}.`;
+      if (labelNode) labelNode.textContent = `Valores de ${getMonthLabel(monthKey)} pela competência de abertura da OS.`;
       chartNode.innerHTML = rows.map(({ vehicle, total }) => {
         const percent = maxValue > 0 ? Math.max((total / maxValue) * 100, total > 0 ? 10 : 3) : 3;
         const vehicleTitle = [vehicle.numeroFrota, vehicle.placa].filter(Boolean).join(' - ') || 'Veículo';
@@ -3021,6 +3198,19 @@
         return '<div class="text-slate-400 text-sm">Nenhum item para exibir no momento.</div>';
       }
       return items.map(formatter).join('');
+    }
+
+    function getInsuranceAlertTone(days) {
+      if (days < 0) return 'danger';
+      if (days <= 5) return 'critical';
+      return 'warning';
+    }
+
+    function getInsuranceAlertLabel(days) {
+      if (days < 0) return `Vencido h\u00e1 ${Math.abs(days)} dia(s)`;
+      if (days === 0) return 'Vence hoje';
+      if (days <= 5) return `Alerta laranja: faltam ${days} dia(s)`;
+      return `Aviso amarelo: faltam ${days} dia(s)`;
     }
 
     function getReportFilters() {
@@ -3762,7 +3952,7 @@
           </div>
           <div class="field-wrap">
             <label>Selecionar motorista</label>
-            <select class="soft-input w-full" id="finance-driver-id">
+            <select class="soft-input w-full" id="finance-driver-id" onchange="suggestFinanceVehicleFromDriver()">
               <option value="">Selecione um motorista</option>
               ${allDrivers.map(driver => `<option value="${driver.id}">${escapeHtml(driver.nome)}</option>`).join('')}
             </select>
@@ -4242,6 +4432,7 @@
         : 'Nenhum abastecimento registrado';
       if (cnhNode) cnhNode.textContent = cnhItems.length;
       if (insuranceNode) insuranceNode.textContent = insuranceItems.length;
+      renderStorageDashboard();
       renderMonthlyVehicleCostChart();
       if (costTableNode) {
         costTableNode.innerHTML = renderDashboardTableRows(
@@ -4280,18 +4471,21 @@
       if (insuranceTableNode) {
         insuranceTableNode.innerHTML = renderDashboardTableRows(
           insuranceItems.slice(0, 6),
-          item => `
-            <button type="button" class="dashboard-action-row" onclick="openVehicleFromHome('${item.id}')">
-              <div>
-                <p class="font-bold text-slate-800">${escapeHtml(item.placa)}  ${escapeHtml(item.modelo)}</p>
-                <p class="text-xs text-slate-500">Frota ${escapeHtml(item.numeroFrota || '-')}</p>
-              </div>
-              <div class="text-right">
-                <p class="font-extrabold text-[#6267d9]">${escapeHtml(formatDate(item.seguroVencimento))}</p>
-                <p class="text-xs text-slate-500">${item.days} dia(s)</p>
-              </div>
-            </button>
-          `
+          item => {
+            const alertTone = getInsuranceAlertTone(item.days);
+            return `
+              <button type="button" class="dashboard-action-row insurance-alert-row insurance-alert-row--${alertTone}" onclick="openVehicleFromHome('${item.id}')">
+                <div>
+                  <p class="font-bold text-slate-800">${escapeHtml(item.placa)}  ${escapeHtml(item.modelo)}</p>
+                  <p class="text-xs text-slate-500">Frota ${escapeHtml(item.numeroFrota || '-')}</p>
+                </div>
+                <div class="text-right">
+                  <p class="font-extrabold insurance-alert-date">${escapeHtml(formatDate(item.seguroVencimento))}</p>
+                  <p class="text-xs font-bold insurance-alert-label">${escapeHtml(getInsuranceAlertLabel(item.days))}</p>
+                </div>
+              </button>
+            `;
+          }
         );
       }
       if (maintenanceTableNode) {
@@ -5085,7 +5279,15 @@
         updateDriverSelectionUI();
         return;
       }
-      list.innerHTML = visibleDrivers.map(driver => `
+      list.innerHTML = visibleDrivers.map(driver => {
+        const linkedVehicles = getDriverVehicleIds(driver)
+          .map(vehicleId => allVehicles.find(vehicle => vehicle.id === vehicleId))
+          .filter(Boolean)
+          .map(vehicle => `${vehicle.numeroFrota || '-'} ${vehicle.placa || '-'}`);
+        const vehicleSummary = linkedVehicles.length
+          ? `Veículos: ${linkedVehicles.slice(0, 2).join(', ')}${linkedVehicles.length > 2 ? ` +${linkedVehicles.length - 2}` : ''}`
+          : 'Sem veículo vinculado';
+        return `
         <div class="orders-table-row entity-table-row--drivers ${selectedDrivers.has(driver.id) ? 'selected' : ''}">
             <div class="orders-table-cell orders-table-cell--check">
               <button class="selection-check ${selectedDrivers.has(driver.id) ? 'checked' : ''}" onclick="toggleDriverSelection(event, '${driver.id}')">
@@ -5114,9 +5316,11 @@
             </div>
             <div class="orders-table-cell">
               <span class="mini-badge">Motorista ativo</span>
+              <div class="orders-sub-text orders-sub-text--wrap mt-1">${escapeHtml(vehicleSummary)}</div>
             </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
       updateEntityListViewport('drivers-list-shell', visibleDrivers.length);
       updateDriverSelectionUI();
     }
@@ -5528,6 +5732,7 @@
       document.getElementById('driver-categoria').value = driver.categoria;
       document.getElementById('driver-telefone').value = driver.telefone || '';
       document.getElementById('driver-validade').value = driver.validade || '';
+      setSelectedDriverVehicleIds(getDriverVehicleIds(driver));
       document.getElementById('modal-title').textContent = 'Editar motorista';
     }
 
@@ -6354,6 +6559,7 @@
         const categoria = document.getElementById('driver-categoria').value.trim();
         const telefone = document.getElementById('driver-telefone').value.trim();
         const validade = document.getElementById('driver-validade').value.trim();
+        const vehicleIds = getSelectedDriverVehicleIds();
         if (!nome || !cpf || !cnh || !categoria) {
           showToast('Preencha nome, CPF, CNH e categoria do motorista.');
           return;
@@ -6368,11 +6574,14 @@
         }
         if (currentEditingId) {
           allDrivers = allDrivers.map(driver => driver.id === currentEditingId
-            ? { ...driver, nome, cpf, cnh, categoria, telefone, validade }
+            ? { ...driver, nome, cpf, cnh, categoria, telefone, validade, vehicleIds }
             : driver);
+          syncVehiclesWithDriver(currentEditingId, vehicleIds);
           showToast('Motorista atualizado com sucesso.');
         } else {
-          allDrivers.unshift({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, nome, cpf, cnh, categoria, telefone, validade });
+          const newDriverId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+          allDrivers.unshift({ id: newDriverId, nome, cpf, cnh, categoria, telefone, validade, vehicleIds });
+          syncVehiclesWithDriver(newDriverId, vehicleIds);
           showToast('Motorista cadastrado com sucesso.');
         }
         saveToLocalStorage();

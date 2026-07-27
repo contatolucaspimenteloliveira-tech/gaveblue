@@ -326,6 +326,99 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
       display: block;
       padding: 20px;
     }
+    .insurance-alert-row {
+      border-left: 6px solid transparent;
+    }
+    .insurance-alert-row--warning {
+      background: linear-gradient(90deg, rgba(254, 249, 195, 0.7) 0%, #ffffff 42%);
+      border-color: #fde68a;
+      border-left-color: #eab308;
+    }
+    .insurance-alert-row--warning .insurance-alert-date,
+    .insurance-alert-row--warning .insurance-alert-label {
+      color: #a16207;
+    }
+    .insurance-alert-row--critical {
+      background: linear-gradient(90deg, rgba(255, 237, 213, 0.78) 0%, #ffffff 42%);
+      border-color: #fed7aa;
+      border-left-color: #f97316;
+    }
+    .insurance-alert-row--critical .insurance-alert-date,
+    .insurance-alert-row--critical .insurance-alert-label {
+      color: #c2410c;
+    }
+    .insurance-alert-row--danger {
+      background: linear-gradient(90deg, rgba(254, 226, 226, 0.82) 0%, #ffffff 42%);
+      border-color: #fecaca;
+      border-left-color: #ef4444;
+    }
+    .insurance-alert-row--danger .insurance-alert-date,
+    .insurance-alert-row--danger .insurance-alert-label {
+      color: #b91c1c;
+    }
+    .storage-dashboard-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 420px);
+      gap: 24px;
+      align-items: center;
+      padding: 22px 24px;
+      border: 1px solid rgba(199, 210, 254, 0.85);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at top left, rgba(99, 102, 241, 0.13), transparent 34%),
+        linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+      box-shadow: 0 18px 42px rgba(148, 163, 184, 0.16);
+    }
+    .storage-dashboard-kicker {
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #6366f1;
+      margin-bottom: 5px;
+    }
+    .storage-dashboard-title {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .storage-dashboard-summary {
+      color: #64748b;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .storage-dashboard-meter-wrap {
+      display: grid;
+      gap: 10px;
+    }
+    .storage-dashboard-meter {
+      height: 14px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e2e8f0;
+      box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+    .storage-dashboard-meter-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #38bdf8 0%, #6366f1 58%, #8b5cf6 100%);
+      transition: width 0.25s ease, background 0.25s ease;
+    }
+    .storage-dashboard-meter-fill.is-warning {
+      background: linear-gradient(90deg, #facc15 0%, #f97316 100%);
+    }
+    .storage-dashboard-meter-fill.is-danger {
+      background: linear-gradient(90deg, #fb7185 0%, #ef4444 100%);
+    }
+    .storage-dashboard-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      color: #64748b;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
     .home-month-filter {
       display: grid;
       gap: 6px;
@@ -1121,6 +1214,14 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
       }
       .home-monthly-bar-item {
         min-width: 86px;
+      }
+      .storage-dashboard-card {
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+      .storage-dashboard-meta {
+        flex-direction: column;
+        gap: 4px;
       }
       .content-card {
         min-height: auto;
