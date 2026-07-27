@@ -139,12 +139,16 @@
       <div>
        <label class="block text-sm font-semibold text-gray-900 mb-3">Comprovante (Foto) <span class="text-red-500">*</span></label>
        <div id="photo-preview-container" class="hidden mb-4">
-        <div class="relative">
+       <div class="relative">
          <img id="photo-preview" src="" alt="Preview" class="w-full h-48 object-cover rounded-lg border border-gray-300">
          <button type="button" onclick="deletePhoto()" class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
          </button>
         </div>
+        <button id="save-receipt-btn" type="button" onclick="saveFuelReceiptUpload()" class="mt-3 w-full px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm">
+         Salvar comprovante
+        </button>
+        <p id="receipt-upload-status" class="mt-2 text-xs font-medium text-gray-500">Salve o comprovante para deixar o envio pelo WhatsApp mais r&aacute;pido.</p>
        </div>
        <div id="photo-buttons" class="space-y-2">
         <button type="button" onclick="capturePhoto()" class="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm">
@@ -158,7 +162,7 @@
        </div>
        <input type="file" id="fuel-photo" accept="image/*" class="hidden" onchange="updatePhotoPreview()">
       </div>
-      <div class="flex gap-3 sm:gap-4 pt-4">
+      <div id="fuel-action-buttons" class="hidden flex gap-3 sm:gap-4 pt-4">
        <button type="button" onclick="closeFuelForm()" class="flex-1 px-4 py-2.5 bg-gray-300 hover:bg-gray-400 text-gray-900 font-semibold rounded-lg transition text-sm">Cancelar</button>
        <button type="submit" id="fuel-submit-btn" class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition text-sm flex items-center justify-center gap-2">
         <span>Enviar</span>
@@ -170,8 +174,12 @@
    </div>
 
    <div id="loading-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 sm:p-8">
-     <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-6 text-center">Processando Registros</h2>
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full mx-4 p-6 sm:p-8 border border-emerald-100">
+     <div class="text-center mb-6">
+      <p class="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Valida&ccedil;&atilde;o do abastecimento</p>
+      <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mt-2">Quase pronto</h2>
+      <p class="text-sm text-gray-500 mt-2">Ao finalizar, clique no bot&atilde;o do WhatsApp para validar seu abastecimento.</p>
+     </div>
      <div class="space-y-4">
       <div class="flex items-start gap-3">
        <div id="step-1-icon" class="flex-shrink-0 mt-1">
@@ -237,6 +245,12 @@
      <div class="mt-6 bg-gray-200 h-2 rounded-full overflow-hidden">
       <div id="progress-bar" class="h-full bg-gradient-to-r from-blue-500 to-green-500 w-0 transition-all duration-500"></div>
      </div>
+     <p id="whatsapp-required-note" class="hidden mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 text-center">
+      Para validar seu abastecimento, clique no bot&atilde;o abaixo e envie a mensagem no WhatsApp.
+     </p>
+     <button id="whatsapp-send-btn" type="button" class="hidden mt-3 w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition text-sm flex items-center justify-center gap-2">
+      Enviar comprovante pelo WhatsApp
+     </button>
     </div>
    </div>
 
