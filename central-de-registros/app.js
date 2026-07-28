@@ -24,8 +24,10 @@ const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
 let fuelReceiptUploadPromise = null;
+let selectedFuelReceiptFile = null;
 let uploadedLooseNoteReceipt = null;
 let looseNoteReceiptUploadPromise = null;
+let selectedLooseNoteReceiptFile = null;
 const DEFAULT_DRIVER_NAMES = [
   'AMANDA P. BONATTO',
   'ALAN CHRISTIE',
@@ -164,7 +166,7 @@ document.getElementById('fuel-date').addEventListener('change', function() {
 
 document.getElementById('fuel-km').addEventListener('keypress', function(e) {
   if (e.key === 'Enter') {
-    document.getElementById('fuel-photo').click();
+    document.getElementById('fuel-photo-camera').click();
   }
 });
 
@@ -401,10 +403,14 @@ async function compressFuelReceiptIfNeeded(file) {
 }
 
 function resetFuelPhotoState() {
-  document.getElementById('fuel-photo').value = '';
+  const cameraInput = document.getElementById('fuel-photo-camera');
+  const uploadInput = document.getElementById('fuel-photo-upload');
+  if (cameraInput) cameraInput.value = '';
+  if (uploadInput) uploadInput.value = '';
   document.getElementById('photo-preview-container').classList.add('hidden');
   document.getElementById('photo-buttons').classList.remove('hidden');
   document.getElementById('photo-preview').src = '';
+  selectedFuelReceiptFile = null;
   uploadedFuelReceipt = null;
   fuelReceiptUploadPromise = null;
   updateReceiptUploadStatus('Salve o comprovante para deixar o envio pelo WhatsApp mais r\u00e1pido.');
@@ -413,16 +419,17 @@ function resetFuelPhotoState() {
 }
 
 function resetLoosePhotoState() {
-  const fileInput = document.getElementById('loose-photo');
-  if (fileInput) {
-    fileInput.value = '';
-  }
+  const cameraInput = document.getElementById('loose-photo-camera');
+  const uploadInput = document.getElementById('loose-photo-upload');
+  if (cameraInput) cameraInput.value = '';
+  if (uploadInput) uploadInput.value = '';
   document.getElementById('loose-photo-preview-container')?.classList.add('hidden');
   document.getElementById('loose-photo-buttons')?.classList.remove('hidden');
   const preview = document.getElementById('loose-photo-preview');
   if (preview) {
     preview.src = '';
   }
+  selectedLooseNoteReceiptFile = null;
   uploadedLooseNoteReceipt = null;
   looseNoteReceiptUploadPromise = null;
   updateLooseReceiptUploadStatus('Salve o comprovante para liberar o envio pelo WhatsApp.');
@@ -459,7 +466,7 @@ function getSelectedDriverName() {
 }
 
 function markFuelReceiptUploadDirty() {
-  if (!document.getElementById('fuel-photo')?.files?.length) {
+  if (!selectedFuelReceiptFile) {
     return;
   }
 
@@ -471,7 +478,7 @@ function markFuelReceiptUploadDirty() {
 }
 
 function markLooseReceiptUploadDirty() {
-  if (!document.getElementById('loose-photo')?.files?.length) {
+  if (!selectedLooseNoteReceiptFile) {
     return;
   }
 
@@ -602,7 +609,6 @@ function submitLooseNoteForm(e) {
 }
 
 function getFuelFormData() {
-  const fileInput = document.getElementById('fuel-photo');
   const data = document.getElementById('fuel-date').value;
   const dateObj = data ? new Date(`${data}T00:00:00`) : null;
   const now = new Date();
@@ -618,7 +624,7 @@ function getFuelFormData() {
     valor: document.getElementById('fuel-value').value.trim(),
     litros: document.getElementById('fuel-liters').value.trim(),
     tipoCombustivel: document.getElementById('fuel-type').value,
-    file: fileInput.files && fileInput.files[0]
+    file: selectedFuelReceiptFile
   };
 }
 
@@ -702,7 +708,6 @@ function validateFuelReceiptUploadFields(formData) {
 }
 
 function getLooseNoteFormData() {
-  const fileInput = document.getElementById('loose-photo');
   const now = new Date();
   return {
     fornecedor: document.getElementById('loose-supplier').value.trim(),
@@ -711,7 +716,7 @@ function getLooseNoteFormData() {
     observacoes: document.getElementById('loose-notes').value.trim(),
     dataFormatada: now.toLocaleDateString('pt-BR'),
     horaFormatada: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-    file: fileInput?.files && fileInput.files[0]
+    file: selectedLooseNoteReceiptFile
   };
 }
 
@@ -1222,15 +1227,15 @@ function updateBackButtonVisibility() {
   }
 }
 
-function updatePhotoPreview() {
-  const fileInput = document.getElementById('fuel-photo');
+function updatePhotoPreview(fileInput) {
   const previewContainer = document.getElementById('photo-preview-container');
   const photoButtons = document.getElementById('photo-buttons');
   const preview = document.getElementById('photo-preview');
+  selectedFuelReceiptFile = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
   uploadedFuelReceipt = null;
   fuelReceiptUploadPromise = null;
 
-  if (fileInput.files && fileInput.files.length > 0) {
+  if (selectedFuelReceiptFile) {
     const reader = new FileReader();
     reader.onload = function(e) {
       preview.src = e.target.result;
@@ -1240,19 +1245,19 @@ function updatePhotoPreview() {
       setSaveReceiptButtonVisible(true);
       setFuelActionButtonsVisible(false);
     };
-    reader.readAsDataURL(fileInput.files[0]);
+    reader.readAsDataURL(selectedFuelReceiptFile);
   }
 }
 
-function updateLoosePhotoPreview() {
-  const fileInput = document.getElementById('loose-photo');
+function updateLoosePhotoPreview(fileInput) {
   const previewContainer = document.getElementById('loose-photo-preview-container');
   const photoButtons = document.getElementById('loose-photo-buttons');
   const preview = document.getElementById('loose-photo-preview');
+  selectedLooseNoteReceiptFile = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
   uploadedLooseNoteReceipt = null;
   looseNoteReceiptUploadPromise = null;
 
-  if (fileInput?.files && fileInput.files.length > 0) {
+  if (selectedLooseNoteReceiptFile) {
     const reader = new FileReader();
     reader.onload = function(e) {
       preview.src = e.target.result;
@@ -1262,7 +1267,7 @@ function updateLoosePhotoPreview() {
       setSaveLooseReceiptButtonVisible(true);
       setLooseActionButtonsVisible(false);
     };
-    reader.readAsDataURL(fileInput.files[0]);
+    reader.readAsDataURL(selectedLooseNoteReceiptFile);
   }
 }
 
@@ -1295,13 +1300,13 @@ function formatCurrency(input) {
 }
 
 function capturePhoto() {
-  const fileInput = document.getElementById('fuel-photo');
+  const fileInput = document.getElementById('fuel-photo-camera');
   fileInput.setAttribute('capture', 'environment');
   fileInput.click();
 }
 
 function captureLoosePhoto() {
-  const fileInput = document.getElementById('loose-photo');
+  const fileInput = document.getElementById('loose-photo-camera');
   fileInput.setAttribute('capture', 'environment');
   fileInput.click();
 }
