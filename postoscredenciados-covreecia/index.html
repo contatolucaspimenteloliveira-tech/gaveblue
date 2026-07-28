@@ -154,16 +154,17 @@
         <p id="receipt-upload-status" class="mt-2 text-xs font-medium text-gray-500">Salve o comprovante para deixar o envio pelo WhatsApp mais r&aacute;pido.</p>
        </div>
        <div id="photo-buttons" class="space-y-2">
-        <button type="button" onclick="capturePhoto()" class="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm">
+        <label for="fuel-photo-camera" class="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer">
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
          Tirar Foto
-        </button>
-        <button type="button" onclick="document.getElementById('fuel-photo').click()" class="w-full px-4 py-2.5 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm">
+        </label>
+        <label for="fuel-photo-upload" class="w-full px-4 py-2.5 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer">
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
          Fazer Upload
-        </button>
+        </label>
        </div>
-       <input type="file" id="fuel-photo" accept="image/*" capture="environment" class="hidden" onchange="updatePhotoPreview()">
+       <input type="file" id="fuel-photo-camera" accept="image/*" capture="environment" class="sr-only" onchange="updatePhotoPreview(this)">
+       <input type="file" id="fuel-photo-upload" accept="image/*" class="sr-only" onchange="updatePhotoPreview(this)">
       </div>
       <div id="fuel-action-buttons" class="hidden flex gap-3 sm:gap-4 pt-4">
        <button type="button" onclick="closeFuelForm()" class="flex-1 px-4 py-2.5 bg-gray-300 hover:bg-gray-400 text-gray-900 font-semibold rounded-lg transition text-sm">Cancelar</button>

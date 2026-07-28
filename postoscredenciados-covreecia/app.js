@@ -24,6 +24,7 @@ const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
 let fuelReceiptUploadPromise = null;
+let selectedFuelReceiptFile = null;
 const DEFAULT_DRIVER_NAMES = [
   'AMANDA P. BONATTO',
   'ALAN CHRISTIE',
@@ -162,7 +163,7 @@ document.getElementById('fuel-date').addEventListener('change', function() {
 
 document.getElementById('fuel-km').addEventListener('keypress', function(e) {
   if (e.key === 'Enter') {
-    document.getElementById('fuel-photo').click();
+    document.getElementById('fuel-photo-camera').click();
   }
 });
 
@@ -354,10 +355,14 @@ async function compressFuelReceiptIfNeeded(file) {
 }
 
 function resetFuelPhotoState() {
-  document.getElementById('fuel-photo').value = '';
+  const cameraInput = document.getElementById('fuel-photo-camera');
+  const uploadInput = document.getElementById('fuel-photo-upload');
+  if (cameraInput) cameraInput.value = '';
+  if (uploadInput) uploadInput.value = '';
   document.getElementById('photo-preview-container').classList.add('hidden');
   document.getElementById('photo-buttons').classList.remove('hidden');
   document.getElementById('photo-preview').src = '';
+  selectedFuelReceiptFile = null;
   uploadedFuelReceipt = null;
   fuelReceiptUploadPromise = null;
   updateReceiptUploadStatus('Salve o comprovante para deixar o envio pelo WhatsApp mais r\u00e1pido.');
@@ -394,7 +399,7 @@ function getSelectedDriverName() {
 }
 
 function markFuelReceiptUploadDirty() {
-  if (!document.getElementById('fuel-photo')?.files?.length) {
+  if (!selectedFuelReceiptFile) {
     return;
   }
 
@@ -470,7 +475,6 @@ function openWhatsAppDirect(numero, mensagem) {
 }
 
 function getFuelFormData() {
-  const fileInput = document.getElementById('fuel-photo');
   const data = document.getElementById('fuel-date').value;
   const dateObj = data ? new Date(`${data}T00:00:00`) : null;
   const now = new Date();
@@ -483,7 +487,7 @@ function getFuelFormData() {
     dataFormatada: dateObj ? dateObj.toLocaleDateString('pt-BR') : '',
     horaFormatada: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     km: document.getElementById('fuel-km').value.trim(),
-    file: fileInput.files && fileInput.files[0]
+    file: selectedFuelReceiptFile
   };
 }
 
@@ -904,15 +908,15 @@ function updateBackButtonVisibility() {
   }
 }
 
-function updatePhotoPreview() {
-  const fileInput = document.getElementById('fuel-photo');
+function updatePhotoPreview(fileInput) {
   const previewContainer = document.getElementById('photo-preview-container');
   const photoButtons = document.getElementById('photo-buttons');
   const preview = document.getElementById('photo-preview');
+  selectedFuelReceiptFile = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
   uploadedFuelReceipt = null;
   fuelReceiptUploadPromise = null;
 
-  if (fileInput.files && fileInput.files.length > 0) {
+  if (selectedFuelReceiptFile) {
     const reader = new FileReader();
     reader.onload = function(e) {
       preview.src = e.target.result;
@@ -922,7 +926,7 @@ function updatePhotoPreview() {
       setSaveReceiptButtonVisible(true);
       setFuelActionButtonsVisible(false);
     };
-    reader.readAsDataURL(fileInput.files[0]);
+    reader.readAsDataURL(selectedFuelReceiptFile);
   }
 }
 
@@ -951,7 +955,7 @@ function formatCurrency(input) {
 }
 
 function capturePhoto() {
-  const fileInput = document.getElementById('fuel-photo');
+  const fileInput = document.getElementById('fuel-photo-camera');
   fileInput.setAttribute('capture', 'environment');
   fileInput.click();
 }
