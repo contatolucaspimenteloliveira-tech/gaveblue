@@ -1795,6 +1795,7 @@
 
       const readField = getImportedMessageReader(sourceText);
       const dateValue = readField('Data') || readField('Data/Hora');
+      const comprovanteUrlMatch = sourceText.match(/https?:\/\/\S+/i);
       const importedData = {
         type: 'loose_note',
         fornecedor: readField('Fornecedor') || readField('Posto'),
@@ -1802,7 +1803,8 @@
         valor: readField('Valor'),
         dataBr: dateValue,
         dataIso: parseBrazilianDateToIso(dateValue),
-        observacoes: readField('Observações') || readField('Observacoes')
+        observacoes: readField('Observações') || readField('Observacoes'),
+        comprovanteUrl: comprovanteUrlMatch ? comprovanteUrlMatch[0].trim() : ''
       };
 
       if (!importedData.fornecedor || !importedData.valor) {
@@ -2104,6 +2106,7 @@
       if (document.getElementById('finance-nf')) {
         document.getElementById('finance-nf').value = 'NOTINHA AVULSA';
       }
+      updateFinanceReceiptPreview(importedData.comprovanteUrl || '');
 
       if (importedData.tipoServico) {
         notes.push(`Tipo de serviço informado na Central: ${importedData.tipoServico}`);
@@ -4501,6 +4504,14 @@
           <div class="field-wrap">
             <label>Valor</label>
             <input class="soft-input w-full" id="finance-total" type="text" inputmode="numeric" value="${formatCurrencyInputValue(0)}">
+          </div>
+          <div class="field-wrap full hidden" id="finance-receipt-wrap">
+            <label>Comprovante importado</label>
+            <input id="finance-comprovante-url" type="hidden">
+            <div class="soft-input w-full flex items-center justify-between gap-3">
+              <span id="finance-receipt-url" class="truncate text-slate-500"></span>
+              <button type="button" id="finance-receipt-open-btn" class="soft-btn !h-11 !px-4" onclick="viewFinanceReceipt(document.getElementById('finance-comprovante-url')?.value || '')">Abrir comprovante</button>
+            </div>
           </div>
           <div class="field-wrap full">
             <label>Observações</label>
@@ -7432,6 +7443,7 @@
         const dataVencimento = document.getElementById('finance-data-vencimento').value;
         const nf = normalizeFinanceNoteLabel(document.getElementById('finance-nf').value.trim());
         const km = document.getElementById('finance-km')?.value || '';
+        const comprovanteUrl = document.getElementById('finance-comprovante-url')?.value.trim() || '';
         const linkedOrder = allOrders.find(item => item.id === orderId);
         if (!dataVencimento || !supplierId) {
           showToast('Selecione o parceiro e a data de vencimento do lançamento.');
@@ -7457,6 +7469,7 @@
           fornecedor,
           nf,
           km,
+          comprovanteUrl,
           dataVencimento,
           total,
           observacoes
