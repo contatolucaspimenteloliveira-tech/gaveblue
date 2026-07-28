@@ -24,6 +24,8 @@ const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
 let fuelReceiptUploadPromise = null;
+let uploadedLooseNoteReceipt = null;
+let looseNoteReceiptUploadPromise = null;
 const DEFAULT_DRIVER_NAMES = [
   'AMANDA P. BONATTO',
   'ALAN CHRISTIE',
@@ -182,6 +184,16 @@ document.getElementById('fuel-type').addEventListener('change', function() {
   markFuelReceiptUploadDirty();
 });
 
+['loose-supplier', 'loose-value', 'loose-notes'].forEach((id) => {
+  document.getElementById(id)?.addEventListener('input', function() {
+    markLooseReceiptUploadDirty();
+  });
+});
+
+document.getElementById('loose-service-type')?.addEventListener('change', function() {
+  markLooseReceiptUploadDirty();
+});
+
 function toggleMenu() {
   const menu = document.getElementById('menu-dropdown');
   menu.classList.toggle('hidden');
@@ -311,6 +323,29 @@ function createRenamedFuelReceiptFile(file, driverName, dateValue) {
   });
 }
 
+function buildLooseNoteReceiptFileName(supplierName, originalFileName) {
+  const normalizedSupplierName = String(supplierName || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '+')
+    .replace(/[^a-z0-9+_-]/g, '');
+
+  const today = getTodayLocalDateString().split('-').reverse().join('.');
+  const extensionMatch = String(originalFileName || '').match(/\.[^.]+$/);
+  const extension = extensionMatch ? extensionMatch[0].toLowerCase() : '.jpg';
+  return `${normalizedSupplierName || 'notinha-avulsa'}+${today}${extension}`;
+}
+
+function createRenamedLooseNoteReceiptFile(file, supplierName) {
+  const renamedFileName = buildLooseNoteReceiptFileName(supplierName, file.name || '');
+  return new File([file], renamedFileName, {
+    type: file.type || 'image/jpeg',
+    lastModified: file.lastModified || Date.now()
+  });
+}
+
 function loadImageFromFile(file) {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -377,6 +412,24 @@ function resetFuelPhotoState() {
   setSaveReceiptButtonVisible(true);
 }
 
+function resetLoosePhotoState() {
+  const fileInput = document.getElementById('loose-photo');
+  if (fileInput) {
+    fileInput.value = '';
+  }
+  document.getElementById('loose-photo-preview-container')?.classList.add('hidden');
+  document.getElementById('loose-photo-buttons')?.classList.remove('hidden');
+  const preview = document.getElementById('loose-photo-preview');
+  if (preview) {
+    preview.src = '';
+  }
+  uploadedLooseNoteReceipt = null;
+  looseNoteReceiptUploadPromise = null;
+  updateLooseReceiptUploadStatus('Salve o comprovante para liberar o envio pelo WhatsApp.');
+  setLooseActionButtonsVisible(false);
+  setSaveLooseReceiptButtonVisible(true);
+}
+
 function toggleCustomDriverField() {
   const driverSelect = document.getElementById('driver-name');
   const customContainer = document.getElementById('custom-driver-container');
@@ -415,6 +468,18 @@ function markFuelReceiptUploadDirty() {
   setSaveReceiptButtonVisible(true);
   setFuelActionButtonsVisible(false);
   updateReceiptUploadStatus('Dados alterados. Salve o comprovante novamente antes de enviar.', 'neutral');
+}
+
+function markLooseReceiptUploadDirty() {
+  if (!document.getElementById('loose-photo')?.files?.length) {
+    return;
+  }
+
+  uploadedLooseNoteReceipt = null;
+  looseNoteReceiptUploadPromise = null;
+  setSaveLooseReceiptButtonVisible(true);
+  setLooseActionButtonsVisible(false);
+  updateLooseReceiptUploadStatus('Dados alterados. Salve o comprovante novamente antes de enviar.', 'neutral');
 }
 
 function prepareFuelForm(options = {}) {
@@ -474,6 +539,7 @@ function openLooseNoteForm() {
   if (form) {
     form.reset();
   }
+  resetLoosePhotoState();
   modal.classList.remove('hidden');
   window.setTimeout(() => document.getElementById('loose-supplier')?.focus(), 80);
 }
@@ -481,6 +547,7 @@ function openLooseNoteForm() {
 function closeLooseNoteForm() {
   document.getElementById('loose-note-modal').classList.add('hidden');
   document.getElementById('loose-note-form')?.reset();
+  resetLoosePhotoState();
 }
 
 function openWhatsAppDirect(numero, mensagem) {
@@ -499,32 +566,39 @@ function openWhatsAppDirect(numero, mensagem) {
 function submitLooseNoteForm(e) {
   e.preventDefault();
 
-  const fornecedor = document.getElementById('loose-supplier').value.trim();
-  const tipoServico = document.getElementById('loose-service-type').value;
-  const valor = document.getElementById('loose-value').value.trim();
-  const observacoes = document.getElementById('loose-notes').value.trim();
-  const now = new Date();
-  const dataFormatada = now.toLocaleDateString('pt-BR');
-  const horaFormatada = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const formData = getLooseNoteFormData();
+  const uploadKey = getLooseNoteReceiptUploadKey(formData);
 
-  if (!fornecedor || !tipoServico || !valor) {
+  if (!formData.fornecedor || !formData.tipoServico || !formData.valor) {
     showErrorMessage('Preencha fornecedor, tipo do servi\u00e7o e valor.');
+    return;
+  }
+
+  if (!formData.file) {
+    showErrorMessage('Por favor, selecione uma foto do comprovante.');
+    return;
+  }
+
+  if (!uploadedLooseNoteReceipt || uploadedLooseNoteReceipt.key !== uploadKey) {
+    showErrorMessage('Salve o comprovante antes de enviar pelo WhatsApp.');
     return;
   }
 
   const mensagem = [
     '\ud83e\uddfe *REGISTRO DE NOTINHA AVULSA*',
     '',
-    `\ud83c\udfe2 *Fornecedor:* ${fornecedor}`,
-    `\ud83d\udee0\ufe0f *Tipo do servi\u00e7o:* ${tipoServico}`,
-    `\ud83d\udcb0 *Valor:* ${valor}`,
-    `\ud83d\udcc5 *Data/Hora:* ${dataFormatada} \u00e0s ${horaFormatada}`,
-    observacoes ? `\ud83d\udcdd *Observa\u00e7\u00f5es:* ${observacoes}` : ''
+    `\ud83c\udfe2 *Fornecedor:* ${formData.fornecedor}`,
+    `\ud83d\udee0\ufe0f *Tipo do servi\u00e7o:* ${formData.tipoServico}`,
+    `\ud83d\udcb0 *Valor:* ${formData.valor}`,
+    `\ud83d\udcc5 *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
+    formData.observacoes ? `\ud83d\udcdd *Observa\u00e7\u00f5es:* ${formData.observacoes}` : '',
+    '',
+    `\ud83e\uddfe *Comprovante:* ${uploadedLooseNoteReceipt.result.secure_url}`
   ].filter(Boolean).join('\n');
 
   openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
   closeLooseNoteForm();
-  showSuccessMessage('WhatsApp aberto com a notinha avulsa.');
+  showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar a notinha avulsa.');
 }
 
 function getFuelFormData() {
@@ -625,6 +699,157 @@ function validateFuelReceiptUploadFields(formData) {
   }
 
   return true;
+}
+
+function getLooseNoteFormData() {
+  const fileInput = document.getElementById('loose-photo');
+  const now = new Date();
+  return {
+    fornecedor: document.getElementById('loose-supplier').value.trim(),
+    tipoServico: document.getElementById('loose-service-type').value,
+    valor: document.getElementById('loose-value').value.trim(),
+    observacoes: document.getElementById('loose-notes').value.trim(),
+    dataFormatada: now.toLocaleDateString('pt-BR'),
+    horaFormatada: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    file: fileInput?.files && fileInput.files[0]
+  };
+}
+
+function getLooseNoteReceiptUploadKey(formData) {
+  const file = formData.file;
+  if (!file) {
+    return '';
+  }
+
+  return [
+    file.name,
+    file.size,
+    file.lastModified,
+    formData.fornecedor,
+    formData.tipoServico,
+    formData.valor
+  ].join('|');
+}
+
+function updateLooseReceiptUploadStatus(message, tone = 'neutral') {
+  const statusEl = document.getElementById('loose-receipt-upload-status');
+  if (!statusEl) {
+    return;
+  }
+
+  const toneClasses = {
+    neutral: 'text-gray-500',
+    progress: 'text-blue-600',
+    success: 'text-emerald-700',
+    error: 'text-red-600'
+  };
+
+  statusEl.classList.remove('text-gray-500', 'text-blue-600', 'text-emerald-700', 'text-red-600');
+  statusEl.classList.add(toneClasses[tone] || toneClasses.neutral);
+  statusEl.textContent = message;
+}
+
+function setSaveLooseReceiptButtonLoading(isLoading) {
+  const button = document.getElementById('save-loose-receipt-btn');
+  if (!button) {
+    return;
+  }
+
+  button.disabled = isLoading;
+  button.classList.toggle('opacity-70', isLoading);
+  button.classList.toggle('cursor-wait', isLoading);
+  button.textContent = isLoading ? 'Salvando comprovante...' : 'Salvar comprovante';
+}
+
+function setSaveLooseReceiptButtonVisible(isVisible) {
+  const button = document.getElementById('save-loose-receipt-btn');
+  if (button) {
+    button.classList.toggle('hidden', !isVisible);
+  }
+}
+
+function setLooseActionButtonsVisible(isVisible) {
+  const actions = document.getElementById('loose-action-buttons');
+  if (actions) {
+    actions.classList.toggle('hidden', !isVisible);
+  }
+}
+
+function validateLooseNoteReceiptUploadFields(formData) {
+  if (!formData.fornecedor || !formData.tipoServico || !formData.valor) {
+    showErrorMessage('Preencha fornecedor, tipo do servi\u00e7o e valor antes de salvar o comprovante.');
+    return false;
+  }
+
+  if (!formData.file) {
+    showErrorMessage('Selecione uma foto do comprovante primeiro.');
+    return false;
+  }
+
+  return true;
+}
+
+async function saveLooseNoteReceiptUpload(options = {}) {
+  const { silent = false } = options;
+  const formData = getLooseNoteFormData();
+
+  if (!validateLooseNoteReceiptUploadFields(formData)) {
+    return null;
+  }
+
+  const uploadKey = getLooseNoteReceiptUploadKey(formData);
+  if (uploadedLooseNoteReceipt && uploadedLooseNoteReceipt.key === uploadKey) {
+    if (!silent) {
+      showSuccessMessage('Comprovante j\u00e1 salvo. Agora \u00e9 s\u00f3 enviar pelo WhatsApp.');
+    }
+    return uploadedLooseNoteReceipt.result;
+  }
+
+  if (looseNoteReceiptUploadPromise) {
+    return looseNoteReceiptUploadPromise;
+  }
+
+  setSaveLooseReceiptButtonLoading(true);
+  updateLooseReceiptUploadStatus('Comprimindo e salvando comprovante na nuvem...', 'progress');
+
+  looseNoteReceiptUploadPromise = (async () => {
+    const compressedFile = await compressFuelReceiptIfNeeded(formData.file);
+    const renamedFile = createRenamedLooseNoteReceiptFile(compressedFile, formData.fornecedor);
+    const result = await uploadLooseNoteReceiptToCloudinary(renamedFile, {
+      fornecedor: formData.fornecedor,
+      tipoServico: formData.tipoServico,
+      valor: formData.valor,
+      data: formData.dataFormatada
+    });
+
+    uploadedLooseNoteReceipt = {
+      key: uploadKey,
+      result
+    };
+    updateLooseReceiptUploadStatus('Comprovante salvo. Agora envie pelo WhatsApp para validar.', 'success');
+    setSaveLooseReceiptButtonVisible(false);
+    setLooseActionButtonsVisible(true);
+    if (!silent) {
+      showSuccessMessage('Comprovante salvo com sucesso.');
+    }
+
+    return result;
+  })();
+
+  try {
+    return await looseNoteReceiptUploadPromise;
+  } catch (error) {
+    uploadedLooseNoteReceipt = null;
+    updateLooseReceiptUploadStatus('N\u00e3o foi poss\u00edvel salvar. Tente novamente antes de enviar.', 'error');
+    if (!silent) {
+      showErrorMessage('Erro ao salvar comprovante. Tente novamente.');
+      return null;
+    }
+    throw error;
+  } finally {
+    looseNoteReceiptUploadPromise = null;
+    setSaveLooseReceiptButtonLoading(false);
+  }
 }
 
 async function saveFuelReceiptUpload(options = {}) {
@@ -748,6 +973,29 @@ async function uploadFuelReceiptToCloudinary(file, metadata) {
   formData.append(
     'context',
     `motorista=${metadata.motorista}|cidade=${metadata.cidade}|posto=${metadata.posto}|data=${metadata.data}|km=${metadata.km || 'nao informado'}|valor=${metadata.valor}|litros=${metadata.litros}|combustivel=${metadata.tipoCombustivel}`
+  );
+
+  const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    throw new Error('Falha ao enviar comprovante para o Cloudinary.');
+  }
+
+  return response.json();
+}
+
+async function uploadLooseNoteReceiptToCloudinary(file, metadata) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('folder', 'comprovantes-frota/notinhas-avulsas');
+  formData.append('filename_override', file.name.replace(/\.[^.]+$/, ''));
+  formData.append(
+    'context',
+    `fornecedor=${metadata.fornecedor}|servico=${metadata.tipoServico}|valor=${metadata.valor}|data=${metadata.data}`
   );
 
   const response = await fetch(CLOUDINARY_UPLOAD_URL, {
@@ -996,8 +1244,34 @@ function updatePhotoPreview() {
   }
 }
 
+function updateLoosePhotoPreview() {
+  const fileInput = document.getElementById('loose-photo');
+  const previewContainer = document.getElementById('loose-photo-preview-container');
+  const photoButtons = document.getElementById('loose-photo-buttons');
+  const preview = document.getElementById('loose-photo-preview');
+  uploadedLooseNoteReceipt = null;
+  looseNoteReceiptUploadPromise = null;
+
+  if (fileInput?.files && fileInput.files.length > 0) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.src = e.target.result;
+      previewContainer.classList.remove('hidden');
+      photoButtons.classList.add('hidden');
+      updateLooseReceiptUploadStatus('Clique em Salvar comprovante para antecipar o upload.', 'neutral');
+      setSaveLooseReceiptButtonVisible(true);
+      setLooseActionButtonsVisible(false);
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  }
+}
+
 function deletePhoto() {
   resetFuelPhotoState();
+}
+
+function deleteLoosePhoto() {
+  resetLoosePhotoState();
 }
 
 function formatCurrency(input) {
@@ -1022,6 +1296,12 @@ function formatCurrency(input) {
 
 function capturePhoto() {
   const fileInput = document.getElementById('fuel-photo');
+  fileInput.setAttribute('capture', 'environment');
+  fileInput.click();
+}
+
+function captureLoosePhoto() {
+  const fileInput = document.getElementById('loose-photo');
   fileInput.setAttribute('capture', 'environment');
   fileInput.click();
 }
