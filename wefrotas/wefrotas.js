@@ -306,7 +306,7 @@
 
     function escapeHtml(value) {
       return String(value || '')
-        .replace(/&/g, '&')
+        .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
@@ -837,6 +837,10 @@
       return getEntryLinkedOrder(entry)?.vehicleId || '';
     }
 
+    function getEntryImmediateVehicleId(entry) {
+      return entry?.vehicleId || getEntryLinkedVehicleId(entry) || '';
+    }
+
     function isDistributedCostEntry(entry) {
       return !!entry && !entry.groupedIntoId && !!entry.orderId && !!getEntryLinkedVehicleId(entry);
     }
@@ -985,6 +989,19 @@
         return `O KM informado não pode ser maior que ${next.km}, pois já existe abastecimento futuro para esse veículo.`;
       }
       return '';
+    }
+
+    function findSimilarFuelEntry({ vehicleId, dataAbastecimento, total, excludeId = '' }) {
+      if (Number(total || 0) <= 0) return null;
+      const normalizedTotal = Number(total || 0).toFixed(2);
+      return allFinanceEntries.find((entry) =>
+        entry
+        && entry.id !== excludeId
+        && isFuelEntry(entry)
+        && getEntryImmediateVehicleId(entry) === vehicleId
+        && String(entry.dataAbastecimento || entry.dataVencimento || '') === String(dataAbastecimento || '')
+        && Number(entry.total || 0).toFixed(2) === normalizedTotal
+      ) || null;
     }
 
     function migrateFinanceEntries() {
@@ -1553,10 +1570,52 @@
 
     function parseBrazilianDateToIso(value) {
       const rawValue = String(value || '').trim();
-      const match = rawValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      const match = rawValue.match(/(\d{2})\/(\d{2})\/(\d{4})/);
       if (!match) return '';
       const [, day, month, year] = match;
       return `${year}-${month}-${day}`;
+    }
+
+    function getImportedMessageReader(rawText) {
+      const sourceText = String(rawText || '').trim();
+      const normalizedLines = sourceText
+        .split(/\r?\n/)
+        .map((line) => line.replace(/\*/g, '').replace(/^\s*[^\p{L}\p{N}]+/gu, '').trim())
+        .filter(Boolean);
+
+      return (label) => {
+        const normalizedLabel = `${normalizeComparableText(label)}:`;
+        const line = normalizedLines.find((item) => normalizeComparableText(item).startsWith(normalizedLabel));
+        if (!line) return '';
+        const separatorIndex = line.indexOf(':');
+        return separatorIndex >= 0 ? line.slice(separatorIndex + 1).trim() : '';
+      };
+    }
+
+    function normalizeImportedLiters(value) {
+      const rawValue = String(value || '').trim();
+      const match = rawValue.match(/[\d.,]+/);
+      return match ? match[0].replace(',', '.') : '';
+    }
+
+    function normalizeImportedFuelType(value) {
+      const normalized = normalizeComparableText(value);
+      if (!normalized) return '';
+      const aliases = [
+        ['diesel s10', 'Diesel S10'],
+        ['s10', 'Diesel S10'],
+        ['gasolina aditivada', 'Gasolina aditivada'],
+        ['aditivada', 'Gasolina aditivada'],
+        ['gasolina', 'Gasolina'],
+        ['etanol', 'Etanol'],
+        ['arla', 'Arla 32'],
+        ['gnv', 'GNV'],
+        ['oleo hidraulico', 'Oleo hidraulico'],
+        ['oleo de motor', 'Oleo de motor'],
+        ['diesel', 'Diesel']
+      ];
+      const match = aliases.find(([alias]) => normalized.includes(alias));
+      return match ? match[1] : value;
     }
 
     function normalizeVehicleRecord(vehicle) {
@@ -1706,26 +1765,19 @@
       const sourceText = String(rawText || '').trim();
       if (!sourceText) return null;
 
-      const normalizedLines = sourceText
-        .split(/\r?\n/)
-        .map((line) => line.replace(/\*/g, '').replace(/^\s*[^\p{L}\p{N}]+/gu, '').trim())
-        .filter(Boolean);
-
-      const readField = (label) => {
-        const normalizedLabel = `${normalizeComparableText(label)}:`;
-        const line = normalizedLines.find((item) => normalizeComparableText(item).startsWith(normalizedLabel));
-        if (!line) return '';
-        const separatorIndex = line.indexOf(':');
-        return separatorIndex >= 0 ? line.slice(separatorIndex + 1).trim() : '';
-      };
-
+      const readField = getImportedMessageReader(sourceText);
+      const dateValue = readField('Data') || readField('Data/Hora');
       const comprovanteUrlMatch = sourceText.match(/https?:\/\/\S+/i);
       const importedData = {
+        type: 'fuel',
         motorista: readField('Motorista'),
         cidade: readField('Cidade'),
         posto: readField('Posto'),
-        dataBr: readField('Data') || readField('Data/Hora'),
-        dataIso: parseBrazilianDateToIso((readField('Data') || readField('Data/Hora')).slice(0, 10)),
+        dataBr: dateValue,
+        dataIso: parseBrazilianDateToIso(dateValue),
+        valor: readField('Valor'),
+        litros: normalizeImportedLiters(readField('Litros') || readField('QTD em litros') || readField('Qtd em L')),
+        tipoCombustivel: normalizeImportedFuelType(readField('Combustível') || readField('Combustivel') || readField('Tipo de combustível')),
         km: String(readField('KM') || '').replace(/[^\d]/g, ''),
         comprovanteUrl: comprovanteUrlMatch ? comprovanteUrlMatch[0].trim() : ''
       };
@@ -1735,6 +1787,39 @@
       }
 
       return importedData;
+    }
+
+    function parseImportedLooseNoteMessage(rawText) {
+      const sourceText = String(rawText || '').trim();
+      if (!sourceText) return null;
+
+      const readField = getImportedMessageReader(sourceText);
+      const dateValue = readField('Data') || readField('Data/Hora');
+      const importedData = {
+        type: 'loose_note',
+        fornecedor: readField('Fornecedor') || readField('Posto'),
+        tipoServico: readField('Tipo do serviço') || readField('Tipo de serviço') || readField('Serviço') || readField('Servico'),
+        valor: readField('Valor'),
+        dataBr: dateValue,
+        dataIso: parseBrazilianDateToIso(dateValue),
+        observacoes: readField('Observações') || readField('Observacoes')
+      };
+
+      if (!importedData.fornecedor || !importedData.valor) {
+        return null;
+      }
+
+      return importedData;
+    }
+
+    function parseImportedCentralMessage(rawText) {
+      const sourceText = String(rawText || '').trim();
+      const normalized = normalizeComparableText(sourceText);
+      if (!sourceText) return null;
+      if (normalized.includes('registro de notinha avulsa')) {
+        return parseImportedLooseNoteMessage(sourceText);
+      }
+      return parseImportedFuelMessage(sourceText);
     }
 
     function updateFinanceReceiptPreview(url = '') {
@@ -1902,19 +1987,23 @@
     function openFinanceImportPrompt(initialValue = '') {
       openPromptModal({
         title: 'Importar dados do WhatsApp',
-        text: 'Cole abaixo a mensagem completa recebida no WhatsApp para pré-preencher o lançamento de combustível.',
-        placeholder: 'Cole aqui o texto com motorista, posto, data, KM e link do comprovante.',
+        text: 'Cole abaixo a mensagem completa recebida da Central de Registros para pré-preencher abastecimentos ou notinhas avulsas.',
+        placeholder: 'Cole aqui o texto com motorista, fornecedor, data, valor e link do comprovante, quando houver.',
         value: initialValue,
         confirmLabel: 'Importar dados',
         cancelLabel: 'Cancelar',
         onConfirm: (value) => {
-          const importedData = parseImportedFuelMessage(value);
+          const importedData = parseImportedCentralMessage(value);
           if (!importedData) {
-            showToast('Não foi possível identificar os dados do abastecimento. Confira o texto colado.');
+            showToast('Não foi possível identificar os dados da Central. Confira o texto colado.');
             openFinanceImportPrompt(value);
             return;
           }
-          openImportedFuelLaunch(importedData);
+          if (importedData.type === 'loose_note') {
+            openImportedLooseNoteLaunch(importedData);
+          } else {
+            openImportedFuelLaunch(importedData);
+          }
         }
       });
     }
@@ -1933,6 +2022,15 @@
       }
       if (document.getElementById('finance-km')) {
         document.getElementById('finance-km').value = importedData.km || '';
+      }
+      if (document.getElementById('finance-total') && importedData.valor) {
+        document.getElementById('finance-total').value = formatCurrencyInputValue(importedData.valor);
+      }
+      if (document.getElementById('finance-litros') && importedData.litros) {
+        document.getElementById('finance-litros').value = importedData.litros;
+      }
+      if (document.getElementById('finance-fuel-type') && importedData.tipoCombustivel) {
+        document.getElementById('finance-fuel-type').value = importedData.tipoCombustivel;
       }
       if (document.getElementById('finance-supplier-id') && supplier) {
         document.getElementById('finance-supplier-id').value = supplier.id;
@@ -1968,11 +2066,64 @@
       updateFinanceReceiptPreview(importedData.comprovanteUrl || '');
       toggleFinanceSpecificFields();
 
-      const pendingFields = ['veículo', 'tipo de combustível', 'valor'];
-      if (document.getElementById('finance-litros')) {
-        pendingFields.splice(2, 0, 'quantidade em litros');
+      const pendingFields = [];
+      if (!vehicle) pendingFields.push('veículo');
+      if (!importedData.tipoCombustivel) pendingFields.push('tipo de combustível');
+      if (!importedData.litros) pendingFields.push('quantidade em litros');
+      if (!importedData.valor || !parseCurrencyInputValue(importedData.valor)) pendingFields.push('valor');
+      showToast(pendingFields.length
+        ? `Dados importados. Revise ${pendingFields.join(', ')} e finalize o lançamento.`
+        : 'Abastecimento importado. Revise os dados e finalize o lançamento.');
+    }
+
+    function openImportedLooseNoteLaunch(importedData) {
+      openCadastroModal('finance');
+      loadFinanceForm('despesa');
+
+      const expenseSuppliers = allSuppliers.filter((supplier) => supplier.tipo !== 'posto');
+      const supplier = resolveSupplierByRelevantTerms(importedData.fornecedor, expenseSuppliers);
+      const notes = [];
+
+      if (document.getElementById('finance-order-search')) {
+        document.getElementById('finance-order-search').value = 'Lançar sem OS por enquanto';
       }
-      showToast(`Dados importados. Revise ${pendingFields.join(', ')} e finalize o lançamento.`);
+      if (document.getElementById('finance-data-vencimento')) {
+        document.getElementById('finance-data-vencimento').value = importedData.dataIso || getLocalIsoDate();
+      }
+      if (document.getElementById('finance-total') && importedData.valor) {
+        document.getElementById('finance-total').value = formatCurrencyInputValue(importedData.valor);
+      }
+      if (document.getElementById('finance-supplier-id') && supplier) {
+        document.getElementById('finance-supplier-id').value = supplier.id;
+      }
+      if (document.getElementById('finance-supplier-search')) {
+        document.getElementById('finance-supplier-search').value = supplier
+          ? getSupplierAutocompleteLabel(supplier)
+          : importedData.fornecedor || '';
+      }
+      if (document.getElementById('finance-nf')) {
+        document.getElementById('finance-nf').value = 'NOTINHA AVULSA';
+      }
+
+      if (importedData.tipoServico) {
+        notes.push(`Tipo de serviço informado na Central: ${importedData.tipoServico}`);
+      }
+      if (importedData.observacoes) {
+        notes.push(importedData.observacoes);
+      }
+      if (!supplier && importedData.fornecedor) {
+        notes.push(`Fornecedor informado na Central: ${importedData.fornecedor}`);
+      }
+
+      const observationsField = document.getElementById('finance-observacoes');
+      if (observationsField) {
+        observationsField.value = notes.join(' | ');
+      }
+
+      toggleFinanceSpecificFields();
+      showToast(supplier
+        ? 'Notinha avulsa importada. Revise os dados e finalize o lançamento.'
+        : 'Notinha avulsa importada. Confira o fornecedor antes de finalizar.');
     }
 
     function findVehicleDuplicate(payload, ignoreId = null) {
@@ -2552,8 +2703,17 @@
             <input class="soft-input w-full" id="order-administracao" placeholder="Ex: Administração">
           </div>
           <div class="field-wrap">
+            <label>${requiredLabel('Tipo de OS')}</label>
+            <select class="soft-input w-full" id="order-tipo-os" onchange="updateOrderDescriptionFromType()" required>
+              <option value="avulsa">Avulsa</option>
+              <option value="mensal">Mensal de despesas</option>
+              <option value="revisao">Revisão</option>
+              <option value="sinistro">Sinistro</option>
+            </select>
+          </div>
+          <div class="field-wrap">
             <label>${requiredLabel('Veículo')}</label>
-            <select class="soft-input w-full" id="order-veiculo" required>
+            <select class="soft-input w-full" id="order-veiculo" onchange="updateOrderDescriptionFromType()" required>
               <option value="">Selecione um veículo</option>
               ${allVehicles.map(vehicle => `<option value="${vehicle.id}">${escapeHtml(vehicle.numeroFrota)}  ${escapeHtml(vehicle.placa)}  ${escapeHtml(vehicle.modelo)}</option>`).join('')}
             </select>
@@ -2567,7 +2727,7 @@
           </div>
           <div class="field-wrap">
             <label>Data de início</label>
-            <input class="soft-input w-full" id="order-data-inicio" type="date">
+            <input class="soft-input w-full" id="order-data-inicio" type="date" onchange="updateOrderDescriptionFromType()">
           </div>
           <div class="field-wrap">
             <label>Data de término</label>
@@ -3218,7 +3378,7 @@
 
     function getVehicleCurrentKm(vehicleId) {
       const entries = allFinanceEntries
-        .filter(entry => isDistributedCostEntry(entry) && getEntryLinkedVehicleId(entry) === vehicleId)
+        .filter(entry => !entry.groupedIntoId && getEntryImmediateVehicleId(entry) === vehicleId)
         .flatMap(entry => isFuelGroupEntry(entry) ? getFuelGroupChildren(entry) : [entry])
         .filter(entry => entry && entry.km !== undefined && entry.km !== null && String(entry.km).trim() !== '' && getFinanceEntryDate(entry))
         .sort((a, b) => {
@@ -3231,8 +3391,66 @@
       return Number(entries[0].km || 0);
     }
 
-    function getRevisionDescription(revisionKm) {
-      return `REVISAO DE ${Number(revisionKm || 0).toLocaleString('pt-BR')}KM`;
+    function getMonthYearReference(dateString) {
+      if (!dateString) return 'MÊS/AAAA';
+      const date = new Date(`${dateString}T00:00:00`);
+      if (Number.isNaN(date.getTime())) return 'MÊS/AAAA';
+      return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
+    }
+
+    function getRevisionDescription(revisionKm, vehicle = null) {
+      const kmLabel = revisionKm ? Number(revisionKm).toLocaleString('pt-BR') : 'XX.XXX';
+      const plateLabel = vehicle?.placa ? ` - ${vehicle.placa}` : '';
+      return `REVISÃO ${kmLabel} KM${plateLabel}`;
+    }
+
+    function getMonthlyExpenseDescription(dateString) {
+      return `CONTROLE MENSAL DE DESPESAS REF A ${getMonthYearReference(dateString)}`;
+    }
+
+    function getOrderTypeDescription(type, options = {}) {
+      if (type === 'mensal') return getMonthlyExpenseDescription(options.dataInicio);
+      if (type === 'revisao') return getRevisionDescription(options.revisionKm, options.vehicle);
+      if (type === 'sinistro') return 'SINISTRO';
+      return '';
+    }
+
+    function updateOrderDescriptionFromType(force = false) {
+      const typeField = document.getElementById('order-tipo-os');
+      const dateField = document.getElementById('order-data-inicio');
+      const vehicleField = document.getElementById('order-veiculo');
+      const descriptionField = document.getElementById('order-descricao');
+      if (!typeField || !descriptionField) return;
+
+      const vehicle = allVehicles.find(item => item.id === vehicleField?.value);
+      const currentKm = vehicle ? getVehicleCurrentKm(vehicle.id) : null;
+      const nextRevisionKm = currentKm ? (Math.ceil(currentKm / 10000) * 10000 || 10000) : 0;
+      const nextDescription = getOrderTypeDescription(typeField.value, {
+        dataInicio: dateField?.value || '',
+        vehicle,
+        revisionKm: nextRevisionKm
+      });
+
+      const currentValue = descriptionField.value.trim();
+      const previousGenerated = descriptionField.dataset.generatedDescription || '';
+      if (!nextDescription) {
+        if (currentValue && currentValue === previousGenerated) {
+          descriptionField.value = '';
+          descriptionField.dataset.generatedDescription = '';
+        }
+        return;
+      }
+      if (force || !currentValue || currentValue === previousGenerated) {
+        descriptionField.value = nextDescription;
+        descriptionField.dataset.generatedDescription = nextDescription;
+      }
+    }
+
+    window.updateOrderDescriptionFromType = updateOrderDescriptionFromType;
+
+    function setOrderTypeValue(type) {
+      const typeField = document.getElementById('order-tipo-os');
+      if (typeField) typeField.value = type || 'avulsa';
     }
 
     function normalizeRevisionText(value) {
@@ -3245,10 +3463,14 @@
 
     function findOpenRevisionOrder(vehicleId, revisionKm) {
       const revisionToken = normalizeRevisionText(getRevisionDescription(revisionKm));
+      const legacyRevisionToken = normalizeRevisionText(`REVISAO DE ${Number(revisionKm || 0).toLocaleString('pt-BR')}KM`);
       return allOrders.find(order =>
         order.vehicleId === vehicleId
         && order.status !== 'fechada'
-        && normalizeRevisionText(order.descricao).includes(revisionToken)
+        && (
+          normalizeRevisionText(order.descricao).includes(revisionToken)
+          || normalizeRevisionText(order.descricao).includes(legacyRevisionToken)
+        )
       ) || null;
     }
 
@@ -3296,10 +3518,12 @@
       }
 
       openCadastroModal('order');
+      setOrderTypeValue('revisao');
       document.getElementById('order-veiculo').value = vehicle.id;
       document.getElementById('order-data-inicio').value = getLocalIsoDate();
       document.getElementById('order-status').value = 'aberta';
-      document.getElementById('order-descricao').value = getRevisionDescription(maintenance.nextRevisionKm);
+      document.getElementById('order-descricao').value = getRevisionDescription(maintenance.nextRevisionKm, vehicle);
+      document.getElementById('order-descricao').dataset.generatedDescription = document.getElementById('order-descricao').value;
       document.getElementById('modal-title').textContent = 'Abrir OS de revisão';
       showToast(`OS preparada para revisão de ${maintenance.nextRevisionKm.toLocaleString('pt-BR')} KM.`);
     }
@@ -3322,9 +3546,8 @@
         });
       });
 
-      const vehicleEntriesMap = new Map();
       allFinanceEntries
-        .filter(entry => (isFuelEntry(entry) || isFuelGroupEntry(entry)) && isDistributedCostEntry(entry))
+        .filter(entry => isDistributedCostEntry(entry))
         .forEach(entry => {
           const currentVehicleId = getEntryLinkedVehicleId(entry);
           if (!currentVehicleId) return;
@@ -3336,13 +3559,23 @@
           const stats = statsMap.get(currentVehicleId);
           if (!stats) return;
           stats.totalCost += Number(entry.total || 0);
-          const kmEntries = isFuelGroupEntry(entry) ? getFuelGroupChildren(entry) : [entry];
-          stats.entries += Math.max(kmEntries.length, 1);
+          stats.entries += isFuelGroupEntry(entry) ? Math.max(getFuelGroupChildren(entry).length, 1) : 1;
+        });
 
+      const vehicleEntriesMap = new Map();
+      allFinanceEntries
+        .filter(entry => !entry.groupedIntoId)
+        .flatMap(entry => isFuelGroupEntry(entry) ? getFuelGroupChildren(entry) : [entry])
+        .filter(entry => entry && entry.km !== undefined && entry.km !== null && String(entry.km).trim() !== '')
+        .forEach((entry) => {
+          const currentVehicleId = getEntryImmediateVehicleId(entry);
+          if (!currentVehicleId) return;
+          if (vehicleId && currentVehicleId !== vehicleId) return;
+          const entryDate = getFinanceEntryDate(entry);
+          if (start && (!entryDate || entryDate < start)) return;
+          if (end && (!entryDate || entryDate > end)) return;
           if (!vehicleEntriesMap.has(currentVehicleId)) vehicleEntriesMap.set(currentVehicleId, []);
-          kmEntries
-            .filter(item => item && item.km !== '')
-            .forEach(item => vehicleEntriesMap.get(currentVehicleId).push(item));
+          vehicleEntriesMap.get(currentVehicleId).push(entry);
         });
 
       vehicleEntriesMap.forEach((entries, currentVehicleId) => {
@@ -4782,6 +5015,9 @@
                 </div>
                 <div class="mt-4 flex items-center justify-between gap-4 flex-wrap">
                   <p class="text-sm text-slate-600">${escapeHtml(alertLabel)}</p>
+                  ${maintenance.openOrder
+                    ? `<button type="button" class="soft-btn primary" onclick="event.stopPropagation(); openOrderFromHome('${maintenance.openOrder.id}')">Vincular OS</button>`
+                    : ''}
                   ${maintenance.isAlert && !maintenance.openOrder
                     ? `<button type="button" class="soft-btn primary" onclick="event.stopPropagation(); openRevisionOrderForVehicle('${vehicle.id}')">Abrir OS</button>`
                     : ''}
@@ -5131,6 +5367,14 @@
       button.classList.toggle('is-action-disabled', !enabled);
       button.setAttribute('aria-disabled', enabled ? 'false' : 'true');
       button.title = enabled ? safeActiveTitle : (blockedTitle || safeActiveTitle);
+    }
+
+    function blockDisabledActionClicks(event) {
+      const blockedButton = event.target.closest?.('[aria-disabled="true"], .is-action-disabled');
+      if (!blockedButton) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (blockedButton.title) showToast(blockedButton.title);
     }
 
     function updateButtonState(editId, deleteId, count, labels = {}) {
@@ -6159,12 +6403,14 @@
       document.getElementById('order-numero').value = getOrderNumberLabel(order);
       document.getElementById('order-numero').readOnly = !allowManualOrderNumberEditing;
       document.getElementById('order-administracao').value = order.administracao || '';
+      setOrderTypeValue(order.tipoOs || 'avulsa');
       document.getElementById('order-veiculo').value = order.vehicleId || '';
       document.getElementById('order-driver').value = order.driverId || '';
       document.getElementById('order-data-inicio').value = order.dataInicio || '';
       document.getElementById('order-data-termino').value = order.dataTermino || '';
       document.getElementById('order-status').value = order.status || 'aberta';
       document.getElementById('order-descricao').value = order.descricao || '';
+      document.getElementById('order-descricao').dataset.generatedDescription = '';
       document.getElementById('modal-title').textContent = 'Editar OS';
     }
 
@@ -6605,15 +6851,19 @@
         </tr>
       `).join('');
 
+      let runningTotal = 0;
       const rows = Array.from({ length: Math.max(entries.length, 24) }, (_, index) => {
         const entry = entries[index];
+        if (entry) {
+          runningTotal += getFinanceTotal(entry);
+        }
         return `
           <tr>
-            <td>${entry ? escapeHtml(formatDate(entry.dataVencimento)) : ''}</td>
+            <td>${entry ? escapeHtml(formatDate(getFinanceEntryDate(entry))) : ''}</td>
             <td>${entry ? escapeHtml(getFinanceSupplierSummary(entry)) : ''}</td>
             <td class="money">${entry && entry.kind === 'despesa' ? escapeHtml(formatCurrency(entry.total)) : ''}</td>
             <td class="money">${entry && entry.kind === 'receita' ? escapeHtml(formatCurrency(entry.total)) : ''}</td>
-            <td class="money">${entry ? escapeHtml(formatCurrency(getFinanceTotal(entry))) : ''}</td>
+            <td class="money">${entry ? escapeHtml(formatCurrency(runningTotal)) : ''}</td>
           </tr>
         `;
       }).join('');
@@ -7024,6 +7274,7 @@
           ? normalizeOrderNumberInput(rawNumero)
           : String(getNextOrderCounterValue());
         const administracao = document.getElementById('order-administracao').value.trim();
+        const tipoOs = document.getElementById('order-tipo-os')?.value || 'avulsa';
         const vehicleId = document.getElementById('order-veiculo').value;
         const driverId = document.getElementById('order-driver').value;
         const dataInicio = document.getElementById('order-data-inicio').value;
@@ -7045,12 +7296,12 @@
         }
         if (currentEditingId) {
           allOrders = allOrders.map(order => order.id === currentEditingId
-            ? { ...order, numero, administracao, vehicleId, driverId, responsavelNome, dataInicio, dataTermino, status, descricao }
+            ? { ...order, numero, administracao, tipoOs, vehicleId, driverId, responsavelNome, dataInicio, dataTermino, status, descricao }
             : order);
           syncOrderCounterWithOrders();
           showToast('OS atualizada com sucesso.');
         } else {
-          allOrders.unshift({ id: generateId(), numero, administracao, vehicleId, driverId, responsavelNome, dataInicio, dataTermino, status, descricao });
+          allOrders.unshift({ id: generateId(), numero, administracao, tipoOs, vehicleId, driverId, responsavelNome, dataInicio, dataTermino, status, descricao });
           syncOrderCounterWithOrders();
           showToast('OS cadastrada com sucesso.');
         }
@@ -7135,16 +7386,38 @@
             discount: 0
           };
 
-          if (currentEditingId) {
-            allFinanceEntries = allFinanceEntries.map(entry => entry.id === currentEditingId ? { ...entry, ...payload } : entry);
-            showToast('Abastecimento atualizado com sucesso.');
-          } else {
-            allFinanceEntries.unshift({ id: generateId(), createdAt: new Date().toISOString(), ...payload });
-            showToast('Abastecimento registrado com sucesso.');
+          const persistFuelEntry = () => {
+            if (currentEditingId) {
+              allFinanceEntries = allFinanceEntries.map(entry => entry.id === currentEditingId ? { ...entry, ...payload } : entry);
+              showToast('Abastecimento atualizado com sucesso.');
+            } else {
+              allFinanceEntries.unshift({ id: generateId(), createdAt: new Date().toISOString(), ...payload });
+              showToast('Abastecimento registrado com sucesso.');
+            }
+            saveToLocalStorage();
+            renderAll();
+            closeCadastroModal();
+          };
+
+          const similarFuelEntry = findSimilarFuelEntry({
+            vehicleId,
+            dataAbastecimento,
+            total,
+            excludeId: currentEditingId || ''
+          });
+          if (similarFuelEntry) {
+            openPromptModal({
+              mode: 'confirm',
+              title: 'Possível lançamento duplicado',
+              text: `Já existe um abastecimento para este veículo em ${formatDate(dataAbastecimento)} com valor ${formatCurrency(total)}. Deseja registrar mesmo assim?`,
+              confirmLabel: 'Registrar mesmo assim',
+              cancelLabel: 'Revisar',
+              onConfirm: persistFuelEntry
+            });
+            return;
           }
-          saveToLocalStorage();
-          renderAll();
-          closeCadastroModal();
+
+          persistFuelEntry();
           return;
         }
 
@@ -7445,5 +7718,4 @@
       }
     });
     window.addEventListener('resize', applySidebarState);
-
-
+    document.addEventListener('click', blockDisabledActionClicks, true);
