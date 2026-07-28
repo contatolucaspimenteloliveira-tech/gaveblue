@@ -29,6 +29,9 @@
     let selectedFinance = new Set();
     let financeSortState = { key: 'default', direction: 'desc' };
     let orderSortState = { key: 'default', direction: 'desc' };
+    let vehicleSortState = { key: 'fleet', direction: 'asc' };
+    let driverSortState = { key: 'name', direction: 'asc' };
+    let supplierSortState = { key: 'name', direction: 'asc' };
     let currentModalType = null;
     let currentEditingId = null;
     let currentFinanceEntryType = null;
@@ -45,6 +48,22 @@
     let managerDisplayName = 'Gestor';
     let allowManualOrderNumberEditing = false;
     const wefrotasLogoSrc = new URL('wefrotas.png', window.location.href).href;
+    const wefrotasIndexedDbName = 'wefrotas_app_storage';
+    const wefrotasIndexedDbVersion = 1;
+    const wefrotasIndexedDbStore = 'snapshots';
+    const wefrotasIndexedDbSnapshotKey = 'current';
+    const wefrotasLegacyLargeKeys = [
+      'wefrotas_vehicles',
+      'wefrotas_drivers',
+      'wefrotas_suppliers',
+      'wefrotas_orders',
+      'wefrotas_finance',
+      'wefrotas_deleted_orders',
+      'wefrotas_notifications'
+    ];
+    let wefrotasDbConnection = null;
+    let wefrotasStorageEngine = 'localStorage';
+    let wefrotasStorageQueue = Promise.resolve();
     let customLogoEnabled = false;
     let customLogoUrl = '';
     let customLogoScale = 60;
@@ -171,12 +190,12 @@
       updateOperationSettingsUi();
     }
 
-    function saveOperationSettings() {
+    async function saveOperationSettings() {
       const adminInput = document.getElementById('settings-manager-name');
       managerDisplayName = String(adminInput?.value || '').trim() || 'Gestor';
-      saveToLocalStorage();
       updateManagerIdentityUi();
       updateOperationSettingsUi();
+      await saveToLocalStorage();
       showToast(`Gestor atualizado para ${managerDisplayName}. Alteração salva com sucesso.`);
     }
 
@@ -568,6 +587,51 @@
       ].filter(Boolean).join(' ');
     }
 
+    function getMeaningfulSupplierTokens(value) {
+      const ignoredTokens = new Set([
+        'auto',
+        'combustivel',
+        'combustiveis',
+        'ltda',
+        'posto',
+        'rede',
+        'servicos',
+        'shell'
+      ]);
+      return normalizeComparableText(value)
+        .replace(/[^\p{L}\p{N}]+/gu, ' ')
+        .split(/\s+/)
+        .filter(token => token.length > 2 && !ignoredTokens.has(token));
+    }
+
+    function getStringDistance(a, b) {
+      const source = String(a || '');
+      const target = String(b || '');
+      if (source === target) return 0;
+      if (!source) return target.length;
+      if (!target) return source.length;
+
+      const rows = Array.from({ length: source.length + 1 }, (_, index) => [index]);
+      for (let column = 1; column <= target.length; column += 1) rows[0][column] = column;
+      for (let row = 1; row <= source.length; row += 1) {
+        for (let column = 1; column <= target.length; column += 1) {
+          const cost = source[row - 1] === target[column - 1] ? 0 : 1;
+          rows[row][column] = Math.min(
+            rows[row - 1][column] + 1,
+            rows[row][column - 1] + 1,
+            rows[row - 1][column - 1] + cost
+          );
+        }
+      }
+      return rows[source.length][target.length];
+    }
+
+    function areSupplierTokensSimilar(a, b) {
+      if (a === b) return true;
+      if (a.length < 4 || b.length < 4) return false;
+      return getStringDistance(a, b) <= 1;
+    }
+
     function normalizeOrderNumberInput(value) {
       const digits = String(value || '').replace(/\D/g, '');
       if (!digits) return '';
@@ -581,38 +645,38 @@
     }
 
     function resolveVehicleFromSearch(rawValue, vehicles = getSortedVehicles()) {
-      const normalized = rawValue.trim().toLowerCase();
+      const normalized = normalizeSearchText(rawValue);
       if (!normalized) return null;
 
       const exactMatch = vehicles.find(vehicle =>
-        getVehicleAutocompleteLabel(vehicle).toLowerCase() === normalized
-        || String(vehicle.numeroFrota || '').toLowerCase() === normalized
-        || String(vehicle.placa || '').toLowerCase() === normalized
+        normalizeSearchText(getVehicleAutocompleteLabel(vehicle)) === normalized
+        || normalizeSearchText(vehicle.numeroFrota) === normalized
+        || normalizeSearchText(vehicle.placa) === normalized
       );
       if (exactMatch) return exactMatch;
 
       const matches = vehicles.filter(vehicle =>
-        getVehicleAutocompleteLabel(vehicle).toLowerCase().includes(normalized)
-        || String(vehicle.numeroFrota || '').toLowerCase().includes(normalized)
-        || String(vehicle.placa || '').toLowerCase().includes(normalized)
+        normalizeSearchText(getVehicleAutocompleteLabel(vehicle)).includes(normalized)
+        || normalizeSearchText(vehicle.numeroFrota).includes(normalized)
+        || normalizeSearchText(vehicle.placa).includes(normalized)
       );
       return matches.length === 1 ? matches[0] : null;
     }
 
     function resolveOrderFromSearch(rawValue, orders = getOpenOrdersSorted()) {
-      const normalized = rawValue.trim().toLowerCase();
+      const normalized = normalizeSearchText(rawValue);
       const cleanNormalized = normalized.replace(/^os\s*/i, '');
       if (!normalized) return null;
 
       const exactMatch = orders.find(order =>
-        getOrderAutocompleteLabel(order).toLowerCase() === normalized
-        || getOrderNumberLabel(order).toLowerCase() === cleanNormalized
+        normalizeSearchText(getOrderAutocompleteLabel(order)) === normalized
+        || normalizeSearchText(getOrderNumberLabel(order)) === cleanNormalized
       );
       if (exactMatch) return exactMatch;
 
       const matches = orders.filter(order =>
-        getOrderAutocompleteLabel(order).toLowerCase().includes(normalized)
-        || getOrderNumberLabel(order).toLowerCase().includes(cleanNormalized)
+        normalizeSearchText(getOrderAutocompleteLabel(order)).includes(normalized)
+        || normalizeSearchText(getOrderNumberLabel(order)).includes(cleanNormalized)
       );
       return matches.length === 1 ? matches[0] : null;
     }
@@ -631,6 +695,37 @@
         normalizeComparableText(getSupplierSearchText(supplier)).includes(normalized)
       );
       return matches.length === 1 ? matches[0] : null;
+    }
+
+    function resolveSupplierByRelevantTerms(rawValue, suppliers = allSuppliers) {
+      const normalized = normalizeComparableText(rawValue);
+      if (!normalized) return null;
+
+      const directMatch = resolveSupplierFromSearch(rawValue, suppliers);
+      if (directMatch) return directMatch;
+
+      const inputTokens = getMeaningfulSupplierTokens(rawValue);
+      if (!inputTokens.length) return null;
+
+      const scoredMatches = suppliers
+        .map((supplier) => {
+          const supplierTokens = getMeaningfulSupplierTokens(getSupplierSearchText(supplier));
+          const score = inputTokens.reduce((total, inputToken) => {
+            const hasExactToken = supplierTokens.includes(inputToken);
+            const hasSimilarToken = supplierTokens.some(supplierToken => areSupplierTokensSimilar(inputToken, supplierToken));
+            return total + (hasExactToken ? 10 : hasSimilarToken ? 7 : 0);
+          }, 0);
+          return { supplier, score };
+        })
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+      if (!scoredMatches.length) return null;
+      const [firstMatch, secondMatch] = scoredMatches;
+      if (!secondMatch || firstMatch.score >= secondMatch.score + 3) {
+        return firstMatch.supplier;
+      }
+      return null;
     }
 
     function bindAutocompleteField({ inputId, hiddenId, items, labelGetter, resolver }) {
@@ -660,7 +755,7 @@
       if (!input || !hidden) return;
       const syncDisplay = () => {
         const supplier = allSuppliers.find(item => item.id === hidden.value)
-          || resolveSupplierFromSearch(input.value, allSuppliers);
+          || resolveSupplierByRelevantTerms(input.value, allSuppliers);
         if (!supplier) return;
         hidden.value = supplier.id;
         input.value = supplier.nome || '';
@@ -784,10 +879,10 @@
     function getFinanceEntryStatus(entry) {
       if (isFuelEntry(entry) && entry.groupedIntoId) return 'agrupado';
       if (entry?.orderId) return 'distribuido';
+      if (entry?.workflowStatus === 'distribuido') return 'distribuido';
+      if (entry?.workflowStatus === 'pendente_os' || entry?.closedExpense) return 'pendente_os';
       if (entry?.workflowStatus && entry.workflowStatus !== 'distribuido') return entry.workflowStatus;
-      if (isFuelGroupEntry(entry)) return 'pendente';
-      if (isFuelEntry(entry)) return 'pendente';
-      return entry?.workflowStatus === 'distribuido' ? 'distribuido' : 'pendente';
+      return 'pendente';
     }
 
     function getFinanceEntryDateLabel(entry) {
@@ -922,43 +1017,216 @@
       });
     }
 
-    function saveToLocalStorage() {
-      localStorage.setItem('wefrotas_vehicles', JSON.stringify(allVehicles));
-      localStorage.setItem('wefrotas_drivers', JSON.stringify(allDrivers));
-      localStorage.setItem('wefrotas_suppliers', JSON.stringify(allSuppliers));
-      localStorage.setItem('wefrotas_orders', JSON.stringify(allOrders));
-      localStorage.setItem('wefrotas_finance', JSON.stringify(allFinanceEntries));
-      localStorage.setItem('wefrotas_deleted_orders', JSON.stringify(deletedOrders));
-      localStorage.setItem('wefrotas_order_counter', String(orderCounter));
-      localStorage.setItem('wefrotas_notifications', JSON.stringify(systemNotifications));
-      localStorage.setItem('wefrotas_custom_logo_enabled', customLogoEnabled ? 'true' : 'false');
-      localStorage.setItem('wefrotas_custom_logo_url', customLogoUrl);
-      localStorage.setItem('wefrotas_custom_logo_scale', String(customLogoScale || 60));
-      localStorage.setItem('wefrotas_manager_display_name', managerDisplayName || 'Gestor');
-      localStorage.setItem('wefrotas_allow_manual_order_number_editing', allowManualOrderNumberEditing ? 'true' : 'false');
+    function buildStorageSnapshot() {
+      return {
+        vehicles: allVehicles,
+        drivers: allDrivers,
+        suppliers: allSuppliers,
+        orders: allOrders,
+        finance: allFinanceEntries,
+        deletedOrders,
+        orderCounter,
+        notifications: systemNotifications,
+        customLogoEnabled,
+        customLogoUrl,
+        customLogoScale,
+        managerDisplayName,
+        allowManualOrderNumberEditing
+      };
     }
 
-    function getLocalStorageUsageStats() {
-      const safeLimitBytes = 5 * 1024 * 1024;
-      let usedBytes = 0;
+    function parseLocalStorageJson(key, fallbackValue) {
+      const rawValue = localStorage.getItem(key);
+      if (!rawValue) return fallbackValue;
+      try {
+        return JSON.parse(rawValue);
+      } catch (error) {
+        console.warn(`Não foi possível ler ${key} no armazenamento local.`, error);
+        return fallbackValue;
+      }
+    }
 
-      for (let index = 0; index < localStorage.length; index += 1) {
-        const key = localStorage.key(index);
-        if (!key || !key.startsWith('wefrotas_')) continue;
-        const value = localStorage.getItem(key) || '';
-        usedBytes += (key.length + value.length) * 2;
+    function applyStorageSnapshot(snapshot = {}) {
+      allVehicles = Array.isArray(snapshot.vehicles) ? snapshot.vehicles.map(normalizeVehicleRecord) : [];
+      allDrivers = Array.isArray(snapshot.drivers) ? snapshot.drivers.map(normalizeDriverRecord) : [];
+      allSuppliers = Array.isArray(snapshot.suppliers) ? snapshot.suppliers : [];
+      allOrders = Array.isArray(snapshot.orders) ? snapshot.orders : [];
+      allFinanceEntries = Array.isArray(snapshot.finance) ? snapshot.finance : [];
+      deletedOrders = Array.isArray(snapshot.deletedOrders) ? snapshot.deletedOrders : [];
+      systemNotifications = Array.isArray(snapshot.notifications) ? snapshot.notifications : [];
+      orderCounter = Number(snapshot.orderCounter) || 1;
+      customLogoEnabled = snapshot.customLogoEnabled === true || snapshot.customLogoEnabled === 'true';
+      customLogoUrl = snapshot.customLogoUrl || '';
+      customLogoScale = Number(snapshot.customLogoScale) || 60;
+      managerDisplayName = snapshot.managerDisplayName || snapshot.defaultAdministratorName || 'Gestor';
+      allowManualOrderNumberEditing = snapshot.allowManualOrderNumberEditing === true || snapshot.allowManualOrderNumberEditing === 'true';
+      migrateFinanceEntries();
+      syncOrderCounterWithOrders();
+    }
+
+    function getLegacyLocalStorageSnapshot() {
+      return {
+        vehicles: parseLocalStorageJson('wefrotas_vehicles', []),
+        drivers: parseLocalStorageJson('wefrotas_drivers', []),
+        suppliers: parseLocalStorageJson('wefrotas_suppliers', []),
+        orders: parseLocalStorageJson('wefrotas_orders', []),
+        finance: parseLocalStorageJson('wefrotas_finance', []),
+        deletedOrders: parseLocalStorageJson('wefrotas_deleted_orders', []),
+        orderCounter: localStorage.getItem('wefrotas_order_counter') || 1,
+        notifications: parseLocalStorageJson('wefrotas_notifications', []),
+        customLogoEnabled: localStorage.getItem('wefrotas_custom_logo_enabled') === 'true',
+        customLogoUrl: localStorage.getItem('wefrotas_custom_logo_url') || '',
+        customLogoScale: localStorage.getItem('wefrotas_custom_logo_scale') || 60,
+        managerDisplayName: localStorage.getItem('wefrotas_manager_display_name') || localStorage.getItem('wefrotas_default_administrator_name') || 'Gestor',
+        allowManualOrderNumberEditing: localStorage.getItem('wefrotas_allow_manual_order_number_editing') === 'true'
+      };
+    }
+
+    function saveSmallSettingsToLocalStorage(snapshot = buildStorageSnapshot()) {
+      try {
+        localStorage.setItem('wefrotas_storage_engine', wefrotasStorageEngine);
+        localStorage.setItem('wefrotas_order_counter', String(snapshot.orderCounter || 1));
+        localStorage.setItem('wefrotas_custom_logo_enabled', snapshot.customLogoEnabled ? 'true' : 'false');
+        localStorage.setItem('wefrotas_custom_logo_url', snapshot.customLogoUrl || '');
+        localStorage.setItem('wefrotas_custom_logo_scale', String(snapshot.customLogoScale || 60));
+        localStorage.setItem('wefrotas_manager_display_name', snapshot.managerDisplayName || 'Gestor');
+        localStorage.setItem('wefrotas_allow_manual_order_number_editing', snapshot.allowManualOrderNumberEditing ? 'true' : 'false');
+      } catch (error) {
+        console.warn('Não foi possível salvar preferências pequenas no localStorage.', error);
+      }
+    }
+
+    function saveFullSnapshotToLocalStorage(snapshot = buildStorageSnapshot()) {
+      try {
+        localStorage.setItem('wefrotas_vehicles', JSON.stringify(snapshot.vehicles || []));
+        localStorage.setItem('wefrotas_drivers', JSON.stringify(snapshot.drivers || []));
+        localStorage.setItem('wefrotas_suppliers', JSON.stringify(snapshot.suppliers || []));
+        localStorage.setItem('wefrotas_orders', JSON.stringify(snapshot.orders || []));
+        localStorage.setItem('wefrotas_finance', JSON.stringify(snapshot.finance || []));
+        localStorage.setItem('wefrotas_deleted_orders', JSON.stringify(snapshot.deletedOrders || []));
+        localStorage.setItem('wefrotas_notifications', JSON.stringify(snapshot.notifications || []));
+        saveSmallSettingsToLocalStorage(snapshot);
+      } catch (error) {
+        console.warn('Não foi possível salvar snapshot completo no localStorage.', error);
+      }
+    }
+
+    function clearLegacyLargeLocalStorageData() {
+      wefrotasLegacyLargeKeys.forEach((key) => localStorage.removeItem(key));
+    }
+
+    function openWeFrotasIndexedDb() {
+      if (!window.indexedDB) {
+        return Promise.reject(new Error('IndexedDB indisponível neste navegador.'));
+      }
+      if (wefrotasDbConnection) return Promise.resolve(wefrotasDbConnection);
+
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(wefrotasIndexedDbName, wefrotasIndexedDbVersion);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(wefrotasIndexedDbStore)) {
+            db.createObjectStore(wefrotasIndexedDbStore, { keyPath: 'key' });
+          }
+        };
+        request.onsuccess = () => {
+          wefrotasDbConnection = request.result;
+          wefrotasDbConnection.onversionchange = () => {
+            wefrotasDbConnection.close();
+            wefrotasDbConnection = null;
+          };
+          resolve(wefrotasDbConnection);
+        };
+        request.onerror = () => reject(request.error || new Error('Falha ao abrir IndexedDB.'));
+      });
+    }
+
+    function readWeFrotasIndexedDbSnapshot() {
+      return openWeFrotasIndexedDb().then((db) => new Promise((resolve, reject) => {
+        const transaction = db.transaction(wefrotasIndexedDbStore, 'readonly');
+        const store = transaction.objectStore(wefrotasIndexedDbStore);
+        const request = store.get(wefrotasIndexedDbSnapshotKey);
+        request.onsuccess = () => resolve(request.result?.value || null);
+        request.onerror = () => reject(request.error || new Error('Falha ao ler IndexedDB.'));
+      }));
+    }
+
+    function writeWeFrotasIndexedDbSnapshot(snapshot = buildStorageSnapshot()) {
+      return openWeFrotasIndexedDb().then((db) => new Promise((resolve, reject) => {
+        const transaction = db.transaction(wefrotasIndexedDbStore, 'readwrite');
+        const store = transaction.objectStore(wefrotasIndexedDbStore);
+        const request = store.put({
+          key: wefrotasIndexedDbSnapshotKey,
+          value: snapshot,
+          updatedAt: new Date().toISOString()
+        });
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error || new Error('Falha ao salvar IndexedDB.'));
+      }));
+    }
+
+    async function loadFromStorage() {
+      try {
+        const indexedDbSnapshot = await readWeFrotasIndexedDbSnapshot();
+        if (indexedDbSnapshot) {
+          wefrotasStorageEngine = 'IndexedDB';
+          applyStorageSnapshot(indexedDbSnapshot);
+          saveSmallSettingsToLocalStorage(indexedDbSnapshot);
+          clearLegacyLargeLocalStorageData();
+          return;
+        }
+
+        const legacySnapshot = getLegacyLocalStorageSnapshot();
+        applyStorageSnapshot(legacySnapshot);
+        wefrotasStorageEngine = 'IndexedDB';
+        await writeWeFrotasIndexedDbSnapshot(buildStorageSnapshot());
+        saveSmallSettingsToLocalStorage(buildStorageSnapshot());
+        clearLegacyLargeLocalStorageData();
+      } catch (error) {
+        console.warn('IndexedDB indisponível. Mantendo fallback em localStorage.', error);
+        wefrotasStorageEngine = 'localStorage';
+        applyStorageSnapshot(getLegacyLocalStorageSnapshot());
+      }
+    }
+
+    function saveToLocalStorage() {
+      const snapshot = buildStorageSnapshot();
+      saveSmallSettingsToLocalStorage(snapshot);
+
+      if (wefrotasStorageEngine === 'IndexedDB') {
+        wefrotasStorageQueue = wefrotasStorageQueue
+          .then(() => writeWeFrotasIndexedDbSnapshot(snapshot))
+          .then(() => clearLegacyLargeLocalStorageData())
+          .catch((error) => {
+            console.warn('Falha ao salvar no IndexedDB. Salvando cópia de emergência em localStorage.', error);
+            wefrotasStorageEngine = 'localStorage';
+            saveFullSnapshotToLocalStorage(snapshot);
+          });
+        return wefrotasStorageQueue;
       }
 
-      const usedPercent = Math.min(100, (usedBytes / safeLimitBytes) * 100);
+      saveFullSnapshotToLocalStorage(snapshot);
+      return Promise.resolve();
+    }
+
+    function getStorageUsageStats() {
+      const snapshotText = JSON.stringify(buildStorageSnapshot());
+      const usedBytes = snapshotText.length * 2;
+      const fallbackLimitBytes = wefrotasStorageEngine === 'IndexedDB' ? 250 * 1024 * 1024 : 5 * 1024 * 1024;
+      const usedPercent = Math.min(100, (usedBytes / fallbackLimitBytes) * 100);
       return {
         usedBytes,
-        freeBytes: Math.max(safeLimitBytes - usedBytes, 0),
-        limitBytes: safeLimitBytes,
-        usedPercent
+        freeBytes: Math.max(fallbackLimitBytes - usedBytes, 0),
+        limitBytes: fallbackLimitBytes,
+        usedPercent,
+        engine: wefrotasStorageEngine
       };
     }
 
     function formatStorageBytes(bytes) {
+      if (bytes >= 1024 * 1024 * 1024) {
+        return `${(bytes / 1024 / 1024 / 1024).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} GB`;
+      }
       if (bytes >= 1024 * 1024) {
         return `${(bytes / 1024 / 1024).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} MB`;
       }
@@ -972,47 +1240,38 @@
       const fillNode = document.getElementById('home-storage-meter-fill');
       if (!summaryNode || !usedNode || !freeNode || !fillNode) return;
 
-      const stats = getLocalStorageUsageStats();
+      const stats = getStorageUsageStats();
       const percentLabel = stats.usedPercent.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
 
-      summaryNode.textContent = `${percentLabel}% da capacidade segura em uso. Limite estimado: ${formatStorageBytes(stats.limitBytes)}.`;
-      usedNode.textContent = `${formatStorageBytes(stats.usedBytes)} usados`;
-      freeNode.textContent = `${formatStorageBytes(stats.freeBytes)} livres`;
+      summaryNode.textContent = stats.engine === 'IndexedDB'
+        ? 'IndexedDB ativo: o limite de 5 MB do localStorage não é mais a régua principal.'
+        : `${percentLabel}% da capacidade segura do localStorage em uso.`;
+      usedNode.textContent = stats.engine === 'IndexedDB'
+        ? `${formatStorageBytes(stats.usedBytes)} em dados do WeFrotas`
+        : `${formatStorageBytes(stats.usedBytes)} usados`;
+      freeNode.textContent = stats.engine === 'IndexedDB'
+        ? 'Cota gerenciada pelo navegador'
+        : `${formatStorageBytes(stats.freeBytes)} livres`;
       fillNode.style.width = `${Math.max(stats.usedPercent, stats.usedBytes > 0 ? 2 : 0).toFixed(2)}%`;
       fillNode.classList.toggle('is-warning', stats.usedPercent >= 60 && stats.usedPercent < 85);
       fillNode.classList.toggle('is-danger', stats.usedPercent >= 85);
+
+      if (stats.engine === 'IndexedDB' && navigator.storage?.estimate) {
+        navigator.storage.estimate().then((estimate) => {
+          const quotaBytes = Number(estimate.quota) || stats.limitBytes;
+          const originUsedBytes = Number(estimate.usage) || stats.usedBytes;
+          const originPercent = Math.min(100, (originUsedBytes / quotaBytes) * 100);
+          summaryNode.textContent = `IndexedDB ativo: ${originPercent.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% da cota estimada do navegador em uso.`;
+          freeNode.textContent = `Cota estimada: ${formatStorageBytes(quotaBytes)}`;
+          fillNode.style.width = `${Math.max(originPercent, originUsedBytes > 0 ? 2 : 0).toFixed(2)}%`;
+          fillNode.classList.toggle('is-warning', originPercent >= 60 && originPercent < 85);
+          fillNode.classList.toggle('is-danger', originPercent >= 85);
+        }).catch(() => {});
+      }
     }
 
     function loadFromLocalStorage() {
-      const savedVehicles = localStorage.getItem('wefrotas_vehicles');
-      const savedDrivers = localStorage.getItem('wefrotas_drivers');
-      const savedSuppliers = localStorage.getItem('wefrotas_suppliers');
-      const savedOrders = localStorage.getItem('wefrotas_orders');
-      const savedFinance = localStorage.getItem('wefrotas_finance');
-      const savedDeletedOrders = localStorage.getItem('wefrotas_deleted_orders');
-      const savedCounter = localStorage.getItem('wefrotas_order_counter');
-      const savedNotifications = localStorage.getItem('wefrotas_notifications');
-      const savedCustomLogoEnabled = localStorage.getItem('wefrotas_custom_logo_enabled');
-      const savedCustomLogoUrl = localStorage.getItem('wefrotas_custom_logo_url');
-      const savedCustomLogoScale = localStorage.getItem('wefrotas_custom_logo_scale');
-      const savedManagerDisplayName = localStorage.getItem('wefrotas_manager_display_name');
-      const legacyAdministratorName = localStorage.getItem('wefrotas_default_administrator_name');
-      const savedAllowManualOrderNumberEditing = localStorage.getItem('wefrotas_allow_manual_order_number_editing');
-      if (savedVehicles) allVehicles = JSON.parse(savedVehicles).map(normalizeVehicleRecord);
-      if (savedDrivers) allDrivers = JSON.parse(savedDrivers).map(normalizeDriverRecord);
-      if (savedSuppliers) allSuppliers = JSON.parse(savedSuppliers);
-      if (savedOrders) allOrders = JSON.parse(savedOrders);
-      if (savedFinance) allFinanceEntries = JSON.parse(savedFinance);
-      if (savedDeletedOrders) deletedOrders = JSON.parse(savedDeletedOrders);
-      if (savedCounter) orderCounter = Number(savedCounter) || 1;
-      if (savedNotifications) systemNotifications = JSON.parse(savedNotifications);
-      customLogoEnabled = savedCustomLogoEnabled === 'true';
-      customLogoUrl = savedCustomLogoUrl || '';
-      customLogoScale = Number(savedCustomLogoScale) || 60;
-      managerDisplayName = savedManagerDisplayName || legacyAdministratorName || 'Gestor';
-      allowManualOrderNumberEditing = savedAllowManualOrderNumberEditing === 'true';
-      migrateFinanceEntries();
-      syncOrderCounterWithOrders();
+      applyStorageSnapshot(getLegacyLocalStorageSnapshot());
     }
 
     function showToast(message, options = {}) {
@@ -1286,6 +1545,12 @@
         .toLowerCase();
     }
 
+    function normalizeSearchText(value) {
+      const normalized = normalizeComparableText(value);
+      const compact = normalized.replace(/[^a-z0-9]/g, '');
+      return compact || normalized;
+    }
+
     function parseBrazilianDateToIso(value) {
       const rawValue = String(value || '').trim();
       const match = rawValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -1376,7 +1641,7 @@
       );
       if (mappedPlateEntry?.[1]) {
         const mappedPlate = mappedPlateEntry[1];
-        const mappedVehicle = allVehicles.find((vehicle) => normalizeComparableText(vehicle?.placa) === normalizeComparableText(mappedPlate));
+        const mappedVehicle = allVehicles.find((vehicle) => normalizeSearchText(vehicle?.placa) === normalizeSearchText(mappedPlate));
         if (mappedVehicle) return mappedVehicle;
       }
 
@@ -1434,8 +1699,7 @@
       const fuelSuppliers = allSuppliers.filter((supplier) => supplier.tipo === 'posto');
       const exactMatch = fuelSuppliers.find((supplier) => normalizeComparableText(supplier.nome) === normalized);
       if (exactMatch) return exactMatch;
-      const partialMatches = fuelSuppliers.filter((supplier) => normalizeComparableText(supplier.nome).includes(normalized) || normalized.includes(normalizeComparableText(supplier.nome)));
-      return partialMatches.length === 1 ? partialMatches[0] : null;
+      return resolveSupplierByRelevantTerms(name, fuelSuppliers);
     }
 
     function parseImportedFuelMessage(rawText) {
@@ -1712,11 +1976,11 @@
     }
 
     function findVehicleDuplicate(payload, ignoreId = null) {
-      const placa = normalizeComparableText(payload.placa);
+      const placa = normalizeSearchText(payload.placa);
       const frota = normalizeComparableText(payload.numeroFrota);
       return allVehicles.find((item) =>
         item.id !== ignoreId && (
-          normalizeComparableText(item.placa) === placa ||
+          normalizeSearchText(item.placa) === placa ||
           normalizeComparableText(item.numeroFrota) === frota
         )
       );
@@ -2691,7 +2955,7 @@
           return;
         }
         const payload = { numeroFrota, placa, modelo, ano, cor, seguroVencimento, chassi };
-        const existingIndex = allVehicles.findIndex((item) => item.numeroFrota === numeroFrota || item.placa.toLowerCase() === placa.toLowerCase());
+        const existingIndex = allVehicles.findIndex((item) => item.numeroFrota === numeroFrota || normalizeSearchText(item.placa) === normalizeSearchText(placa));
         if (existingIndex >= 0) {
           const duplicate = findVehicleDuplicate(payload, allVehicles[existingIndex].id);
           if (duplicate) {
@@ -2723,11 +2987,11 @@
         .map(item => item.trim())
         .filter(Boolean)
         .map((token) => {
-          const normalizedToken = normalizeComparableText(token);
+          const normalizedToken = normalizeSearchText(token);
           const exactVehicle = allVehicles.find((vehicle) =>
-            normalizeComparableText(vehicle.numeroFrota) === normalizedToken ||
-            normalizeComparableText(vehicle.placa) === normalizedToken ||
-            normalizeComparableText(getVehicleAutocompleteLabel(vehicle)) === normalizedToken
+            normalizeSearchText(vehicle.numeroFrota) === normalizedToken ||
+            normalizeSearchText(vehicle.placa) === normalizedToken ||
+            normalizeSearchText(getVehicleAutocompleteLabel(vehicle)) === normalizedToken
           );
           return exactVehicle?.id || '';
         })
@@ -2933,30 +3197,30 @@
     }
 
     function getOrderKmData(orderId) {
-      const fuelEntries = allFinanceEntries
-        .filter(entry => entry.orderId === orderId && (isFuelEntry(entry) || isFuelGroupEntry(entry)))
+      const kmEntries = allFinanceEntries
+        .filter(entry => entry.orderId === orderId || (entry.groupedIntoId && allFinanceEntries.some(group => group.id === entry.groupedIntoId && group.orderId === orderId)))
         .flatMap(entry => isFuelGroupEntry(entry) ? getFuelGroupChildren(entry) : [entry])
-        .filter(entry => isFuelEntry(entry) && entry.km !== '')
+        .filter(entry => entry && entry.km !== undefined && entry.km !== null && String(entry.km).trim() !== '')
         .sort((a, b) => {
           const dateCompare = String(getFinanceEntryDate(a)).localeCompare(String(getFinanceEntryDate(b)));
           if (dateCompare !== 0) return dateCompare;
           return Number(a.km || 0) - Number(b.km || 0);
         });
 
-      if (!fuelEntries.length) {
+      if (!kmEntries.length) {
         return { kmInicial: '', kmFinal: '' };
       }
       return {
-        kmInicial: fuelEntries[0].km || '',
-        kmFinal: fuelEntries[fuelEntries.length - 1].km || ''
+        kmInicial: kmEntries[0].km || '',
+        kmFinal: kmEntries[kmEntries.length - 1].km || ''
       };
     }
 
     function getVehicleCurrentKm(vehicleId) {
       const entries = allFinanceEntries
-        .filter(entry => (isFuelEntry(entry) || isFuelGroupEntry(entry)) && isDistributedCostEntry(entry) && getEntryLinkedVehicleId(entry) === vehicleId)
+        .filter(entry => isDistributedCostEntry(entry) && getEntryLinkedVehicleId(entry) === vehicleId)
         .flatMap(entry => isFuelGroupEntry(entry) ? getFuelGroupChildren(entry) : [entry])
-        .filter(entry => isFuelEntry(entry) && entry.km !== '' && getFinanceEntryDate(entry))
+        .filter(entry => entry && entry.km !== undefined && entry.km !== null && String(entry.km).trim() !== '' && getFinanceEntryDate(entry))
         .sort((a, b) => {
           const dateCompare = String(getFinanceEntryDate(b)).localeCompare(String(getFinanceEntryDate(a)));
           if (dateCompare !== 0) return dateCompare;
@@ -3820,7 +4084,7 @@
     window.toggleFinanceSort = toggleFinanceSort;
 
     function getVisibleFinanceEntries() {
-      const quickSearch = normalizeComparableText(document.getElementById('finance-filter-search')?.value || '');
+      const quickSearch = normalizeSearchText(document.getElementById('finance-filter-search')?.value || '');
       const statusFilter = document.getElementById('finance-filter-status')?.value || '';
       const dateFilter = document.getElementById('finance-filter-date')?.value || '';
       const valueFilter = document.getElementById('finance-filter-value')?.value.trim().toLowerCase() || '';
@@ -3834,7 +4098,7 @@
         visibleEntries = visibleEntries.filter(entry => {
           const order = allOrders.find(item => item.id === entry.orderId);
           const vehicle = allVehicles.find(item => item.id === getEntryVehicleId(entry));
-          const haystack = normalizeComparableText([
+          const haystack = normalizeSearchText([
             entry.fornecedor,
             entry.nf,
             entry.observacoes,
@@ -3884,12 +4148,7 @@
       const supplierSearchItems = allSuppliers
         .filter(supplier => entryType === 'combustivel' ? supplier.tipo === 'posto' : supplier.tipo !== 'posto');
       const supplierSearchOptions = supplierSearchItems
-        .flatMap(supplier => [
-          `<option value="${escapeHtml(supplier.nome)}" label="${escapeHtml([supplier.tipoLabel, supplier.documento].filter(Boolean).join(' - '))}"></option>`,
-          supplier.documento ? `<option value="${escapeHtml(supplier.documento)}" label="${escapeHtml([supplier.nome, supplier.tipoLabel].filter(Boolean).join(' - '))}"></option>` : '',
-          supplier.tipoLabel ? `<option value="${escapeHtml(supplier.tipoLabel)}" label="${escapeHtml([supplier.nome, supplier.documento].filter(Boolean).join(' - '))}"></option>` : ''
-        ])
-        .filter(Boolean)
+        .map(supplier => `<option value="${escapeHtml(supplier.nome)}" label="${escapeHtml([supplier.tipoLabel, supplier.documento].filter(Boolean).join(' - '))}"></option>`)
         .join('');
       const openOrders = getOpenOrdersSorted();
       const orderOptions = openOrders
@@ -3995,7 +4254,7 @@
           <div class="field-wrap">
             <label>${requiredLabel('Fornecedor')}</label>
             <input id="finance-supplier-id" type="hidden">
-            <input class="soft-input w-full" id="finance-supplier-search" list="finance-supplier-options" placeholder="Digite nome, tipo ou CNPJ do parceiro" autocomplete="off" required>
+            <input class="soft-input w-full" id="finance-supplier-search" list="finance-supplier-options" placeholder="Digite nome, categoria ou CNPJ do parceiro" autocomplete="off" required>
             <datalist id="finance-supplier-options">${supplierSearchOptions}</datalist>
           </div>
           <div class="field-wrap">
@@ -4039,7 +4298,7 @@
           hiddenId: 'finance-supplier-id',
           items: supplierSearchItems,
           labelGetter: getSupplierAutocompleteLabel,
-          resolver: resolveSupplierFromSearch
+          resolver: resolveSupplierByRelevantTerms
         });
         bindSupplierSearchDisplay();
       }
@@ -4590,6 +4849,36 @@
         });
     }
 
+    function openFinanceEntryFromDocuments(entryId) {
+      const entry = allFinanceEntries.find(item => item.id === entryId);
+      if (!entry) {
+        showToast('Não foi possível localizar esse lançamento financeiro.');
+        return;
+      }
+
+      document.getElementById('finance-filter-search') && (document.getElementById('finance-filter-search').value = '');
+      document.getElementById('finance-filter-status') && (document.getElementById('finance-filter-status').value = '');
+      document.getElementById('finance-filter-date') && (document.getElementById('finance-filter-date').value = '');
+      document.getElementById('finance-filter-value') && (document.getElementById('finance-filter-value').value = '');
+      financeSortState = { key: 'default', direction: 'desc' };
+      selectedFinance = new Set([entryId]);
+
+      const financeNavButton = getNavButtonForModule('financeiro');
+      showModule('financeiro', financeNavButton);
+      renderFinance();
+
+      requestAnimationFrame(() => {
+        const selectedRow = document.querySelector('.finance-table-row.selected');
+        if (selectedRow) {
+          selectedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+        viewFinanceEntryById(entryId);
+      });
+    }
+
+    window.openFinanceEntryFromDocuments = openFinanceEntryFromDocuments;
+
     function renderDocuments() {
       const list = document.getElementById('documents-list');
       if (!list) return;
@@ -4629,12 +4918,12 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21.44 11.05l-8.49 8.49a5.5 5.5 0 01-7.78-7.78l9.2-9.19a3.5 3.5 0 114.95 4.95l-9.19 9.2a1.5 1.5 0 11-2.12-2.13l8.49-8.48"/>
                   </svg>
                 </button>
-                <a class="finance-detail-action-btn" title="Abrir link" href="${escapeHtml(doc.url)}" target="_blank" rel="noopener noreferrer">
+                <button type="button" class="finance-detail-action-btn" title="Ir para lançamento financeiro" onclick="openFinanceEntryFromDocuments('${doc.id}')">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10v10"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17 17 7"/>
                   </svg>
-                </a>
+                </button>
               </div>
             </div>
           </div>
@@ -5025,7 +5314,10 @@
       const selectedEntries = Array.from(selectedFinance)
         .map(id => allFinanceEntries.find(entry => entry.id === id))
         .filter(Boolean);
-      document.getElementById('finance-selected-text').textContent = `${count} selecionado${count === 1 ? '' : 's'}`;
+      const selectedTotal = selectedEntries.reduce((sum, entry) => sum + getFinanceTotal(entry), 0);
+      document.getElementById('finance-selected-text').textContent = count
+        ? `${count} selecionado${count === 1 ? '' : 's'} | Total ${formatCurrency(selectedTotal)}`
+        : '0 selecionados';
       document.getElementById('select-all-finance').classList.toggle('checked', visibleEntries.length > 0 && visibleEntries.every(entry => selectedFinance.has(entry.id)));
       updateButtonState('edit-finance-btn', 'delete-finance-btn', count, {
         edit: 'Editar lançamento',
@@ -5138,13 +5430,103 @@
       renderFinance();
     }
 
-    function getVisibleVehicles() {
-      const quickSearch = normalizeComparableText(document.getElementById('vehicle-filter-search')?.value || '');
+    function compareSortableValues(aValue, bValue) {
+      if (typeof aValue === 'number' || typeof bValue === 'number') {
+        return Number(aValue || 0) - Number(bValue || 0);
+      }
+      return String(aValue || '').localeCompare(String(bValue || ''), 'pt-BR', { numeric: true, sensitivity: 'base' });
+    }
 
-      return [...allVehicles]
+    function sortByState(items, state, valueGetter) {
+      const direction = state.direction === 'asc' ? 1 : -1;
+      return items
+        .map((item, index) => ({ item, index }))
+        .sort((a, b) => {
+          const compare = compareSortableValues(valueGetter(a.item, state.key), valueGetter(b.item, state.key));
+          return compare !== 0 ? compare * direction : a.index - b.index;
+        })
+        .map(({ item }) => item);
+    }
+
+    function getVehicleSortValue(vehicle, key) {
+      switch (key) {
+        case 'plate': return normalizeComparableText(vehicle.placa || '');
+        case 'model': return normalizeComparableText(vehicle.modelo || '');
+        case 'fleet': return getNumericOrderValue(vehicle.numeroFrota);
+        case 'details': return normalizeComparableText([vehicle.seguroVencimento, vehicle.chassi, vehicle.cor].join(' '));
+        case 'status': return 'ativo';
+        case 'km': return getVehicleCurrentKm(vehicle.id) ?? -1;
+        case 'cost': return getVehicleDistributedCostTotal(vehicle.id);
+        default: return normalizeComparableText(vehicle.placa || '');
+      }
+    }
+
+    function getDriverSortValue(driver, key) {
+      switch (key) {
+        case 'name': return normalizeComparableText(driver.nome || '');
+        case 'category': return normalizeComparableText(driver.categoria || '');
+        case 'cpf': return normalizeComparableText(driver.cpf || '');
+        case 'cnh': return normalizeComparableText(driver.cnh || '');
+        case 'contact': return normalizeComparableText([driver.telefone, driver.validade].join(' '));
+        case 'status': return 'ativo';
+        default: return normalizeComparableText(driver.nome || '');
+      }
+    }
+
+    function getSupplierSortValue(supplier, key) {
+      switch (key) {
+        case 'name': return normalizeComparableText(supplier.nome || '');
+        case 'type': return normalizeComparableText(supplier.tipoLabel || supplier.tipo || '');
+        case 'document': return normalizeComparableText(supplier.documento || '');
+        case 'contact': return normalizeComparableText([supplier.telefone, supplier.email].join(' '));
+        case 'notes': return normalizeComparableText(supplier.observacoes || '');
+        case 'status': return 'ativo';
+        default: return normalizeComparableText(supplier.nome || '');
+      }
+    }
+
+    function updateSimpleSortIndicators(attributeName, currentState) {
+      document.querySelectorAll(`[${attributeName}]`).forEach((node) => {
+        const key = node.getAttribute(attributeName);
+        node.textContent = currentState.key === key
+          ? (currentState.direction === 'asc' ? '↑' : '↓')
+          : '';
+        node.closest('.finance-sort-head')?.classList.toggle('active', currentState.key === key);
+      });
+    }
+
+    function toggleVehicleSort(key) {
+      vehicleSortState = vehicleSortState.key === key
+        ? { key, direction: vehicleSortState.direction === 'asc' ? 'desc' : 'asc' }
+        : { key, direction: ['fleet', 'km', 'cost'].includes(key) ? 'desc' : 'asc' };
+      renderVehicles();
+    }
+
+    function toggleDriverSort(key) {
+      driverSortState = driverSortState.key === key
+        ? { key, direction: driverSortState.direction === 'asc' ? 'desc' : 'asc' }
+        : { key, direction: 'asc' };
+      renderDrivers();
+    }
+
+    function toggleSupplierSort(key) {
+      supplierSortState = supplierSortState.key === key
+        ? { key, direction: supplierSortState.direction === 'asc' ? 'desc' : 'asc' }
+        : { key, direction: 'asc' };
+      renderSuppliers();
+    }
+
+    window.toggleVehicleSort = toggleVehicleSort;
+    window.toggleDriverSort = toggleDriverSort;
+    window.toggleSupplierSort = toggleSupplierSort;
+
+    function getVisibleVehicles() {
+      const quickSearch = normalizeSearchText(document.getElementById('vehicle-filter-search')?.value || '');
+
+      const items = [...allVehicles]
         .filter(vehicle => {
           if (!quickSearch) return true;
-          const haystack = normalizeComparableText([
+          const haystack = normalizeSearchText([
             vehicle.numeroFrota,
             vehicle.placa,
             vehicle.modelo,
@@ -5153,15 +5535,15 @@
             vehicle.chassi
           ].join(' '));
           return haystack.includes(quickSearch);
-        })
-        .sort((a, b) => getNumericOrderValue(a.numeroFrota) - getNumericOrderValue(b.numeroFrota));
+        });
+      return sortByState(items, vehicleSortState, getVehicleSortValue);
     }
 
     function getVisibleDrivers() {
       const quickSearch = normalizeComparableText(document.getElementById('driver-filter-search')?.value || '');
       const validityFilter = document.getElementById('driver-filter-validity')?.value || '';
 
-      return [...allDrivers]
+      const items = [...allDrivers]
         .filter(driver => !validityFilter || String(driver.validade || '') === validityFilter)
         .filter(driver => {
           if (!quickSearch) return true;
@@ -5173,15 +5555,15 @@
             driver.categoria
           ].join(' '));
           return haystack.includes(quickSearch);
-        })
-        .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
+        });
+      return sortByState(items, driverSortState, getDriverSortValue);
     }
 
     function getVisibleSuppliers() {
       const quickSearch = normalizeComparableText(document.getElementById('supplier-filter-search')?.value || '');
       const typeFilter = document.getElementById('supplier-filter-type')?.value || '';
 
-      return [...allSuppliers]
+      const items = [...allSuppliers]
         .filter(supplier => !typeFilter || supplier.tipo === typeFilter)
         .filter(supplier => {
           if (!quickSearch) return true;
@@ -5194,8 +5576,8 @@
             supplier.observacoes
           ].join(' '));
           return haystack.includes(quickSearch);
-        })
-        .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
+        });
+      return sortByState(items, supplierSortState, getSupplierSortValue);
     }
 
     function hasActiveVehicleFilters() {
@@ -5221,6 +5603,7 @@
         list.innerHTML = `<div class="empty-state">${hasActiveVehicleFilters() ? 'Nenhum veículo encontrado com os filtros aplicados.' : 'Nenhum veículo cadastrado. Clique no botão + para começar.'}</div>`;
         selectedVehicles = new Set(Array.from(selectedVehicles).filter(id => allVehicles.some(vehicle => vehicle.id === id)));
         updateEntityListViewport('vehicles-list-shell', 0);
+        updateSimpleSortIndicators('data-vehicle-sort-indicator', vehicleSortState);
         updateVehicleSelectionUI();
         return;
       }
@@ -5265,6 +5648,7 @@
       `;
       }).join('');
       updateEntityListViewport('vehicles-list-shell', visibleVehicles.length);
+      updateSimpleSortIndicators('data-vehicle-sort-indicator', vehicleSortState);
       updateVehicleSelectionUI();
     }
 
@@ -5276,6 +5660,7 @@
         list.innerHTML = `<div class="empty-state">${hasActiveDriverFilters() ? 'Nenhum motorista encontrado com os filtros aplicados.' : 'Nenhum motorista cadastrado. Clique no botão + para começar.'}</div>`;
         selectedDrivers = new Set(Array.from(selectedDrivers).filter(id => allDrivers.some(driver => driver.id === id)));
         updateEntityListViewport('drivers-list-shell', 0);
+        updateSimpleSortIndicators('data-driver-sort-indicator', driverSortState);
         updateDriverSelectionUI();
         return;
       }
@@ -5322,6 +5707,7 @@
       `;
       }).join('');
       updateEntityListViewport('drivers-list-shell', visibleDrivers.length);
+      updateSimpleSortIndicators('data-driver-sort-indicator', driverSortState);
       updateDriverSelectionUI();
     }
 
@@ -5333,6 +5719,7 @@
         list.innerHTML = `<div class="empty-state">${hasActiveSupplierFilters() ? 'Nenhum fornecedor encontrado com os filtros aplicados.' : 'Nenhum fornecedor cadastrado ainda.'}</div>`;
         selectedSuppliers = new Set(Array.from(selectedSuppliers).filter(id => allSuppliers.some(supplier => supplier.id === id)));
         updateEntityListViewport('suppliers-list-shell', 0);
+        updateSimpleSortIndicators('data-supplier-sort-indicator', supplierSortState);
         updateSupplierSelectionUI();
         return;
       }
@@ -5368,11 +5755,12 @@
         </div>
       `).join('');
       updateEntityListViewport('suppliers-list-shell', visibleSuppliers.length);
+      updateSimpleSortIndicators('data-supplier-sort-indicator', supplierSortState);
       updateSupplierSelectionUI();
     }
 
     function getFilteredOrders() {
-      const quickSearch = normalizeComparableText(document.getElementById('order-filter-search')?.value || '');
+      const quickSearch = normalizeSearchText(document.getElementById('order-filter-search')?.value || '');
       const start = document.getElementById('order-filter-start')?.value || '';
       const end = document.getElementById('order-filter-end')?.value || '';
       const status = document.getElementById('order-filter-status')?.value || '';
@@ -5386,7 +5774,7 @@
         items = items.filter(order => {
           const vehicle = allVehicles.find(item => item.id === order.vehicleId);
           const driver = allDrivers.find(item => item.id === order.driverId);
-          const haystack = normalizeComparableText([
+          const haystack = normalizeSearchText([
             order.numero,
             order.status,
             order.descricao,
@@ -5680,18 +6068,21 @@
 
     function clearVehicleFilters() {
       document.getElementById('vehicle-filter-search').value = '';
+      vehicleSortState = { key: 'fleet', direction: 'asc' };
       renderVehicles();
     }
 
     function clearDriverFilters() {
       document.getElementById('driver-filter-search').value = '';
       document.getElementById('driver-filter-validity').value = '';
+      driverSortState = { key: 'name', direction: 'asc' };
       renderDrivers();
     }
 
     function clearSupplierFilters() {
       document.getElementById('supplier-filter-search').value = '';
       document.getElementById('supplier-filter-type').value = '';
+      supplierSortState = { key: 'name', direction: 'asc' };
       renderSuppliers();
     }
 
@@ -6674,7 +7065,7 @@
         const supplierSearch = document.getElementById('finance-supplier-search')?.value || '';
         let supplierId = document.getElementById('finance-supplier-id').value;
         if (!supplierId && supplierSearch.trim()) {
-          const resolvedSupplier = resolveSupplierFromSearch(supplierSearch);
+          const resolvedSupplier = resolveSupplierByRelevantTerms(supplierSearch);
           supplierId = resolvedSupplier?.id || '';
           const hiddenSupplierField = document.getElementById('finance-supplier-id');
           if (hiddenSupplierField) hiddenSupplierField.value = supplierId;
@@ -6987,15 +7378,19 @@
       }
     });
 
-    loadFromLocalStorage();
-    renderAll();
-    updateModuleHeader('home');
-    applySidebarState();
-    applyThemeState(localStorage.getItem('wefrotas_theme') === 'dark');
-    renderNotifications();
-    updateCustomLogoUi();
-    updateManagerIdentityUi();
-    updateOperationSettingsUi();
+    async function initializeWeFrotas() {
+      await loadFromStorage();
+      renderAll();
+      updateModuleHeader('home');
+      applySidebarState();
+      applyThemeState(localStorage.getItem('wefrotas_theme') === 'dark');
+      renderNotifications();
+      updateCustomLogoUi();
+      updateManagerIdentityUi();
+      updateOperationSettingsUi();
+    }
+
+    initializeWeFrotas();
     document.getElementById('settings-custom-logo-file')?.addEventListener('change', handleCustomLogoUpload);
     document.getElementById('settings-custom-logo-size')?.addEventListener('input', (event) => {
       const sizeLabel = document.getElementById('settings-custom-logo-size-label');

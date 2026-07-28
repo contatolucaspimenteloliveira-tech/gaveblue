@@ -331,7 +331,7 @@
               </div>
               <div class="storage-dashboard-meta">
                 <span id="home-storage-used">0 KB usados</span>
-                <span id="home-storage-free">5 MB disponíveis</span>
+                <span id="home-storage-free">Calculando espaço livre...</span>
               </div>
             </div>
           </div>
@@ -374,13 +374,13 @@
             <div id="vehicles-list-shell" class="orders-table-scroll entity-table-scroll">
               <div class="orders-table-head entity-table-head entity-table-head--vehicles">
                 <div></div>
-                <div>Placa</div>
-                <div>Veículo</div>
-                <div>Frota / Ano</div>
-                <div>Detalhes</div>
-                <div>Status</div>
-                <div>KM atual</div>
-                <div>Custo total</div>
+                <button type="button" class="finance-sort-head" onclick="toggleVehicleSort('plate')">Placa <span data-vehicle-sort-indicator="plate"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleVehicleSort('model')">Veículo <span data-vehicle-sort-indicator="model"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleVehicleSort('fleet')">Frota / Ano <span data-vehicle-sort-indicator="fleet"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleVehicleSort('details')">Detalhes <span data-vehicle-sort-indicator="details"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleVehicleSort('status')">Status <span data-vehicle-sort-indicator="status"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleVehicleSort('km')">KM atual <span data-vehicle-sort-indicator="km"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleVehicleSort('cost')">Custo total <span data-vehicle-sort-indicator="cost"></span></button>
               </div>
               <div id="vehicles-list" class="orders-table-body entity-table-body">
                 <div class="empty-state">Nenhum veículo cadastrado. Clique no botão + para começar.</div>
@@ -430,12 +430,12 @@
             <div id="drivers-list-shell" class="orders-table-scroll entity-table-scroll">
               <div class="orders-table-head entity-table-head entity-table-head--drivers">
                 <div></div>
-                <div>Motorista</div>
-                <div>Categoria</div>
-                <div>CPF</div>
-                <div>CNH</div>
-                <div>Contato</div>
-                <div>Status</div>
+                <button type="button" class="finance-sort-head" onclick="toggleDriverSort('name')">Motorista <span data-driver-sort-indicator="name"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleDriverSort('category')">Categoria <span data-driver-sort-indicator="category"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleDriverSort('cpf')">CPF <span data-driver-sort-indicator="cpf"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleDriverSort('cnh')">CNH <span data-driver-sort-indicator="cnh"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleDriverSort('contact')">Contato <span data-driver-sort-indicator="contact"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleDriverSort('status')">Status <span data-driver-sort-indicator="status"></span></button>
               </div>
               <div id="drivers-list" class="orders-table-body entity-table-body">
                 <div class="empty-state">Nenhum motorista cadastrado. Clique no botão + para começar.</div>
@@ -502,12 +502,12 @@
             <div id="suppliers-list-shell" class="orders-table-scroll entity-table-scroll">
               <div class="orders-table-head entity-table-head entity-table-head--suppliers">
                 <div></div>
-                <div>Fornecedor</div>
-                <div>Tipo</div>
-                <div>Documento</div>
-                <div>Contato</div>
-                <div>Observações</div>
-                <div>Status</div>
+                <button type="button" class="finance-sort-head" onclick="toggleSupplierSort('name')">Fornecedor <span data-supplier-sort-indicator="name"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleSupplierSort('type')">Tipo <span data-supplier-sort-indicator="type"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleSupplierSort('document')">Documento <span data-supplier-sort-indicator="document"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleSupplierSort('contact')">Contato <span data-supplier-sort-indicator="contact"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleSupplierSort('notes')">Observações <span data-supplier-sort-indicator="notes"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleSupplierSort('status')">Status <span data-supplier-sort-indicator="status"></span></button>
               </div>
               <div id="suppliers-list" class="orders-table-body entity-table-body">
                 <div class="empty-state">Nenhum fornecedor cadastrado ainda.</div>
