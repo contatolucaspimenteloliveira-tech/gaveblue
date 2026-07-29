@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260727-14">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260729-24">
   
 </head>
 <body>
@@ -89,7 +89,15 @@
             <span class="nav-label">Fornecedores</span>
           </button>
 
-          <button class="nav-btn" onclick="showModule('documentos', this)">
+          <button class="nav-btn hidden" type="button" aria-hidden="true" tabindex="-1" onclick="showModule('calendario', this)">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 3v3M17 3v3M4 8h16M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01"/>
+            </svg>
+            <span class="nav-label">Calendário</span>
+          </button>
+
+          <button class="nav-btn hidden" type="button" aria-hidden="true" tabindex="-1" onclick="showModule('documentos', this)">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 3h7l5 5v13H7z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M14 3v5h5"/>
@@ -231,6 +239,12 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M16.5 4.5l3 3L9 18l-4 1 1-4 10.5-10.5z"/>
                   </svg>
                 </button>
+                <button id="view-order-btn" class="icon-action text-[#4f46e5]" title="Visualizar OS" onclick="viewSelectedOrder()">
+                  <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/>
+                    <circle cx="12" cy="12" r="3" stroke-width="1.9"/>
+                  </svg>
+                </button>
                 <button id="print-order-btn" class="icon-action text-[#bd8dff]" title="Imprimir" onclick="printSelectedOrder()">
                   <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 8V4h10v4M7 16H5a2 2 0 01-2-2v-3a2 2 0 012-2h14a2 2 0 012 2v3a2 2 0 01-2 2h-2M7 12h10v8H7z"/>
@@ -305,11 +319,11 @@
               <div id="home-cost-table" class="space-y-3 text-sm text-slate-600"></div>
             </div>
             <div class="filter-card p-6 xl:col-span-1">
-              <h3 class="text-lg font-extrabold text-slate-900 mb-4">CNHs próximas a vencer</h3>
-              <div id="home-cnh-table" class="space-y-3 text-sm text-slate-600"></div>
+              <h3 class="text-lg font-extrabold text-slate-900 mb-4">Despesas</h3>
+              <div id="home-finance-status-table" class="space-y-3 text-sm text-slate-600"></div>
             </div>
             <div class="filter-card p-6 xl:col-span-1">
-              <h3 class="text-lg font-extrabold text-slate-900 mb-4">Seguros próximos a vencer</h3>
+              <h3 class="text-lg font-extrabold text-slate-900 mb-4">Seguro</h3>
               <div id="home-insurance-table" class="space-y-3 text-sm text-slate-600"></div>
             </div>
           </div>
@@ -533,8 +547,12 @@
                 </select>
               </div>
               <div class="orders-filter-field">
-                <label>Data</label>
-                <input id="finance-filter-date" type="date" class="soft-input w-full">
+                <label>Data inicial</label>
+                <input id="finance-filter-start" type="date" class="soft-input w-full">
+              </div>
+              <div class="orders-filter-field">
+                <label>Data final</label>
+                <input id="finance-filter-end" type="date" class="soft-input w-full">
               </div>
               <div class="orders-filter-field">
                 <label>Valor</label>
@@ -618,7 +636,25 @@
           </div>
         </section>
 
-        <section id="panel-documentos" class="module-panel content-card orders-page-shell p-8 sm:p-10">
+        <section id="panel-calendario" class="module-panel content-card orders-page-shell p-8 sm:p-10">
+          <div class="calendar-placeholder-shell">
+            <div class="calendar-placeholder-card">
+              <div class="calendar-placeholder-icon">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 3v3M17 3v3M4 8h16M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M9 14l2 2 4-5"/>
+                </svg>
+              </div>
+              <div>
+                <p class="calendar-placeholder-kicker">Planejamento</p>
+                <h3>Calendário de revisões</h3>
+                <p>Estrutura criada para receber os agendamentos de revisão, OS vinculada, data prevista e histórico operacional.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="panel-documentos" class="module-panel content-card orders-page-shell p-8 sm:p-10 hidden" aria-hidden="true">
           <div class="orders-table-shell">
             <div id="documents-list-shell" class="orders-table-scroll documents-table-scroll">
               <div class="orders-table-head documents-table-head">
@@ -825,6 +861,20 @@
           </div>
         </section>
         <section class="settings-block">
+          <p class="settings-label">Administrações</p>
+          <div class="settings-list">
+            <div class="settings-field-stack">
+              <label class="settings-input-label" for="settings-administration-name">Cadastrar administração</label>
+              <div class="settings-inline-form">
+                <input type="text" id="settings-administration-name" class="settings-text-input" placeholder="Ex: MATRIZ, FILIAL, FAZENDA...">
+                <button type="button" class="settings-action-btn" onclick="addAdministrationSetting()">Adicionar</button>
+              </div>
+              <p class="settings-description !mb-0">Essas opções aparecem no campo Administração ao abrir uma OS.</p>
+            </div>
+            <div id="settings-administration-list" class="settings-chip-list"></div>
+          </div>
+        </section>
+        <section class="settings-block">
           <p class="settings-label">Numeração da OS</p>
           <div class="settings-list">
             <button type="button" id="settings-order-number-edit-toggle" class="settings-action-btn full" onclick="toggleOrderNumberEditing()">
@@ -988,24 +1038,44 @@
   </div>
 
   <div id="modal-backdrop" class="modal-backdrop" onclick="handleModalBackdrop(event)">
-    <div class="modal-card">
+    <div id="cadastro-modal-card" class="modal-card">
       <div class="modal-header">
-        <div>
-          <p id="modal-kicker" class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#6670e6]">Cadastro</p>
-          <h3 id="modal-title" class="text-2xl font-extrabold text-slate-900 mt-2">Novo cadastro</h3>
+        <div class="modal-title-row">
+          <div id="modal-icon" class="modal-title-icon">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 3h7l5 5v13H7z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M14 3v5h5"/>
+            </svg>
+          </div>
+          <div>
+            <p id="modal-kicker" class="modal-kicker">Cadastro</p>
+            <h3 id="modal-title" class="modal-title">Novo cadastro</h3>
+            <p id="modal-subtitle" class="modal-subtitle">Preencha as informações para continuar.</p>
+          </div>
         </div>
-        <button class="icon-action bg-white border border-slate-200 text-slate-600" onclick="closeCadastroModal()">
+        <button class="modal-close-btn" onclick="closeCadastroModal()" aria-label="Fechar formulário">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"/>
           </svg>
         </button>
       </div>
       <div class="modal-body">
-        <form id="cadastro-form" class="space-y-6">
+        <form id="cadastro-form" class="space-y-4">
           <div id="modal-fields" class="form-grid"></div>
-          <div id="modal-actions" class="flex items-center justify-end gap-3 pt-2">
-            <button type="button" class="soft-btn" onclick="closeCadastroModal()">Cancelar</button>
-            <button id="modal-submit-btn" type="submit" class="soft-btn primary">Salvar cadastro</button>
+          <div id="modal-actions" class="flex items-center justify-end gap-3 pt-1">
+            <button type="button" class="soft-btn modal-action-btn" onclick="closeCadastroModal()">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"/>
+              </svg>
+              <span>Cancelar</span>
+            </button>
+            <button id="modal-submit-btn" type="submit" class="soft-btn primary modal-action-btn">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M5 21h14V8l-5-5H5z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M9 21v-7h6v7M8 3v5h8"/>
+              </svg>
+              <span>Salvar cadastro</span>
+            </button>
           </div>
         </form>
       </div>
@@ -1052,6 +1122,46 @@
     </div>
   </div>
 
+  <div id="order-viewer-backdrop" class="prompt-modal-backdrop hidden" onclick="handleOrderViewerBackdrop(event)">
+    <div class="prompt-modal-card order-viewer-card">
+      <button type="button" class="order-viewer-close-float" onclick="closeOrderViewer()" aria-label="Fechar visualização da OS">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+      <div class="prompt-modal-body order-viewer-body">
+        <div id="order-viewer-stage" class="order-viewer-stage">
+          <iframe id="order-viewer-frame" class="order-viewer-frame" title="Visualização da ordem de serviço"></iframe>
+        </div>
+      </div>
+      <div class="order-viewer-floating-actions" aria-label="Ações da visualização da OS">
+        <button type="button" class="order-viewer-float-btn" title="Diminuir zoom" onclick="changeOrderViewerZoom(-0.1)" aria-label="Diminuir zoom">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 12h14"/>
+          </svg>
+        </button>
+        <span id="order-viewer-zoom-label" class="order-viewer-zoom-pill">100%</span>
+        <button type="button" class="order-viewer-float-btn" title="Aumentar zoom" onclick="changeOrderViewerZoom(0.1)" aria-label="Aumentar zoom">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+        <button type="button" class="order-viewer-float-btn" title="Imprimir" onclick="printSelectedOrder()" aria-label="Imprimir">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 8V4h10v4M7 16H5a2 2 0 01-2-2v-3a2 2 0 012-2h14a2 2 0 012 2v3a2 2 0 01-2 2h-2M7 12h10v8H7z"/>
+          </svg>
+        </button>
+        <button type="button" class="order-viewer-float-btn primary" title="Salvar PDF" onclick="saveSelectedOrderPdf()" aria-label="Salvar PDF">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M14 3v4a1 1 0 001 1h4"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M9 15h6M9 18h4"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="batch-feedback-backdrop" class="batch-feedback-backdrop hidden">
     <div class="batch-feedback-card">
       <div id="batch-feedback-icon" class="batch-feedback-icon loading">
@@ -1068,7 +1178,7 @@
   <input id="wefrotas-import-backup-input" type="file" accept=".json" class="hidden" onchange="handleBackupImportFile(event)">
   <input id="wefrotas-batch-import-input" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleBatchImportFile(event)">
 
-  <script src="./wefrotas.js?v=20260727-14"></script>
+  <script src="./wefrotas.js?v=20260729-24"></script>
 </body>
 </html>
 

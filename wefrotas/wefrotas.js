@@ -3,6 +3,7 @@
     let allSuppliers = [];
     let allOrders = [];
     let allFinanceEntries = [];
+    let allAdministrations = [];
     let deletedOrders = [];
     const globalSearchInputEl = document.getElementById('global-search-input');
     const globalSearchResultsEl = document.getElementById('global-search-results');
@@ -29,12 +30,14 @@
     let selectedFinance = new Set();
     let financeSortState = { key: 'default', direction: 'desc' };
     let orderSortState = { key: 'default', direction: 'desc' };
+    let orderVehicleFilterId = '';
     let vehicleSortState = { key: 'fleet', direction: 'asc' };
     let driverSortState = { key: 'name', direction: 'asc' };
     let supplierSortState = { key: 'name', direction: 'asc' };
     let currentModalType = null;
     let currentEditingId = null;
     let currentFinanceEntryType = null;
+    let orderViewerZoom = 1;
     let systemNotifications = [];
     let pendingBatchImportEntity = null;
     let pendingPromptConfirm = null;
@@ -172,6 +175,7 @@
       const toggleButton = document.getElementById('settings-order-number-edit-toggle');
       const hint = document.getElementById('settings-order-number-edit-hint');
       if (adminInput) adminInput.value = managerDisplayName || '';
+      renderAdministrationSettings();
       if (toggleButton) {
         toggleButton.textContent = allowManualOrderNumberEditing
           ? 'Travar edição do número da OS'
@@ -185,10 +189,61 @@
       }
     }
 
+    function renderAdministrationSettings() {
+      const listNode = document.getElementById('settings-administration-list');
+      if (!listNode) return;
+      const administrations = getAdministrationOptions();
+      if (!administrations.length) {
+        listNode.innerHTML = '<div class="settings-empty-line">Nenhuma administração cadastrada.</div>';
+        return;
+      }
+      listNode.innerHTML = administrations.map(name => `
+        <div class="settings-chip-item">
+          <span>${escapeHtml(name)}</span>
+          <button type="button" onclick="removeAdministrationSetting('${encodeURIComponent(name)}')" aria-label="Remover ${escapeHtml(name)}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"/>
+            </svg>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    async function addAdministrationSetting() {
+      const input = document.getElementById('settings-administration-name');
+      const value = String(input?.value || '').trim();
+      if (!value) {
+        showToast('Informe o nome da administração.');
+        return;
+      }
+      const exists = getAdministrationOptions()
+        .some(name => name.localeCompare(value, 'pt-BR', { sensitivity: 'base' }) === 0);
+      if (exists) {
+        showToast('Essa administração já está cadastrada.');
+        return;
+      }
+      allAdministrations = normalizeAdministrationList([...allAdministrations, value]);
+      if (input) input.value = '';
+      renderAdministrationSettings();
+      await saveToLocalStorage();
+      showToast('Administração cadastrada com sucesso.');
+    }
+
+    async function removeAdministrationSetting(encodedName) {
+      const name = decodeURIComponent(encodedName || '');
+      allAdministrations = normalizeAdministrationList(allAdministrations.filter(item => item !== name));
+      renderAdministrationSettings();
+      await saveToLocalStorage();
+      showToast('Administração removida.');
+    }
+
     function toggleOrderNumberEditing() {
       allowManualOrderNumberEditing = !allowManualOrderNumberEditing;
       updateOperationSettingsUi();
     }
+
+    window.addAdministrationSetting = addAdministrationSetting;
+    window.removeAdministrationSetting = removeAdministrationSetting;
 
     async function saveOperationSettings() {
       const adminInput = document.getElementById('settings-manager-name');
@@ -315,6 +370,43 @@
 
     function requiredLabel(text) {
       return `${text} <span class="required-mark">*</span>`;
+    }
+
+    const modalIcons = {
+      default: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 3h7l5 5v13H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M14 3v5h5"/></svg>',
+      order: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 3h7l5 5v13H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M14 3v5h5M10 13h6M10 17h4"/></svg>',
+      finance: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 7a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M16 11h4v5h-4a2.5 2.5 0 010-5zM7 9h5"/></svg>',
+      fuel: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M6 21V5a2 2 0 012-2h5a2 2 0 012 2v16"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M9 7h3M15 8h1.5L20 11.5V18a2 2 0 01-2 2h-1"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M8 13h5"/></svg>',
+      expense: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 3h7l5 5v13H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M14 3v5h5M11 12h4M10 16h6"/></svg>'
+    };
+
+    const fieldIcons = {
+      hash: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 4L7 20M17 4l-2 16M4 9h16M3 15h16"/>',
+      document: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 3h7l5 5v13H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M14 3v5h5M10 13h6M10 17h4"/>',
+      building: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 21V7l8-4 8 4v14M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>',
+      flag: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M6 21V4M7 4h10l-1.5 4L17 12H7"/>',
+      calendar: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 3v3M17 3v3M4 8h16M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z"/>',
+      vehicle: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 13l2-5h12l2 5M5 13h14v5H5z"/><circle cx="8" cy="18" r="1.5"/><circle cx="16" cy="18" r="1.5"/>',
+      user: '<circle cx="12" cy="8" r="3.2" stroke-width="1.9"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M5 20c0-3.314 3.134-6 7-6s7 2.686 7 6"/>',
+      edit: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 20h4l10.5-10.5a2.1 2.1 0 00-3-3L5 17v3z"/>',
+      money: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 3v18M16.5 7.5c0-1.933-2.015-3.5-4.5-3.5S7.5 5.567 7.5 7.5 9.515 11 12 11s4.5 1.567 4.5 3.5S14.485 18 12 18s-4.5-1.567-4.5-3.5"/>',
+      fuel: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M6 21V5a2 2 0 012-2h5a2 2 0 012 2v16M9 7h3M15 8h1.5L20 11.5V18a2 2 0 01-2 2h-1"/>',
+      droplet: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/>',
+      speed: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 15a8 8 0 1116 0"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 15l4-4"/>',
+      store: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 10h16l-1-5H5zM6 10v10h12V10M9 20v-5h6v5"/>'
+    };
+
+    function setModalVisual(theme = 'default', subtitle = 'Preencha as informações para continuar.') {
+      const card = document.getElementById('cadastro-modal-card');
+      const icon = document.getElementById('modal-icon');
+      const subtitleNode = document.getElementById('modal-subtitle');
+      if (card) card.dataset.theme = theme;
+      if (icon) icon.innerHTML = modalIcons[theme] || modalIcons.default;
+      if (subtitleNode) subtitleNode.textContent = subtitle;
+    }
+
+    function fieldIcon(name) {
+      return `<span class="form-field-icon" aria-hidden="true"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">${fieldIcons[name] || fieldIcons.document}</svg></span>`;
     }
 
     function onlyDigits(value) {
@@ -448,6 +540,16 @@
       window.location.href = url;
     }
 
+    function openGlobalSearchModule(module) {
+      if (!module) return;
+      hideGlobalSearchResults();
+      if (module.module) {
+        showModule(module.module, getModuleNavButton(module.module));
+        return;
+      }
+      navigateToModule(module.url);
+    }
+
     function setActiveSearchContext(inputEl, resultsEl) {
       activeSearchInputEl = inputEl;
       activeSearchResultsEl = resultsEl;
@@ -501,7 +603,7 @@
       }
 
       resultsEl.innerHTML = modules.map((module, index) => `
-        <button type="button" class="global-search-item${index === highlightedModuleIndex ? ' active' : ''}" data-url="${module.url}">
+        <button type="button" class="global-search-item${index === highlightedModuleIndex ? ' active' : ''}" data-url="${module.url || ''}" data-module="${module.module || ''}">
           <span>
             <span class="global-search-kicker">Ecossistema GaveBlue</span>
             <span class="block font-semibold text-sm">${escapeHtml(module.name)}</span>
@@ -553,6 +655,41 @@
           if (numberCompare !== 0) return numberCompare;
           return `${a.placa || ''} ${a.modelo || ''}`.localeCompare(`${b.placa || ''} ${b.modelo || ''}`, 'pt-BR');
         });
+    }
+
+    function getSortedDrivers() {
+      return allDrivers
+        .slice()
+        .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' }));
+    }
+
+    function getAdministrationOptions() {
+      return Array.from(new Set(allAdministrations.map(name => String(name || '').trim()).filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+    }
+
+    function getLastAdministrationValue() {
+      return String(getAdministrationOptions()[0] || '').trim();
+    }
+
+    function collectLegacyAdministrationOptions() {
+      return Array.from(new Set(allOrders
+        .map(order => String(order.administracao || '').trim())
+        .filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+    }
+
+    function normalizeAdministrationList(list = []) {
+      return Array.from(new Set((Array.isArray(list) ? list : [])
+        .map(name => String(name || '').trim())
+        .filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+    }
+
+    function getSortedSuppliers(suppliers = allSuppliers) {
+      return suppliers
+        .slice()
+        .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' }));
     }
 
     function getVehicleAutocompleteLabel(vehicle) {
@@ -889,6 +1026,36 @@
       return 'pendente';
     }
 
+    function advanceOrderStatusOnFinancialAllocation(orderId) {
+      if (!orderId) return false;
+      let changed = false;
+      allOrders = allOrders.map(order => {
+        if (order.id === orderId && order.status === 'aberta') {
+          changed = true;
+          return { ...order, status: 'andamento' };
+        }
+        return order;
+      });
+      return changed;
+    }
+
+    function hasAllocatedFinancialEntry(orderId) {
+      if (!orderId) return false;
+      return allFinanceEntries.some(entry => entry?.orderId === orderId);
+    }
+
+    function syncAllocatedOrderStatuses() {
+      let changed = false;
+      allOrders = allOrders.map(order => {
+        if (order.status === 'aberta' && hasAllocatedFinancialEntry(order.id)) {
+          changed = true;
+          return { ...order, status: 'andamento' };
+        }
+        return order;
+      });
+      return changed;
+    }
+
     function getFinanceEntryDateLabel(entry) {
       if (isFuelGroupEntry(entry)) return entry.dataVencimento ? 'Vencimento' : 'Agrupamento';
       if (isFuelEntry(entry)) return 'Abastecimento';
@@ -1041,6 +1208,7 @@
         suppliers: allSuppliers,
         orders: allOrders,
         finance: allFinanceEntries,
+        administrations: allAdministrations,
         deletedOrders,
         orderCounter,
         notifications: systemNotifications,
@@ -1069,6 +1237,7 @@
       allSuppliers = Array.isArray(snapshot.suppliers) ? snapshot.suppliers : [];
       allOrders = Array.isArray(snapshot.orders) ? snapshot.orders : [];
       allFinanceEntries = Array.isArray(snapshot.finance) ? snapshot.finance : [];
+      allAdministrations = normalizeAdministrationList(snapshot.administrations || snapshot.administracoes || []);
       deletedOrders = Array.isArray(snapshot.deletedOrders) ? snapshot.deletedOrders : [];
       systemNotifications = Array.isArray(snapshot.notifications) ? snapshot.notifications : [];
       orderCounter = Number(snapshot.orderCounter) || 1;
@@ -1077,6 +1246,7 @@
       customLogoScale = Number(snapshot.customLogoScale) || 60;
       managerDisplayName = snapshot.managerDisplayName || snapshot.defaultAdministratorName || 'Gestor';
       allowManualOrderNumberEditing = snapshot.allowManualOrderNumberEditing === true || snapshot.allowManualOrderNumberEditing === 'true';
+      if (!allAdministrations.length) allAdministrations = collectLegacyAdministrationOptions();
       migrateFinanceEntries();
       syncOrderCounterWithOrders();
     }
@@ -1088,6 +1258,7 @@
         suppliers: parseLocalStorageJson('wefrotas_suppliers', []),
         orders: parseLocalStorageJson('wefrotas_orders', []),
         finance: parseLocalStorageJson('wefrotas_finance', []),
+        administrations: parseLocalStorageJson('wefrotas_administrations', []),
         deletedOrders: parseLocalStorageJson('wefrotas_deleted_orders', []),
         orderCounter: localStorage.getItem('wefrotas_order_counter') || 1,
         notifications: parseLocalStorageJson('wefrotas_notifications', []),
@@ -1108,6 +1279,7 @@
         localStorage.setItem('wefrotas_custom_logo_scale', String(snapshot.customLogoScale || 60));
         localStorage.setItem('wefrotas_manager_display_name', snapshot.managerDisplayName || 'Gestor');
         localStorage.setItem('wefrotas_allow_manual_order_number_editing', snapshot.allowManualOrderNumberEditing ? 'true' : 'false');
+        localStorage.setItem('wefrotas_administrations', JSON.stringify(snapshot.administrations || []));
       } catch (error) {
         console.warn('Não foi possível salvar preferências pequenas no localStorage.', error);
       }
@@ -1120,6 +1292,7 @@
         localStorage.setItem('wefrotas_suppliers', JSON.stringify(snapshot.suppliers || []));
         localStorage.setItem('wefrotas_orders', JSON.stringify(snapshot.orders || []));
         localStorage.setItem('wefrotas_finance', JSON.stringify(snapshot.finance || []));
+        localStorage.setItem('wefrotas_administrations', JSON.stringify(snapshot.administrations || []));
         localStorage.setItem('wefrotas_deleted_orders', JSON.stringify(snapshot.deletedOrders || []));
         localStorage.setItem('wefrotas_notifications', JSON.stringify(snapshot.notifications || []));
         saveSmallSettingsToLocalStorage(snapshot);
@@ -1649,17 +1822,19 @@
     }
 
     function getSelectedDriverVehicleIds() {
-      const select = document.getElementById('driver-vehicles');
-      if (!select) return [];
-      return Array.from(select.selectedOptions).map(option => option.value).filter(Boolean);
+      const list = document.getElementById('driver-vehicles');
+      if (!list) return [];
+      return Array.from(list.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(input => input.value)
+        .filter(Boolean);
     }
 
     function setSelectedDriverVehicleIds(vehicleIds = []) {
-      const select = document.getElementById('driver-vehicles');
-      if (!select) return;
+      const list = document.getElementById('driver-vehicles');
+      if (!list) return;
       const selectedSet = new Set(vehicleIds.map(String));
-      Array.from(select.options).forEach(option => {
-        option.selected = selectedSet.has(String(option.value));
+      Array.from(list.querySelectorAll('input[type="checkbox"]')).forEach(input => {
+        input.checked = selectedSet.has(String(input.value));
       });
     }
 
@@ -1798,11 +1973,13 @@
       const comprovanteUrlMatch = sourceText.match(/https?:\/\/\S+/i);
       const importedData = {
         type: 'loose_note',
+        motorista: readField('Motorista'),
         fornecedor: readField('Fornecedor') || readField('Posto'),
         tipoServico: readField('Tipo do serviço') || readField('Tipo de serviço') || readField('Serviço') || readField('Servico'),
         valor: readField('Valor'),
         dataBr: dateValue,
         dataIso: parseBrazilianDateToIso(dateValue),
+        km: String(readField('KM') || '').replace(/[^\d]/g, ''),
         observacoes: readField('Observações') || readField('Observacoes'),
         comprovanteUrl: comprovanteUrlMatch ? comprovanteUrlMatch[0].trim() : ''
       };
@@ -2106,10 +2283,16 @@
       if (document.getElementById('finance-nf')) {
         document.getElementById('finance-nf').value = 'NOTINHA AVULSA';
       }
+      if (document.getElementById('finance-km') && importedData.km) {
+        document.getElementById('finance-km').value = importedData.km;
+      }
       updateFinanceReceiptPreview(importedData.comprovanteUrl || '');
 
       if (importedData.tipoServico) {
         notes.push(`Tipo de serviço informado na Central: ${importedData.tipoServico}`);
+      }
+      if (importedData.motorista) {
+        notes.push(`Motorista informado na Central: ${importedData.motorista}`);
       }
       if (importedData.observacoes) {
         notes.push(importedData.observacoes);
@@ -2188,6 +2371,10 @@
         title: 'Fornecedores',
         subtitle: 'Mantenha parceiros, postos e prestadores organizados em um único painel.'
       },
+      calendario: {
+        title: 'Calendário',
+        subtitle: 'Planeje revisões, acompanhe agendamentos e relacione OS futuras.'
+      },
       documentos: {
         title: 'Documentos',
         subtitle: 'Consulte os comprovantes vinculados aos abastecimentos da frota.'
@@ -2227,6 +2414,11 @@
     window.toggleSidebar = toggleSidebar;
 
     function showModule(module, button) {
+      if (module === 'documentos') {
+        showToast('A aba Documentos está desativada.');
+        showModule('home', getModuleNavButton('home'));
+        return;
+      }
       document.querySelectorAll('.module-panel').forEach(panel => panel.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(btn => {
         if (btn.id !== 'theme-toggle-btn') btn.classList.remove('active');
@@ -2267,7 +2459,8 @@
       openModuleFromHome('financeiro');
       setFilterValue('finance-filter-search', buildVehicleSearchValue(vehicle));
       setFilterValue('finance-filter-status', '');
-      setFilterValue('finance-filter-date', '');
+      setFilterValue('finance-filter-start', '');
+      setFilterValue('finance-filter-end', '');
       setFilterValue('finance-filter-value', '');
       selectedFinance.clear();
       renderFinance();
@@ -2293,7 +2486,8 @@
     function openOrdersForVehicle(vehicleId) {
       const vehicle = allVehicles.find(item => item.id === vehicleId);
       openModuleFromHome('orders');
-      setFilterValue('order-filter-search', buildVehicleSearchValue(vehicle));
+      orderVehicleFilterId = vehicleId || '';
+      setFilterValue('order-filter-search', vehicle ? `${vehicle.numeroFrota || ''} ${vehicle.placa || ''} ${vehicle.modelo || ''}`.trim() : '');
       setFilterValue('order-filter-start', '');
       setFilterValue('order-filter-end', '');
       setFilterValue('order-filter-status', '');
@@ -2306,6 +2500,7 @@
     function openOrderFromHome(orderId) {
       const order = allOrders.find(item => item.id === orderId);
       openModuleFromHome('orders');
+      orderVehicleFilterId = '';
       setFilterValue('order-filter-search', order ? `OS ${getOrderNumberLabel(order)}` : '');
       setFilterValue('order-filter-start', '');
       setFilterValue('order-filter-end', '');
@@ -2371,7 +2566,7 @@
           if (event.key === 'Enter' && inputEl.value.trim()) {
             updateGlobalSearch(inputEl.value, resultsEl);
             if (filteredModules[0]) {
-              navigateToModule(filteredModules[0].url);
+              openGlobalSearchModule(filteredModules[0]);
             }
           }
           return;
@@ -2393,7 +2588,7 @@
           event.preventDefault();
           const selectedModule = filteredModules[highlightedModuleIndex] || filteredModules[0];
           if (selectedModule) {
-            navigateToModule(selectedModule.url);
+            openGlobalSearchModule(selectedModule);
           }
         }
 
@@ -2414,7 +2609,9 @@
       globalSearchResultsEl.addEventListener('click', (event) => {
         const item = event.target.closest('.global-search-item');
         if (!item) return;
-        navigateToModule(item.dataset.url);
+        openGlobalSearchModule(item.dataset.module
+          ? { module: item.dataset.module }
+          : { url: item.dataset.url });
       });
     }
 
@@ -2422,7 +2619,9 @@
       mobileGlobalSearchResultsEl.addEventListener('click', (event) => {
         const item = event.target.closest('.global-search-item');
         if (!item) return;
-        navigateToModule(item.dataset.url);
+        openGlobalSearchModule(item.dataset.module
+          ? { module: item.dataset.module }
+          : { url: item.dataset.url });
       });
     }
 
@@ -2557,8 +2756,11 @@
       const title = document.getElementById('modal-title');
       setModalSubmitState(true, 'Salvar cadastro');
       setModalActionsVisible(true);
+      setCadastroModalReadOnly(false);
+      setModalVisual('default', 'Preencha as informações para continuar.');
 
       if (type === 'vehicle') {
+        setModalVisual('default', 'Preencha os dados principais do veículo.');
         kicker.textContent = 'Veículos';
         title.textContent = 'Cadastrar veículo';
         fields.innerHTML = `
@@ -2590,7 +2792,7 @@
             <label>Motorista vinculado</label>
             <select class="soft-input w-full" id="vehicle-motorista">
               <option value="">Selecione um motorista</option>
-              ${allDrivers.map(driver => `<option value="${driver.id}">${escapeHtml(driver.nome)}</option>`).join('')}
+              ${getSortedDrivers().map(driver => `<option value="${driver.id}">${escapeHtml(driver.nome)}</option>`).join('')}
             </select>
           </div>
           <div class="field-wrap full">
@@ -2599,10 +2801,11 @@
           </div>
         `;
       } else if (type === 'driver') {
+        setModalVisual('default', 'Cadastre o motorista e vincule os veículos quando necessário.');
         kicker.textContent = 'Motoristas';
         title.textContent = 'Cadastrar motorista';
         fields.innerHTML = `
-          <div class="field-wrap full">
+          <div class="field-wrap field-wrap--span-2">
             <label>${requiredLabel('Nome completo')}</label>
             <input class="soft-input w-full" id="driver-nome" placeholder="Nome do motorista" required>
           </div>
@@ -2640,13 +2843,28 @@
           </div>
           <div class="field-wrap full">
             <label>Veículos vinculados</label>
-            <select class="soft-input w-full" id="driver-vehicles" multiple size="${Math.min(Math.max(allVehicles.length, 3), 6)}">
-              ${getSortedVehicles().map(vehicle => `<option value="${vehicle.id}">${escapeHtml(getVehicleAutocompleteLabel(vehicle))}</option>`).join('')}
-            </select>
-            <p class="text-xs text-slate-500 mt-2">Segure Ctrl para selecionar mais de um veículo. A importação do WhatsApp usa esse vínculo como sugestão, mas o veículo continua editável.</p>
+            <div id="driver-vehicles" class="driver-vehicle-checklist" role="group" aria-label="Veículos vinculados ao motorista">
+              ${getSortedVehicles().length
+                ? getSortedVehicles().map(vehicle => `
+                  <label class="driver-vehicle-option">
+                    <input type="checkbox" value="${vehicle.id}">
+                    <span class="driver-vehicle-check" aria-hidden="true">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 12l4 4 10-10"/>
+                      </svg>
+                    </span>
+                    <span class="driver-vehicle-text">
+                      <strong>${escapeHtml([vehicle.numeroFrota, vehicle.placa].filter(Boolean).join(' - ') || 'Veículo sem identificação')}</strong>
+                      <small>${escapeHtml(vehicle.modelo || 'Modelo não informado')}</small>
+                    </span>
+                  </label>
+                `).join('')
+                : '<div class="driver-vehicle-empty">Cadastre veículos para criar vínculos com este motorista.</div>'}
+            </div>
           </div>
         `;
       } else if (type === 'supplier') {
+        setModalVisual('default', 'Cadastre parceiros, postos e prestadores usados no financeiro.');
         kicker.textContent = 'Fornecedores';
         title.textContent = 'Cadastrar fornecedor';
         fields.innerHTML = `
@@ -2694,79 +2912,135 @@
         `;
       } else if (type === 'order') {
         syncOrderCounterWithOrders();
+        setModalVisual('order', 'Preencha as informações para criar uma nova ordem de serviço.');
+        const administrationOptions = getAdministrationOptions();
         kicker.textContent = 'Ordens de serviço';
         title.textContent = 'Cadastrar OS';
         fields.innerHTML = `
           <div class="field-wrap">
-            <label>Número da OS</label>
-            <input class="soft-input w-full" id="order-numero" value="${String(orderCounter).padStart(4, '0')}" ${allowManualOrderNumberEditing ? '' : 'readonly'}>
-          </div>
-          <div class="field-wrap">
-            <label>Administração</label>
-            <input class="soft-input w-full" id="order-administracao" placeholder="Ex: Administração">
+            <label>Nº OS</label>
+            <div class="form-input-shell">
+              ${fieldIcon('hash')}
+              <input class="soft-input w-full" id="order-numero" value="${String(orderCounter).padStart(4, '0')}" ${allowManualOrderNumberEditing ? '' : 'readonly'}>
+            </div>
           </div>
           <div class="field-wrap">
             <label>${requiredLabel('Tipo de OS')}</label>
-            <select class="soft-input w-full" id="order-tipo-os" onchange="updateOrderDescriptionFromType()" required>
-              <option value="avulsa">Avulsa</option>
-              <option value="mensal">Mensal de despesas</option>
-              <option value="revisao">Revisão</option>
-              <option value="sinistro">Sinistro</option>
-            </select>
+            <div class="form-input-shell">
+              ${fieldIcon('document')}
+              <select class="soft-input w-full" id="order-tipo-os" onchange="updateOrderDescriptionFromType()" required>
+                <option value="avulsa">Avulsa</option>
+                <option value="mensal">Mensal de despesas</option>
+                <option value="revisao">Revisão</option>
+                <option value="sinistro">Sinistro</option>
+              </select>
+            </div>
           </div>
           <div class="field-wrap">
-            <label>${requiredLabel('Veículo')}</label>
-            <select class="soft-input w-full" id="order-veiculo" onchange="updateOrderDescriptionFromType()" required>
-              <option value="">Selecione um veículo</option>
-              ${allVehicles.map(vehicle => `<option value="${vehicle.id}">${escapeHtml(vehicle.numeroFrota)}  ${escapeHtml(vehicle.placa)}  ${escapeHtml(vehicle.modelo)}</option>`).join('')}
-            </select>
+            <label>Administração</label>
+            <div class="form-input-shell">
+              ${fieldIcon('building')}
+              <select class="soft-input w-full" id="order-administracao" onchange="toggleOrderAdministrationCustom()">
+                <option value="">Selecione</option>
+                ${administrationOptions.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')}
+                <option value="__custom__">Outra administração</option>
+              </select>
+            </div>
           </div>
-          <div class="field-wrap">
-            <label>Responsável</label>
-            <select class="soft-input w-full" id="order-driver">
-              <option value="">Selecione um motorista</option>
-              ${allDrivers.map(driver => `<option value="${driver.id}">${escapeHtml(driver.nome)}</option>`).join('')}
-            </select>
-          </div>
-          <div class="field-wrap">
-            <label>Data de início</label>
-            <input class="soft-input w-full" id="order-data-inicio" type="date" onchange="updateOrderDescriptionFromType()">
-          </div>
-          <div class="field-wrap">
-            <label>Data de término</label>
-            <input class="soft-input w-full" id="order-data-termino" type="date">
+          <div class="field-wrap hidden" id="order-administracao-custom-wrap">
+            <label>Nova administração</label>
+            <div class="form-input-shell">
+              ${fieldIcon('building')}
+              <input class="soft-input w-full" id="order-administracao-custom" placeholder="Digite a administração">
+            </div>
           </div>
           <div class="field-wrap">
             <label>Status</label>
-            <select class="soft-input w-full" id="order-status">
-              <option value="aberta">Aberta</option>
-              <option value="andamento">Em andamento</option>
-              <option value="fechada">Fechada</option>
-            </select>
+            <div class="form-input-shell">
+              ${fieldIcon('flag')}
+              <select class="soft-input w-full" id="order-status">
+                <option value="aberta">Aberta</option>
+                <option value="andamento">Em andamento</option>
+                <option value="fechada">Fechada</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-wrap">
+            <label>Data de início</label>
+            <div class="form-input-shell form-input-shell--date">
+              ${fieldIcon('calendar')}
+              <input class="soft-input w-full" id="order-data-inicio" type="date" onchange="updateOrderDescriptionFromType()">
+            </div>
+          </div>
+          <div class="field-wrap">
+            <label>Data de fim</label>
+            <div class="form-input-shell form-input-shell--date">
+              ${fieldIcon('calendar')}
+              <input class="soft-input w-full" id="order-data-termino" type="date">
+            </div>
+          </div>
+          <div class="field-wrap">
+            <label>${requiredLabel('Veículo')}</label>
+            <div class="form-input-shell">
+              ${fieldIcon('vehicle')}
+              <select class="soft-input w-full" id="order-veiculo" onchange="handleOrderVehicleChange()" required>
+                <option value="">Selecione um veículo</option>
+                ${getSortedVehicles().map(vehicle => `<option value="${vehicle.id}">${escapeHtml(vehicle.numeroFrota)}  ${escapeHtml(vehicle.placa)}  ${escapeHtml(vehicle.modelo)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="field-wrap">
+            <label>Responsável</label>
+            <div class="form-input-shell">
+              ${fieldIcon('user')}
+              <select class="soft-input w-full" id="order-driver">
+                <option value="">Selecione um motorista</option>
+                ${getSortedDrivers().map(driver => `<option value="${driver.id}">${escapeHtml(driver.nome)}</option>`).join('')}
+              </select>
+            </div>
           </div>
           <div class="field-wrap full">
             <label>${requiredLabel('Descrição do serviço / problema')}</label>
-            <textarea class="soft-input textarea w-full" id="order-descricao" placeholder="Descreva tudo que deve sair na impressão da OS."></textarea>
+            <div class="form-input-shell form-input-shell--textarea">
+              ${fieldIcon('edit')}
+              <textarea class="soft-input textarea w-full" id="order-descricao" placeholder="Descreva tudo que deve sair na impressão da OS."></textarea>
+            </div>
           </div>
         `;
+        setOrderAdministrationFormValue(getLastAdministrationValue());
       } else if (type === 'finance') {
+        setModalVisual('finance', 'Escolha o tipo de lançamento que deseja realizar.');
         kicker.textContent = 'Financeiro';
         title.textContent = 'Novo lançamento';
         fields.innerHTML = `
           <div class="field-wrap full">
             <label>O que você quer lançar?</label>
-            <div class="grid md:grid-cols-3 gap-4">
-              <button type="button" class="soft-btn primary !h-auto py-5 px-5 text-left" onclick="loadFinanceForm('combustivel')">
-                <span class="block text-base font-extrabold">Lançamento de combustível</span>
-                <span class="block text-sm font-medium opacity-90 mt-2">Seleciona veículo, data de abastecimento, posto, tipo de combustível e KM.</span>
+            <div class="finance-choice-grid">
+              <button type="button" class="finance-choice-card finance-choice-card--fuel" onclick="loadFinanceForm('combustivel')">
+                <span class="finance-choice-icon">${modalIcons.fuel}</span>
+                <span class="finance-choice-content">
+                  <span class="finance-choice-title">Lançamento de combustível</span>
+                  <span class="finance-choice-rule"></span>
+                  <span class="finance-choice-description">Selecione veículo, data de abastecimento, posto, tipo de combustível, litros, valor e KM.</span>
+                </span>
+                <span class="finance-choice-arrow">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </span>
               </button>
-              <button type="button" class="soft-btn !h-auto py-5 px-5 text-left" onclick="loadFinanceForm('despesa')">
-                <span class="block text-base font-extrabold">Lançamento de despesa</span>
-                <span class="block text-sm font-medium text-slate-500 mt-2">Usa a lista completa de parceiros cadastrados no sistema.</span>
-              </button>
-              <button type="button" class="soft-btn !h-auto py-5 px-5 text-left border-[#99f6e4] text-[#0f766e]" onclick="openFinanceImportPrompt()">
-                <span class="block text-base font-extrabold">Importar dados</span>
-                <span class="block text-sm font-medium mt-2">Cole a mensagem do WhatsApp e pré-preencha o abastecimento com o link do comprovante.</span>
+              <button type="button" class="finance-choice-card finance-choice-card--expense" onclick="loadFinanceForm('despesa')">
+                <span class="finance-choice-icon">${modalIcons.expense}</span>
+                <span class="finance-choice-content">
+                  <span class="finance-choice-title">Lançamento de despesa</span>
+                  <span class="finance-choice-rule"></span>
+                  <span class="finance-choice-description">Registre notas fiscais, seguros, serviços, peças e outros lançamentos que não são abastecimento.</span>
+                </span>
+                <span class="finance-choice-arrow">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </span>
               </button>
             </div>
           </div>
@@ -2776,10 +3050,12 @@
 
       backdrop.classList.add('show');
       attachModalInputMasks();
+      enhanceModalSelects();
     }
 
     function closeCadastroModal() {
       document.getElementById('modal-backdrop').classList.remove('show');
+      closeCustomSelects();
       document.getElementById('cadastro-form').reset();
       currentModalType = null;
       currentEditingId = null;
@@ -2790,6 +3066,7 @@
 
     function handleModalBackdrop(event) {
       if (event) event.stopPropagation();
+      if (!event?.target?.closest('.custom-select-shell')) closeCustomSelects();
     }
 
     function downloadBlob(filename, blob) {
@@ -2820,6 +3097,7 @@
         suppliers: allSuppliers,
         orders: allOrders,
         finance: allFinanceEntries,
+        administrations: allAdministrations,
         deletedOrders
       };
       downloadBlob(`wefrotas_backup_${getLocalIsoDate()}.json`, new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' }));
@@ -2856,6 +3134,7 @@
           }));
           allOrders = parsed.orders;
           allFinanceEntries = parsed.finance;
+          allAdministrations = normalizeAdministrationList(parsed.administrations || parsed.administracoes || []);
           deletedOrders = Array.isArray(parsed.deletedOrders) ? parsed.deletedOrders : [];
           systemNotifications = Array.isArray(parsed.notifications) ? parsed.notifications.slice(0, 30) : [];
           orderCounter = Number(parsed.orderCounter) || 1;
@@ -2864,6 +3143,7 @@
           customLogoScale = Number(parsed.customLogoScale) || 60;
           managerDisplayName = parsed.managerDisplayName || parsed.defaultAdministratorName || 'Gestor';
           allowManualOrderNumberEditing = !!parsed.allowManualOrderNumberEditing;
+          if (!allAdministrations.length) allAdministrations = collectLegacyAdministrationOptions();
           if (parsed.theme === 'dark' || parsed.theme === 'light') {
             applyThemeState(parsed.theme === 'dark');
           }
@@ -2893,6 +3173,7 @@
       allSuppliers = [];
       allOrders = [];
       allFinanceEntries = [];
+      allAdministrations = [];
       deletedOrders = [];
       systemNotifications = [];
       selectedVehicles.clear();
@@ -2912,6 +3193,7 @@
         'wefrotas_suppliers',
         'wefrotas_orders',
         'wefrotas_finance',
+        'wefrotas_administrations',
         'wefrotas_deleted_orders',
         'wefrotas_order_counter',
         'wefrotas_notifications',
@@ -3451,6 +3733,185 @@
 
     window.updateOrderDescriptionFromType = updateOrderDescriptionFromType;
 
+    function toggleOrderAdministrationCustom() {
+      const field = document.getElementById('order-administracao');
+      const wrap = document.getElementById('order-administracao-custom-wrap');
+      if (!field || !wrap) return;
+      wrap.classList.toggle('hidden', field.value !== '__custom__');
+      if (field.value === '__custom__') {
+        setTimeout(() => document.getElementById('order-administracao-custom')?.focus(), 30);
+      }
+    }
+
+    function getOrderAdministrationFormValue() {
+      const field = document.getElementById('order-administracao');
+      if (!field) return '';
+      if (field.value === '__custom__') {
+        return document.getElementById('order-administracao-custom')?.value.trim() || '';
+      }
+      return field.value.trim();
+    }
+
+    function setOrderAdministrationFormValue(value = '') {
+      const field = document.getElementById('order-administracao');
+      const customField = document.getElementById('order-administracao-custom');
+      if (!field) return;
+      const normalizedValue = String(value || '').trim();
+      const option = Array.from(field.options).find(item => item.value === normalizedValue);
+      if (!normalizedValue || option) {
+        field.value = normalizedValue;
+        if (customField) customField.value = '';
+      } else {
+        field.value = '__custom__';
+        if (customField) customField.value = normalizedValue;
+      }
+      toggleOrderAdministrationCustom();
+      syncCustomSelectById('order-administracao');
+    }
+
+    function handleOrderVehicleChange() {
+      const vehicleField = document.getElementById('order-veiculo');
+      const driverField = document.getElementById('order-driver');
+      const vehicle = allVehicles.find(item => item.id === vehicleField?.value);
+      if (vehicle?.motoristaId && driverField) {
+        driverField.value = vehicle.motoristaId;
+      }
+      updateOrderDescriptionFromType();
+      syncCustomSelectById('order-veiculo');
+      syncCustomSelectById('order-driver');
+    }
+
+    window.toggleOrderAdministrationCustom = toggleOrderAdministrationCustom;
+    window.handleOrderVehicleChange = handleOrderVehicleChange;
+
+    const modalCustomSelectIds = new Set([
+      'vehicle-motorista',
+      'driver-categoria',
+      'supplier-type',
+      'order-tipo-os',
+      'order-administracao',
+      'order-status',
+      'order-veiculo',
+      'order-driver',
+      'finance-supplier-id',
+      'finance-driver-id'
+    ]);
+
+    function getCustomSelectLabel(select) {
+      if (!select) return 'Selecione';
+      const selected = select.options[select.selectedIndex];
+      return selected?.textContent?.trim() || select.getAttribute('placeholder') || 'Selecione';
+    }
+
+    function closeCustomSelects(except = null) {
+      document.querySelectorAll('.custom-select-shell.open').forEach(shell => {
+        if (shell !== except) shell.classList.remove('open');
+      });
+    }
+
+    function positionCustomSelectMenu(shell) {
+      const button = shell?.querySelector('.custom-select-button');
+      const menu = shell?.querySelector('.custom-select-menu');
+      if (!button || !menu) return;
+
+      const rect = button.getBoundingClientRect();
+      const viewportPadding = 12;
+      const gap = 8;
+      const minHeight = 140;
+      const preferredHeight = 260;
+      const width = Math.min(
+        Math.max(rect.width + 50, 320),
+        window.innerWidth - viewportPadding * 2
+      );
+      const left = Math.min(
+        Math.max(rect.left - 42, viewportPadding),
+        window.innerWidth - width - viewportPadding
+      );
+      const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPadding;
+      const spaceAbove = rect.top - gap - viewportPadding;
+      const openAbove = spaceBelow < minHeight && spaceAbove > spaceBelow;
+      const maxHeight = Math.max(minHeight, Math.min(preferredHeight, openAbove ? spaceAbove : spaceBelow));
+      const top = openAbove
+        ? Math.max(viewportPadding, rect.top - gap - maxHeight)
+        : Math.min(rect.bottom + gap, window.innerHeight - viewportPadding - minHeight);
+
+      menu.style.setProperty('--custom-select-left', `${left}px`);
+      menu.style.setProperty('--custom-select-top', `${top}px`);
+      menu.style.setProperty('--custom-select-width', `${width}px`);
+      menu.style.setProperty('--custom-select-max-height', `${maxHeight}px`);
+    }
+
+    function positionOpenCustomSelects() {
+      document.querySelectorAll('.custom-select-shell.open').forEach(positionCustomSelectMenu);
+    }
+
+    function syncCustomSelectById(id) {
+      const select = document.getElementById(id);
+      const shell = select?.closest('.custom-select-shell');
+      const label = shell?.querySelector('.custom-select-label');
+      if (select && label) label.textContent = getCustomSelectLabel(select);
+    }
+
+    function enhanceModalSelects() {
+      const fields = document.getElementById('modal-fields');
+      if (!fields) return;
+      fields.querySelectorAll('select.soft-input').forEach(select => {
+        if (!modalCustomSelectIds.has(select.id) || select.dataset.customSelectReady === 'true') return;
+        select.dataset.customSelectReady = 'true';
+        select.classList.add('custom-select-native');
+
+        const shell = document.createElement('div');
+        shell.className = 'custom-select-shell';
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'custom-select-button';
+        button.innerHTML = `
+          <span class="custom-select-label">${escapeHtml(getCustomSelectLabel(select))}</span>
+          <svg class="custom-select-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/>
+          </svg>
+        `;
+        const menu = document.createElement('div');
+        menu.className = 'custom-select-menu';
+
+        Array.from(select.options).forEach(option => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'custom-select-option';
+          item.dataset.value = option.value;
+          item.textContent = option.textContent;
+          item.addEventListener('click', () => {
+            select.value = option.value;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            button.querySelector('.custom-select-label').textContent = getCustomSelectLabel(select);
+            closeCustomSelects();
+          });
+          menu.appendChild(item);
+        });
+
+        button.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const willOpen = !shell.classList.contains('open');
+          closeCustomSelects(shell);
+          if (willOpen) {
+            positionCustomSelectMenu(shell);
+            shell.classList.add('open');
+          } else {
+            shell.classList.remove('open');
+          }
+        });
+
+        select.parentNode.insertBefore(shell, select);
+        shell.appendChild(select);
+        shell.appendChild(button);
+        shell.appendChild(menu);
+      });
+    }
+
+    window.addEventListener('resize', positionOpenCustomSelects);
+    document.addEventListener('scroll', positionOpenCustomSelects, true);
+
     function setOrderTypeValue(type) {
       const typeField = document.getElementById('order-tipo-os');
       if (typeField) typeField.value = type || 'avulsa';
@@ -3622,7 +4083,7 @@
 
       const insuranceItems = allVehicles
         .map(vehicle => ({ ...vehicle, days: daysUntil(vehicle.seguroVencimento) }))
-        .filter(item => item.days !== null && item.days >= 0 && item.days <= 45)
+        .filter(item => item.days !== null && item.days <= 45)
         .sort((a, b) => a.days - b.days);
 
       return { cnhItems, insuranceItems };
@@ -3700,6 +4161,42 @@
       return items.map(formatter).join('');
     }
 
+    function getHomeFinanceStatusItems() {
+      const entries = allFinanceEntries.filter(entry => !entry.groupedIntoId);
+      const pending = entries.filter(entry => ['pendente', 'pendente_os'].includes(getFinanceEntryStatus(entry)));
+      const distributed = entries.filter(entry => getFinanceEntryStatus(entry) === 'distribuido');
+      const sumEntries = items => items.reduce((sum, entry) => sum + getFinanceTotal(entry), 0);
+
+      return [
+        {
+          group: 'pending',
+          label: 'Pendentes',
+          count: pending.length,
+          total: sumEntries(pending),
+          help: 'Aguardando fechamento ou OS'
+        },
+        {
+          group: 'distributed',
+          label: 'Distribuídas',
+          count: distributed.length,
+          total: sumEntries(distributed),
+          help: 'Vinculadas em OS'
+        }
+      ];
+    }
+
+    function openFinanceStatusFromHome(group) {
+      openModuleFromHome('financeiro');
+      setFilterValue('finance-filter-search', '');
+      setFilterValue('finance-filter-start', '');
+      setFilterValue('finance-filter-end', '');
+      setFilterValue('finance-filter-value', '');
+      setFilterValue('finance-filter-status', group === 'distributed' ? 'distribuido' : 'pendente');
+      renderFinance();
+    }
+
+    window.openFinanceStatusFromHome = openFinanceStatusFromHome;
+
     function getInsuranceAlertTone(days) {
       if (days < 0) return 'danger';
       if (days <= 5) return 'critical';
@@ -3709,8 +4206,7 @@
     function getInsuranceAlertLabel(days) {
       if (days < 0) return `Vencido h\u00e1 ${Math.abs(days)} dia(s)`;
       if (days === 0) return 'Vence hoje';
-      if (days <= 5) return `Alerta laranja: faltam ${days} dia(s)`;
-      return `Aviso amarelo: faltam ${days} dia(s)`;
+      return `Faltam ${days} dia(s)`;
     }
 
     function getReportFilters() {
@@ -4322,14 +4818,20 @@
     function getVisibleFinanceEntries() {
       const quickSearch = normalizeSearchText(document.getElementById('finance-filter-search')?.value || '');
       const statusFilter = document.getElementById('finance-filter-status')?.value || '';
-      const dateFilter = document.getElementById('finance-filter-date')?.value || '';
+      const startFilter = document.getElementById('finance-filter-start')?.value || '';
+      const endFilter = document.getElementById('finance-filter-end')?.value || '';
       const valueFilter = document.getElementById('finance-filter-value')?.value.trim().toLowerCase() || '';
 
       let visibleEntries = allFinanceEntries
         .filter(entry => !entry.groupedIntoId);
 
-      if (statusFilter) visibleEntries = visibleEntries.filter(entry => getFinanceEntryStatus(entry) === statusFilter);
-      if (dateFilter) visibleEntries = visibleEntries.filter(entry => getFinanceEntryDate(entry) === dateFilter);
+      if (statusFilter === 'pendente') {
+        visibleEntries = visibleEntries.filter(entry => ['pendente', 'pendente_os'].includes(getFinanceEntryStatus(entry)));
+      } else if (statusFilter) {
+        visibleEntries = visibleEntries.filter(entry => getFinanceEntryStatus(entry) === statusFilter);
+      }
+      if (startFilter) visibleEntries = visibleEntries.filter(entry => getFinanceEntryDate(entry) >= startFilter);
+      if (endFilter) visibleEntries = visibleEntries.filter(entry => getFinanceEntryDate(entry) <= endFilter);
       if (quickSearch) {
         visibleEntries = visibleEntries.filter(entry => {
           const order = allOrders.find(item => item.id === entry.orderId);
@@ -4361,8 +4863,15 @@
     function setModalSubmitState(visible, label = 'Salvar cadastro') {
       const button = document.getElementById('modal-submit-btn');
       if (!button) return;
-      button.textContent = label;
+      const labelNode = button.querySelector('span');
+      if (labelNode) {
+        labelNode.textContent = label;
+      } else {
+        button.textContent = label;
+      }
       button.style.display = visible ? 'inline-flex' : 'none';
+      button.hidden = !visible;
+      button.disabled = !visible;
     }
 
     function setModalActionsVisible(visible) {
@@ -4371,18 +4880,27 @@
       actions.style.display = visible ? 'flex' : 'none';
     }
 
+    function setCadastroModalReadOnly(readOnly) {
+      const fields = document.getElementById('modal-fields');
+      if (!fields) return;
+      fields.querySelectorAll('input, select, textarea, button').forEach((field) => {
+        if (field.id === 'finance-receipt-open-btn') return;
+        field.disabled = readOnly;
+      });
+    }
+
     function loadFinanceForm(entryType) {
       currentModalType = 'finance';
       currentFinanceEntryType = entryType;
       const fields = document.getElementById('modal-fields');
       const kicker = document.getElementById('modal-kicker');
       const title = document.getElementById('modal-title');
-      const supplierOptions = allSuppliers
+      const supplierOptions = getSortedSuppliers(allSuppliers)
         .filter(supplier => entryType === 'combustivel' ? supplier.tipo === 'posto' : supplier.tipo !== 'posto')
         .map(supplier => `<option value="${supplier.id}">${escapeHtml(supplier.nome)}</option>`)
         .join('');
-      const supplierSearchItems = allSuppliers
-        .filter(supplier => entryType === 'combustivel' ? supplier.tipo === 'posto' : supplier.tipo !== 'posto');
+      const supplierSearchItems = getSortedSuppliers(allSuppliers
+        .filter(supplier => entryType === 'combustivel' ? supplier.tipo === 'posto' : supplier.tipo !== 'posto'));
       const supplierSearchOptions = supplierSearchItems
         .map(supplier => `<option value="${escapeHtml(supplier.nome)}" label="${escapeHtml([supplier.tipoLabel, supplier.documento].filter(Boolean).join(' - '))}"></option>`)
         .join('');
@@ -4397,6 +4915,12 @@
 
       kicker.textContent = 'Financeiro';
       title.textContent = entryType === 'combustivel' ? 'Lançamento de combustível' : 'Lançar despesa';
+      setModalVisual(
+        entryType === 'combustivel' ? 'fuel' : 'expense',
+        entryType === 'combustivel'
+          ? 'Registre abastecimentos com veículo, posto, litros, valor e KM.'
+          : 'Registre notas fiscais, seguros, serviços e outras despesas da frota.'
+      );
 
       if (entryType === 'combustivel') {
         fields.innerHTML = `
@@ -4404,53 +4928,77 @@
           <div class="field-wrap full">
             <label>${requiredLabel('Veículo')}</label>
             <input id="finance-vehicle-id" type="hidden">
-            <input class="soft-input w-full" id="finance-vehicle-search" list="finance-vehicle-options" placeholder="Digite frota, placa ou nome do veículo" autocomplete="off" required>
+            <div class="form-input-shell">
+              ${fieldIcon('vehicle')}
+              <input class="soft-input w-full" id="finance-vehicle-search" list="finance-vehicle-options" placeholder="Digite frota, placa ou nome do veículo" autocomplete="off" required>
+            </div>
             <datalist id="finance-vehicle-options">${vehicleOptions}</datalist>
           </div>
           <div class="field-wrap">
             <label>${requiredLabel('Data de abastecimento')}</label>
-            <input class="soft-input w-full" id="finance-data-abastecimento" type="date" required>
+            <div class="form-input-shell form-input-shell--date">
+              ${fieldIcon('calendar')}
+              <input class="soft-input w-full" id="finance-data-abastecimento" type="date" required>
+            </div>
           </div>
           <div class="field-wrap">
             <label>${requiredLabel('Posto de combustível')}</label>
-            <select class="soft-input w-full" id="finance-supplier-id" onchange="toggleFinanceSpecificFields()" required>
-              <option value="">Selecione um posto</option>
-              ${supplierOptions}
-            </select>
+            <div class="form-input-shell">
+              ${fieldIcon('store')}
+              <select class="soft-input w-full" id="finance-supplier-id" onchange="toggleFinanceSpecificFields()" required>
+                <option value="">Selecione um posto</option>
+                ${supplierOptions}
+              </select>
+            </div>
           </div>
           <div class="field-wrap">
             <label>Valor</label>
-            <input class="soft-input w-full" id="finance-total" type="text" inputmode="numeric" value="${formatCurrencyInputValue(0)}">
+            <div class="form-input-shell">
+              ${fieldIcon('money')}
+              <input class="soft-input w-full" id="finance-total" type="text" inputmode="numeric" value="${formatCurrencyInputValue(0)}">
+            </div>
           </div>
           <div class="field-wrap">
             <label>QTD em litros</label>
-            <input class="soft-input w-full" id="finance-litros" type="number" min="0" step="0.001" placeholder="Ex: 120.500">
+            <div class="form-input-shell">
+              ${fieldIcon('droplet')}
+              <input class="soft-input w-full" id="finance-litros" type="number" min="0" step="0.001" placeholder="Ex: 120.500">
+            </div>
           </div>
           <div class="field-wrap" id="finance-fuel-wrap">
             <label>${requiredLabel('Tipo de combustível')}</label>
-            <select class="soft-input w-full" id="finance-fuel-type">
-              <option value="">Selecione</option>
-              <option value="Diesel">Diesel</option>
-              <option value="Diesel S10">Diesel S10</option>
-              <option value="Gasolina">Gasolina</option>
-              <option value="Gasolina aditivada">Gasolina aditivada</option>
-              <option value="Etanol">Etanol</option>
-              <option value="GNV">GNV</option>
-              <option value="Arla 32">Arla 32</option>
-              <option value="Oleo hidraulico">Oleo hidraulico</option>
-              <option value="Oleo de motor">Oleo de motor</option>
-            </select>
+            <div class="form-input-shell">
+              ${fieldIcon('fuel')}
+              <select class="soft-input w-full" id="finance-fuel-type">
+                <option value="">Selecione</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Diesel S10">Diesel S10</option>
+                <option value="Gasolina">Gasolina</option>
+                <option value="Gasolina aditivada">Gasolina aditivada</option>
+                <option value="Etanol">Etanol</option>
+                <option value="GNV">GNV</option>
+                <option value="Arla 32">Arla 32</option>
+                <option value="Oleo hidraulico">Oleo hidraulico</option>
+                <option value="Oleo de motor">Oleo de motor</option>
+              </select>
+            </div>
           </div>
           <div class="field-wrap">
             <label>${requiredLabel('KM')}</label>
-            <input class="soft-input w-full" id="finance-km" type="number" min="0" step="1" placeholder="Ex: 50500">
+            <div class="form-input-shell">
+              ${fieldIcon('speed')}
+              <input class="soft-input w-full" id="finance-km" type="number" min="0" step="1" placeholder="Ex: 50500">
+            </div>
           </div>
           <div class="field-wrap">
             <label>Selecionar motorista</label>
-            <select class="soft-input w-full" id="finance-driver-id" onchange="suggestFinanceVehicleFromDriver()">
-              <option value="">Selecione um motorista</option>
-              ${allDrivers.map(driver => `<option value="${driver.id}">${escapeHtml(driver.nome)}</option>`).join('')}
-            </select>
+            <div class="form-input-shell">
+              ${fieldIcon('user')}
+              <select class="soft-input w-full" id="finance-driver-id" onchange="suggestFinanceVehicleFromDriver()">
+                <option value="">Selecione um motorista</option>
+                ${getSortedDrivers().map(driver => `<option value="${driver.id}">${escapeHtml(driver.nome)}</option>`).join('')}
+              </select>
+            </div>
           </div>
           <div class="field-wrap full hidden" id="finance-receipt-wrap">
             <label>Comprovante importado</label>
@@ -4462,7 +5010,10 @@
           </div>
           <div class="field-wrap full">
             <label>Observações</label>
-            <textarea class="soft-input textarea w-full" id="finance-observacoes" placeholder="Observações do abastecimento"></textarea>
+            <div class="form-input-shell form-input-shell--textarea">
+              ${fieldIcon('edit')}
+              <textarea class="soft-input textarea w-full" id="finance-observacoes" placeholder="Observações do abastecimento"></textarea>
+            </div>
           </div>
         `;
       } else {
@@ -4470,7 +5021,10 @@
           <div class="field-wrap full">
             <label>Alocar na OS</label>
             <input id="finance-order-id" type="hidden">
-            <input class="soft-input w-full" id="finance-order-search" list="finance-order-options" placeholder="Digite número da OS, frota, placa ou veículo" autocomplete="off">
+            <div class="form-input-shell">
+              ${fieldIcon('document')}
+              <input class="soft-input w-full" id="finance-order-search" list="finance-order-options" placeholder="Digite número da OS, frota, placa ou veículo" autocomplete="off">
+            </div>
             <datalist id="finance-order-options">
               <option value="Lançar sem OS por enquanto"></option>
               ${orderOptions}
@@ -4478,32 +5032,50 @@
           </div>
           <div class="field-wrap">
             <label>${requiredLabel('Natureza financeira')}</label>
-            <select class="soft-input w-full" id="finance-kind" required>
-              <option value="despesa">Despesa</option>
-              <option value="receita">Receita</option>
-            </select>
+            <div class="form-input-shell">
+              ${fieldIcon('flag')}
+              <select class="soft-input w-full" id="finance-kind" required>
+                <option value="despesa">Despesa</option>
+                <option value="receita">Receita</option>
+              </select>
+            </div>
           </div>
           <div class="field-wrap">
             <label>${requiredLabel('Data de vencimento')}</label>
-            <input class="soft-input w-full" id="finance-data-vencimento" type="date" required>
+            <div class="form-input-shell form-input-shell--date">
+              ${fieldIcon('calendar')}
+              <input class="soft-input w-full" id="finance-data-vencimento" type="date" required>
+            </div>
           </div>
           <div class="field-wrap">
             <label>${requiredLabel('Fornecedor')}</label>
             <input id="finance-supplier-id" type="hidden">
-            <input class="soft-input w-full" id="finance-supplier-search" list="finance-supplier-options" placeholder="Digite nome, categoria ou CNPJ do parceiro" autocomplete="off" required>
+            <div class="form-input-shell">
+              ${fieldIcon('store')}
+              <input class="soft-input w-full" id="finance-supplier-search" list="finance-supplier-options" placeholder="Digite nome, categoria ou CNPJ do parceiro" autocomplete="off" required>
+            </div>
             <datalist id="finance-supplier-options">${supplierSearchOptions}</datalist>
           </div>
           <div class="field-wrap">
             <label>NF / referência</label>
-            <input class="soft-input w-full" id="finance-nf" placeholder="Ex: NF 1542">
+            <div class="form-input-shell">
+              ${fieldIcon('document')}
+              <input class="soft-input w-full" id="finance-nf" placeholder="Ex: NF 1542">
+            </div>
           </div>
           <div class="field-wrap">
             <label>KM</label>
-            <input class="soft-input w-full" id="finance-km" type="number" min="0" step="1" placeholder="Ex: 50500">
+            <div class="form-input-shell">
+              ${fieldIcon('speed')}
+              <input class="soft-input w-full" id="finance-km" type="number" min="0" step="1" placeholder="Ex: 50500">
+            </div>
           </div>
           <div class="field-wrap">
             <label>Valor</label>
-            <input class="soft-input w-full" id="finance-total" type="text" inputmode="numeric" value="${formatCurrencyInputValue(0)}">
+            <div class="form-input-shell">
+              ${fieldIcon('money')}
+              <input class="soft-input w-full" id="finance-total" type="text" inputmode="numeric" value="${formatCurrencyInputValue(0)}">
+            </div>
           </div>
           <div class="field-wrap full hidden" id="finance-receipt-wrap">
             <label>Comprovante importado</label>
@@ -4515,7 +5087,10 @@
           </div>
           <div class="field-wrap full">
             <label>Observações</label>
-            <textarea class="soft-input textarea w-full" id="finance-observacoes" placeholder="Observações do lançamento"></textarea>
+            <div class="form-input-shell form-input-shell--textarea">
+              ${fieldIcon('edit')}
+              <textarea class="soft-input textarea w-full" id="finance-observacoes" placeholder="Observações do lançamento"></textarea>
+            </div>
           </div>
         `;
       }
@@ -4548,6 +5123,7 @@
       }
       toggleFinanceSpecificFields();
       attachModalInputMasks();
+      enhanceModalSelects();
       updateFinanceReceiptPreview('');
     }
 
@@ -4745,10 +5321,59 @@
       if (isFuelGroupEntry(entry)) {
         openFuelGroupingModal(entry.id);
         setModalSubmitState(false);
+        setCadastroModalReadOnly(true);
         return;
       }
-      editSelectedFinance();
+      viewFinanceEntryById(entry.id);
       setModalSubmitState(false);
+    }
+
+    function loadFinanceEntryIntoForm(entry) {
+      if (!entry) return;
+      openCadastroModal('finance');
+      loadFinanceForm(entry.entryType || 'despesa');
+      currentEditingId = entry.id;
+      if (isFuelEntry(entry)) {
+        const vehicle = allVehicles.find(item => item.id === (entry.vehicleId || getEntryVehicleId(entry) || ''));
+        document.getElementById('finance-vehicle-id').value = vehicle?.id || '';
+        if (document.getElementById('finance-vehicle-search')) {
+          document.getElementById('finance-vehicle-search').value = vehicle ? getVehicleAutocompleteLabel(vehicle) : '';
+        }
+        document.getElementById('finance-data-abastecimento').value = entry.dataAbastecimento || entry.dataVencimento || '';
+        document.getElementById('finance-supplier-id').value = entry.supplierId || '';
+        document.getElementById('finance-total').value = formatCurrencyInputValue(entry.total ?? 0);
+        const litrosField = document.getElementById('finance-litros');
+        if (litrosField) litrosField.value = entry.litros || '';
+        const driverField = document.getElementById('finance-driver-id');
+        if (driverField) driverField.value = entry.driverId || '';
+        toggleFinanceSpecificFields();
+        if (document.getElementById('finance-fuel-type')) {
+          document.getElementById('finance-fuel-type').value = entry.fuelType || '';
+        }
+        if (document.getElementById('finance-km')) {
+          document.getElementById('finance-km').value = entry.km || entry.kmFinal || '';
+        }
+        updateFinanceReceiptPreview(entry.comprovanteUrl || '');
+      } else {
+        const order = allOrders.find(item => item.id === (entry.orderId || ''));
+        document.getElementById('finance-order-id').value = order?.id || '';
+        if (document.getElementById('finance-order-search')) {
+          document.getElementById('finance-order-search').value = order ? getOrderAutocompleteLabel(order) : '';
+        }
+        document.getElementById('finance-kind').value = entry.kind || 'despesa';
+        document.getElementById('finance-data-vencimento').value = entry.dataVencimento || '';
+        document.getElementById('finance-supplier-id').value = entry.supplierId || '';
+        if (document.getElementById('finance-supplier-search')) {
+          const supplier = allSuppliers.find(item => item.id === entry.supplierId);
+          document.getElementById('finance-supplier-search').value = supplier?.nome || entry.fornecedor || '';
+        }
+        document.getElementById('finance-nf').value = entry.nf || '';
+        if (document.getElementById('finance-km')) {
+          document.getElementById('finance-km').value = entry.km || '';
+        }
+        document.getElementById('finance-total').value = formatCurrencyInputValue(entry.total ?? 0);
+      }
+      document.getElementById('finance-observacoes').value = entry.observacoes || '';
     }
 
     function getFinanceEntryReceiptUrl(entry) {
@@ -4791,12 +5416,15 @@
       if (isFuelGroupEntry(entry)) {
         openFuelGroupingModal(entry.id);
         setModalSubmitState(false);
+        setCadastroModalReadOnly(true);
         return;
       }
       currentEditingId = entry.id;
       selectedFinance = new Set([entry.id]);
-      editSelectedFinance();
+      loadFinanceEntryIntoForm(entry);
+      document.getElementById('modal-title').textContent = 'Visualizar lançamento';
       setModalSubmitState(false);
+      setCadastroModalReadOnly(true);
     }
 
     function openFinanceReceiptByEntryId(entryId) {
@@ -4901,12 +5529,13 @@
       const cnhNode = document.getElementById('home-cnh-expiring');
       const insuranceNode = document.getElementById('home-insurance-expiring');
       const costTableNode = document.getElementById('home-cost-table');
-      const cnhTableNode = document.getElementById('home-cnh-table');
+      const financeStatusTableNode = document.getElementById('home-finance-status-table');
       const insuranceTableNode = document.getElementById('home-insurance-table');
       const maintenanceTableNode = document.getElementById('home-maintenance-table');
       const vehicleStats = getVehicleCostStats().filter(item => item.entries > 0);
       const bestVehicle = vehicleStats[0];
       const { cnhItems, insuranceItems } = getDashboardExpirations();
+      const financeStatusItems = getHomeFinanceStatusItems();
       const maintenanceItems = getSortedVehicles()
         .map(vehicle => ({
           vehicle,
@@ -4954,18 +5583,18 @@
           `
         );
       }
-      if (cnhTableNode) {
-        cnhTableNode.innerHTML = renderDashboardTableRows(
-          cnhItems.slice(0, 6),
+      if (financeStatusTableNode) {
+        financeStatusTableNode.innerHTML = renderDashboardTableRows(
+          financeStatusItems,
           item => `
-            <button type="button" class="dashboard-action-row" onclick="openDriverFromHome('${item.id}')">
+            <button type="button" class="dashboard-action-row" onclick="openFinanceStatusFromHome('${item.group}')">
               <div>
-                <p class="font-bold text-slate-800">${escapeHtml(item.nome)}</p>
-                <p class="text-xs text-slate-500">CPF ${escapeHtml(item.cpf || '-')}  CNH ${escapeHtml(item.cnh || '-')}</p>
+                <p class="font-bold text-slate-800">${escapeHtml(item.label)}</p>
+                <p class="text-xs text-slate-500">${item.count} lançamento(s)</p>
               </div>
               <div class="text-right">
-                <p class="font-extrabold text-[#6267d9]">${escapeHtml(formatDate(item.validade))}</p>
-                <p class="text-xs text-slate-500">${item.days} dia(s)</p>
+                <p class="font-extrabold ${item.group === 'pending' ? 'text-amber-600' : 'text-emerald-600'}">${escapeHtml(formatCurrency(item.total))}</p>
+                <p class="text-xs text-slate-500">${escapeHtml(item.help)}</p>
               </div>
             </button>
           `
@@ -5026,9 +5655,6 @@
                 </div>
                 <div class="mt-4 flex items-center justify-between gap-4 flex-wrap">
                   <p class="text-sm text-slate-600">${escapeHtml(alertLabel)}</p>
-                  ${maintenance.openOrder
-                    ? `<button type="button" class="soft-btn primary" onclick="event.stopPropagation(); openOrderFromHome('${maintenance.openOrder.id}')">Vincular OS</button>`
-                    : ''}
                   ${maintenance.isAlert && !maintenance.openOrder
                     ? `<button type="button" class="soft-btn primary" onclick="event.stopPropagation(); openRevisionOrderForVehicle('${vehicle.id}')">Abrir OS</button>`
                     : ''}
@@ -5048,7 +5674,7 @@
       if (!select || !typeSelect || !titleNode || !metaNode) return;
 
       const currentValue = select.value;
-      select.innerHTML = '<option value="">Todos os veículos</option>' + allVehicles.map(vehicle => `
+      select.innerHTML = '<option value="">Todos os veículos</option>' + getSortedVehicles().map(vehicle => `
         <option value="${vehicle.id}">${escapeHtml(vehicle.placa)}  ${escapeHtml(vehicle.modelo)}  Frota ${escapeHtml(vehicle.numeroFrota || '-')}</option>
       `).join('');
       if (Array.from(select.options).some(option => option.value === currentValue)) {
@@ -5074,109 +5700,17 @@
     }
 
     function getFinanceDocuments() {
-      return allFinanceEntries
-        .filter(entry => entry?.comprovanteUrl)
-        .map(entry => {
-          const order = getFinanceDocumentOrder(entry);
-          return {
-            id: entry.id,
-            url: entry.comprovanteUrl,
-            fornecedor: entry.fornecedor || 'Abastecimento',
-            vehicleId: getEntryVehicleId(entry),
-            order,
-            date: getFinanceEntryDate(entry),
-            value: getFinanceTotal(entry),
-            grouped: !!entry.groupedIntoId
-          };
-        })
-        .sort((a, b) => {
-          const dateCompare = String(b.date || '').localeCompare(String(a.date || ''));
-          if (dateCompare !== 0) return dateCompare;
-          return String(a.fornecedor || '').localeCompare(String(b.fornecedor || ''), 'pt-BR');
-        });
+      return [];
     }
 
     function openFinanceEntryFromDocuments(entryId) {
-      const entry = allFinanceEntries.find(item => item.id === entryId);
-      if (!entry) {
-        showToast('Não foi possível localizar esse lançamento financeiro.');
-        return;
-      }
-
-      document.getElementById('finance-filter-search') && (document.getElementById('finance-filter-search').value = '');
-      document.getElementById('finance-filter-status') && (document.getElementById('finance-filter-status').value = '');
-      document.getElementById('finance-filter-date') && (document.getElementById('finance-filter-date').value = '');
-      document.getElementById('finance-filter-value') && (document.getElementById('finance-filter-value').value = '');
-      financeSortState = { key: 'default', direction: 'desc' };
-      selectedFinance = new Set([entryId]);
-
-      const financeNavButton = getNavButtonForModule('financeiro');
-      showModule('financeiro', financeNavButton);
-      renderFinance();
-
-      requestAnimationFrame(() => {
-        const selectedRow = document.querySelector('.finance-table-row.selected');
-        if (selectedRow) {
-          selectedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          return;
-        }
-        viewFinanceEntryById(entryId);
-      });
+      showToast('A aba Documentos está desativada.');
     }
 
     window.openFinanceEntryFromDocuments = openFinanceEntryFromDocuments;
 
     function renderDocuments() {
-      const list = document.getElementById('documents-list');
-      if (!list) return;
-
-      const documents = getFinanceDocuments();
-      if (!documents.length) {
-        list.innerHTML = '<div class="empty-state">Nenhum comprovante encontrado.</div>';
-        updateEntityListViewport('documents-list-shell', 0);
-        return;
-      }
-
-      list.innerHTML = documents.map(doc => {
-        const vehicleLabel = doc.vehicleId ? getVehicleLabel(doc.vehicleId) : '-';
-        const orderLabel = doc.order ? `OS ${escapeHtml(getOrderNumberLabel(doc.order))}` : '';
-        return `
-          <div class="orders-table-row documents-table-row">
-            <div class="orders-table-cell">
-              <div class="orders-main-text">${escapeHtml(doc.fornecedor)}</div>
-              <div class="orders-sub-text">${doc.grouped ? 'Item agrupado' : 'Comprovante de abastecimento'}</div>
-            </div>
-            <div class="orders-table-cell">
-              <div class="orders-main-text">${escapeHtml(vehicleLabel)}</div>
-            </div>
-            <div class="orders-table-cell finance-os-cell">
-              ${orderLabel ? `<span class="finance-os-badge">${orderLabel}</span>` : ''}
-            </div>
-            <div class="orders-table-cell">
-              <div class="orders-main-text">${escapeHtml(formatDate(doc.date))}</div>
-            </div>
-            <div class="orders-table-cell documents-value-cell">
-              <span class="orders-value-text">${escapeHtml(formatCurrency(doc.value))}</span>
-            </div>
-            <div class="orders-table-cell">
-              <div class="finance-detail-actions">
-                <button type="button" class="finance-detail-action-btn" title="Visualizar comprovante" onclick="viewFinanceReceipt('${escapeHtml(doc.url)}')">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21.44 11.05l-8.49 8.49a5.5 5.5 0 01-7.78-7.78l9.2-9.19a3.5 3.5 0 114.95 4.95l-9.19 9.2a1.5 1.5 0 11-2.12-2.13l8.49-8.48"/>
-                  </svg>
-                </button>
-                <button type="button" class="finance-detail-action-btn" title="Ir para lançamento financeiro" onclick="openFinanceEntryFromDocuments('${doc.id}')">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10v10"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17 17 7"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-      updateEntityListViewport('documents-list-shell', documents.length);
+      return;
     }
 
     function printMonthlyVehicleCostDashboard() {
@@ -5460,13 +5994,20 @@
         item: 'OS'
       });
       const printButton = document.getElementById('print-order-btn');
+      const viewButton = document.getElementById('view-order-btn');
       const closeButton = document.getElementById('close-order-btn');
       const reopenButton = document.getElementById('reopen-order-btn');
       setActionButtonState(
-        printButton,
+        viewButton,
         count === 1,
-        'Imprimir OS',
-        count === 0 ? 'Imprimir OS: selecione 1 OS.' : 'Imprimir OS: selecione apenas 1 OS.'
+        'Visualizar OS',
+        count === 0 ? 'Visualizar OS: selecione 1 OS.' : 'Visualizar OS: selecione apenas 1 OS.'
+      );
+      setActionButtonState(
+        printButton,
+        count > 0,
+        count > 1 ? 'Imprimir OS em lote' : 'Imprimir OS',
+        'Imprimir OS: selecione ao menos 1 OS.'
       );
       setActionButtonState(
         closeButton,
@@ -5612,11 +6153,23 @@
       renderVehicles();
     }
 
+    function handleVehicleRowSelectionKey(event, id) {
+      if (!['Enter', ' '].includes(event.key)) return;
+      event.preventDefault();
+      toggleVehicleSelection(event, id);
+    }
+
     function toggleDriverSelection(event, id) {
       if (event) event.stopPropagation();
       if (selectedDrivers.has(id)) selectedDrivers.delete(id);
       else selectedDrivers.add(id);
       renderDrivers();
+    }
+
+    function handleDriverRowSelectionKey(event, id) {
+      if (!['Enter', ' '].includes(event.key)) return;
+      event.preventDefault();
+      toggleDriverSelection(event, id);
     }
 
     function toggleSupplierSelection(event, id) {
@@ -5626,6 +6179,12 @@
       renderSuppliers();
     }
 
+    function handleSupplierRowSelectionKey(event, id) {
+      if (!['Enter', ' '].includes(event.key)) return;
+      event.preventDefault();
+      toggleSupplierSelection(event, id);
+    }
+
     function toggleOrderSelection(event, id) {
       if (event) event.stopPropagation();
       if (selectedOrders.has(id)) selectedOrders.delete(id);
@@ -5633,11 +6192,23 @@
       renderOrders();
     }
 
+    function handleOrderRowSelectionKey(event, id) {
+      if (!['Enter', ' '].includes(event.key)) return;
+      event.preventDefault();
+      toggleOrderSelection(event, id);
+    }
+
     function toggleFinanceSelection(event, id) {
       if (event) event.stopPropagation();
       if (selectedFinance.has(id)) selectedFinance.delete(id);
       else selectedFinance.add(id);
       renderFinance();
+    }
+
+    function handleFinanceRowSelectionKey(event, id) {
+      if (!['Enter', ' '].includes(event.key)) return;
+      event.preventDefault();
+      toggleFinanceSelection(event, id);
     }
 
     function toggleSelectAllVehicles(event) {
@@ -5866,7 +6437,7 @@
         const currentKm = getVehicleCurrentKm(vehicle.id);
         const totalCost = getVehicleDistributedCostTotal(vehicle.id);
         return `
-        <div class="orders-table-row entity-table-row--vehicles ${selectedVehicles.has(vehicle.id) ? 'selected' : ''}">
+        <div class="orders-table-row entity-table-row--vehicles ${selectedVehicles.has(vehicle.id) ? 'selected' : ''}" role="button" tabindex="0" onclick="toggleVehicleSelection(event, '${vehicle.id}')" onkeydown="handleVehicleRowSelectionKey(event, '${vehicle.id}')">
             <div class="orders-table-cell orders-table-cell--check">
               <button class="selection-check ${selectedVehicles.has(vehicle.id) ? 'checked' : ''}" onclick="toggleVehicleSelection(event, '${vehicle.id}')">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5928,7 +6499,7 @@
           ? `Veículos: ${linkedVehicles.slice(0, 2).join(', ')}${linkedVehicles.length > 2 ? ` +${linkedVehicles.length - 2}` : ''}`
           : 'Sem veículo vinculado';
         return `
-        <div class="orders-table-row entity-table-row--drivers ${selectedDrivers.has(driver.id) ? 'selected' : ''}">
+        <div class="orders-table-row entity-table-row--drivers ${selectedDrivers.has(driver.id) ? 'selected' : ''}" role="button" tabindex="0" onclick="toggleDriverSelection(event, '${driver.id}')" onkeydown="handleDriverRowSelectionKey(event, '${driver.id}')">
             <div class="orders-table-cell orders-table-cell--check">
               <button class="selection-check ${selectedDrivers.has(driver.id) ? 'checked' : ''}" onclick="toggleDriverSelection(event, '${driver.id}')">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5979,7 +6550,7 @@
         return;
       }
       list.innerHTML = visibleSuppliers.map(supplier => `
-        <div class="orders-table-row entity-table-row--suppliers ${selectedSuppliers.has(supplier.id) ? 'selected' : ''}">
+        <div class="orders-table-row entity-table-row--suppliers ${selectedSuppliers.has(supplier.id) ? 'selected' : ''}" role="button" tabindex="0" onclick="toggleSupplierSelection(event, '${supplier.id}')" onkeydown="handleSupplierRowSelectionKey(event, '${supplier.id}')">
             <div class="orders-table-cell orders-table-cell--check">
               <button class="selection-check ${selectedSuppliers.has(supplier.id) ? 'checked' : ''}" onclick="toggleSupplierSelection(event, '${supplier.id}')">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -6022,6 +6593,7 @@
       const sort = document.getElementById('order-filter-sort')?.value || 'recentes';
 
       let items = [...allOrders];
+      if (orderVehicleFilterId) items = items.filter(order => order.vehicleId === orderVehicleFilterId);
       if (start) items = items.filter(order => !order.dataInicio || order.dataInicio >= start);
       if (end) items = items.filter(order => !order.dataInicio || order.dataInicio <= end);
       if (status) items = items.filter(order => order.status === status);
@@ -6035,7 +6607,8 @@
             order.descricao,
             order.responsavelNome,
             driver?.nome,
-            vehicle ? `${vehicle.numeroFrota || ''} ${vehicle.placa || ''} ${vehicle.modelo || ''}` : ''
+            vehicle ? `${vehicle.numeroFrota || ''} ${vehicle.placa || ''} ${vehicle.modelo || ''} ${vehicle.chassi || ''}` : '',
+            vehicle ? buildVehicleSearchValue(vehicle) : ''
           ].join(' '));
           return haystack.includes(quickSearch);
         });
@@ -6165,7 +6738,7 @@
           .toUpperCase() || 'OS';
         const serviceLabel = order.descricao || 'Serviço não informado';
         return `
-          <div class="orders-table-row ${selectedOrders.has(order.id) ? 'selected' : ''}">
+          <div class="orders-table-row ${selectedOrders.has(order.id) ? 'selected' : ''}" role="button" tabindex="0" onclick="toggleOrderSelection(event, '${order.id}')" onkeydown="handleOrderRowSelectionKey(event, '${order.id}')">
             <div class="orders-table-cell orders-table-cell--check">
               <button class="selection-check ${selectedOrders.has(order.id) ? 'checked' : ''}" onclick="toggleOrderSelection(event, '${order.id}')">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -6243,7 +6816,7 @@
               class="finance-detail-action-btn ${receiptUrl ? '' : 'is-disabled'}"
               title="${receiptUrl ? 'Abrir comprovante' : 'Sem comprovante vinculado a este lançamento.'}"
               aria-disabled="${receiptUrl ? 'false' : 'true'}"
-              onclick="openFinanceReceiptByEntryId('${entry.id}')"
+              onclick="event.stopPropagation(); openFinanceReceiptByEntryId('${entry.id}')"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21.44 11.05l-8.49 8.49a5.5 5.5 0 01-7.78-7.78l9.2-9.19a3.5 3.5 0 114.95 4.95l-9.19 9.2a1.5 1.5 0 11-2.12-2.13l8.49-8.48"/>
@@ -6253,7 +6826,7 @@
               type="button"
               class="finance-detail-action-btn"
               title="Visualizar lançamento"
-              onclick="viewFinanceEntryById('${entry.id}')"
+              onclick="event.stopPropagation(); viewFinanceEntryById('${entry.id}')"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1.5 12s4-7 10.5-7 10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/>
@@ -6263,7 +6836,7 @@
           </div>
         `;
         return `
-          <div class="orders-table-row finance-table-row finance-entry finance-entry--${getFinanceEntryFamily(entry)} ${selectedFinance.has(entry.id) ? 'selected' : ''}">
+          <div class="orders-table-row finance-table-row finance-entry finance-entry--${getFinanceEntryFamily(entry)} ${selectedFinance.has(entry.id) ? 'selected' : ''}" role="button" tabindex="0" onclick="toggleFinanceSelection(event, '${entry.id}')" onkeydown="handleFinanceRowSelectionKey(event, '${entry.id}')">
             <div class="orders-table-cell orders-table-cell--check">
               <button class="selection-check ${selectedFinance.has(entry.id) ? 'checked' : ''}" onclick="toggleFinanceSelection(event, '${entry.id}')">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -6303,6 +6876,7 @@
     }
 
     function clearOrderFilters() {
+      orderVehicleFilterId = '';
       document.getElementById('order-filter-search').value = '';
       document.getElementById('order-filter-start').value = '';
       document.getElementById('order-filter-end').value = '';
@@ -6315,7 +6889,8 @@
     function clearFinanceFilters() {
       document.getElementById('finance-filter-search').value = '';
       document.getElementById('finance-filter-status').value = '';
-      document.getElementById('finance-filter-date').value = '';
+      document.getElementById('finance-filter-start').value = '';
+      document.getElementById('finance-filter-end').value = '';
       document.getElementById('finance-filter-value').value = '';
       financeSortState = { key: 'default', direction: 'desc' };
       renderFinance();
@@ -6358,6 +6933,7 @@
       document.getElementById('vehicle-cor').value = vehicle.cor || '';
       document.getElementById('vehicle-seguro').value = vehicle.seguroVencimento || '';
       document.getElementById('vehicle-motorista').value = vehicle.motoristaId || '';
+      syncCustomSelectById('vehicle-motorista');
       document.getElementById('vehicle-chassi').value = vehicle.chassi || '';
       document.getElementById('modal-title').textContent = 'Editar veículo';
     }
@@ -6376,6 +6952,7 @@
       document.getElementById('driver-cpf').value = driver.cpf;
       document.getElementById('driver-cnh').value = driver.cnh;
       document.getElementById('driver-categoria').value = driver.categoria;
+      syncCustomSelectById('driver-categoria');
       document.getElementById('driver-telefone').value = driver.telefone || '';
       document.getElementById('driver-validade').value = driver.validade || '';
       setSelectedDriverVehicleIds(getDriverVehicleIds(driver));
@@ -6394,6 +6971,7 @@
       currentEditingId = id;
       document.getElementById('supplier-name').value = supplier.nome || '';
       document.getElementById('supplier-type').value = supplier.tipo || '';
+      syncCustomSelectById('supplier-type');
       document.getElementById('supplier-document').value = supplier.documento || '';
       document.getElementById('supplier-phone').value = supplier.telefone || '';
       document.getElementById('supplier-email').value = supplier.email || '';
@@ -6413,13 +6991,14 @@
       currentEditingId = id;
       document.getElementById('order-numero').value = getOrderNumberLabel(order);
       document.getElementById('order-numero').readOnly = !allowManualOrderNumberEditing;
-      document.getElementById('order-administracao').value = order.administracao || '';
+      setOrderAdministrationFormValue(order.administracao || '');
       setOrderTypeValue(order.tipoOs || 'avulsa');
       document.getElementById('order-veiculo').value = order.vehicleId || '';
       document.getElementById('order-driver').value = order.driverId || '';
       document.getElementById('order-data-inicio').value = order.dataInicio || '';
       document.getElementById('order-data-termino').value = order.dataTermino || '';
       document.getElementById('order-status').value = order.status || 'aberta';
+      ['order-tipo-os', 'order-veiculo', 'order-driver', 'order-status'].forEach(syncCustomSelectById);
       document.getElementById('order-descricao').value = order.descricao || '';
       document.getElementById('order-descricao').dataset.generatedDescription = '';
       document.getElementById('modal-title').textContent = 'Editar OS';
@@ -6449,50 +7028,8 @@
         openFuelGroupingModal(id);
         return;
       }
-      openCadastroModal('finance');
-      loadFinanceForm(entry.entryType || 'despesa');
-      currentEditingId = id;
-      if (isFuelEntry(entry)) {
-        const vehicle = allVehicles.find(item => item.id === (entry.vehicleId || getEntryVehicleId(entry) || ''));
-        document.getElementById('finance-vehicle-id').value = vehicle?.id || '';
-        if (document.getElementById('finance-vehicle-search')) {
-          document.getElementById('finance-vehicle-search').value = vehicle ? getVehicleAutocompleteLabel(vehicle) : '';
-        }
-        document.getElementById('finance-data-abastecimento').value = entry.dataAbastecimento || entry.dataVencimento || '';
-        document.getElementById('finance-supplier-id').value = entry.supplierId || '';
-        document.getElementById('finance-total').value = formatCurrencyInputValue(entry.total ?? 0);
-        const litrosField = document.getElementById('finance-litros');
-        if (litrosField) litrosField.value = entry.litros || '';
-        const driverField = document.getElementById('finance-driver-id');
-        if (driverField) driverField.value = entry.driverId || '';
-        toggleFinanceSpecificFields();
-        if (document.getElementById('finance-fuel-type')) {
-          document.getElementById('finance-fuel-type').value = entry.fuelType || '';
-        }
-        if (document.getElementById('finance-km')) {
-          document.getElementById('finance-km').value = entry.km || entry.kmFinal || '';
-        }
-        updateFinanceReceiptPreview(entry.comprovanteUrl || '');
-      } else {
-        const order = allOrders.find(item => item.id === (entry.orderId || ''));
-        document.getElementById('finance-order-id').value = order?.id || '';
-        if (document.getElementById('finance-order-search')) {
-          document.getElementById('finance-order-search').value = order ? getOrderAutocompleteLabel(order) : '';
-        }
-        document.getElementById('finance-kind').value = entry.kind || 'despesa';
-        document.getElementById('finance-data-vencimento').value = entry.dataVencimento || '';
-        document.getElementById('finance-supplier-id').value = entry.supplierId || '';
-        if (document.getElementById('finance-supplier-search')) {
-          const supplier = allSuppliers.find(item => item.id === entry.supplierId);
-          document.getElementById('finance-supplier-search').value = supplier?.nome || entry.fornecedor || '';
-        }
-        document.getElementById('finance-nf').value = entry.nf || '';
-        if (document.getElementById('finance-km')) {
-          document.getElementById('finance-km').value = entry.km || '';
-        }
-        document.getElementById('finance-total').value = formatCurrencyInputValue(entry.total ?? 0);
-      }
-      document.getElementById('finance-observacoes').value = entry.observacoes || '';
+      loadFinanceEntryIntoForm(entry);
+      setCadastroModalReadOnly(false);
       document.getElementById('modal-title').textContent = 'Editar lançamento';
     }
 
@@ -6837,13 +7374,358 @@
       });
     }
 
-    function printSelectedOrder() {
+    function getSelectedOrderForSingleAction(message) {
       if (selectedOrders.size !== 1) {
-        showToast('Selecione uma OS para imprimir.');
-        return;
+        showToast(message);
+        return null;
       }
       const id = Array.from(selectedOrders)[0];
-      const order = allOrders.find(item => item.id === id);
+      return allOrders.find(item => item.id === id) || null;
+    }
+
+    function buildOrderViewerHtml(order) {
+      const vehicle = allVehicles.find(item => item.id === order.vehicleId);
+      const driver = allDrivers.find(item => item.id === order.driverId);
+      const kmData = getOrderKmData(order.id);
+      const entries = allFinanceEntries.filter(item => item.orderId === order.id);
+      const totalEntries = entries.reduce((sum, item) => sum + getFinanceTotal(item), 0);
+      const statusLabel = getOrderStatusUi(order.status).label;
+      const printableDescription = getOrderPrintableDescription(order);
+      const reopenHistory = getOrderReopenHistory(order);
+      let runningTotal = 0;
+      const rows = Array.from({ length: Math.max(entries.length, 18) }, (_, index) => {
+        const entry = entries[index];
+        if (entry) runningTotal += getFinanceTotal(entry);
+        return `
+          <tr>
+            <td>${entry ? escapeHtml(formatDate(getFinanceEntryDate(entry))) : ''}</td>
+            <td>${entry ? escapeHtml(getFinanceSupplierSummary(entry)) : ''}</td>
+            <td class="money">${entry && entry.kind === 'despesa' ? escapeHtml(formatCurrency(entry.total)) : ''}</td>
+            <td class="money">${entry && entry.kind === 'receita' ? escapeHtml(formatCurrency(entry.total)) : ''}</td>
+            <td class="money">${entry ? escapeHtml(formatCurrency(runningTotal)) : ''}</td>
+          </tr>
+        `;
+      }).join('');
+      const reopenRows = reopenHistory.map((item, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(item.dateLabel || formatDate(item.date) || '-')}</td>
+          <td>${escapeHtml(item.timeLabel || '-')}</td>
+          <td>${escapeHtml(item.reason || '-')}</td>
+        </tr>
+      `).join('');
+
+      return `
+        <!doctype html>
+        <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; color: #000; }
+            html, body { margin: 0; padding: 0; background: #fff; }
+            body { padding: 24px; }
+            .sheet { width: 100%; margin: 0 auto; }
+            table { width: 100%; table-layout: fixed; border-collapse: collapse; border: 1px solid #000; empty-cells: show; }
+            td, th { border: 1px solid #000; padding: 3px 5px; font-size: 10px; vertical-align: middle; }
+            .top-strip td { height: 20px; background: #d9d9d9; }
+            .header-logo-cell { width: 22%; padding: 10px 12px 6px 20px; text-align: left; }
+            .header-main-cell { width: 56%; text-align: center; padding: 10px 8px 8px; }
+            .header-number-cell { width: 22%; text-align: right; padding: 20px 18px 8px 8px; }
+            .brand-logo { max-width: ${getOsLogoStyle().width}px; max-height: ${getOsLogoStyle().height}px; object-fit: contain; display: block; }
+            .admin-line { font-size: 10px; font-weight: 800; margin-bottom: 10px; }
+            .title-line { font-size: 15px; font-weight: 800; line-height: 1.2; }
+            .status-line { margin-top: 16px; font-size: 10px; font-weight: 700; }
+            .number-label, .number-value { font-size: 19px; font-style: italic; font-weight: 800; }
+            .number-value { font-size: 22px; }
+            .label { font-weight: 700; }
+            .block-gap { margin-top: 24px; }
+            .desc-title td, .finance-table th, .reopen-table th { background: #d9d9d9; text-align: center; font-weight: 800; text-transform: uppercase; }
+            .desc-title td { height: 40px; font-size: 11px; }
+            .desc-box td { height: 90px; vertical-align: top; padding: 8px; white-space: pre-wrap; line-height: 1.42; font-size: 13px; }
+            .signature-block td { height: 74px; }
+            .sign-wrap { width: 250px; margin: 40px auto 0; text-align: center; }
+            .sign-line { width: 100%; border-top: 1px solid #000; min-height: 1px; display: block; }
+            .sign-label { margin-top: 2px; font-size: 11px; font-weight: 800; }
+            .finance-table th { height: 48px; font-size: 10px; line-height: 1.1; }
+            .finance-table td { height: 21px; font-size: 10px; }
+            .money { text-align: right; white-space: nowrap; }
+            .total-row td { height: 28px; }
+            .finance-total-spacer { border-left: none; border-bottom: none; border-right: none; }
+            .finance-total-label { text-align: center; font-size: 11px; font-weight: 800; }
+            .reopen-title { margin: 26px 0 10px; font-size: 15px; font-weight: 800; text-align: center; text-transform: uppercase; }
+            .reopen-table td, .reopen-table th { height: 26px; font-size: 10px; vertical-align: top; }
+          </style>
+        </head>
+        <body>
+          <div class="sheet">
+            <table class="top-strip"><tr><td></td></tr></table>
+            <table>
+              <tr>
+                <td class="header-logo-cell"><img class="brand-logo" src="${getActiveLogoSrc()}" alt="WeFrotas"></td>
+                <td class="header-main-cell">
+                  <div class="admin-line">${escapeHtml(order.administracao || 'NOME PREENCHIDO NA ADMINISTRAÇÃO')}</div>
+                  <div class="title-line">Ordem de Serviço para veículos/Máquinas</div>
+                  <div class="status-line">Status: ${escapeHtml(statusLabel)}</div>
+                </td>
+                <td class="header-number-cell"><span class="number-label">Nº:</span> <span class="number-value">${escapeHtml(getOrderNumberLabel(order))}</span></td>
+              </tr>
+            </table>
+            <table>
+              <tr><td class="label" style="width:14%;">Administração:</td><td style="width:54%;">${escapeHtml(order.administracao || '')}</td><td class="label" style="width:16%;">DT. INÍCIO:</td><td style="width:16%;">${escapeHtml(formatDate(order.dataInicio))}</td></tr>
+              <tr><td class="label">Veículo:</td><td>${escapeHtml(vehicle ? vehicle.modelo : '')}</td><td class="label">DT. TÉRMINO:</td><td>${escapeHtml(formatDate(order.dataTermino))}</td></tr>
+              <tr><td class="label">Placa:</td><td>${escapeHtml(vehicle ? vehicle.placa : '')}</td><td class="label">KM INICIAL:</td><td>${escapeHtml(kmData.kmInicial || '')}</td></tr>
+              <tr><td class="label">Chassi:</td><td>${escapeHtml(vehicle ? vehicle.chassi || '' : '')}</td><td class="label">KM FINAL:</td><td>${escapeHtml(kmData.kmFinal || '')}</td></tr>
+              <tr><td class="label">Responsável:</td><td colspan="3">${escapeHtml(driver ? driver.nome : order.responsavelNome || '')}</td></tr>
+            </table>
+            <table class="desc-title block-gap"><tr><td>DESCRIÇÃO DO SERVIÇO/PROBLEMA:</td></tr></table>
+            <table class="desc-box"><tr><td>${escapeHtml(printableDescription || '')}</td></tr></table>
+            <table class="signature-block block-gap"><tr><td><div class="sign-wrap"><div class="sign-line"></div><div class="sign-label">AUTORIZADOR</div></div></td></tr></table>
+            <table class="finance-table">
+              <thead><tr><th style="width:14%;">DATA<br>VENCIMENTO</th><th>FORNECEDOR E NFs</th><th style="width:17%;">DÉBITO</th><th style="width:16%;">CRÉDITO</th><th style="width:16%;">TOTAL</th></tr></thead>
+              <tbody>${rows}<tr class="total-row"><td colspan="3" class="finance-total-spacer"></td><td class="finance-total-label">TOTAL</td><td class="money">${entries.length ? escapeHtml(formatCurrency(totalEntries)) : 'R$'}</td></tr></tbody>
+            </table>
+            ${reopenHistory.length ? `<h2 class="reopen-title">Histórico de reaberturas da OS</h2><table class="reopen-table"><thead><tr><th style="width:8%;">#</th><th style="width:18%;">Data</th><th style="width:14%;">Hora</th><th>Justificativa</th></tr></thead><tbody>${reopenRows}</tbody></table>` : ''}
+          </div>
+        </body>
+        </html>
+      `;
+    }
+
+    function applyOrderViewerZoom() {
+      const frame = document.getElementById('order-viewer-frame');
+      const label = document.getElementById('order-viewer-zoom-label');
+      if (frame) {
+        frame.style.transform = `scale(${orderViewerZoom})`;
+        frame.style.marginBottom = `${Math.max(0, 1123 * (orderViewerZoom - 1))}px`;
+      }
+      if (label) label.textContent = `${Math.round(orderViewerZoom * 100)}%`;
+    }
+
+    function fitOrderViewerToStage() {
+      const stage = document.getElementById('order-viewer-stage');
+      if (!stage) return;
+      const availableWidth = Math.max(0, stage.clientWidth - 24);
+      orderViewerZoom = Math.min(1.65, Math.max(0.7, Number((availableWidth / 794).toFixed(2))));
+      applyOrderViewerZoom();
+    }
+
+    function changeOrderViewerZoom(delta) {
+      orderViewerZoom = Math.min(1.8, Math.max(0.55, Number((orderViewerZoom + delta).toFixed(2))));
+      applyOrderViewerZoom();
+    }
+
+    function closeOrderViewer() {
+      const backdrop = document.getElementById('order-viewer-backdrop');
+      const frame = document.getElementById('order-viewer-frame');
+      if (backdrop) backdrop.classList.add('hidden');
+      if (frame) frame.srcdoc = '';
+    }
+
+    function handleOrderViewerBackdrop(event) {
+      if (event.target?.id === 'order-viewer-backdrop') closeOrderViewer();
+    }
+
+    function viewSelectedOrder() {
+      const order = getSelectedOrderForSingleAction('Selecione uma OS para visualizar.');
+      if (!order) return;
+      const backdrop = document.getElementById('order-viewer-backdrop');
+      const frame = document.getElementById('order-viewer-frame');
+      const title = document.getElementById('order-viewer-title');
+      if (!backdrop || !frame) return;
+      orderViewerZoom = 1;
+      if (title) title.textContent = `Visualizar OS ${getOrderNumberLabel(order)}`;
+      frame.srcdoc = buildOrderViewerHtml(order);
+      backdrop.classList.remove('hidden');
+      requestAnimationFrame(fitOrderViewerToStage);
+    }
+
+    function saveSelectedOrderPdf() {
+      showToast('Na janela de impressão, escolha "Salvar como PDF".');
+      printSelectedOrder();
+    }
+
+    function buildPrintableOrderPageHtml(order, forcePageBreak = false) {
+      const vehicle = allVehicles.find(item => item.id === order.vehicleId);
+      const driver = allDrivers.find(item => item.id === order.driverId);
+      const kmData = getOrderKmData(order.id);
+      const entries = allFinanceEntries.filter(item => item.orderId === order.id);
+      const totalEntries = entries.reduce((sum, item) => sum + getFinanceTotal(item), 0);
+      const statusLabel = (order.status || 'aberta').charAt(0).toUpperCase() + (order.status || 'aberta').slice(1);
+      const printableDescription = getOrderPrintableDescription(order);
+      const reopenHistory = getOrderReopenHistory(order);
+      const reopenHistoryRows = reopenHistory.map((item, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(item.dateLabel || formatDate(item.date) || '-')}</td>
+          <td>${escapeHtml(item.timeLabel || '-')}</td>
+          <td>${escapeHtml(item.reason || '-')}</td>
+        </tr>
+      `).join('');
+
+      let runningTotal = 0;
+      const rows = Array.from({ length: Math.max(entries.length, 24) }, (_, index) => {
+        const entry = entries[index];
+        if (entry) {
+          runningTotal += getFinanceTotal(entry);
+        }
+        return `
+          <tr>
+            <td>${entry ? escapeHtml(formatDate(getFinanceEntryDate(entry))) : ''}</td>
+            <td>${entry ? escapeHtml(getFinanceSupplierSummary(entry)) : ''}</td>
+            <td class="money">${entry && entry.kind === 'despesa' ? escapeHtml(formatCurrency(entry.total)) : ''}</td>
+            <td class="money">${entry && entry.kind === 'receita' ? escapeHtml(formatCurrency(entry.total)) : ''}</td>
+            <td class="money">${entry ? escapeHtml(formatCurrency(runningTotal)) : ''}</td>
+          </tr>
+        `;
+      }).join('');
+
+      return `
+        <div class="sheet ${forcePageBreak ? 'sheet-page-break' : ''}">
+          <table class="top-strip">
+            <tr><td></td></tr>
+          </table>
+
+          <table class="header-table">
+            <tr>
+              <td class="header-logo-cell"><img class="brand-logo" src="${getActiveLogoSrc()}" alt="WeFrotas"></td>
+              <td class="header-main-cell">
+                <div class="admin-line">${escapeHtml(order.administracao || 'NOME PREENCHIDO NA ADMINISTRAÇÃO')}</div>
+                <div class="title-line">Ordem de Serviço para veículos/Máquinas</div>
+                <div class="status-line">Status: ${escapeHtml(statusLabel)}</div>
+              </td>
+              <td class="header-number-cell">
+                <div class="number-wrap">
+                  <span class="number-label">Nº:</span>
+                  <span class="number-value">${escapeHtml(getOrderNumberLabel(order))}</span>
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <table class="info-table">
+            <tr>
+              <td class="label" style="width:14%;">Administração:</td>
+              <td style="width:54%;">${escapeHtml(order.administracao || '')}</td>
+              <td class="label" style="width:16%;">DT. INÍCIO:</td>
+              <td style="width:16%;">${escapeHtml(formatDate(order.dataInicio))}</td>
+            </tr>
+            <tr>
+              <td class="label">Veículo:</td>
+              <td>${escapeHtml(vehicle ? vehicle.modelo : '')}</td>
+              <td class="label">DT. TÉRMINO:</td>
+              <td>${escapeHtml(formatDate(order.dataTermino))}</td>
+            </tr>
+            <tr>
+              <td class="label">Placa:</td>
+              <td>${escapeHtml(vehicle ? vehicle.placa : '')}</td>
+              <td class="label" style="width:16%;">KM INICIAL:</td>
+              <td style="width:16%;">${escapeHtml(kmData.kmInicial || '')}</td>
+            </tr>
+            <tr>
+              <td class="label">Chassi:</td>
+              <td>${escapeHtml(vehicle ? vehicle.chassi || '' : '')}</td>
+              <td class="label">KM FINAL:</td>
+              <td>${escapeHtml(kmData.kmFinal || '')}</td>
+            </tr>
+            <tr>
+              <td class="label">Responsável:</td>
+              <td colspan="5">${escapeHtml(driver ? driver.nome : order.responsavelNome || '')}</td>
+            </tr>
+          </table>
+
+          <table class="desc-title block-gap">
+            <tr>
+              <td>DESCRIÇÃO DO SERVIÇO/PROBLEMA:</td>
+            </tr>
+          </table>
+
+          <table class="desc-box">
+            <tr>
+              <td>${escapeHtml(printableDescription || '')}</td>
+            </tr>
+          </table>
+
+          <table class="signature-block block-gap">
+            <tr>
+              <td>
+                <div class="sign-wrap">
+                  <div class="sign-line"></div>
+                  <div class="sign-label">AUTORIZADOR</div>
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <table class="finance-table">
+            <thead>
+              <tr>
+                <th style="width: 14%;">DATA<br>VENCIMENTO</th>
+                <th>FORNECEDOR E NFs</th>
+                <th style="width: 17%;">DÉBITO</th>
+                <th style="width: 16%;">CRÉDITO</th>
+                <th style="width: 16%;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+              <tr class="total-row">
+                <td colspan="3" class="finance-total-spacer"></td>
+                <td class="finance-total-label">TOTAL</td>
+                <td class="money ${entries.length ? '' : 'money-empty'}">${entries.length ? escapeHtml(formatCurrency(totalEntries)) : 'R$'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        ${reopenHistory.length ? `
+          <div class="sheet reopen-sheet">
+            <table class="top-strip">
+              <tr><td></td></tr>
+            </table>
+            <table class="header-table">
+              <tr>
+                <td class="header-logo-cell"><img class="brand-logo" src="${getActiveLogoSrc()}" alt="WeFrotas"></td>
+                <td class="header-main-cell">
+                  <div class="admin-line">${escapeHtml(order.administracao || 'NOME PREENCHIDO NA ADMINISTRAÇÃO')}</div>
+                  <div class="title-line">Histórico de reaberturas da OS</div>
+                  <div class="status-line">OS Nº: ${escapeHtml(getOrderNumberLabel(order))}</div>
+                </td>
+                <td class="header-number-cell">
+                  <div class="number-wrap">
+                    <span class="number-label">Nº:</span>
+                    <span class="number-value">${escapeHtml(getOrderNumberLabel(order))}</span>
+                  </div>
+                </td>
+              </tr>
+            </table>
+            <table class="reopen-table">
+              <thead>
+                <tr>
+                  <th style="width:8%;">#</th>
+                  <th style="width:18%;">Data</th>
+                  <th style="width:14%;">Hora</th>
+                  <th>Justificativa</th>
+                </tr>
+              </thead>
+              <tbody>${reopenHistoryRows}</tbody>
+            </table>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    function printSelectedOrder() {
+      if (!selectedOrders.size) {
+        showToast('Selecione ao menos uma OS para imprimir.');
+        return;
+      }
+      const selectedOrderRecords = Array.from(selectedOrders)
+        .map(id => allOrders.find(item => item.id === id))
+        .filter(Boolean);
+      if (!selectedOrderRecords.length) {
+        showToast('Não foi possível localizar as OS selecionadas.');
+        return;
+      }
+      const order = selectedOrderRecords[0];
       if (!order) return;
       const vehicle = allVehicles.find(item => item.id === order.vehicleId);
       const driver = allDrivers.find(item => item.id === order.driverId);
@@ -6886,6 +7768,146 @@
       }
 
       printWindow.document.open();
+      if (selectedOrderRecords.length > 1) {
+        const printPages = selectedOrderRecords
+          .map((selectedOrder, index) => buildPrintableOrderPageHtml(selectedOrder, index > 0))
+          .join('');
+        printWindow.document.write(`
+          <!doctype html>
+          <html lang="pt-BR">
+          <head>
+            <meta charset="UTF-8">
+            <title>OS em lote - ${selectedOrderRecords.length} ordens</title>
+            <style>
+              @page { size: A4; margin: 8mm; }
+              * {
+                box-sizing: border-box;
+                font-family: Arial, Helvetica, sans-serif;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color-adjust: exact;
+                -moz-print-color-adjust: exact;
+              }
+              html, body { margin: 0; padding: 0; background: #fff; color: #000; }
+              body { padding: 8px; }
+              .sheet { width: 196mm; max-width: 100%; margin: 0 auto; }
+              .sheet-page-break {
+                page-break-before: always;
+                break-before: page;
+              }
+              table {
+                width: 100%;
+                table-layout: fixed;
+                border-collapse: collapse;
+                border: 1px solid #000;
+                empty-cells: show;
+              }
+              td, th {
+                border: 1px solid #000;
+                padding: 2px 4px;
+                font-size: 10px;
+                vertical-align: middle;
+              }
+              .top-strip td { height: 20px; background: #d9d9d9 !important; }
+              .header-logo-cell { width: 22%; padding: 10px 12px 6px 20px; text-align: left; }
+              .header-main-cell { width: 56%; text-align: center; padding: 10px 8px 8px; }
+              .header-number-cell { width: 22%; text-align: right; padding: 20px 18px 8px 8px; }
+              .brand-logo { max-width: ${getOsLogoStyle().width}px; max-height: ${getOsLogoStyle().height}px; object-fit: contain; display: block; }
+              .admin-line { font-size: 10px; font-weight: 800; letter-spacing: 0.02em; margin-bottom: 10px; }
+              .title-line { font-size: 15px; font-weight: 800; line-height: 1.2; }
+              .status-line { margin-top: 16px; font-size: 10px; font-weight: 700; }
+              .number-wrap { display: inline-flex; align-items: baseline; gap: 6px; }
+              .number-label { font-size: 18px; font-style: italic; font-weight: 800; }
+              .number-value { font-size: 22px; font-style: italic; font-weight: 800; line-height: 1; }
+              .info-table td { height: 18px; }
+              .label { font-weight: 700; }
+              .block-gap { margin-top: 24px; }
+              .desc-title td { height: 40px; text-align: center; font-size: 11px; font-weight: 800; text-transform: uppercase; background: #d9d9d9 !important; }
+              .desc-box td { height: 90px; vertical-align: top; padding: 8px; white-space: pre-wrap; line-height: 1.42; font-size: 13px; }
+              .signature-block td { height: 74px; }
+              .sign-wrap { width: 250px; margin: 40px auto 0; text-align: center; }
+              .sign-line { width: 100%; border-top: 1px solid #000; min-height: 1px; display: block; }
+              .sign-label { margin-top: 2px; font-size: 11px; font-weight: 800; }
+              .finance-table {
+                margin-top: 0;
+                page-break-inside: avoid;
+                break-inside: avoid;
+              }
+              .finance-table th {
+                height: 48px;
+                background: #d9d9d9 !important;
+                text-align: center;
+                font-size: 10px;
+                font-weight: 800;
+                text-transform: uppercase;
+                line-height: 1.1;
+              }
+              .finance-table td {
+                height: 21px;
+                font-size: 10px;
+                page-break-inside: avoid;
+                break-inside: avoid;
+              }
+              .finance-table tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
+              }
+              .money { text-align: right; white-space: nowrap; }
+              .money-empty { text-align: left; }
+              .total-row td { height: 28px; }
+              .finance-table td.finance-total-spacer {
+                border-left: none !important;
+                border-bottom: none !important;
+                border-right: none !important;
+                border-top: 1px solid #000 !important;
+              }
+              .finance-total-label { text-align: center; font-size: 11px; font-weight: 800; }
+              .reopen-sheet {
+                page-break-before: always;
+                break-before: page;
+              }
+              .reopen-table th,
+              .reopen-table td {
+                height: 28px;
+                font-size: 11px;
+                vertical-align: top;
+                padding: 6px;
+              }
+              .reopen-table th {
+                background: #d9d9d9 !important;
+                text-align: center;
+                text-transform: uppercase;
+              }
+              @media print {
+                table, td, th {
+                  border-color: #000 !important;
+                  border-style: solid !important;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                  -moz-print-color-adjust: exact !important;
+                  color-adjust: exact !important;
+                }
+                td, th { border-width: 1pt !important; }
+                table { border-width: 1pt !important; }
+              }
+            </style>
+          </head>
+          <body>
+            ${printPages}
+            <script>
+              window.onload = function () {
+                setTimeout(function () {
+                  window.print();
+                  window.close();
+                }, 180);
+              };
+            <\/script>
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+        return;
+      }
       printWindow.document.write(`
         <!doctype html>
         <html lang="pt-BR">
@@ -7161,13 +8183,13 @@
     }
 
     function renderAll() {
+      syncAllocatedOrderStatuses();
       renderHomeCards();
       renderVehicles();
       renderDrivers();
       renderSuppliers();
       renderOrders();
       renderFinance();
-      renderDocuments();
       renderReports();
     }
 
@@ -7284,7 +8306,7 @@
         const numero = allowManualOrderNumberEditing || currentEditingId
           ? normalizeOrderNumberInput(rawNumero)
           : String(getNextOrderCounterValue());
-        const administracao = document.getElementById('order-administracao').value.trim();
+        const administracao = getOrderAdministrationFormValue();
         const tipoOs = document.getElementById('order-tipo-os')?.value || 'avulsa';
         const vehicleId = document.getElementById('order-veiculo').value;
         const driverId = document.getElementById('order-driver').value;
@@ -7482,6 +8504,7 @@
           allFinanceEntries.unshift({ id: generateId(), createdAt: new Date().toISOString(), ...payload });
           showToast(orderId ? 'Lançamento vinculado a OS com sucesso.' : 'Lançamento salvo sem OS. Você pode alocar depois.');
         }
+        advanceOrderStatusOnFinancialAllocation(orderId);
         saveToLocalStorage();
         renderAll();
         closeCadastroModal();
@@ -7568,6 +8591,7 @@
             allFinanceEntries.unshift({ id: groupId, createdAt: new Date().toISOString(), ...payload });
             showToast('Agrupamento criado com sucesso.');
           }
+          advanceOrderStatusOnFinancialAllocation(orderId);
           saveToLocalStorage();
           closeCadastroModal();
           selectedFinance = targetGroupId ? new Set([targetGroupId]) : new Set();
@@ -7642,6 +8666,7 @@
         }
 
         const workflowStatus = 'distribuido';
+        advanceOrderStatusOnFinancialAllocation(orderId);
         allFinanceEntries = allFinanceEntries.map(item => item.id === currentEditingId
           ? {
               ...item,
@@ -7666,6 +8691,7 @@
 
     async function initializeWeFrotas() {
       await loadFromStorage();
+      if (syncAllocatedOrderStatuses()) saveToLocalStorage();
       renderAll();
       updateModuleHeader('home');
       applySidebarState();
@@ -7684,7 +8710,10 @@
     });
     ['order-filter-search'].forEach(id => {
       const node = document.getElementById(id);
-      if (node) node.addEventListener('input', renderOrders);
+      if (node) node.addEventListener('input', () => {
+        orderVehicleFilterId = '';
+        renderOrders();
+      });
     });
     ['order-filter-start', 'order-filter-end', 'order-filter-status', 'order-filter-sort'].forEach(id => {
       const node = document.getElementById(id);
@@ -7695,7 +8724,7 @@
       if (node) node.addEventListener('input', renderFinance);
     });
     applyCurrencyMaskToInput(document.getElementById('finance-filter-value'));
-    ['finance-filter-status', 'finance-filter-date'].forEach(id => {
+    ['finance-filter-status', 'finance-filter-start', 'finance-filter-end'].forEach(id => {
       const node = document.getElementById(id);
       if (node) node.addEventListener('change', renderFinance);
     });
