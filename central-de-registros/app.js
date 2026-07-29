@@ -186,7 +186,16 @@ document.getElementById('fuel-type').addEventListener('change', function() {
   markFuelReceiptUploadDirty();
 });
 
-['loose-supplier', 'loose-value', 'loose-notes'].forEach((id) => {
+document.getElementById('loose-driver-name')?.addEventListener('change', function() {
+  toggleLooseCustomDriverField();
+  markLooseReceiptUploadDirty();
+});
+
+document.getElementById('loose-custom-driver-name')?.addEventListener('input', function() {
+  markLooseReceiptUploadDirty();
+});
+
+['loose-supplier', 'loose-value', 'loose-date', 'loose-km', 'loose-notes'].forEach((id) => {
   document.getElementById(id)?.addEventListener('input', function() {
     markLooseReceiptUploadDirty();
   });
@@ -230,27 +239,33 @@ function getStoredDriverNames() {
 }
 
 function populateDriverOptions() {
-  const driverSelect = document.getElementById('driver-name');
-  if (!driverSelect) {
+  const driverSelects = [
+    document.getElementById('driver-name'),
+    document.getElementById('loose-driver-name')
+  ].filter(Boolean);
+  if (!driverSelects.length) {
     return;
   }
 
-  const currentValue = driverSelect.value;
   const driverNames = getStoredDriverNames();
-  driverSelect.innerHTML = '<option value="">Selecione um motorista</option>';
+  driverSelects.forEach((driverSelect) => {
+    const currentValue = driverSelect.value;
+    driverSelect.innerHTML = '<option value="">Selecione um motorista</option>';
 
-  driverNames.forEach((driverName) => {
-    const option = document.createElement('option');
-    option.value = driverName;
-    option.textContent = driverName;
-    driverSelect.appendChild(option);
+    driverNames.forEach((driverName) => {
+      const option = document.createElement('option');
+      option.value = driverName;
+      option.textContent = driverName;
+      driverSelect.appendChild(option);
+    });
+
+    if (currentValue && driverNames.includes(currentValue)) {
+      driverSelect.value = currentValue;
+    }
   });
 
-  if (currentValue && driverNames.includes(currentValue)) {
-    driverSelect.value = currentValue;
-  }
-
   toggleCustomDriverField();
+  toggleLooseCustomDriverField();
 }
 
 function saveDriverNameSuggestion(driverName) {
@@ -465,6 +480,34 @@ function getSelectedDriverName() {
   return driverSelect?.value.trim() || '';
 }
 
+function toggleLooseCustomDriverField() {
+  const driverSelect = document.getElementById('loose-driver-name');
+  const customContainer = document.getElementById('loose-custom-driver-container');
+  const customInput = document.getElementById('loose-custom-driver-name');
+  const shouldShowCustomInput = driverSelect?.value === OTHER_DRIVER_OPTION;
+
+  if (!customContainer || !customInput) {
+    return;
+  }
+
+  customContainer.classList.toggle('hidden', !shouldShowCustomInput);
+  customInput.required = shouldShowCustomInput;
+  if (!shouldShowCustomInput) {
+    customInput.value = '';
+  }
+}
+
+function getSelectedLooseDriverName() {
+  const driverSelect = document.getElementById('loose-driver-name');
+  const customInput = document.getElementById('loose-custom-driver-name');
+
+  if (driverSelect?.value === OTHER_DRIVER_OPTION) {
+    return customInput?.value.trim() || '';
+  }
+
+  return driverSelect?.value.trim() || '';
+}
+
 function markFuelReceiptUploadDirty() {
   if (!selectedFuelReceiptFile) {
     return;
@@ -547,6 +590,12 @@ function openLooseNoteForm() {
     form.reset();
   }
   resetLoosePhotoState();
+  populateDriverOptions();
+  toggleLooseCustomDriverField();
+  const dateField = document.getElementById('loose-date');
+  if (dateField) {
+    dateField.value = getTodayLocalDateString();
+  }
   modal.classList.remove('hidden');
   window.setTimeout(() => document.getElementById('loose-supplier')?.focus(), 80);
 }
@@ -576,8 +625,8 @@ function submitLooseNoteForm(e) {
   const formData = getLooseNoteFormData();
   const uploadKey = getLooseNoteReceiptUploadKey(formData);
 
-  if (!formData.fornecedor || !formData.tipoServico || !formData.valor) {
-    showErrorMessage('Preencha fornecedor, tipo do servi\u00e7o e valor.');
+  if (!formData.motorista || !formData.fornecedor || !formData.tipoServico || !formData.valor || !formData.data) {
+    showErrorMessage('Preencha motorista, fornecedor, tipo do servi\u00e7o, valor e data.');
     return;
   }
 
@@ -594,16 +643,19 @@ function submitLooseNoteForm(e) {
   const mensagem = [
     '\ud83e\uddfe *REGISTRO DE NOTINHA AVULSA*',
     '',
+    `\ud83d\udc64 *Motorista:* ${formData.motorista}`,
     `\ud83c\udfe2 *Fornecedor:* ${formData.fornecedor}`,
     `\ud83d\udee0\ufe0f *Tipo do servi\u00e7o:* ${formData.tipoServico}`,
     `\ud83d\udcb0 *Valor:* ${formData.valor}`,
     `\ud83d\udcc5 *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
+    formData.km ? `\ud83d\udee3\ufe0f *KM:* ${formData.km}` : '',
     formData.observacoes ? `\ud83d\udcdd *Observa\u00e7\u00f5es:* ${formData.observacoes}` : '',
     '',
     `\ud83e\uddfe *Comprovante:* ${uploadedLooseNoteReceipt.result.secure_url}`
   ].filter(Boolean).join('\n');
 
   openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
+  saveDriverNameSuggestion(formData.motorista);
   closeLooseNoteForm();
   showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar a notinha avulsa.');
 }
@@ -708,13 +760,18 @@ function validateFuelReceiptUploadFields(formData) {
 }
 
 function getLooseNoteFormData() {
+  const data = document.getElementById('loose-date')?.value || '';
+  const dateObj = data ? new Date(`${data}T00:00:00`) : null;
   const now = new Date();
   return {
+    motorista: getSelectedLooseDriverName(),
     fornecedor: document.getElementById('loose-supplier').value.trim(),
     tipoServico: document.getElementById('loose-service-type').value,
     valor: document.getElementById('loose-value').value.trim(),
+    data,
+    dataFormatada: dateObj ? dateObj.toLocaleDateString('pt-BR') : '',
+    km: document.getElementById('loose-km')?.value.trim() || '',
     observacoes: document.getElementById('loose-notes').value.trim(),
-    dataFormatada: now.toLocaleDateString('pt-BR'),
     horaFormatada: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     file: selectedLooseNoteReceiptFile
   };
@@ -730,9 +787,12 @@ function getLooseNoteReceiptUploadKey(formData) {
     file.name,
     file.size,
     file.lastModified,
+    formData.motorista,
     formData.fornecedor,
     formData.tipoServico,
-    formData.valor
+    formData.valor,
+    formData.data,
+    formData.km
   ].join('|');
 }
 
@@ -781,8 +841,8 @@ function setLooseActionButtonsVisible(isVisible) {
 }
 
 function validateLooseNoteReceiptUploadFields(formData) {
-  if (!formData.fornecedor || !formData.tipoServico || !formData.valor) {
-    showErrorMessage('Preencha fornecedor, tipo do servi\u00e7o e valor antes de salvar o comprovante.');
+  if (!formData.motorista || !formData.fornecedor || !formData.tipoServico || !formData.valor || !formData.data) {
+    showErrorMessage('Preencha motorista, fornecedor, tipo do servi\u00e7o, valor e data antes de salvar o comprovante.');
     return false;
   }
 
@@ -821,10 +881,12 @@ async function saveLooseNoteReceiptUpload(options = {}) {
     const compressedFile = await compressFuelReceiptIfNeeded(formData.file);
     const renamedFile = createRenamedLooseNoteReceiptFile(compressedFile, formData.fornecedor);
     const result = await uploadLooseNoteReceiptToCloudinary(renamedFile, {
+      motorista: formData.motorista,
       fornecedor: formData.fornecedor,
       tipoServico: formData.tipoServico,
       valor: formData.valor,
-      data: formData.dataFormatada
+      data: formData.dataFormatada,
+      km: formData.km
     });
 
     uploadedLooseNoteReceipt = {
@@ -1000,7 +1062,7 @@ async function uploadLooseNoteReceiptToCloudinary(file, metadata) {
   formData.append('filename_override', file.name.replace(/\.[^.]+$/, ''));
   formData.append(
     'context',
-    `fornecedor=${metadata.fornecedor}|servico=${metadata.tipoServico}|valor=${metadata.valor}|data=${metadata.data}`
+    `motorista=${metadata.motorista}|fornecedor=${metadata.fornecedor}|servico=${metadata.tipoServico}|valor=${metadata.valor}|data=${metadata.data}|km=${metadata.km || 'nao informado'}`
   );
 
   const response = await fetch(CLOUDINARY_UPLOAD_URL, {
