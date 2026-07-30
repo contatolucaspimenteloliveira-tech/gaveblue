@@ -1,5 +1,7 @@
 import { account } from '../lib/appwrite.js';
 
+const AUTH_TIMEOUT_MS = 15000;
+
 const authState = {
   currentUser: null,
   isChecking: true
@@ -17,6 +19,16 @@ function getAuthNodes() {
     userAvatar: document.getElementById('sidebar-user-avatar'),
     topbarAvatar: document.getElementById('topbar-avatar')
   };
+}
+
+function withTimeout(promise, label) {
+  let timeoutId = null;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      reject(new Error(`${label} demorou mais de ${AUTH_TIMEOUT_MS / 1000}s. Verifique a plataforma Web no Appwrite e a conexao.`));
+    }, AUTH_TIMEOUT_MS);
+  });
+  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timeoutId));
 }
 
 function getUserInitials(user) {
@@ -46,6 +58,23 @@ function setAuthLoading(isLoading, label = 'Entrar') {
   if (!submit) return;
   submit.disabled = isLoading;
   submit.textContent = isLoading ? 'Validando acesso...' : label;
+}
+
+function getReadableAuthError(error) {
+  const message = String(error?.message || '').trim();
+  const code = error?.code ? `Codigo ${error.code}: ` : '';
+  if (/invalid origin|origin/i.test(message)) {
+    return `${code}Origem bloqueada pelo Appwrite. Cadastre gaveblue.com.br e www.gaveblue.com.br em Platforms.`;
+  }
+  if (/invalid credentials|password|email/i.test(message)) {
+    return `${code}E-mail ou senha invalidos. Confira o usuario criado em Auth > Users.`;
+  }
+  if (/network|failed to fetch|fetch/i.test(message)) {
+    return `${code}Falha de rede ao conectar no Appwrite. Confira internet, endpoint e bloqueios do navegador.`;
+  }
+  return message
+    ? `${code}${message}`
+    : 'Nao foi possivel entrar. Confira usuario, senha, Auth por e-mail/senha e plataforma Web no Appwrite.';
 }
 
 function applyAuthenticatedUser(user) {
@@ -82,10 +111,10 @@ function lockWefrotas(message = '') {
 
 async function checkCurrentSession() {
   document.body.classList.add('auth-checking', 'auth-locked');
-  setAuthStatus('Verificando sessão...', 'info');
+  setAuthStatus('Verificando sessao...', 'info');
   setAuthLoading(true);
   try {
-    const user = await account.get();
+    const user = await withTimeout(account.get(), 'Verificacao de sessao');
     setAuthStatus('', 'info');
     unlockWefrotas(user);
   } catch (error) {
@@ -110,29 +139,31 @@ async function handleLoginSubmit(event) {
   setAuthStatus('Conectando com o Appwrite...', 'info');
 
   try {
-    await account.createEmailPasswordSession({
+    await withTimeout(account.createEmailPasswordSession({
       email: emailValue,
       password: passwordValue
-    });
-    const user = await account.get();
+    }), 'Login');
+
+    setAuthStatus('Sessao criada. Carregando usuario...', 'info');
+    const user = await withTimeout(account.get(), 'Carregamento do usuario');
     setAuthStatus('', 'info');
     unlockWefrotas(user);
   } catch (error) {
-    const message = error?.message || 'Não foi possível entrar. Confira usuário, senha e plataforma Web no Appwrite.';
-    setAuthStatus(message, 'error');
+    console.error('Falha no login Appwrite.', error);
+    setAuthStatus(getReadableAuthError(error), 'error');
   } finally {
     setAuthLoading(false);
   }
 }
 
 async function logoutWefrotas() {
-  setAuthStatus('Encerrando sessão...', 'info');
+  setAuthStatus('Encerrando sessao...', 'info');
   try {
-    await account.deleteSession('current');
+    await account.deleteSession({ sessionId: 'current' });
   } catch (error) {
-    console.warn('Não foi possível encerrar a sessão no Appwrite.', error);
+    console.warn('Nao foi possivel encerrar a sessao no Appwrite.', error);
   } finally {
-    lockWefrotas('Sessão encerrada com segurança.');
+    lockWefrotas('Sessao encerrada com seguranca.');
   }
 }
 
