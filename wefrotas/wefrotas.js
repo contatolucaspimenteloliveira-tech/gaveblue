@@ -915,6 +915,15 @@
       return Number(entry.total || 0);
     }
 
+    function getFinanceNetTotal(entry) {
+      const total = getFinanceTotal(entry);
+      return entry?.kind === 'receita' ? -total : total;
+    }
+
+    function sumFinanceNetTotal(entries) {
+      return entries.reduce((sum, entry) => sum + getFinanceNetTotal(entry), 0);
+    }
+
     function normalizeFinanceNoteLabel(value) {
       const rawValue = String(value || '').trim();
       if (!rawValue) return '';
@@ -923,8 +932,8 @@
     }
 
     function getFinanceAdjustmentBaseTotal(entry) {
-      if (isFuelGroupEntry(entry)) {
-        return getFuelGroupChildren(entry).reduce((sum, item) => sum + getFinanceTotal(item), 0);
+      if (isFinanceGroupEntry(entry)) {
+        return getFinanceGroupChildren(entry).reduce((sum, item) => sum + getFinanceTotal(item), 0);
       }
       return Number(entry?.baseTotal || entry?.total || 0);
     }
@@ -956,6 +965,31 @@
 
     function isFuelGroupEntry(entry) {
       return entry?.entryType === 'combustivel_agrupado';
+    }
+
+    function isExpenseGroupEntry(entry) {
+      return entry?.entryType === 'despesa_agrupada';
+    }
+
+    function isFinanceGroupEntry(entry) {
+      return isFuelGroupEntry(entry) || isExpenseGroupEntry(entry);
+    }
+
+    function isRegularExpenseEntry(entry) {
+      return !!entry && entry.entryType !== 'combustivel' && !isFinanceGroupEntry(entry);
+    }
+
+    function getFinanceGroupingMode(entries = []) {
+      if (entries.length < 2) return null;
+      if (entries.every(entry => isFuelEntry(entry) && !entry.groupedIntoId && !isFinanceEntryLockedForEditing(entry))) {
+        const vehicleIds = new Set(entries.map(entry => getEntryVehicleId(entry)).filter(Boolean));
+        return vehicleIds.size === 1 ? 'fuel' : null;
+      }
+      if (entries.every(entry => isRegularExpenseEntry(entry) && !entry.groupedIntoId && !isFinanceEntryLockedForEditing(entry))) {
+        const supplierIds = new Set(entries.map(entry => entry.supplierId || normalizeSearchText(entry.fornecedor || '')).filter(Boolean));
+        return supplierIds.size === 1 ? 'expense' : null;
+      }
+      return null;
     }
 
     function getEntryVehicleId(entry) {
@@ -1010,7 +1044,7 @@
         .filter(isDistributedCostEntry)
         .filter(entry => getEntryLinkedVehicleId(entry) === vehicleId)
         .filter(entry => isFinanceEntryInsideCompetencePeriod(entry, start, end))
-        .reduce((sum, entry) => sum + getFinanceTotal(entry), 0);
+        .reduce((sum, entry) => sum + getFinanceNetTotal(entry), 0);
     }
 
     function getFinanceEntryDate(entry) {
@@ -1018,7 +1052,7 @@
     }
 
     function getFinanceEntryStatus(entry) {
-      if (isFuelEntry(entry) && entry.groupedIntoId) return 'agrupado';
+      if (entry?.groupedIntoId) return 'agrupado';
       if (entry?.orderId) return 'distribuido';
       if (entry?.workflowStatus === 'distribuido') return 'distribuido';
       if (entry?.workflowStatus === 'pendente_os' || entry?.closedExpense) return 'pendente_os';
@@ -1056,8 +1090,22 @@
       return changed;
     }
 
+    function syncOrderStatusesAfterFinancialReversal(orderIds = []) {
+      const impactedIds = new Set(orderIds.filter(Boolean));
+      if (!impactedIds.size) return false;
+      let changed = false;
+      allOrders = allOrders.map(order => {
+        if (impactedIds.has(order.id) && order.status === 'andamento' && !hasAllocatedFinancialEntry(order.id)) {
+          changed = true;
+          return { ...order, status: 'aberta' };
+        }
+        return order;
+      });
+      return changed;
+    }
+
     function getFinanceEntryDateLabel(entry) {
-      if (isFuelGroupEntry(entry)) return entry.dataVencimento ? 'Vencimento' : 'Agrupamento';
+      if (isFinanceGroupEntry(entry)) return entry.dataVencimento ? 'Vencimento' : 'Agrupamento';
       if (isFuelEntry(entry)) return 'Abastecimento';
       return 'Vencimento';
     }
@@ -1076,8 +1124,8 @@
       return isFuelEntry(entry) || isFuelGroupEntry(entry) ? 'fuel' : 'expense';
     }
 
-    function getFuelGroupChildren(entry) {
-      if (!isFuelGroupEntry(entry)) return [];
+    function getFinanceGroupChildren(entry) {
+      if (!isFinanceGroupEntry(entry)) return [];
       const groupedIds = Array.isArray(entry.groupedEntryIds) ? entry.groupedEntryIds : [];
       return groupedIds
         .map(id => allFinanceEntries.find(item => item.id === id))
@@ -1089,14 +1137,19 @@
         });
     }
 
+    function getFuelGroupChildren(entry) {
+      if (!isFuelGroupEntry(entry)) return [];
+      return getFinanceGroupChildren(entry);
+    }
+
     function getFinanceSupplierSummary(entry) {
       if (!entry) return '';
       const noteLabel = normalizeFinanceNoteLabel(entry.nf);
-      if (!isFuelGroupEntry(entry)) {
+      if (!isFinanceGroupEntry(entry)) {
         return [entry.fornecedor, noteLabel, entry.fuelType].filter(Boolean).join('  ');
       }
 
-      const children = getFuelGroupChildren(entry);
+      const children = getFinanceGroupChildren(entry);
       const supplierNames = [...new Set(children.map(item => item.fornecedor).filter(Boolean))];
       const notes = children.map(item => normalizeFinanceNoteLabel(item.nf)).filter(Boolean);
       return [
@@ -2969,14 +3022,14 @@
             <label>Data de início</label>
             <div class="form-input-shell form-input-shell--date">
               ${fieldIcon('calendar')}
-              <input class="soft-input w-full" id="order-data-inicio" type="date" onchange="updateOrderDescriptionFromType()">
+              <input class="soft-input w-full" id="order-data-inicio" type="date" onchange="handleOrderStartDateChange()">
             </div>
           </div>
           <div class="field-wrap">
             <label>Data de fim</label>
             <div class="form-input-shell form-input-shell--date">
               ${fieldIcon('calendar')}
-              <input class="soft-input w-full" id="order-data-termino" type="date">
+              <input class="soft-input w-full" id="order-data-termino" type="date" onchange="handleOrderEndDateChange()">
             </div>
           </div>
           <div class="field-wrap">
@@ -3008,6 +3061,7 @@
           </div>
         `;
         setOrderAdministrationFormValue(getLastAdministrationValue());
+        updateOrderDateConstraints();
       } else if (type === 'finance') {
         setModalVisual('finance', 'Escolha o tipo de lançamento que deseja realizar.');
         kicker.textContent = 'Financeiro';
@@ -3685,8 +3739,8 @@
 
     function getRevisionDescription(revisionKm, vehicle = null) {
       const kmLabel = revisionKm ? Number(revisionKm).toLocaleString('pt-BR') : 'XX.XXX';
-      const plateLabel = vehicle?.placa ? ` - ${vehicle.placa}` : '';
-      return `REVISÃO ${kmLabel} KM${plateLabel}`;
+      const revisionNumber = revisionKm ? Math.max(1, Math.round(Number(revisionKm) / 10000)) : 'X';
+      return `REVISÃO ${kmLabel} KM - REF A ${revisionNumber}º REVISÃO PERIÓDICA`;
     }
 
     function getMonthlyExpenseDescription(dateString) {
@@ -3732,6 +3786,34 @@
     }
 
     window.updateOrderDescriptionFromType = updateOrderDescriptionFromType;
+
+    function updateOrderDateConstraints() {
+      const startField = document.getElementById('order-data-inicio');
+      const endField = document.getElementById('order-data-termino');
+      if (!startField || !endField) return;
+      endField.min = startField.value || '';
+      if (startField.value && endField.value && endField.value < startField.value) {
+        endField.value = '';
+        showToast('A data de fim não pode ser anterior à data de início da OS.');
+      }
+    }
+
+    function validateOrderDateRange(dataInicio, dataTermino) {
+      if (!dataInicio || !dataTermino) return true;
+      if (dataTermino >= dataInicio) return true;
+      showToast('A data de fim da OS não pode ser anterior à data de início.');
+      document.getElementById('order-data-termino')?.focus();
+      return false;
+    }
+
+    function handleOrderStartDateChange() {
+      updateOrderDescriptionFromType();
+      updateOrderDateConstraints();
+    }
+
+    function handleOrderEndDateChange() {
+      updateOrderDateConstraints();
+    }
 
     function toggleOrderAdministrationCustom() {
       const field = document.getElementById('order-administracao');
@@ -3783,6 +3865,8 @@
 
     window.toggleOrderAdministrationCustom = toggleOrderAdministrationCustom;
     window.handleOrderVehicleChange = handleOrderVehicleChange;
+    window.handleOrderStartDateChange = handleOrderStartDateChange;
+    window.handleOrderEndDateChange = handleOrderEndDateChange;
 
     const modalCustomSelectIds = new Set([
       'vehicle-motorista',
@@ -3928,12 +4012,14 @@
     function findOpenRevisionOrder(vehicleId, revisionKm) {
       const revisionToken = normalizeRevisionText(getRevisionDescription(revisionKm));
       const legacyRevisionToken = normalizeRevisionText(`REVISAO DE ${Number(revisionKm || 0).toLocaleString('pt-BR')}KM`);
+      const previousRevisionToken = normalizeRevisionText(`REVISAO ${Number(revisionKm || 0).toLocaleString('pt-BR')} KM`);
       return allOrders.find(order =>
         order.vehicleId === vehicleId
         && order.status !== 'fechada'
         && (
           normalizeRevisionText(order.descricao).includes(revisionToken)
           || normalizeRevisionText(order.descricao).includes(legacyRevisionToken)
+          || normalizeRevisionText(order.descricao).includes(previousRevisionToken)
         )
       ) || null;
     }
@@ -3986,6 +4072,7 @@
       document.getElementById('order-veiculo').value = vehicle.id;
       document.getElementById('order-data-inicio').value = getLocalIsoDate();
       document.getElementById('order-status').value = 'aberta';
+      updateOrderDateConstraints();
       document.getElementById('order-descricao').value = getRevisionDescription(maintenance.nextRevisionKm, vehicle);
       document.getElementById('order-descricao').dataset.generatedDescription = document.getElementById('order-descricao').value;
       document.getElementById('modal-title').textContent = 'Abrir OS de revisão';
@@ -4165,7 +4252,7 @@
       const entries = allFinanceEntries.filter(entry => !entry.groupedIntoId);
       const pending = entries.filter(entry => ['pendente', 'pendente_os'].includes(getFinanceEntryStatus(entry)));
       const distributed = entries.filter(entry => getFinanceEntryStatus(entry) === 'distribuido');
-      const sumEntries = items => items.reduce((sum, entry) => sum + getFinanceTotal(entry), 0);
+      const sumEntries = items => items.reduce((sum, entry) => sum + getFinanceNetTotal(entry), 0);
 
       return [
         {
@@ -4371,7 +4458,7 @@
       if (['orders', 'orders_open', 'orders_progress', 'orders_closed', 'orders_deleted'].includes(filters.type)) {
         const totalLinked = visibleOrders.reduce((sum, order) => {
           if (typeof order.totalLinked === 'number') return sum + order.totalLinked;
-          return sum + allFinanceEntries.filter(entry => entry.orderId === order.id).reduce((entrySum, entry) => entrySum + getFinanceTotal(entry), 0);
+          return sum + sumFinanceNetTotal(allFinanceEntries.filter(entry => entry.orderId === order.id));
         }, 0);
         const vehiclesCovered = new Set(visibleOrders.map(order => order.vehicleId).filter(Boolean)).size;
         return {
@@ -4395,7 +4482,7 @@
             const vehicle = order.vehicleSnapshot || allVehicles.find(item => item.id === order.vehicleId);
             const total = typeof order.totalLinked === 'number'
               ? order.totalLinked
-              : allFinanceEntries.filter(entry => entry.orderId === order.id).reduce((sum, entry) => sum + getFinanceTotal(entry), 0);
+              : sumFinanceNetTotal(allFinanceEntries.filter(entry => entry.orderId === order.id));
             const groupedRows = getOrderGroupedFuelReportRows(order.id);
             const statusLabel = filters.type === 'orders_deleted' ? 'Excluída' : (order.status || '-');
             const statusTone = statusLabel === 'fechada' || statusLabel === 'Fechada'
@@ -4429,7 +4516,7 @@
           const status = getFinanceEntryStatus(entry);
           const current = statusMap.get(status) || { status, count: 0, total: 0 };
           current.count += 1;
-          current.total += getFinanceTotal(entry);
+          current.total += getFinanceNetTotal(entry);
           statusMap.set(status, current);
         });
         const rows = Array.from(statusMap.values()).sort((a, b) => b.total - a.total);
@@ -4478,7 +4565,7 @@
             type: '',
             latestDate: ''
           };
-          current.total += getFinanceTotal(entry);
+          current.total += getFinanceNetTotal(entry);
           current.count += 1;
           current.latestDate = [current.latestDate, getFinanceEntryDate(entry)].filter(Boolean).sort().pop() || current.latestDate;
           if (!current.type) {
@@ -5130,39 +5217,43 @@
     function openFuelGroupingModal(editId = null, options = {}) {
       openCadastroModal('finance');
       currentModalType = 'finance-group';
-      currentFinanceEntryType = 'combustivel_agrupado';
       currentEditingId = editId;
       const documentsOnly = options?.documentsOnly === true;
 
-      const existingGroup = editId ? allFinanceEntries.find(item => item.id === editId && isFuelGroupEntry(item)) : null;
+      const existingGroup = editId ? allFinanceEntries.find(item => item.id === editId && isFinanceGroupEntry(item)) : null;
+      const existingMode = existingGroup
+        ? (isExpenseGroupEntry(existingGroup) ? 'expense' : 'fuel')
+        : null;
       const selectedEntries = existingGroup
-        ? getFuelGroupChildren(existingGroup)
+        ? getFinanceGroupChildren(existingGroup)
         : Array.from(selectedFinance)
           .map(id => allFinanceEntries.find(item => item.id === id))
-          .filter(entry => entry && isFuelEntry(entry) && !entry.groupedIntoId);
+          .filter(entry => entry && !entry.groupedIntoId && !isFinanceEntryLockedForEditing(entry));
+      const groupingMode = existingMode || getFinanceGroupingMode(selectedEntries);
+      currentFinanceEntryType = groupingMode === 'expense' ? 'despesa_agrupada' : 'combustivel_agrupado';
 
       if (!selectedEntries.length) {
         closeCadastroModal();
-        showToast('Selecione abastecimentos pendentes para agrupar.');
+        showToast('Selecione lançamentos pendentes para agrupar.');
         return;
       }
       if (!existingGroup && selectedEntries.length < 2) {
         closeCadastroModal();
-        showToast('Selecione pelo menos dois abastecimentos para agrupar.');
+        showToast('Selecione pelo menos dois lançamentos para agrupar.');
         return;
       }
-
-      const vehicleIds = [...new Set(selectedEntries.map(entry => getEntryVehicleId(entry)).filter(Boolean))];
-      if (vehicleIds.length !== 1) {
+      if (!groupingMode) {
         closeCadastroModal();
-        showToast('O agrupamento só pode ser feito com abastecimentos do mesmo veículo.');
+        showToast('Agrupe abastecimentos do mesmo veículo ou despesas do mesmo fornecedor.');
         return;
       }
 
-      const vehicleId = vehicleIds[0];
+      const isExpenseGrouping = groupingMode === 'expense';
+      const vehicleIds = [...new Set(selectedEntries.map(entry => getEntryVehicleId(entry)).filter(Boolean))];
+      const vehicleId = isExpenseGrouping ? (vehicleIds.length === 1 ? vehicleIds[0] : '') : vehicleIds[0];
       const vehicle = allVehicles.find(item => item.id === vehicleId);
       const groupOpenOrders = getOpenOrdersSorted()
-        .filter(order => order.vehicleId === vehicleId);
+        .filter(order => !vehicleId || order.vehicleId === vehicleId);
       const orderOptions = groupOpenOrders
         .map(order => `<option value="${escapeHtml(getOrderAutocompleteLabel(order))}"></option>`)
         .join('');
@@ -5170,24 +5261,30 @@
       const fields = document.getElementById('modal-fields');
       const kicker = document.getElementById('modal-kicker');
       const title = document.getElementById('modal-title');
+      const groupNoun = isExpenseGrouping ? 'despesas' : 'abastecimentos';
+      const groupTitle = isExpenseGrouping ? 'Agrupar despesas' : 'Agrupar abastecimentos';
+      const supplier = isExpenseGrouping
+        ? (allSuppliers.find(item => item.id === selectedEntries[0]?.supplierId) || null)
+        : null;
 
       kicker.textContent = 'Financeiro';
       title.textContent = documentsOnly
         ? 'Comprovantes do agrupamento'
-        : existingGroup ? 'Editar agrupamento de abastecimentos' : 'Agrupar abastecimentos';
+        : existingGroup ? `Editar agrupamento de ${groupNoun}` : groupTitle;
       const historyBlockHtml = `
         <div class="field-wrap full">
-          <label>Histórico dos abastecimentos</label>
+          <label>Histórico ${isExpenseGrouping ? 'das despesas' : 'dos abastecimentos'}</label>
           <div class="space-y-3 max-h-[220px] overflow-y-auto pr-1">
             ${selectedEntries.map(entry => `
               <div class="rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50">
                 <div class="flex items-center justify-between gap-3 flex-wrap">
-                  <strong class="text-slate-800">${escapeHtml(entry.fornecedor || 'Abastecimento')}</strong>
+                  <strong class="text-slate-800">${escapeHtml(entry.fornecedor || (isExpenseGrouping ? 'Despesa' : 'Abastecimento'))}</strong>
                   <span class="text-sm font-semibold text-slate-500">${escapeHtml(formatCurrency(getFinanceTotal(entry)))}</span>
                 </div>
                 <div class="mt-2 text-sm text-slate-500 flex gap-3 flex-wrap">
                   <span>Data: ${escapeHtml(formatDate(getFinanceEntryDate(entry)))}</span>
                   ${entry.fuelType ? `<span>Combustível: ${escapeHtml(entry.fuelType)}</span>` : ''}
+                  ${entry.nf ? `<span>${escapeHtml(normalizeFinanceNoteLabel(entry.nf))}</span>` : ''}
                   ${entry.km ? `<span>KM: ${escapeHtml(entry.km)}</span>` : ''}
                 </div>
                 ${entry.comprovanteUrl ? `
@@ -5206,8 +5303,10 @@
       fields.innerHTML = documentsOnly ? historyBlockHtml : `
         <input id="finance-group-entry-ids" type="hidden" value="${selectedEntries.map(entry => entry.id).join(',')}">
         <div class="field-wrap full">
-          <label>Veículo do agrupamento</label>
-          <div class="soft-input w-full flex items-center">${escapeHtml(vehicle ? `${vehicle.numeroFrota}  ${vehicle.placa}  ${vehicle.modelo}` : '-')}</div>
+          <label>${isExpenseGrouping ? 'Fornecedor do agrupamento' : 'Veículo do agrupamento'}</label>
+          <div class="soft-input w-full flex items-center">${escapeHtml(isExpenseGrouping
+            ? (supplier?.nome || selectedEntries[0]?.fornecedor || '-')
+            : (vehicle ? `${vehicle.numeroFrota}  ${vehicle.placa}  ${vehicle.modelo}` : '-'))}</div>
         </div>
         ${historyBlockHtml}
         <div class="field-wrap">
@@ -5289,7 +5388,7 @@
         return;
       }
       const selectedId = Array.from(selectedFinance)[0];
-      const groupEntry = allFinanceEntries.find(entry => entry.id === selectedId && isFuelGroupEntry(entry));
+      const groupEntry = allFinanceEntries.find(entry => entry.id === selectedId && isFinanceGroupEntry(entry));
       if (!groupEntry) {
         showToast('Selecione um agrupamento válido para desfazer.');
         return;
@@ -5318,7 +5417,7 @@
       }
       const entry = allFinanceEntries.find(item => item.id === Array.from(selectedFinance)[0]);
       if (!entry) return;
-      if (isFuelGroupEntry(entry)) {
+      if (isFinanceGroupEntry(entry)) {
         openFuelGroupingModal(entry.id);
         setModalSubmitState(false);
         setCadastroModalReadOnly(true);
@@ -5379,8 +5478,8 @@
     function getFinanceEntryReceiptUrl(entry) {
       if (!entry) return '';
       if (entry.comprovanteUrl) return entry.comprovanteUrl;
-      if (isFuelGroupEntry(entry)) {
-        const childWithReceipt = getFuelGroupChildren(entry).find((item) => item?.comprovanteUrl);
+      if (isFinanceGroupEntry(entry)) {
+        const childWithReceipt = getFinanceGroupChildren(entry).find((item) => item?.comprovanteUrl);
         return childWithReceipt?.comprovanteUrl || '';
       }
       return '';
@@ -5388,13 +5487,13 @@
 
     function getFinanceEntryReceipts(entry) {
       if (!entry) return [];
-      if (isFuelGroupEntry(entry)) {
-        return getFuelGroupChildren(entry)
+      if (isFinanceGroupEntry(entry)) {
+        return getFinanceGroupChildren(entry)
           .filter((item) => item?.comprovanteUrl)
           .map((item) => ({
             id: item.id,
             url: item.comprovanteUrl,
-            fornecedor: item.fornecedor || 'Abastecimento',
+            fornecedor: item.fornecedor || (isExpenseGroupEntry(entry) ? 'Despesa' : 'Abastecimento'),
             date: getFinanceEntryDate(item),
             value: getFinanceTotal(item)
           }));
@@ -5413,7 +5512,7 @@
     function viewFinanceEntryById(entryId) {
       const entry = allFinanceEntries.find((item) => item.id === entryId);
       if (!entry) return;
-      if (isFuelGroupEntry(entry)) {
+      if (isFinanceGroupEntry(entry)) {
         openFuelGroupingModal(entry.id);
         setModalSubmitState(false);
         setCadastroModalReadOnly(true);
@@ -5434,7 +5533,7 @@
         showToast('Esse lançamento não possui comprovante vinculado.');
         return;
       }
-      if (isFuelGroupEntry(entry)) {
+      if (isFinanceGroupEntry(entry)) {
         openFuelGroupingModal(entry.id, { documentsOnly: true });
         return;
       }
@@ -5470,7 +5569,7 @@
       fields.innerHTML = `
         <div class="field-wrap full">
           <label>Lançamento selecionado</label>
-          <div class="soft-input w-full flex items-center">${escapeHtml(isFuelGroupEntry(entry) ? 'Agrupamento de abastecimentos' : (entry.fornecedor || 'Abastecimento'))}</div>
+          <div class="soft-input w-full flex items-center">${escapeHtml(isFinanceGroupEntry(entry) ? (isExpenseGroupEntry(entry) ? 'Agrupamento de despesas' : 'Agrupamento de abastecimentos') : (entry.fornecedor || 'Abastecimento'))}</div>
         </div>
         <div class="field-wrap">
           <label>NF / numero da nota</label>
@@ -6030,7 +6129,7 @@
 
       if (!count) {
         const emptyMessages = {
-          group: 'Agrupar abastecimentos: selecione pelo menos 2 abastecimentos pendentes do mesmo veículo.',
+          group: 'Agrupar lançamentos: selecione pelo menos 2 abastecimentos do mesmo veículo ou despesas do mesmo fornecedor.',
           ungroup: 'Desfazer agrupamento: selecione 1 agrupamento.',
           close: 'Fechar despesa: selecione 1 lançamento pendente.',
           edit: 'Editar lançamento: selecione 1 lançamento.',
@@ -6041,18 +6140,23 @@
       }
 
       if (action === 'group') {
-        if (count < 2) return 'Agrupar abastecimentos: selecione pelo menos 2 abastecimentos.';
-        if (!entries.every(entry => isFuelEntry(entry) && !entry.groupedIntoId)) {
-          return 'Agrupar abastecimentos: use apenas abastecimentos pendentes, sem agrupamento.';
+        if (count < 2) return 'Agrupar lançamentos: selecione pelo menos 2 lançamentos.';
+        if (entries.some(entry => entry.groupedIntoId || isFinanceEntryLockedForEditing(entry))) {
+          return 'Agrupar lançamentos: use apenas lançamentos pendentes e sem agrupamento.';
         }
-        if (new Set(entries.map(entry => getEntryVehicleId(entry))).size !== 1) {
-          return 'Agrupar abastecimentos: selecione abastecimentos do mesmo veículo.';
+        const hasOnlyFuel = entries.every(entry => isFuelEntry(entry));
+        const hasOnlyExpenses = entries.every(entry => isRegularExpenseEntry(entry));
+        if (!hasOnlyFuel && !hasOnlyExpenses) return 'Agrupar lançamentos: não misture abastecimentos com despesas.';
+        if (!getFinanceGroupingMode(entries)) {
+          return hasOnlyFuel
+            ? 'Agrupar abastecimentos: selecione abastecimentos do mesmo veículo.'
+            : 'Agrupar despesas: selecione despesas do mesmo fornecedor.';
         }
       }
 
       if (action === 'ungroup') {
         if (count !== 1) return 'Desfazer agrupamento: selecione apenas 1 agrupamento.';
-        if (!isFuelGroupEntry(firstEntry)) return 'Desfazer agrupamento: selecione um agrupamento.';
+        if (!isFinanceGroupEntry(firstEntry)) return 'Desfazer agrupamento: selecione um agrupamento.';
         if (isFinanceEntryLinkedToClosedOrder(firstEntry)) return 'Desfazer agrupamento: reabra a OS antes de alterar essa despesa.';
         if (isFinanceEntryLockedForEditing(firstEntry)) return 'Desfazer agrupamento: faça o estorno antes.';
       }
@@ -6078,14 +6182,11 @@
       }
 
       if (action === 'delete') {
-        if (entries.some(entry => entry.groupedIntoId || isFuelGroupEntry(entry))) {
+        if (entries.some(entry => entry.groupedIntoId || isFinanceGroupEntry(entry))) {
           return 'Excluir lançamento: desfaça o agrupamento antes.';
         }
         if (entries.some(entry => isFinanceEntryLinkedToClosedOrder(entry))) {
           return 'Excluir lançamento: reabra a OS antes de alterar essa despesa.';
-        }
-        if (entries.some(entry => canReverseFinanceEntry(entry) || isFinanceEntryLockedForEditing(entry))) {
-          return 'Excluir lançamento: faça o estorno antes de excluir.';
         }
       }
 
@@ -6127,18 +6228,20 @@
       const editButton = document.getElementById('edit-finance-btn');
       const deleteButton = document.getElementById('delete-finance-btn');
       const reverseButton = document.getElementById('reverse-finance-btn');
-      const canGroup = selectedEntries.length >= 2
-        && selectedEntries.every(entry => isFuelEntry(entry) && !entry.groupedIntoId)
-        && new Set(selectedEntries.map(entry => getEntryVehicleId(entry))).size === 1;
-      const canUngroup = selectedEntries.length === 1 && isFuelGroupEntry(selectedEntries[0]);
+      const canGroup = !!getFinanceGroupingMode(selectedEntries);
+      const canUngroup = selectedEntries.length === 1 && isFinanceGroupEntry(selectedEntries[0]);
       const canCloseExpense = selectedEntries.length === 1
         && getFinanceEntryStatus(selectedEntries[0]) !== 'agrupado'
         && !isFinanceEntryLockedForEditing(selectedEntries[0]);
       const canEdit = selectedEntries.length === 1 && !isFinanceEntryLockedForEditing(selectedEntries[0]);
-      const canDelete = count > 0 && selectedEntries.every(entry => !canReverseFinanceEntry(entry) && !entry.groupedIntoId && !isFuelGroupEntry(entry));
+      const canDelete = count > 0 && selectedEntries.every(entry =>
+        !entry.groupedIntoId
+        && !isFinanceGroupEntry(entry)
+        && !isFinanceEntryLinkedToClosedOrder(entry)
+      );
       const canReverse = selectedEntries.length >= 1 && selectedEntries.every(entry => canReverseFinanceEntry(entry));
 
-      setActionButtonState(groupButton, canGroup, 'Agrupar abastecimentos', getFinanceBlockedTooltip('group', selectedEntries));
+      setActionButtonState(groupButton, canGroup, 'Agrupar lançamentos', getFinanceBlockedTooltip('group', selectedEntries));
       setActionButtonState(ungroupButton, canUngroup, 'Desfazer agrupamento', getFinanceBlockedTooltip('ungroup', selectedEntries));
       setActionButtonState(closeExpenseButton, canCloseExpense, 'Fechar despesa', getFinanceBlockedTooltip('close', selectedEntries));
       setActionButtonState(editButton, canEdit, 'Editar lançamento', getFinanceBlockedTooltip('edit', selectedEntries));
@@ -6635,9 +6738,7 @@
         case 'service':
           return normalizeComparableText(order.descricao || '');
         case 'value':
-          return allFinanceEntries
-            .filter(entry => entry.orderId === order.id)
-            .reduce((sum, entry) => sum + getFinanceTotal(entry), 0);
+          return sumFinanceNetTotal(allFinanceEntries.filter(entry => entry.orderId === order.id));
         default:
           return '';
       }
@@ -6724,7 +6825,7 @@
         const vehicle = allVehicles.find(item => item.id === order.vehicleId);
         const driver = allDrivers.find(item => item.id === order.driverId);
         const financialItems = allFinanceEntries.filter(item => item.orderId === order.id);
-        const totalFinance = financialItems.reduce((sum, item) => sum + getFinanceTotal(item), 0);
+        const totalFinance = sumFinanceNetTotal(financialItems);
         const statusUi = getOrderStatusUi(order.status);
         const vehicleLabel = vehicle ? `${vehicle.numeroFrota || ''} ${vehicle.placa || ''} ${vehicle.modelo || ''}`.trim() : '-';
         const vehicleSub = vehicle ? [vehicle.placa || '', vehicle.modelo || ''].filter(Boolean).join(' ') : '';
@@ -6798,9 +6899,9 @@
         const order = allOrders.find(item => item.id === entry.orderId);
         const vehicle = allVehicles.find(item => item.id === getEntryVehicleId(entry));
         const groupEntry = entry.groupedIntoId ? allFinanceEntries.find(item => item.id === entry.groupedIntoId) : null;
-        const groupedChildren = isFuelGroupEntry(entry) ? getFuelGroupChildren(entry) : [];
-        const title = isFuelGroupEntry(entry)
-          ? 'Agrupamento de abastecimentos'
+        const groupedChildren = isFinanceGroupEntry(entry) ? getFinanceGroupChildren(entry) : [];
+        const title = isFinanceGroupEntry(entry)
+          ? (isExpenseGroupEntry(entry) ? 'Agrupamento de despesas' : 'Agrupamento de abastecimentos')
           : (entry.fornecedor || 'Lançamento');
         const vehicleLabel = vehicle
           ? `${vehicle.numeroFrota || ''} ${vehicle.placa || ''} ${vehicle.modelo || ''}`.trim()
@@ -6998,6 +7099,7 @@
       document.getElementById('order-data-inicio').value = order.dataInicio || '';
       document.getElementById('order-data-termino').value = order.dataTermino || '';
       document.getElementById('order-status').value = order.status || 'aberta';
+      updateOrderDateConstraints();
       ['order-tipo-os', 'order-veiculo', 'order-driver', 'order-status'].forEach(syncCustomSelectById);
       document.getElementById('order-descricao').value = order.descricao || '';
       document.getElementById('order-descricao').dataset.generatedDescription = '';
@@ -7024,7 +7126,7 @@
         showToast('Essa despesa já foi fechada ou distribuída. Faça o estorno antes de editar.');
         return;
       }
-      if (isFuelGroupEntry(entry)) {
+      if (isFinanceGroupEntry(entry)) {
         openFuelGroupingModal(id);
         return;
       }
@@ -7125,18 +7227,20 @@
         mode: 'confirm',
         title: selectedCount === 1 ? 'Excluir OS' : 'Excluir OS em lote',
         text: selectedCount === 1
-          ? 'Tem certeza que deseja excluir esta OS? Os lançamentos vinculados também serão removidos.'
-          : `Tem certeza que deseja excluir ${selectedCount} OS? Os lançamentos vinculados também serão removidos.`,
+          ? 'Tem certeza que deseja excluir esta OS? Os lançamentos financeiros vinculados serão estornados e voltarão para pendente.'
+          : `Tem certeza que deseja excluir ${selectedCount} OS? Os lançamentos financeiros vinculados serão estornados e voltarão para pendente.`,
         confirmLabel: 'Excluir',
         cancelLabel: 'Cancelar',
         onConfirm: () => {
           const deletedIds = new Set(selectedOrders);
           const deletedAt = new Date().toISOString();
+          const linkedEntryIds = new Set();
           const deletedBatch = allOrders
             .filter(order => deletedIds.has(order.id))
             .map(order => {
               const vehicle = allVehicles.find(item => item.id === order.vehicleId);
               const linkedEntries = allFinanceEntries.filter(entry => entry.orderId === order.id);
+              linkedEntries.forEach(entry => linkedEntryIds.add(entry.id));
               return {
                 ...order,
                 deletedAt,
@@ -7146,16 +7250,28 @@
                   modelo: vehicle.modelo,
                   numeroFrota: vehicle.numeroFrota
                 } : null,
-                totalLinked: linkedEntries.reduce((sum, entry) => sum + getFinanceTotal(entry), 0)
+                totalLinked: sumFinanceNetTotal(linkedEntries)
               };
             });
           deletedOrders = [...deletedBatch, ...deletedOrders].slice(0, 500);
           allOrders = allOrders.filter(order => !deletedIds.has(order.id));
-          allFinanceEntries = allFinanceEntries.filter(entry => !deletedIds.has(entry.orderId));
+          allFinanceEntries = allFinanceEntries.map(entry => {
+            if (!deletedIds.has(entry.orderId)) return entry;
+            return {
+              ...entry,
+              orderId: '',
+              workflowStatus: 'pendente',
+              closedExpense: false,
+              reversedFromDeletedOrder: entry.orderId,
+              reversedFromDeletedOrderAt: deletedAt
+            };
+          });
           selectedOrders.clear();
           saveToLocalStorage();
           renderAll();
-          showToast('OS e lançamentos vinculados excluídos com sucesso.');
+          showToast(linkedEntryIds.size
+            ? 'OS excluída. Lançamentos financeiros preservados e estornados para pendente.'
+            : 'OS excluída com sucesso.');
         }
       });
     }
@@ -7176,7 +7292,7 @@
       }
 
       const hasClosedGroup = selectedEntries.some(entry =>
-        isFuelGroupEntry(entry)
+        isFinanceGroupEntry(entry)
         && (entry.closedExpense || ['pendente_os', 'distribuido'].includes(getFinanceEntryStatus(entry)) || !!entry.orderId)
       );
       if (hasClosedGroup) {
@@ -7188,40 +7304,44 @@
         return;
       }
 
-      const hasOpenGroup = selectedEntries.some(entry => isFuelGroupEntry(entry));
+      const hasOpenGroup = selectedEntries.some(entry => isFinanceGroupEntry(entry));
       if (hasOpenGroup) {
         showToast('Desfaça o agrupamento antes de excluir esse lançamento.');
         return;
       }
 
-      const hasAllocatedEntry = selectedEntries.some(entry =>
-        !isFuelGroupEntry(entry)
-        && (['pendente_os', 'distribuido'].includes(getFinanceEntryStatus(entry)) || !!entry.orderId || !!entry.closedExpense)
-      );
-      if (hasAllocatedEntry) {
-        if (selectedEntries.some(entry => isFinanceEntryLinkedToClosedOrder(entry))) {
-          showToast('Despesa vinculada a OS fechada não pode ser excluída. Reabra a OS antes.');
-          return;
-        }
-        showToast('Despesa já alocada em OS não pode ser excluída. Faça o estorno antes de remover.');
+      if (selectedEntries.some(entry => isFinanceEntryLinkedToClosedOrder(entry))) {
+        showToast('Despesa vinculada a OS fechada não pode ser excluída. Reabra a OS antes.');
         return;
       }
 
       const selectedCount = selectedEntries.length;
+      const hasAllocatedEntry = selectedEntries.some(entry =>
+        !isFinanceGroupEntry(entry)
+        && (['pendente_os', 'distribuido'].includes(getFinanceEntryStatus(entry)) || !!entry.orderId || !!entry.closedExpense)
+      );
       openPromptModal({
         mode: 'confirm',
         title: selectedCount === 1 ? 'Excluir lançamento' : 'Excluir lançamentos',
-        text: selectedCount === 1
-          ? 'Tem certeza que deseja excluir este lançamento? Essa ação não poderá ser desfeita.'
-          : `Tem certeza que deseja excluir ${selectedCount} lançamentos? Essa ação não poderá ser desfeita.`,
+        text: hasAllocatedEntry
+          ? (selectedCount === 1
+            ? 'Este lançamento está alocado em OS. O sistema vai estornar o vínculo da OS e excluir o lançamento. Essa ação não poderá ser desfeita.'
+            : `Existem lançamentos alocados em OS nesta seleção. O sistema vai estornar os vínculos das OS e excluir os ${selectedCount} lançamentos. Essa ação não poderá ser desfeita.`)
+          : (selectedCount === 1
+            ? 'Tem certeza que deseja excluir este lançamento? Essa ação não poderá ser desfeita.'
+            : `Tem certeza que deseja excluir ${selectedCount} lançamentos? Essa ação não poderá ser desfeita.`),
         confirmLabel: 'Excluir',
         cancelLabel: 'Cancelar',
         onConfirm: () => {
+          const impactedOrderIds = selectedEntries.map(entry => entry.orderId).filter(Boolean);
           allFinanceEntries = allFinanceEntries.filter(entry => !selectedFinance.has(entry.id));
+          syncOrderStatusesAfterFinancialReversal(impactedOrderIds);
           selectedFinance.clear();
           saveToLocalStorage();
           renderAll();
-          showToast('Lançamento(s) excluído(s) com sucesso.');
+          showToast(hasAllocatedEntry
+            ? 'Estorno da OS realizado e lançamento(s) excluído(s) com sucesso.'
+            : 'Lançamento(s) excluído(s) com sucesso.');
         }
       });
     }
@@ -7253,6 +7373,7 @@
         confirmLabel: 'Estornar',
         cancelLabel: 'Cancelar',
         onConfirm: () => {
+          const impactedOrderIds = selectedEntries.map(entry => entry.orderId).filter(Boolean);
           allFinanceEntries = allFinanceEntries.map((entry) => {
             if (!selectedFinance.has(entry.id)) return entry;
             return {
@@ -7262,6 +7383,7 @@
               closedExpense: false
             };
           });
+          syncOrderStatusesAfterFinancialReversal(impactedOrderIds);
           saveToLocalStorage();
           renderAll();
           showToast('Estorno realizado. Agora a despesa pode ser editada novamente.');
@@ -7388,14 +7510,14 @@
       const driver = allDrivers.find(item => item.id === order.driverId);
       const kmData = getOrderKmData(order.id);
       const entries = allFinanceEntries.filter(item => item.orderId === order.id);
-      const totalEntries = entries.reduce((sum, item) => sum + getFinanceTotal(item), 0);
+      const totalEntries = sumFinanceNetTotal(entries);
       const statusLabel = getOrderStatusUi(order.status).label;
       const printableDescription = getOrderPrintableDescription(order);
       const reopenHistory = getOrderReopenHistory(order);
       let runningTotal = 0;
       const rows = Array.from({ length: Math.max(entries.length, 18) }, (_, index) => {
         const entry = entries[index];
-        if (entry) runningTotal += getFinanceTotal(entry);
+        if (entry) runningTotal += getFinanceNetTotal(entry);
         return `
           <tr>
             <td>${entry ? escapeHtml(formatDate(getFinanceEntryDate(entry))) : ''}</td>
@@ -7549,7 +7671,7 @@
       const driver = allDrivers.find(item => item.id === order.driverId);
       const kmData = getOrderKmData(order.id);
       const entries = allFinanceEntries.filter(item => item.orderId === order.id);
-      const totalEntries = entries.reduce((sum, item) => sum + getFinanceTotal(item), 0);
+      const totalEntries = sumFinanceNetTotal(entries);
       const statusLabel = (order.status || 'aberta').charAt(0).toUpperCase() + (order.status || 'aberta').slice(1);
       const printableDescription = getOrderPrintableDescription(order);
       const reopenHistory = getOrderReopenHistory(order);
@@ -7566,7 +7688,7 @@
       const rows = Array.from({ length: Math.max(entries.length, 24) }, (_, index) => {
         const entry = entries[index];
         if (entry) {
-          runningTotal += getFinanceTotal(entry);
+          runningTotal += getFinanceNetTotal(entry);
         }
         return `
           <tr>
@@ -7731,7 +7853,7 @@
       const driver = allDrivers.find(item => item.id === order.driverId);
       const kmData = getOrderKmData(order.id);
       const entries = allFinanceEntries.filter(item => item.orderId === order.id);
-      const totalEntries = entries.reduce((sum, item) => sum + getFinanceTotal(item), 0);
+      const totalEntries = sumFinanceNetTotal(entries);
       const statusLabel = (order.status || 'aberta').charAt(0).toUpperCase() + (order.status || 'aberta').slice(1);
       const printableDescription = getOrderPrintableDescription(order);
       const reopenHistory = getOrderReopenHistory(order);
@@ -7748,7 +7870,7 @@
       const rows = Array.from({ length: Math.max(entries.length, 24) }, (_, index) => {
         const entry = entries[index];
         if (entry) {
-          runningTotal += getFinanceTotal(entry);
+          runningTotal += getFinanceNetTotal(entry);
         }
         return `
           <tr>
@@ -8323,6 +8445,9 @@
           showToast('Informe um número válido para a OS.');
           return;
         }
+        if (!validateOrderDateRange(dataInicio, dataTermino)) {
+          return;
+        }
         if (findOrderNumberDuplicate(numero, currentEditingId)) {
           showToast(`Já existe uma OS com o número ${String(numero).padStart(4, '0')}.`);
           return;
@@ -8518,17 +8643,26 @@
           .filter(Boolean);
         const entries = ids
           .map(id => allFinanceEntries.find(entry => entry.id === id))
-          .filter(entry => entry && isFuelEntry(entry));
+          .filter(entry => entry && !isFinanceGroupEntry(entry));
         if (!entries.length) {
-          showToast('Não foi possível localizar os abastecimentos do agrupamento.');
+          showToast('Não foi possível localizar os lançamentos do agrupamento.');
           return;
         }
 
-        const vehicleId = getEntryVehicleId(entries[0]);
+        const groupingMode = currentEditingId
+          ? (currentFinanceEntryType === 'despesa_agrupada' ? 'expense' : 'fuel')
+          : getFinanceGroupingMode(entries);
+        if (!groupingMode) {
+          showToast('Agrupe abastecimentos do mesmo veículo ou despesas do mesmo fornecedor.');
+          return;
+        }
+        const isExpenseGrouping = groupingMode === 'expense';
+        const vehicleIds = [...new Set(entries.map(entry => getEntryVehicleId(entry)).filter(Boolean))];
+        const vehicleId = isExpenseGrouping ? (vehicleIds.length === 1 ? vehicleIds[0] : '') : getEntryVehicleId(entries[0]);
         const groupOrderSearch = document.getElementById('finance-group-order-search')?.value || '';
         let orderId = document.getElementById('finance-group-order-id').value;
         if (!orderId && groupOrderSearch.trim() && groupOrderSearch.trim().toLowerCase() !== 'deixar pendente') {
-          const resolvedOrder = resolveOrderFromSearch(groupOrderSearch, getOpenOrdersSorted().filter(order => order.vehicleId === vehicleId));
+          const resolvedOrder = resolveOrderFromSearch(groupOrderSearch, getOpenOrdersSorted().filter(order => !vehicleId || order.vehicleId === vehicleId));
           orderId = resolvedOrder?.id || '';
           const hiddenOrderField = document.getElementById('finance-group-order-id');
           if (hiddenOrderField) hiddenOrderField.value = orderId;
@@ -8558,14 +8692,16 @@
         }
 
         const payload = {
-          entryType: 'combustivel_agrupado',
+          entryType: isExpenseGrouping ? 'despesa_agrupada' : 'combustivel_agrupado',
           vehicleId,
           orderId: orderId || '',
           kind: 'despesa',
           kindLabel: 'Despesa',
-          supplierId: '',
-          supplierType: 'posto',
-          fornecedor: `Agrupamento de ${entries.length} abastecimento(s)`,
+          supplierId: isExpenseGrouping ? (entries[0].supplierId || '') : '',
+          supplierType: isExpenseGrouping ? (entries[0].supplierType || '') : 'posto',
+          fornecedor: isExpenseGrouping
+            ? `Agrupamento de ${entries.length} despesa(s) - ${entries[0].fornecedor || 'Fornecedor'}`
+            : `Agrupamento de ${entries.length} abastecimento(s)`,
           nf,
           dataVencimento,
           baseTotal,
