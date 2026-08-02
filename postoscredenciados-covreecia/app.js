@@ -578,7 +578,7 @@ async function saveFuelReceiptUpload(options = {}) {
   const uploadKey = getFuelReceiptUploadKey(formData);
   if (uploadedFuelReceipt && uploadedFuelReceipt.key === uploadKey) {
     if (!silent) {
-      showSuccessMessage('Comprovante j\u00e1 salvo. Agora \u00e9 s\u00f3 enviar pelo WhatsApp.');
+      showSuccessMessage('Comprovante j\u00e1 salvo. Clique em ENVIAR para validar pelo WhatsApp.');
     }
     return uploadedFuelReceipt.result;
   }
@@ -609,7 +609,7 @@ async function saveFuelReceiptUpload(options = {}) {
     setSaveReceiptButtonVisible(false);
     setFuelActionButtonsVisible(true);
     if (!silent) {
-      showSuccessMessage('Comprovante salvo com sucesso.');
+      showSuccessMessage('Comprovante salvo com sucesso. Clique em ENVIAR para validar pelo WhatsApp.');
     }
 
     return result;
@@ -757,18 +757,18 @@ async function submitFuelForm(e) {
 
 function showSuccessMessage(message) {
   const toast = document.createElement('div');
-  toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
+  toast.className = 'fixed top-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in max-w-md mx-auto text-center font-semibold';
   toast.textContent = message;
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
+  setTimeout(() => toast.remove(), 4500);
 }
 
 function showErrorMessage(message) {
   const toast = document.createElement('div');
-  toast.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
+  toast.className = 'fixed top-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in max-w-md mx-auto text-center font-semibold';
   toast.textContent = message;
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
+  setTimeout(() => toast.remove(), 4500);
 }
 
 function openMap(link) {
