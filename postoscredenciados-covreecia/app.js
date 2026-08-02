@@ -15,6 +15,28 @@ const CLOUDINARY_CLOUD_NAME = 'anh49kkl';
 const CLOUDINARY_UPLOAD_PRESET = 'comprovantes_frota';
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 const FUEL_WHATSAPP_NUMBER = '5527999884208';
+const MAX_RECEIPT_IMAGE_BYTES = 1200 * 1024;
+const COMPRESSED_RECEIPT_MAX_SIZE = 1600;
+const COMPRESSED_RECEIPT_QUALITY = 0.72;
+const DRIVER_NAMES_STORAGE_KEY = 'postoscredenciados-covreecia:driver-names';
+const LAST_FUEL_ENTRY_STORAGE_KEY = 'postoscredenciados-covreecia:last-fuel-entry';
+const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
+let pendingFuelWhatsAppPayload = null;
+let uploadedFuelReceipt = null;
+let fuelReceiptUploadPromise = null;
+let selectedFuelReceiptFile = null;
+const DEFAULT_DRIVER_NAMES = [
+  'AMANDA P. BONATTO',
+  'ALAN CHRISTIE',
+  'ITALO P. BONATTO',
+  'ELOI DOS SANTOS',
+  'JO\u00c3O SILVA',
+  'ELICARLOS ZANOTTI',
+  'GLEIDSON LAURENTINO',
+  'RONI VON',
+  'TIAGO COVRE',
+  OTHER_DRIVER_OPTION
+];
 
 const postosPorCidade = {
   'Boa Esperan\u00e7a': [
@@ -40,22 +62,55 @@ const postosPorCidade = {
   ]
 };
 
+function hideSuggestions(elementId) {
+  const suggestionsEl = document.getElementById(elementId);
+  if (suggestionsEl) {
+    suggestionsEl.classList.add('hidden');
+    suggestionsEl.innerHTML = '';
+  }
+}
+
+function renderSuggestions(elementId, items, dataAttribute) {
+  const suggestionsEl = document.getElementById(elementId);
+  if (!suggestionsEl || items.length === 0) {
+    hideSuggestions(elementId);
+    return;
+  }
+
+  suggestionsEl.innerHTML = items
+    .map(
+      (item) => `
+        <button
+          type="button"
+          class="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-red-50 transition border-b border-gray-100 last:border-b-0"
+          ${dataAttribute}="${item.replace(/"/g, '&quot;')}"
+        >
+          ${item}
+        </button>
+      `
+    )
+    .join('');
+
+  suggestionsEl.classList.remove('hidden');
+}
+
 document.getElementById('fuel-city').addEventListener('change', function() {
   const selectedCity = this.value;
-  const postoSelect = document.getElementById('fuel-station');
+  const stationSelect = document.getElementById('fuel-station');
+  markFuelReceiptUploadDirty();
 
-  postoSelect.innerHTML = '';
+  stationSelect.innerHTML = '';
 
   if (selectedCity && postosPorCidade[selectedCity]) {
-    postoSelect.innerHTML = '<option value="">Selecione um posto</option>';
+    stationSelect.innerHTML = '<option value="">Selecione um posto</option>';
     postosPorCidade[selectedCity].forEach((posto) => {
       const option = document.createElement('option');
       option.value = posto.nome;
       option.textContent = posto.nome;
-      postoSelect.appendChild(option);
+      stationSelect.appendChild(option);
     });
   } else {
-    postoSelect.innerHTML = '<option value="">Selecione uma cidade primeiro</option>';
+    stationSelect.innerHTML = '<option value="">Selecione uma cidade primeiro</option>';
   }
 });
 
@@ -71,7 +126,26 @@ document.getElementById('fuel-station').addEventListener('keypress', function(e)
   }
 });
 
+document.getElementById('fuel-station').addEventListener('change', function() {
+  markFuelReceiptUploadDirty();
+});
+
 document.getElementById('driver-name').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    document.getElementById('fuel-date').focus();
+  }
+});
+
+document.getElementById('driver-name').addEventListener('change', function() {
+  toggleCustomDriverField();
+  markFuelReceiptUploadDirty();
+});
+
+document.getElementById('custom-driver-name').addEventListener('input', function() {
+  markFuelReceiptUploadDirty();
+});
+
+document.getElementById('custom-driver-name').addEventListener('keypress', function(e) {
   if (e.key === 'Enter') {
     document.getElementById('fuel-date').focus();
   }
@@ -83,10 +157,18 @@ document.getElementById('fuel-date').addEventListener('keypress', function(e) {
   }
 });
 
+document.getElementById('fuel-date').addEventListener('change', function() {
+  markFuelReceiptUploadDirty();
+});
+
 document.getElementById('fuel-km').addEventListener('keypress', function(e) {
   if (e.key === 'Enter') {
-    document.getElementById('fuel-photo').click();
+    document.getElementById('fuel-photo-camera').click();
   }
+});
+
+document.getElementById('fuel-km').addEventListener('input', function() {
+  markFuelReceiptUploadDirty();
 });
 
 function toggleMenu() {
@@ -111,30 +193,253 @@ function setFuelDateToToday() {
   }
 }
 
+function getStoredDriverNames() {
+  try {
+    const storedNames = localStorage.getItem(DRIVER_NAMES_STORAGE_KEY);
+    const parsedNames = storedNames ? JSON.parse(storedNames) : [];
+    const validStoredNames = Array.isArray(parsedNames) ? parsedNames : [];
+    return Array.from(new Set([...DEFAULT_DRIVER_NAMES, ...validStoredNames]));
+  } catch (error) {
+    return [...DEFAULT_DRIVER_NAMES];
+  }
+}
+
+function populateDriverOptions() {
+  const driverSelect = document.getElementById('driver-name');
+  if (!driverSelect) {
+    return;
+  }
+
+  const currentValue = driverSelect.value;
+  const driverNames = getStoredDriverNames();
+  driverSelect.innerHTML = '<option value="">Selecione um motorista</option>';
+
+  driverNames.forEach((driverName) => {
+    const option = document.createElement('option');
+    option.value = driverName;
+    option.textContent = driverName;
+    driverSelect.appendChild(option);
+  });
+
+  if (currentValue && driverNames.includes(currentValue)) {
+    driverSelect.value = currentValue;
+  }
+
+  toggleCustomDriverField();
+}
+
+function saveDriverNameSuggestion(driverName) {
+  const normalizedName = driverName.trim().replace(/\s+/g, ' ');
+  if (!normalizedName || normalizedName === OTHER_DRIVER_OPTION) {
+    return;
+  }
+
+  const existingNames = getStoredDriverNames();
+  const filteredNames = existingNames.filter(
+    (storedName) => storedName.toLocaleLowerCase('pt-BR') !== normalizedName.toLocaleLowerCase('pt-BR')
+  );
+
+  filteredNames.unshift(normalizedName);
+  const namesToPersist = filteredNames.slice(0, 25).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+  try {
+    localStorage.setItem(DRIVER_NAMES_STORAGE_KEY, JSON.stringify(namesToPersist));
+  } catch (error) {
+    return;
+  }
+  populateDriverOptions();
+}
+
+function getLastFuelEntry() {
+  try {
+    const storedEntry = localStorage.getItem(LAST_FUEL_ENTRY_STORAGE_KEY);
+    const parsedEntry = storedEntry ? JSON.parse(storedEntry) : null;
+    return parsedEntry && typeof parsedEntry === 'object' ? parsedEntry : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveLastFuelEntry(entry) {
+  try {
+    localStorage.setItem(
+      LAST_FUEL_ENTRY_STORAGE_KEY,
+      JSON.stringify({
+        motorista: entry.motorista || '',
+        cidade: entry.cidade || '',
+        posto: entry.posto || ''
+      })
+    );
+  } catch (error) {
+    return;
+  }
+}
+
+function buildFuelReceiptFileName(driverName, dateValue, originalFileName) {
+  const normalizedDriverName = driverName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '+')
+    .replace(/[^a-z0-9+_-]/g, '');
+
+  const formattedDate = (dateValue || getTodayLocalDateString()).split('-').reverse().join('.');
+  const extensionMatch = originalFileName.match(/\.[^.]+$/);
+  const extension = extensionMatch ? extensionMatch[0].toLowerCase() : '.jpg';
+  const safeDriverName = normalizedDriverName || 'motorista';
+
+  return `${safeDriverName}+${formattedDate}${extension}`;
+}
+
+function createRenamedFuelReceiptFile(file, driverName, dateValue) {
+  const renamedFileName = buildFuelReceiptFileName(driverName, dateValue, file.name || '');
+  return new File([file], renamedFileName, {
+    type: file.type || 'image/jpeg',
+    lastModified: file.lastModified || Date.now()
+  });
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('N\u00e3o foi poss\u00edvel ler a imagem selecionada.'));
+    };
+
+    image.src = objectUrl;
+  });
+}
+
+async function compressFuelReceiptIfNeeded(file) {
+  if (!file || !file.type.startsWith('image/') || file.size <= MAX_RECEIPT_IMAGE_BYTES) {
+    return file;
+  }
+
+  const image = await loadImageFromFile(file);
+  const scale = Math.min(1, COMPRESSED_RECEIPT_MAX_SIZE / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+
+  canvas.width = width;
+  canvas.height = height;
+  context.drawImage(image, 0, 0, width, height);
+
+  const compressedBlob = await new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('N\u00e3o foi poss\u00edvel comprimir a imagem.'))),
+      'image/jpeg',
+      COMPRESSED_RECEIPT_QUALITY
+    );
+  });
+
+  if (compressedBlob.size >= file.size) {
+    return file;
+  }
+
+  const compressedName = (file.name || 'comprovante.jpg').replace(/\.[^.]+$/, '.jpg');
+  return new File([compressedBlob], compressedName, {
+    type: 'image/jpeg',
+    lastModified: Date.now()
+  });
+}
+
 function resetFuelPhotoState() {
-  document.getElementById('fuel-photo').value = '';
+  const cameraInput = document.getElementById('fuel-photo-camera');
+  const uploadInput = document.getElementById('fuel-photo-upload');
+  if (cameraInput) cameraInput.value = '';
+  if (uploadInput) uploadInput.value = '';
   document.getElementById('photo-preview-container').classList.add('hidden');
   document.getElementById('photo-buttons').classList.remove('hidden');
   document.getElementById('photo-preview').src = '';
+  selectedFuelReceiptFile = null;
+  uploadedFuelReceipt = null;
+  fuelReceiptUploadPromise = null;
+  updateReceiptUploadStatus('Salve o comprovante para deixar o envio pelo WhatsApp mais r\u00e1pido.');
+  setFuelActionButtonsVisible(false);
+  setSaveReceiptButtonVisible(true);
+}
+
+function toggleCustomDriverField() {
+  const driverSelect = document.getElementById('driver-name');
+  const customContainer = document.getElementById('custom-driver-container');
+  const customInput = document.getElementById('custom-driver-name');
+  const shouldShowCustomInput = driverSelect?.value === OTHER_DRIVER_OPTION;
+
+  if (!customContainer || !customInput) {
+    return;
+  }
+
+  customContainer.classList.toggle('hidden', !shouldShowCustomInput);
+  customInput.required = shouldShowCustomInput;
+  if (!shouldShowCustomInput) {
+    customInput.value = '';
+  }
+}
+
+function getSelectedDriverName() {
+  const driverSelect = document.getElementById('driver-name');
+  const customInput = document.getElementById('custom-driver-name');
+
+  if (driverSelect?.value === OTHER_DRIVER_OPTION) {
+    return customInput?.value.trim() || '';
+  }
+
+  return driverSelect?.value.trim() || '';
+}
+
+function markFuelReceiptUploadDirty() {
+  if (!selectedFuelReceiptFile) {
+    return;
+  }
+
+  uploadedFuelReceipt = null;
+  fuelReceiptUploadPromise = null;
+  setSaveReceiptButtonVisible(true);
+  setFuelActionButtonsVisible(false);
+  updateReceiptUploadStatus('Dados alterados. Salve o comprovante novamente antes de enviar.', 'neutral');
 }
 
 function prepareFuelForm(options = {}) {
-  const { cidade = '', posto = '' } = options;
+  const { cidade = '', posto = '', useLastEntry = false } = options;
   const citySelect = document.getElementById('fuel-city');
   const stationSelect = document.getElementById('fuel-station');
+  const driverInput = document.getElementById('driver-name');
+  const lastFuelEntry = useLastEntry ? getLastFuelEntry() : null;
+  const selectedCity = cidade || lastFuelEntry?.cidade || '';
+  const selectedPosto = posto || lastFuelEntry?.posto || '';
+  const selectedDriver = lastFuelEntry?.motorista || '';
 
   document.getElementById('fuel-form').reset();
-  citySelect.value = cidade;
+  citySelect.value = selectedCity;
+  populateDriverOptions();
+  if (selectedDriver && getStoredDriverNames().includes(selectedDriver)) {
+    driverInput.value = selectedDriver;
+  } else if (selectedDriver) {
+    driverInput.value = OTHER_DRIVER_OPTION;
+    document.getElementById('custom-driver-name').value = selectedDriver;
+  }
+  toggleCustomDriverField();
 
-  if (cidade && postosPorCidade[cidade]) {
+  if (selectedCity && postosPorCidade[selectedCity]) {
     stationSelect.innerHTML = '<option value="">Selecione um posto</option>';
-    postosPorCidade[cidade].forEach((postoItem) => {
+    postosPorCidade[selectedCity].forEach((postoItem) => {
       const option = document.createElement('option');
       option.value = postoItem.nome;
       option.textContent = postoItem.nome;
       stationSelect.appendChild(option);
     });
-    stationSelect.value = posto;
+    stationSelect.value = selectedPosto;
   } else {
     stationSelect.innerHTML = '<option value="">Selecione uma cidade primeiro</option>';
   }
@@ -145,14 +450,16 @@ function prepareFuelForm(options = {}) {
 
 function openFuelFormMenu() {
   document.getElementById('fuel-form-modal').classList.remove('hidden');
-  prepareFuelForm();
+  prepareFuelForm({ useLastEntry: true });
 }
 
 function closeFuelForm() {
   document.getElementById('fuel-form-modal').classList.add('hidden');
+  closeReceiptValidationModal();
   document.getElementById('fuel-form').reset();
   resetFuelPhotoState();
   setFuelDateToToday();
+  populateDriverOptions();
 }
 
 function openWhatsAppDirect(numero, mensagem) {
@@ -168,11 +475,250 @@ function openWhatsAppDirect(numero, mensagem) {
   }
 }
 
+function getFuelFormData() {
+  const data = document.getElementById('fuel-date').value;
+  const dateObj = data ? new Date(`${data}T00:00:00`) : null;
+  const now = new Date();
+
+  return {
+    motorista: getSelectedDriverName(),
+    cidade: document.getElementById('fuel-city').value,
+    posto: document.getElementById('fuel-station').value,
+    data,
+    dataFormatada: dateObj ? dateObj.toLocaleDateString('pt-BR') : '',
+    horaFormatada: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    km: document.getElementById('fuel-km').value.trim(),
+    file: selectedFuelReceiptFile
+  };
+}
+
+function getFuelReceiptUploadKey(formData) {
+  const file = formData.file;
+  if (!file) {
+    return '';
+  }
+
+  return [
+    file.name,
+    file.size,
+    file.lastModified,
+    formData.motorista,
+    formData.cidade,
+    formData.posto,
+    formData.data,
+    formData.km
+  ].join('|');
+}
+
+function updateReceiptUploadStatus(message, tone = 'neutral') {
+  const statusEl = document.getElementById('receipt-upload-status');
+  if (!statusEl) {
+    return;
+  }
+
+  const toneClasses = {
+    neutral: 'text-gray-500',
+    progress: 'text-blue-600',
+    success: 'text-emerald-700',
+    error: 'text-red-600'
+  };
+
+  statusEl.classList.remove('text-gray-500', 'text-blue-600', 'text-emerald-700', 'text-red-600');
+  statusEl.classList.add(toneClasses[tone] || toneClasses.neutral);
+  statusEl.textContent = message;
+}
+
+function setSaveReceiptButtonLoading(isLoading) {
+  const button = document.getElementById('save-receipt-btn');
+  if (!button) {
+    return;
+  }
+
+  button.disabled = isLoading;
+  button.classList.toggle('opacity-70', isLoading);
+  button.classList.toggle('cursor-wait', isLoading);
+  button.textContent = isLoading ? 'Salvando comprovante...' : 'Salvar comprovante';
+}
+
+function setSaveReceiptButtonVisible(isVisible) {
+  const button = document.getElementById('save-receipt-btn');
+  if (button) {
+    button.classList.toggle('hidden', !isVisible);
+  }
+}
+
+function setFuelActionButtonsVisible(isVisible) {
+  const actions = document.getElementById('fuel-action-buttons');
+  if (actions) {
+    actions.classList.toggle('hidden', !isVisible);
+  }
+}
+
+function openReceiptValidationModal() {
+  const formModal = document.getElementById('fuel-form-modal');
+  const validationModal = document.getElementById('receipt-validation-modal');
+  if (formModal) {
+    formModal.classList.add('hidden');
+  }
+  if (validationModal) {
+    validationModal.classList.remove('hidden');
+  }
+}
+
+function closeReceiptValidationModal() {
+  const validationModal = document.getElementById('receipt-validation-modal');
+  if (validationModal) {
+    validationModal.classList.add('hidden');
+  }
+}
+
+function cancelReceiptValidationModal() {
+  closeReceiptValidationModal();
+  const formModal = document.getElementById('fuel-form-modal');
+  if (formModal) {
+    formModal.classList.remove('hidden');
+  }
+}
+
+function confirmReceiptValidationModal() {
+  closeReceiptValidationModal();
+  const form = document.getElementById('fuel-form');
+  if (form?.requestSubmit) {
+    form.requestSubmit();
+  } else {
+    form?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+  }
+}
+
+function validateFuelReceiptUploadFields(formData) {
+  if (!formData.motorista || !formData.cidade || !formData.posto || !formData.data) {
+    showErrorMessage('Preencha motorista, cidade, posto e data antes de salvar o comprovante.');
+    return false;
+  }
+
+  if (!formData.file) {
+    showErrorMessage('Selecione uma foto do comprovante primeiro.');
+    return false;
+  }
+
+  return true;
+}
+
+async function saveFuelReceiptUpload(options = {}) {
+  const { silent = false } = options;
+  const formData = getFuelFormData();
+
+  if (!validateFuelReceiptUploadFields(formData)) {
+    return null;
+  }
+
+  const uploadKey = getFuelReceiptUploadKey(formData);
+  if (uploadedFuelReceipt && uploadedFuelReceipt.key === uploadKey) {
+    if (!silent) {
+      openReceiptValidationModal();
+    }
+    return uploadedFuelReceipt.result;
+  }
+
+  if (fuelReceiptUploadPromise) {
+    return fuelReceiptUploadPromise;
+  }
+
+  setSaveReceiptButtonLoading(true);
+  updateReceiptUploadStatus('Comprimindo e salvando comprovante na nuvem...', 'progress');
+
+  fuelReceiptUploadPromise = (async () => {
+    const compressedFile = await compressFuelReceiptIfNeeded(formData.file);
+    const renamedFile = createRenamedFuelReceiptFile(compressedFile, formData.motorista, formData.data);
+    const result = await uploadFuelReceiptToCloudinary(renamedFile, {
+      motorista: formData.motorista,
+      cidade: formData.cidade,
+      posto: formData.posto,
+      data: formData.dataFormatada,
+      km: formData.km
+    });
+
+    uploadedFuelReceipt = {
+      key: uploadKey,
+      result
+    };
+    updateReceiptUploadStatus('Comprovante salvo. O envio final pelo WhatsApp \u00e9 obrigat\u00f3rio para validar.', 'success');
+    setSaveReceiptButtonVisible(false);
+    setFuelActionButtonsVisible(true);
+    if (!silent) {
+      openReceiptValidationModal();
+    }
+
+    return result;
+  })();
+
+  try {
+    return await fuelReceiptUploadPromise;
+  } catch (error) {
+    uploadedFuelReceipt = null;
+    updateReceiptUploadStatus('N\u00e3o foi poss\u00edvel salvar. Tente novamente antes de enviar.', 'error');
+    if (!silent) {
+      showErrorMessage('Erro ao salvar comprovante. Tente novamente.');
+      return null;
+    }
+    throw error;
+  } finally {
+    fuelReceiptUploadPromise = null;
+    setSaveReceiptButtonLoading(false);
+  }
+}
+
+function hideWhatsAppSendButton() {
+  const button = document.getElementById('whatsapp-send-btn');
+  const note = document.getElementById('whatsapp-required-note');
+  if (!button) {
+    return;
+  }
+
+  button.classList.add('hidden');
+  button.onclick = null;
+  if (note) {
+    note.classList.add('hidden');
+  }
+}
+
+function showWhatsAppSendButton() {
+  const button = document.getElementById('whatsapp-send-btn');
+  const note = document.getElementById('whatsapp-required-note');
+  if (!button) {
+    return;
+  }
+
+  button.classList.remove('hidden');
+  button.onclick = handleWhatsAppSendClick;
+  if (note) {
+    note.classList.remove('hidden');
+  }
+}
+
+function handleWhatsAppSendClick() {
+  if (!pendingFuelWhatsAppPayload) {
+    return;
+  }
+
+  openWhatsAppDirect(pendingFuelWhatsAppPayload.numero, pendingFuelWhatsAppPayload.mensagem);
+  pendingFuelWhatsAppPayload = null;
+  hideWhatsAppSendButton();
+  document.getElementById('fuel-form').reset();
+  document.getElementById('loading-modal').classList.add('hidden');
+  resetProgressState();
+  resetFuelPhotoState();
+  setFuelDateToToday();
+  populateDriverOptions();
+  showSuccessMessage('WhatsApp aberto com a mensagem do comprovante.');
+}
+
 async function uploadFuelReceiptToCloudinary(file, metadata) {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
   formData.append('folder', 'comprovantes-frota');
+  formData.append('filename_override', file.name.replace(/\.[^.]+$/, ''));
   formData.append(
     'context',
     `motorista=${metadata.motorista}|cidade=${metadata.cidade}|posto=${metadata.posto}|data=${metadata.data}|km=${metadata.km || 'nao informado'}`
@@ -204,84 +750,62 @@ function resetProgressState() {
   }
 
   document.getElementById('progress-bar').style.width = '0%';
+  hideWhatsAppSendButton();
 }
 
 async function submitFuelForm(e) {
   e.preventDefault();
 
-  const motorista = document.getElementById('driver-name').value.trim();
-  const cidade = document.getElementById('fuel-city').value;
-  const posto = document.getElementById('fuel-station').value;
-  const data = document.getElementById('fuel-date').value;
-  const km = document.getElementById('fuel-km').value.trim();
-  const fileInput = document.getElementById('fuel-photo');
-  const file = fileInput.files && fileInput.files[0];
+  const formData = getFuelFormData();
+  const uploadKey = getFuelReceiptUploadKey(formData);
 
-  if (!file) {
+  if (!formData.file) {
     showErrorMessage('Por favor, selecione uma foto do comprovante');
     return;
   }
 
-  const dateObj = new Date(`${data}T00:00:00`);
-  const dataFormatada = dateObj.toLocaleDateString('pt-BR');
-
-  document.getElementById('loading-modal').classList.remove('hidden');
-  document.getElementById('fuel-form-modal').classList.add('hidden');
-
-  try {
-    const progressPromise = simulateProgress();
-    const uploadResult = await uploadFuelReceiptToCloudinary(file, {
-      motorista,
-      cidade,
-      posto,
-      data: dataFormatada,
-      km
-    });
-
-    const mensagem = [
-      '\u26fd *REGISTRO DE ABASTECIMENTO*',
-      '',
-      `\ud83d\udc64 *Motorista:* ${motorista}`,
-      `\ud83c\udfd9\ufe0f *Cidade:* ${cidade}`,
-      `\u26fd *Posto:* ${posto}`,
-      `\ud83d\udcc5 *Data:* ${dataFormatada}`,
-      `\ud83d\udee3\ufe0f *KM:* ${km || 'N\u00e3o informado'}`,
-      `\ud83e\uddfe *Comprovante:* ${uploadResult.secure_url}`
-    ].join('\n');
-
-    openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
-    await progressPromise;
-
-    setTimeout(() => {
-      document.getElementById('fuel-form').reset();
-      document.getElementById('loading-modal').classList.add('hidden');
-      resetProgressState();
-      closeFuelForm();
-      showSuccessMessage('Comprovante enviado com sucesso.');
-    }, 300);
-  } catch (error) {
-    console.error('Erro:', error);
-    document.getElementById('loading-modal').classList.add('hidden');
-    document.getElementById('fuel-form-modal').classList.remove('hidden');
-    resetProgressState();
-    showErrorMessage('Erro ao enviar comprovante. Tente novamente.');
+  if (!uploadedFuelReceipt || uploadedFuelReceipt.key !== uploadKey) {
+    showErrorMessage('Salve o comprovante antes de enviar pelo WhatsApp.');
+    return;
   }
+
+  const mensagem = [
+    '\u26fd *COMPROVANTE DE ABASTECIMENTO*',
+    '',
+    `\ud83d\udc64 *Motorista:* ${formData.motorista}`,
+    `\ud83c\udfd9\ufe0f *Cidade:* ${formData.cidade}`,
+    `\u26fd *Posto:* ${formData.posto}`,
+    `\ud83d\udcc5 *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
+    `\ud83d\udee3\ufe0f *KM:* ${formData.km || 'N\u00e3o informado'}`,
+    '',
+    `\ud83e\uddfe *Comprovante:* ${uploadedFuelReceipt.result.secure_url}`
+  ].join('\n');
+
+  openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
+  saveDriverNameSuggestion(formData.motorista);
+  saveLastFuelEntry({ motorista: formData.motorista, cidade: formData.cidade, posto: formData.posto });
+  document.getElementById('fuel-form').reset();
+  document.getElementById('fuel-form-modal').classList.add('hidden');
+  resetFuelPhotoState();
+  setFuelDateToToday();
+  populateDriverOptions();
+  showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar o abastecimento.');
 }
 
 function showSuccessMessage(message) {
   const toast = document.createElement('div');
-  toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
+  toast.className = 'fixed top-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in max-w-md mx-auto text-center font-semibold';
   toast.textContent = message;
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
+  setTimeout(() => toast.remove(), 4500);
 }
 
 function showErrorMessage(message) {
   const toast = document.createElement('div');
-  toast.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
+  toast.className = 'fixed top-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in max-w-md mx-auto text-center font-semibold';
   toast.textContent = message;
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
+  setTimeout(() => toast.remove(), 4500);
 }
 
 function openMap(link) {
@@ -421,28 +945,30 @@ function updateBackButtonVisibility() {
   }
 }
 
-function updatePhotoPreview() {
-  const fileInput = document.getElementById('fuel-photo');
+function updatePhotoPreview(fileInput) {
   const previewContainer = document.getElementById('photo-preview-container');
   const photoButtons = document.getElementById('photo-buttons');
   const preview = document.getElementById('photo-preview');
+  selectedFuelReceiptFile = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+  uploadedFuelReceipt = null;
+  fuelReceiptUploadPromise = null;
 
-  if (fileInput.files && fileInput.files.length > 0) {
+  if (selectedFuelReceiptFile) {
     const reader = new FileReader();
     reader.onload = function(e) {
       preview.src = e.target.result;
       previewContainer.classList.remove('hidden');
       photoButtons.classList.add('hidden');
+      updateReceiptUploadStatus('Clique em Salvar comprovante para antecipar o upload.', 'neutral');
+      setSaveReceiptButtonVisible(true);
+      setFuelActionButtonsVisible(false);
     };
-    reader.readAsDataURL(fileInput.files[0]);
+    reader.readAsDataURL(selectedFuelReceiptFile);
   }
 }
 
 function deletePhoto() {
-  document.getElementById('fuel-photo').value = '';
-  document.getElementById('photo-preview-container').classList.add('hidden');
-  document.getElementById('photo-buttons').classList.remove('hidden');
-  document.getElementById('photo-preview').src = '';
+  resetFuelPhotoState();
 }
 
 function formatCurrency(input) {
@@ -466,18 +992,54 @@ function formatCurrency(input) {
 }
 
 function capturePhoto() {
-  const fileInput = document.getElementById('fuel-photo');
+  const fileInput = document.getElementById('fuel-photo-camera');
   fileInput.setAttribute('capture', 'environment');
   fileInput.click();
 }
 
-async function simulateProgress() {
+async function simulateProgress(options = {}) {
+  const { receiptAlreadyUploaded = false } = options;
   const steps = [
-    { id: 1, duration: 2000, initialText: 'Verificando informa\u00e7\u00f5es', completedText: 'Informa\u00e7\u00f5es verificadas' },
-    { id: 2, duration: 2000, initialText: 'Validando dados', completedText: 'Dados validados' },
-    { id: 3, duration: 2000, initialText: 'Gerando protocolo', completedText: 'Protocolo gerado' },
-    { id: 4, duration: 2000, initialText: 'Anexando comprovantes', completedText: 'Comprovantes anexados' },
-    { id: 5, duration: 4000, initialText: 'Conclu\u00eddo', completedText: 'Tudo pronto!' }
+    {
+      id: 1,
+      duration: 450,
+      initialText: 'Verificando informa\u00e7\u00f5es...',
+      completedText: 'Informa\u00e7\u00f5es verificadas',
+      initialDescription: 'Conferindo motorista, cidade, posto e data.',
+      completedDescription: 'Dados b\u00e1sicos conferidos.'
+    },
+    {
+      id: 2,
+      duration: 450,
+      initialText: 'Validando dados...',
+      completedText: 'Dados validados',
+      initialDescription: 'Analisando o formul\u00e1rio preenchido.',
+      completedDescription: 'Formul\u00e1rio validado.'
+    },
+    {
+      id: 3,
+      duration: 450,
+      initialText: 'Gerando protocolo...',
+      completedText: 'Protocolo gerado',
+      initialDescription: 'Criando identificador do abastecimento.',
+      completedDescription: 'Identificador criado.'
+    },
+    {
+      id: 4,
+      duration: receiptAlreadyUploaded ? 300 : 900,
+      initialText: receiptAlreadyUploaded ? 'Confirmando comprovante salvo...' : 'Salvando comprovante...',
+      completedText: receiptAlreadyUploaded ? 'Comprovante j\u00e1 salvo' : 'Comprovante salvo',
+      initialDescription: receiptAlreadyUploaded ? 'Usando o link salvo na nuvem.' : 'Comprimindo e enviando para a nuvem.',
+      completedDescription: 'Link do comprovante pronto.'
+    },
+    {
+      id: 5,
+      duration: 450,
+      initialText: 'Preparando WhatsApp...',
+      completedText: 'Pronto para validar',
+      initialDescription: 'Montando a mensagem com o link do comprovante.',
+      completedDescription: 'Clique no bot\u00e3o abaixo para enviar e validar.'
+    }
   ];
 
   for (let i = 0; i < steps.length; i += 1) {
@@ -486,15 +1048,22 @@ async function simulateProgress() {
     const currentProgress = ((i + 1) / steps.length) * 100;
     const spinner = document.getElementById(`step-${step.id}-spinner`);
     const textEl = document.getElementById(`step-${step.id}-text`);
+    const descriptionEl = textEl.nextElementSibling;
 
     spinner.classList.remove('hidden');
     textEl.textContent = step.initialText;
+    if (descriptionEl) {
+      descriptionEl.textContent = step.initialDescription;
+    }
 
     await new Promise((resolve) => setTimeout(resolve, step.duration));
 
     spinner.classList.add('hidden');
     document.getElementById(`step-${step.id}-check`).classList.remove('hidden');
     textEl.textContent = step.completedText;
+    if (descriptionEl) {
+      descriptionEl.textContent = step.completedDescription;
+    }
 
     const circle = document.getElementById(`step-${step.id}-icon`).querySelector('div');
     circle.classList.add('border-green-600', 'bg-green-50');
@@ -508,6 +1077,7 @@ window.addEventListener('DOMContentLoaded', function() {
   if (header) {
     header.style.zIndex = '20';
   }
+  populateDriverOptions();
 });
 
 async function onConfigChange(newConfig) {

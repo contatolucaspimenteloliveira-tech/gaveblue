@@ -84,29 +84,55 @@
      </div>
      <form id="fuel-form" class="px-5 sm:px-6 py-6 space-y-4" onsubmit="submitFuelForm(event)">
       <div>
-       <label class="block text-sm font-semibold text-gray-900 mb-2">Motorista *</label>
-       <input type="text" id="driver-name" required placeholder="Nome do motorista" class="w-full px-3 sm:px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition text-sm">
+       <label class="block text-sm font-semibold text-gray-900 mb-2">Motorista <span class="text-red-500">*</span></label>
+       <div class="select-shell">
+        <select id="driver-name" required class="select-field">
+         <option value="">Selecione um motorista</option>
+        </select>
+        <span class="select-icon" aria-hidden="true">
+         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor">
+          <path d="M5 7.5 10 12.5 15 7.5" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+         </svg>
+        </span>
+       </div>
+       <div id="custom-driver-container" class="hidden mt-3">
+        <input id="custom-driver-name" type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-gray-900" placeholder="Digite o nome do motorista" autocomplete="name">
+       </div>
       </div>
       <div>
-       <label class="block text-sm font-semibold text-gray-900 mb-2">Cidade *</label>
-       <select id="fuel-city" required class="w-full px-3 sm:px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition text-sm">
-        <option value="">Selecione uma cidade</option>
-        <option value="Boa Esperan&ccedil;a">Boa Esperan&ccedil;a</option>
-        <option value="Montanha">Montanha</option>
-        <option value="Nova Ven&eacute;cia">Nova Ven&eacute;cia</option>
-        <option value="Pedro Can&aacute;rio">Pedro Can&aacute;rio</option>
-        <option value="Pinheiros">Pinheiros</option>
-        <option value="S&atilde;o Mateus">S&atilde;o Mateus</option>
-       </select>
+       <label class="block text-sm font-semibold text-gray-900 mb-2">Cidade <span class="text-red-500">*</span></label>
+       <div class="select-shell">
+        <select id="fuel-city" required class="select-field">
+         <option value="">Selecione uma cidade</option>
+         <option value="Boa Esperan&ccedil;a">Boa Esperan&ccedil;a</option>
+         <option value="Montanha">Montanha</option>
+         <option value="Nova Ven&eacute;cia">Nova Ven&eacute;cia</option>
+         <option value="Pedro Can&aacute;rio">Pedro Can&aacute;rio</option>
+         <option value="Pinheiros">Pinheiros</option>
+         <option value="S&atilde;o Mateus">S&atilde;o Mateus</option>
+        </select>
+        <span class="select-icon" aria-hidden="true">
+         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor">
+          <path d="M5 7.5 10 12.5 15 7.5" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+         </svg>
+        </span>
+       </div>
       </div>
       <div>
-       <label class="block text-sm font-semibold text-gray-900 mb-2">Posto *</label>
-       <select id="fuel-station" required class="w-full px-3 sm:px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition text-sm">
-        <option value="">Selecione uma cidade primeiro</option>
-       </select>
+       <label class="block text-sm font-semibold text-gray-900 mb-2">Posto <span class="text-red-500">*</span></label>
+       <div class="select-shell">
+        <select id="fuel-station" required class="select-field">
+         <option value="">Selecione uma cidade primeiro</option>
+        </select>
+        <span class="select-icon" aria-hidden="true">
+         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor">
+          <path d="M5 7.5 10 12.5 15 7.5" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+         </svg>
+        </span>
+       </div>
       </div>
       <div>
-       <label class="block text-sm font-semibold text-gray-900 mb-2">Data *</label>
+       <label class="block text-sm font-semibold text-gray-900 mb-2">Data <span class="text-red-500">*</span></label>
        <input type="date" id="fuel-date" required class="w-full px-3 sm:px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition text-sm">
       </div>
       <div>
@@ -114,28 +140,33 @@
        <input type="number" id="fuel-km" min="0" step="1" placeholder="Informe o KM atual do ve&iacute;culo" class="w-full px-3 sm:px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition text-sm">
       </div>
       <div>
-       <label class="block text-sm font-semibold text-gray-900 mb-3">Comprovante (Foto) *</label>
+       <label class="block text-sm font-semibold text-gray-900 mb-3">Comprovante (Foto) <span class="text-red-500">*</span></label>
        <div id="photo-preview-container" class="hidden mb-4">
-        <div class="relative">
+       <div class="relative">
          <img id="photo-preview" src="" alt="Preview" class="w-full h-48 object-cover rounded-lg border border-gray-300">
          <button type="button" onclick="deletePhoto()" class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
          </button>
         </div>
+        <button id="save-receipt-btn" type="button" onclick="saveFuelReceiptUpload()" class="mt-3 w-full px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm">
+         Salvar comprovante
+        </button>
+        <p id="receipt-upload-status" class="mt-2 text-xs font-medium text-gray-500">Salve o comprovante para deixar o envio pelo WhatsApp mais r&aacute;pido.</p>
        </div>
        <div id="photo-buttons" class="space-y-2">
-        <button type="button" onclick="capturePhoto()" class="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm">
+        <label for="fuel-photo-camera" class="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer">
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
          Tirar Foto
-        </button>
-        <button type="button" onclick="document.getElementById('fuel-photo').click()" class="w-full px-4 py-2.5 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm">
+        </label>
+        <label for="fuel-photo-upload" class="w-full px-4 py-2.5 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer">
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
          Fazer Upload
-        </button>
+        </label>
        </div>
-       <input type="file" id="fuel-photo" accept="image/*" class="hidden" onchange="updatePhotoPreview()">
+       <input type="file" id="fuel-photo-camera" accept="image/*" capture="environment" class="sr-only" onchange="updatePhotoPreview(this)">
+       <input type="file" id="fuel-photo-upload" accept="image/*" class="sr-only" onchange="updatePhotoPreview(this)">
       </div>
-      <div class="flex gap-3 sm:gap-4 pt-4">
+      <div id="fuel-action-buttons" class="hidden flex gap-3 sm:gap-4 pt-4">
        <button type="button" onclick="closeFuelForm()" class="flex-1 px-4 py-2.5 bg-gray-300 hover:bg-gray-400 text-gray-900 font-semibold rounded-lg transition text-sm">Cancelar</button>
        <button type="submit" id="fuel-submit-btn" class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition text-sm flex items-center justify-center gap-2">
         <span>Enviar</span>
@@ -143,12 +174,44 @@
        </button>
       </div>
      </form>
+   </div>
+  </div>
+
+   <div id="receipt-validation-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="receipt-validation-title">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-7 border border-amber-200">
+     <div class="flex flex-col items-center text-center">
+      <div class="h-16 w-16 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shadow-lg shadow-amber-200/60 mb-4">
+       <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+       </svg>
+      </div>
+      <p class="text-xs font-black uppercase tracking-[0.22em] text-amber-600">Comprovante salvo</p>
+      <h2 id="receipt-validation-title" class="text-2xl font-black text-gray-900 mt-2">Valide pelo WhatsApp</h2>
+      <p class="text-sm text-gray-600 mt-3 leading-relaxed">
+       Seu comprovante foi salvo com sucesso. Para valida&ccedil;&atilde;o do seu comprovante, por favor, clique em <strong>Enviar</strong> e envie a mensagem pelo WhatsApp.
+      </p>
+     </div>
+     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
+      <button type="button" onclick="cancelReceiptValidationModal()" class="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold rounded-xl transition">
+       Cancelar
+      </button>
+      <button type="button" onclick="confirmReceiptValidationModal()" class="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2">
+       <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20.52 3.48A11.86 11.86 0 0 0 12.06 0C5.49 0 .14 5.35.14 11.92c0 2.1.55 4.15 1.59 5.96L.04 24l6.27-1.65a11.93 11.93 0 0 0 5.75 1.46h.01c6.57 0 11.92-5.35 11.92-11.92 0-3.18-1.24-6.17-3.47-8.41ZM12.07 21.8h-.01a9.9 9.9 0 0 1-5.05-1.38l-.36-.21-3.72.98.99-3.63-.23-.37a9.86 9.86 0 0 1-1.51-5.27c0-5.46 4.44-9.9 9.9-9.9a9.84 9.84 0 0 1 7 2.9 9.84 9.84 0 0 1 2.9 7c0 5.45-4.44 9.89-9.91 9.89Zm5.43-7.41c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.39-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.08-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35Z"/>
+       </svg>
+       Enviar
+      </button>
+     </div>
     </div>
    </div>
 
    <div id="loading-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 sm:p-8">
-     <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-6 text-center">Processando Registros</h2>
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full mx-4 p-6 sm:p-8 border border-emerald-100">
+     <div class="text-center mb-6">
+      <p class="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Valida&ccedil;&atilde;o do abastecimento</p>
+      <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mt-2">Quase pronto</h2>
+      <p class="text-sm text-gray-500 mt-2">Ao finalizar, clique no bot&atilde;o do WhatsApp para validar seu abastecimento.</p>
+     </div>
      <div class="space-y-4">
       <div class="flex items-start gap-3">
        <div id="step-1-icon" class="flex-shrink-0 mt-1">
@@ -214,6 +277,12 @@
      <div class="mt-6 bg-gray-200 h-2 rounded-full overflow-hidden">
       <div id="progress-bar" class="h-full bg-gradient-to-r from-blue-500 to-green-500 w-0 transition-all duration-500"></div>
      </div>
+     <p id="whatsapp-required-note" class="hidden mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 text-center">
+      Para validar seu abastecimento, clique no bot&atilde;o abaixo e envie a mensagem no WhatsApp.
+     </p>
+     <button id="whatsapp-send-btn" type="button" class="hidden mt-3 w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition text-sm flex items-center justify-center gap-2">
+      Enviar comprovante pelo WhatsApp
+     </button>
     </div>
    </div>
 
