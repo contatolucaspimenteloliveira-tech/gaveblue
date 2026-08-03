@@ -67,6 +67,7 @@
     let wefrotasDbConnection = null;
     let wefrotasStorageEngine = 'localStorage';
     let wefrotasStorageQueue = Promise.resolve();
+    let wefrotasLocalSnapshotUpdatedAt = '';
     let customLogoEnabled = false;
     let customLogoUrl = '';
     let customLogoScale = 60;
@@ -1434,7 +1435,10 @@
         const transaction = db.transaction(wefrotasIndexedDbStore, 'readonly');
         const store = transaction.objectStore(wefrotasIndexedDbStore);
         const request = store.get(wefrotasIndexedDbSnapshotKey);
-        request.onsuccess = () => resolve(request.result?.value || null);
+        request.onsuccess = () => {
+          wefrotasLocalSnapshotUpdatedAt = request.result?.updatedAt || '';
+          resolve(request.result?.value || null);
+        };
         request.onerror = () => reject(request.error || new Error('Falha ao ler IndexedDB.'));
       }));
     }
@@ -1443,12 +1447,16 @@
       return openWeFrotasIndexedDb().then((db) => new Promise((resolve, reject) => {
         const transaction = db.transaction(wefrotasIndexedDbStore, 'readwrite');
         const store = transaction.objectStore(wefrotasIndexedDbStore);
+        const updatedAt = new Date().toISOString();
         const request = store.put({
           key: wefrotasIndexedDbSnapshotKey,
           value: snapshot,
-          updatedAt: new Date().toISOString()
+          updatedAt
         });
-        request.onsuccess = () => resolve();
+        request.onsuccess = () => {
+          wefrotasLocalSnapshotUpdatedAt = updatedAt;
+          resolve();
+        };
         request.onerror = () => reject(request.error || new Error('Falha ao salvar IndexedDB.'));
       }));
     }
@@ -1631,6 +1639,7 @@
       }
       const user = await backend.initialize({
         getSnapshot: buildStorageSnapshot,
+        getSnapshotUpdatedAt: () => wefrotasLocalSnapshotUpdatedAt,
         applySnapshot: applyRemoteStorageSnapshot,
         onStatus: updateOnlineStatus
       });
@@ -1643,10 +1652,22 @@
         return null;
       }
       showOnlineAuthChecking('Carregando seus dados...');
-      const result = await backend.adoptRemoteOrUploadLocal();
-      toggleOnlineLogin(false);
-      scheduleOnlineIdleLogout();
-      return result;
+      try {
+        const result = await backend.adoptRemoteOrUploadLocal();
+        toggleOnlineLogin(false);
+        scheduleOnlineIdleLogout();
+        return result;
+      } catch (error) {
+        console.error('Sessão recuperada, mas os dados continuam pendentes.', error);
+        toggleOnlineLogin(false);
+        scheduleOnlineIdleLogout();
+        updateOnlineStatus({
+          state: 'error',
+          message: `Conectado, mas a sincronização está pendente: ${error?.message || 'erro no Appwrite'}`,
+          user
+        });
+        return { mode: 'local-pending', error };
+      }
     }
 
     async function loginWeFrotasOnline(event) {
@@ -1665,13 +1686,22 @@
       let signedIn = false;
       setOnlineLoginLoading(true);
       try {
-        await backend.signIn(email, password);
+        const user = await backend.signIn(email, password);
         signedIn = true;
         showOnlineAuthChecking('Carregando seus dados...');
-        await backend.adoptRemoteOrUploadLocal();
+        try {
+          await backend.adoptRemoteOrUploadLocal();
+        } catch (syncError) {
+          console.error('Login concluído com sincronização pendente.', syncError);
+          updateOnlineStatus({
+            state: 'error',
+            message: `Conectado, mas a sincronização está pendente: ${syncError?.message || 'erro no Appwrite'}`,
+            user
+          });
+        }
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
-        showToast('WeFrotas Online conectado com sucesso.');
+        showToast('WeFrotas Online conectado.');
       } catch (error) {
         if (signedIn) await backend.signOut().catch(() => {});
         toggleOnlineLogin(true, error?.message || 'Não foi possível entrar.');
