@@ -17,6 +17,7 @@
   let remoteApplyTimer = null;
   let lastSerializedSnapshot = '';
   const LOGOUT_PENDING_KEY = 'wefrotas_online_logout_pending';
+  const SYNC_PENDING_KEY = 'wefrotas_online_sync_pending';
 
   function hasPendingLogout() {
     try { return localStorage.getItem(LOGOUT_PENDING_KEY) === '1'; } catch (error) { return false; }
@@ -29,6 +30,25 @@
     } catch (error) {
       console.warn('Não foi possível atualizar o estado local do logout.', error);
     }
+  }
+
+  function hasPendingSync() {
+    try { return localStorage.getItem(SYNC_PENDING_KEY) === '1'; } catch (error) { return false; }
+  }
+
+  function setPendingSync(pending) {
+    try {
+      if (pending) localStorage.setItem(SYNC_PENDING_KEY, '1');
+      else localStorage.removeItem(SYNC_PENDING_KEY);
+    } catch (error) {
+      console.warn('Não foi possível atualizar o estado local da sincronização.', error);
+    }
+  }
+
+  function describeError(error) {
+    if (!error) return 'erro desconhecido';
+    const message = String(error.message || error.type || 'erro desconhecido');
+    return error.code ? `${message} (código ${error.code})` : message;
   }
 
   async function clearPendingRemoteSession() {
@@ -152,25 +172,38 @@
     const serialized = JSON.stringify(snapshot);
     const storedSnapshot = await encodeSnapshot(serialized);
     const rowId = await digestId(config.companyId);
-    await tablesDB.upsertRow({
-      databaseId: config.databaseId,
-      tableId: config.tableId,
-      rowId,
-      data: {
-        workspaceId: config.companyId,
-        snapshot: storedSnapshot,
-        updatedAt: new Date().toISOString(),
-        updatedBy: currentUser.$id
-      },
-      permissions: getPermissions()
-    });
+    const data = {
+      workspaceId: config.companyId,
+      snapshot: storedSnapshot,
+      updatedAt: new Date().toISOString(),
+      updatedBy: currentUser.$id
+    };
+    try {
+      await tablesDB.updateRow({
+        databaseId: config.databaseId,
+        tableId: config.tableId,
+        rowId,
+        data
+      });
+    } catch (error) {
+      if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
+      await tablesDB.createRow({
+        databaseId: config.databaseId,
+        tableId: config.tableId,
+        rowId,
+        data,
+        permissions: getPermissions()
+      });
+    }
 
     lastSerializedSnapshot = serialized;
+    setPendingSync(false);
     emitStatus('online', 'Dados sincronizados.');
   }
 
   function queueSnapshot(snapshot, delay = 1200) {
     if (!currentUser || !snapshot) return;
+    setPendingSync(true);
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => {
       const serialized = JSON.stringify(snapshot);
@@ -179,7 +212,7 @@
         .then(() => persistSnapshot(snapshot))
         .catch((error) => {
           console.error('Falha ao sincronizar WeFrotas.', error);
-          emitStatus('error', 'Falha na sincronização. A cópia local foi preservada.', { error });
+          emitStatus('error', `Falha na sincronização: ${describeError(error)}. Cópia local pendente.`, { error });
         });
     }, delay);
   }
@@ -190,6 +223,7 @@
     const channel = `tablesdb.${config.databaseId}.tables.${config.tableId}.rows`;
     unsubscribeRealtime = client.subscribe(channel, (event) => {
       if (event?.payload?.workspaceId !== config.companyId) return;
+      if (hasPendingSync()) return;
       clearTimeout(remoteApplyTimer);
       remoteApplyTimer = setTimeout(async () => {
         try {
@@ -235,7 +269,29 @@
     if (hasPendingLogout() && !await clearPendingRemoteSession()) {
       throw new Error('Ainda estamos encerrando a sessão anterior. Tente novamente em instantes.');
     }
-    await account.createEmailPasswordSession({ email, password });
+    try {
+      const activeUser = await account.get();
+      if (activeUser) {
+        const requestedEmail = String(email || '').trim().toLowerCase();
+        const activeEmail = String(activeUser.email || '').trim().toLowerCase();
+        if (!requestedEmail || requestedEmail === activeEmail) {
+          currentUser = activeUser;
+          emitStatus('online', `Sessão existente recuperada para ${currentUser.name || currentUser.email}.`);
+          subscribeRealtime();
+          return currentUser;
+        }
+        await account.deleteSession({ sessionId: 'current' });
+      }
+    } catch (error) {
+      // Sem sessão recuperável: o login normal continua abaixo.
+    }
+    try {
+      await account.createEmailPasswordSession({ email, password });
+    } catch (error) {
+      const sessionAlreadyExists = error?.type === 'user_session_already_exists'
+        || /session is active|session already exists/i.test(String(error?.message || ''));
+      if (!sessionAlreadyExists) throw error;
+    }
     currentUser = await account.get();
     emitStatus('online', `Conectado como ${currentUser.name || currentUser.email}.`);
     subscribeRealtime();
@@ -280,13 +336,17 @@
 
   async function adoptRemoteOrUploadLocal() {
     if (!currentUser) return { mode: 'signed-out' };
+    const localSnapshot = currentSnapshotGetter?.();
+    if (hasPendingSync() && localSnapshot) {
+      await persistSnapshot(localSnapshot);
+      return { mode: 'uploaded-pending-local', snapshot: localSnapshot };
+    }
     const remoteSnapshot = await loadRemoteSnapshot();
     if (remoteSnapshot) {
       lastSerializedSnapshot = JSON.stringify(remoteSnapshot);
       await currentSnapshotApplier?.(remoteSnapshot);
       return { mode: 'remote', snapshot: remoteSnapshot };
     }
-    const localSnapshot = currentSnapshotGetter?.();
     if (localSnapshot) await persistSnapshot(localSnapshot);
     return { mode: 'uploaded-local', snapshot: localSnapshot };
   }
@@ -301,7 +361,11 @@
     loadRemoteSnapshot,
     adoptRemoteOrUploadLocal,
     queueSnapshot,
-    syncNow: (snapshot) => persistSnapshot(snapshot || currentSnapshotGetter?.()),
+    syncNow: (snapshot) => {
+      const nextSnapshot = snapshot || currentSnapshotGetter?.();
+      setPendingSync(true);
+      return persistSnapshot(nextSnapshot);
+    },
     uploadReceipt
   });
 })(window);
