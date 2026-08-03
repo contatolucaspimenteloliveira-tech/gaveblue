@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260803-login-2">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260803-access-3">
   
 </head>
 <body class="auth-locked">
@@ -1186,27 +1186,51 @@
   </div>
 
   <div id="online-auth-backdrop" class="online-auth-backdrop">
-    <form id="online-auth-form" class="online-auth-card">
-      <img src="./wefrotas.png" alt="WeFrotas" class="online-auth-logo">
-      <p class="panel-kicker">WeFrotas Online</p>
-      <h2>Fazer login</h2>
-      <label for="online-auth-email">E-mail</label>
-      <input id="online-auth-email" type="email" autocomplete="username" required>
-      <label for="online-auth-password">Senha</label>
-      <input id="online-auth-password" type="password" autocomplete="current-password" required>
-      <button id="online-auth-submit" type="submit">Entrar</button>
-      <p class="online-auth-signup">
-        <span>Não tem cadastro ainda?</span>
-        <a href="https://wa.me/5527988790381?text=Ol%C3%A1%21%20Quero%20me%20cadastrar%20no%20WeFrotas%20Online." target="_blank" rel="noopener noreferrer">Quero me cadastrar</a>
-      </p>
-      <span id="online-auth-error" class="online-auth-error" aria-live="polite"></span>
-    </form>
+    <div id="online-auth-checking" class="online-auth-checking" role="status" aria-live="polite">
+      <img src="./wefrotas.png" alt="WeFrotas" class="online-auth-checking-logo">
+      <span class="online-auth-loader" aria-hidden="true"></span>
+      <strong id="online-auth-checking-text">Verificando seu acesso...</strong>
+      <small>Aguarde enquanto protegemos seus dados.</small>
+    </div>
+
+    <div id="online-auth-layout" class="online-auth-layout hidden">
+      <a class="online-auth-back-link" href="https://gaveblue.com.br/">
+        <span aria-hidden="true">←</span>
+        Voltar ao site principal
+      </a>
+
+      <section class="online-auth-promo" aria-label="Conheça o WeFrotas">
+        <img src="./wefrotas-login-promo.jpg" alt="Gestão completa da sua frota com o WeFrotas">
+      </section>
+
+      <section class="online-auth-panel">
+        <form id="online-auth-form" class="online-auth-card">
+          <img src="./wefrotas.png" alt="WeFrotas" class="online-auth-logo">
+          <p class="panel-kicker">WeFrotas Online</p>
+          <h2>Fazer login</h2>
+          <p class="online-auth-description">Acesse o ambiente exclusivo de gestão da sua frota.</p>
+          <label for="online-auth-email">E-mail</label>
+          <input id="online-auth-email" type="email" autocomplete="username" required>
+          <label for="online-auth-password">Senha</label>
+          <input id="online-auth-password" type="password" autocomplete="current-password" required>
+          <button id="online-auth-submit" type="submit">
+            <span class="online-auth-button-spinner" aria-hidden="true"></span>
+            <span id="online-auth-submit-label">Entrar</span>
+          </button>
+          <p class="online-auth-signup">
+            <span>Não tem cadastro ainda?</span>
+            <a href="https://wa.me/5527988790381?text=Ol%C3%A1%21%20Quero%20me%20cadastrar%20no%20WeFrotas%20Online." target="_blank" rel="noopener noreferrer">Quero me cadastrar</a>
+          </p>
+          <span id="online-auth-error" class="online-auth-error" aria-live="polite"></span>
+        </form>
+      </section>
+    </div>
   </div>
 
   <script src="./appwrite-config.js?v=1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=1"></script>
-  <script src="./wefrotas.js?v=20260802-online-2"></script>
+  <script src="./wefrotas.js?v=20260803-access-3"></script>
 </body>
 </html>
 <!-- deploy: auth-visibility-fix -->
