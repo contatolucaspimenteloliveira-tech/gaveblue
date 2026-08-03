@@ -10,6 +10,7 @@
   let currentUser = null;
   let currentSnapshotGetter = null;
   let currentSnapshotUpdatedAtGetter = null;
+  let currentSnapshotPreparer = null;
   let currentSnapshotApplier = null;
   let statusListener = null;
   let unsubscribeRealtime = null;
@@ -270,8 +271,9 @@
 
   async function persistSnapshot(snapshot) {
     if (!currentUser) throw new Error('Entre no WeFrotas antes de sincronizar os dados.');
-    emitStatus('syncing', 'Sincronizando dados...');
-    const serialized = JSON.stringify(snapshot);
+    emitStatus('syncing', 'Preparando dados para sincronização...');
+    const preparedSnapshot = await currentSnapshotPreparer?.(snapshot) || snapshot;
+    const serialized = JSON.stringify(preparedSnapshot);
     const storedSnapshot = await encodeSnapshot(serialized);
     const rowId = await getPrimaryRowId();
     let previousManifest = null;
@@ -280,33 +282,39 @@
     } catch (error) {
       if (error?.code !== 404 && error?.type !== 'row_not_found') console.warn('Não foi possível ler o índice anterior.', error);
     }
-    const generation = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     const chunks = [];
     for (let offset = 0; offset < storedSnapshot.length; offset += SNAPSHOT_CHUNK_SIZE) {
       chunks.push(storedSnapshot.slice(offset, offset + SNAPSHOT_CHUNK_SIZE));
     }
     const updatedAt = new Date().toISOString();
-    for (let start = 0; start < chunks.length; start += CHUNK_REQUEST_BATCH_SIZE) {
-      const end = Math.min(start + CHUNK_REQUEST_BATCH_SIZE, chunks.length);
-      await Promise.all(Array.from({ length: end - start }, async (_, offset) => {
-        const index = start + offset;
-        await createSnapshotChunk(await getChunkRowId(generation, index), {
-          workspaceId: config.companyId,
-          snapshot: chunks[index],
-          updatedAt,
-          updatedBy: currentUser.$id
-        });
-      }));
-      emitStatus('syncing', `Enviando dados: ${end} de ${chunks.length} blocos...`);
+    let valueForPrimaryRow = storedSnapshot;
+    let generation = '';
+    if (chunks.length > 1) {
+      generation = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      for (let start = 0; start < chunks.length; start += CHUNK_REQUEST_BATCH_SIZE) {
+        const end = Math.min(start + CHUNK_REQUEST_BATCH_SIZE, chunks.length);
+        await Promise.all(Array.from({ length: end - start }, async (_, offset) => {
+          const index = start + offset;
+          await createSnapshotChunk(await getChunkRowId(generation, index), {
+            workspaceId: config.companyId,
+            snapshot: chunks[index],
+            updatedAt,
+            updatedBy: currentUser.$id
+          });
+        }));
+        emitStatus('syncing', `Enviando dados: ${end} de ${chunks.length} blocos...`);
+      }
+      valueForPrimaryRow = `${CHUNK_MANIFEST_PREFIX}${JSON.stringify({
+        generation,
+        count: chunks.length,
+        length: storedSnapshot.length
+      })}`;
+    } else {
+      emitStatus('syncing', 'Enviando dados otimizados...');
     }
-    const manifestValue = `${CHUNK_MANIFEST_PREFIX}${JSON.stringify({
-      generation,
-      count: chunks.length,
-      length: storedSnapshot.length
-    })}`;
     const data = {
       workspaceId: config.companyId,
-      snapshot: manifestValue,
+      snapshot: valueForPrimaryRow,
       updatedAt,
       updatedBy: currentUser.$id
     };
@@ -320,6 +328,7 @@
         console.warn('Não foi possível remover todos os blocos antigos do snapshot.', error);
       });
     }
+    return preparedSnapshot;
   }
 
   function queueSnapshot(snapshot, delay = 1200) {
@@ -453,6 +462,7 @@
   async function initialize(options = {}) {
     currentSnapshotGetter = options.getSnapshot;
     currentSnapshotUpdatedAtGetter = options.getSnapshotUpdatedAt;
+    currentSnapshotPreparer = options.prepareSnapshot;
     currentSnapshotApplier = options.applySnapshot;
     statusListener = options.onStatus;
     return restoreSession();
@@ -460,7 +470,14 @@
 
   async function adoptRemoteOrUploadLocal() {
     if (!currentUser) return { mode: 'signed-out' };
-    const localSnapshot = currentSnapshotGetter?.();
+    let localSnapshot = currentSnapshotGetter?.();
+    if (localSnapshot && currentSnapshotPreparer) {
+      const preparedLocalSnapshot = await currentSnapshotPreparer(localSnapshot) || localSnapshot;
+      if (JSON.stringify(preparedLocalSnapshot) !== JSON.stringify(localSnapshot)) {
+        localSnapshot = preparedLocalSnapshot;
+        setPendingSync(true);
+      }
+    }
     if (hasPendingSync() && localSnapshot) {
       await persistSnapshot(localSnapshot);
       return { mode: 'uploaded-pending-local', snapshot: localSnapshot };
