@@ -138,8 +138,23 @@
 .online-auth-loading-step.is-active { border-color: rgba(37, 99, 235, 0.2); color: #1d4ed8; background: #eff6ff; }
 .online-auth-loading-step.is-active span { background: #2563eb; color: #fff; box-shadow: 0 5px 14px rgba(37, 99, 235, 0.24); }
 .online-auth-loading-step.is-complete { color: #15803d; background: #f0fdf4; }
-.online-auth-loading-step.is-complete span { background: #22c55e; color: transparent; }
-.online-auth-loading-step.is-complete span::after { content: '✓'; color: #fff; font-size: 13px; }
+.online-auth-loading-step.is-complete span {
+  position: relative;
+  background: #22c55e;
+  color: transparent;
+  font-size: 0;
+}
+.online-auth-loading-step.is-complete span::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+}
 .online-auth-loading-note { margin: 15px 0 0; color: #94a3b8; font-size: 12px; }
 
 .online-auth-layout {
