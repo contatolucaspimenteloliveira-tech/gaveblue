@@ -3651,6 +3651,15 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
   backdrop-filter: blur(2px);
   cursor: wait;
 }
+.online-platform-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 1490;
+  background: rgba(241, 245, 249, 0.46);
+  backdrop-filter: blur(1.5px);
+  cursor: wait;
+}
+.online-platform-loading.hidden { display: none; }
 .online-auth-progress {
   position: fixed;
   top: 0;
@@ -3689,13 +3698,11 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
   border-radius: 50%;
   background: #ef4444;
   color: #ffffff;
-  font-size: 27px;
-  font-weight: 500;
-  line-height: 1;
   text-decoration: none;
   box-shadow: 0 8px 20px rgba(239, 68, 68, 0.28);
   transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
+.online-auth-close svg { width: 18px; height: 18px; display: block; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
 .online-auth-close:hover { transform: scale(1.06); background: #dc2626; box-shadow: 0 10px 24px rgba(220, 38, 38, 0.38); }
 .online-auth-promo { min-height: 100%; display: grid; place-items: center; overflow: hidden; background: #eef4ff; }
 .online-auth-promo img { width: 100%; height: 100%; display: block; object-fit: contain; object-position: center; }
