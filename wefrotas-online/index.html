@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260803-access-4">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260803-logout-1">
   
 </head>
 <body class="auth-locked">
@@ -1185,6 +1185,11 @@
     <button id="online-logout-btn" type="button" onclick="logoutWeFrotasOnline()" hidden>Sair</button>
   </div>
 
+  <div id="online-platform-loading" class="online-platform-loading hidden" role="status" aria-live="polite">
+    <span class="online-auth-progress" aria-hidden="true"></span>
+    <span id="online-platform-loading-text" class="sr-only">Encerrando sua sessão...</span>
+  </div>
+
   <div id="online-auth-backdrop" class="online-auth-backdrop">
     <div id="online-auth-checking" class="online-auth-checking" role="status" aria-live="polite">
       <span class="online-auth-progress" aria-hidden="true"></span>
@@ -1197,7 +1202,9 @@
       </a>
 
       <section class="online-auth-panel">
-        <a class="online-auth-close" href="https://gaveblue.com.br/" aria-label="Fechar e voltar ao site principal" title="Voltar ao site principal">×</a>
+        <a class="online-auth-close" href="https://gaveblue.com.br/" aria-label="Fechar e voltar ao site principal" title="Voltar ao site principal">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg>
+        </a>
         <form id="online-auth-form" class="online-auth-card" onsubmit="document.getElementById('online-auth-checking')?.classList.remove('hidden')">
           <img src="./wefrotas.png" alt="WeFrotas" class="online-auth-logo">
           <p class="panel-kicker">WeFrotas Online</p>
@@ -1222,8 +1229,8 @@
 
   <script src="./appwrite-config.js?v=1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
-  <script src="./wefrotas-backend.js?v=1"></script>
-  <script src="./wefrotas.js?v=20260803-access-4"></script>
+  <script src="./wefrotas-backend.js?v=20260803-logout-1"></script>
+  <script src="./wefrotas.js?v=20260803-logout-1"></script>
 </body>
 </html>
 <!-- deploy: auth-visibility-fix -->

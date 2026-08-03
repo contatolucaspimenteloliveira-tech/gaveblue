@@ -1523,6 +1523,25 @@
       if (submitLabel) submitLabel.textContent = loading ? 'Entrando...' : 'Entrar';
     }
 
+    function toggleOnlinePlatformLoading(show, message = 'Carregando...') {
+      const loadingNode = document.getElementById('online-platform-loading');
+      const loadingText = document.getElementById('online-platform-loading-text');
+      loadingNode?.classList.toggle('hidden', !show);
+      if (loadingText) loadingText.textContent = message;
+    }
+
+    async function waitForOnlineLogout(timeoutMs = 6000) {
+      let timeoutId;
+      const timeout = new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error('O servidor demorou para confirmar o logout.')), timeoutMs);
+      });
+      try {
+        await Promise.race([window.WeFrotasBackend?.signOut(), timeout]);
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    }
+
     function stopOnlineIdleTimer() {
       window.clearTimeout(onlineIdleTimer);
       onlineIdleTimer = null;
@@ -1538,12 +1557,13 @@
       if (onlineLogoutInProgress || !window.WeFrotasBackend?.getUser()) return;
       onlineLogoutInProgress = true;
       stopOnlineIdleTimer();
-      showOnlineAuthChecking('Encerrando sessão por inatividade...');
+      toggleOnlinePlatformLoading(true, 'Encerrando sessão por inatividade...');
       try {
-        await window.WeFrotasBackend.signOut();
+        await waitForOnlineLogout();
       } catch (error) {
         console.warn('Não foi possível encerrar a sessão remota por inatividade.', error);
       } finally {
+        toggleOnlinePlatformLoading(false);
         onlineLogoutInProgress = false;
         toggleOnlineLogin(true, 'Sua sessão foi encerrada após 10 minutos sem atividade.');
       }
@@ -1645,12 +1665,13 @@
         logoutButton.disabled = true;
         logoutButton.textContent = 'Saindo...';
       }
-      showOnlineAuthChecking('Encerrando sua sessão...');
+      toggleOnlinePlatformLoading(true, 'Encerrando sua sessão...');
       try {
-        await window.WeFrotasBackend?.signOut();
+        await waitForOnlineLogout();
       } catch (error) {
         console.warn('Não foi possível encerrar a sessão remota.', error);
       } finally {
+        toggleOnlinePlatformLoading(false);
         onlineLogoutInProgress = false;
         if (logoutButton) {
           logoutButton.disabled = false;
