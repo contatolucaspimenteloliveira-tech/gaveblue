@@ -93,6 +93,14 @@
       return new Date(now.getTime() - offset).toISOString().slice(0, 10);
     }
 
+    function getLastDayOfMonthIso(dateString) {
+      const baseDate = dateString ? new Date(`${dateString}T00:00:00`) : new Date();
+      if (Number.isNaN(baseDate.getTime())) return '';
+      const lastDay = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0);
+      const offset = lastDay.getTimezoneOffset() * 60000;
+      return new Date(lastDay.getTime() - offset).toISOString().slice(0, 10);
+    }
+
     function getActiveLogoSrc() {
       return customLogoEnabled && customLogoUrl ? customLogoUrl : wefrotasLogoSrc;
     }
@@ -1016,6 +1024,10 @@
       return !!entry && !entry.groupedIntoId && !!entry.orderId && !!getEntryLinkedVehicleId(entry);
     }
 
+    function isDistributedFuelCostEntry(entry) {
+      return isDistributedCostEntry(entry) && (isFuelEntry(entry) || isFuelGroupEntry(entry));
+    }
+
     function isFinanceEntryInsidePeriod(entry, start = '', end = '') {
       const entryDate = getFinanceEntryDate(entry);
       if (start && (!entryDate || entryDate < start)) return false;
@@ -1435,6 +1447,7 @@
     function saveToLocalStorage() {
       const snapshot = buildStorageSnapshot();
       saveSmallSettingsToLocalStorage(snapshot);
+      window.WeFrotasBackend?.queueSnapshot(snapshot);
 
       if (wefrotasStorageEngine === 'IndexedDB') {
         wefrotasStorageQueue = wefrotasStorageQueue
@@ -1451,6 +1464,108 @@
       saveFullSnapshotToLocalStorage(snapshot);
       return Promise.resolve();
     }
+
+    function updateOnlineStatus({ state = 'local', message = '', user = null } = {}) {
+      const statusNode = document.getElementById('online-status');
+      const textNode = document.getElementById('online-status-text');
+      const syncButton = document.getElementById('online-sync-btn');
+      const logoutButton = document.getElementById('online-logout-btn');
+      if (!statusNode || !textNode) return;
+      statusNode.classList.remove('is-local', 'is-online', 'is-syncing', 'is-error', 'is-signed-out');
+      statusNode.classList.add(`is-${state}`);
+      textNode.textContent = message || 'WeFrotas Online';
+      if (syncButton) syncButton.hidden = !user;
+      if (logoutButton) logoutButton.hidden = !user;
+    }
+
+    function toggleOnlineLogin(show) {
+      const backdrop = document.getElementById('online-auth-backdrop');
+      if (!backdrop) return;
+      document.body.classList.toggle('auth-locked', show);
+      backdrop.classList.toggle('hidden', !show);
+      if (show) document.getElementById('online-auth-email')?.focus();
+    }
+
+    async function applyRemoteStorageSnapshot(snapshot) {
+      applyStorageSnapshot(snapshot);
+      try {
+        wefrotasStorageEngine = 'IndexedDB';
+        await writeWeFrotasIndexedDbSnapshot(buildStorageSnapshot());
+        saveSmallSettingsToLocalStorage(buildStorageSnapshot());
+        clearLegacyLargeLocalStorageData();
+      } catch (error) {
+        wefrotasStorageEngine = 'localStorage';
+        saveFullSnapshotToLocalStorage(buildStorageSnapshot());
+      }
+      renderAll();
+      renderNotifications();
+      updateCustomLogoUi();
+      updateManagerIdentityUi();
+      updateOperationSettingsUi();
+    }
+
+    async function connectWeFrotasOnline() {
+      const backend = window.WeFrotasBackend;
+      if (!backend) {
+        updateOnlineStatus({ state: 'error', message: 'Backend não carregado.' });
+        toggleOnlineLogin(true);
+        return null;
+      }
+      const user = await backend.initialize({
+        getSnapshot: buildStorageSnapshot,
+        applySnapshot: applyRemoteStorageSnapshot,
+        onStatus: updateOnlineStatus
+      });
+      if (!backend.isConfigured()) {
+        toggleOnlineLogin(false);
+        return null;
+      }
+      if (!user) {
+        toggleOnlineLogin(true);
+        return null;
+      }
+      const result = await backend.adoptRemoteOrUploadLocal();
+      toggleOnlineLogin(false);
+      return result;
+    }
+
+    async function loginWeFrotasOnline(event) {
+      event?.preventDefault();
+      const backend = window.WeFrotasBackend;
+      const email = document.getElementById('online-auth-email')?.value.trim() || '';
+      const password = document.getElementById('online-auth-password')?.value || '';
+      const errorNode = document.getElementById('online-auth-error');
+      const submitButton = document.getElementById('online-auth-submit');
+      if (errorNode) errorNode.textContent = '';
+      if (submitButton) submitButton.disabled = true;
+      try {
+        await backend.signIn(email, password);
+        await backend.adoptRemoteOrUploadLocal();
+        toggleOnlineLogin(false);
+        showToast('WeFrotas Online conectado com sucesso.');
+      } catch (error) {
+        if (errorNode) errorNode.textContent = error?.message || 'Não foi possível entrar.';
+      } finally {
+        if (submitButton) submitButton.disabled = false;
+      }
+    }
+
+    async function logoutWeFrotasOnline() {
+      await window.WeFrotasBackend?.signOut();
+      toggleOnlineLogin(true);
+    }
+
+    async function syncWeFrotasOnline() {
+      try {
+        await window.WeFrotasBackend?.syncNow(buildStorageSnapshot());
+        showToast('Sincronização concluída.');
+      } catch (error) {
+        showToast(error?.message || 'Não foi possível sincronizar agora.');
+      }
+    }
+
+    window.logoutWeFrotasOnline = logoutWeFrotasOnline;
+    window.syncWeFrotasOnline = syncWeFrotasOnline;
 
     function getStorageUsageStats() {
       const snapshotText = JSON.stringify(buildStorageSnapshot());
@@ -2583,6 +2698,37 @@
       renderReports();
     }
 
+    function getHomeCostPerKmFilters() {
+      const modeNode = document.getElementById('home-km-cost-mode');
+      const monthNode = document.getElementById('home-km-cost-filter');
+      const mode = modeNode?.value || 'all';
+      if (monthNode && !monthNode.value) monthNode.value = getCurrentMonthKey();
+      if (mode !== 'month') {
+        if (monthNode) monthNode.classList.add('is-muted');
+        return { mode, monthKey: '', start: '', end: '', label: 'Todo o histórico' };
+      }
+      if (monthNode) monthNode.classList.remove('is-muted');
+      const monthKey = monthNode?.value || getCurrentMonthKey();
+      const { start, end } = getMonthRange(monthKey);
+      return {
+        mode,
+        monthKey,
+        start,
+        end,
+        label: `Mês de ${getMonthLabel(monthKey)}`
+      };
+    }
+
+    function openCostPerKmReport() {
+      const filters = getHomeCostPerKmFilters();
+      openModuleFromHome('relatorios');
+      setFilterValue('report-filter-type', 'cost');
+      setFilterValue('report-filter-vehicle', '');
+      setFilterValue('report-filter-start', filters.start);
+      setFilterValue('report-filter-end', filters.end);
+      renderReports();
+    }
+
     function handleDashboardShortcutKey(event, actionName, id) {
       if (event.key !== 'Enter' && event.key !== ' ') return;
       event.preventDefault();
@@ -2596,7 +2742,9 @@
     window.openOrdersForVehicle = openOrdersForVehicle;
     window.openOrderFromHome = openOrderFromHome;
     window.openMonthlyVehicleCostReport = openMonthlyVehicleCostReport;
+    window.openCostPerKmReport = openCostPerKmReport;
     window.printMonthlyVehicleCostDashboard = printMonthlyVehicleCostDashboard;
+    window.printCostPerKmDashboard = printCostPerKmDashboard;
     window.handleDashboardShortcutKey = handleDashboardShortcutKey;
     window.renderMonthlyVehicleCostChart = renderMonthlyVehicleCostChart;
 
@@ -3019,20 +3167,6 @@
             </div>
           </div>
           <div class="field-wrap">
-            <label>Data de início</label>
-            <div class="form-input-shell form-input-shell--date">
-              ${fieldIcon('calendar')}
-              <input class="soft-input w-full" id="order-data-inicio" type="date" onchange="handleOrderStartDateChange()">
-            </div>
-          </div>
-          <div class="field-wrap">
-            <label>Data de fim</label>
-            <div class="form-input-shell form-input-shell--date">
-              ${fieldIcon('calendar')}
-              <input class="soft-input w-full" id="order-data-termino" type="date" onchange="handleOrderEndDateChange()">
-            </div>
-          </div>
-          <div class="field-wrap">
             <label>${requiredLabel('Veículo')}</label>
             <div class="form-input-shell">
               ${fieldIcon('vehicle')}
@@ -3052,6 +3186,20 @@
               </select>
             </div>
           </div>
+          <div class="field-wrap">
+            <label>Data de início</label>
+            <div class="form-input-shell form-input-shell--date" onclick="openNativeDatePicker('order-data-inicio')">
+              ${fieldIcon('calendar')}
+              <input class="soft-input w-full" id="order-data-inicio" type="date" onchange="handleOrderStartDateChange()">
+            </div>
+          </div>
+          <div class="field-wrap">
+            <label>Data de fim</label>
+            <div class="form-input-shell form-input-shell--date" onclick="openNativeDatePicker('order-data-termino')">
+              ${fieldIcon('calendar')}
+              <input class="soft-input w-full" id="order-data-termino" type="date" onchange="handleOrderEndDateChange()">
+            </div>
+          </div>
           <div class="field-wrap full">
             <label>${requiredLabel('Descrição do serviço / problema')}</label>
             <div class="form-input-shell form-input-shell--textarea">
@@ -3061,6 +3209,8 @@
           </div>
         `;
         setOrderAdministrationFormValue(getLastAdministrationValue());
+        setDefaultOrderDates();
+        updateOrderDescriptionFromType(true);
         updateOrderDateConstraints();
       } else if (type === 'finance') {
         setModalVisual('finance', 'Escolha o tipo de lançamento que deseja realizar.');
@@ -3754,6 +3904,18 @@
       return '';
     }
 
+    function getOrderGeneratedDescription(order) {
+      if (!order) return '';
+      const vehicle = allVehicles.find(item => item.id === order.vehicleId);
+      const currentKm = vehicle ? getVehicleCurrentKm(vehicle.id) : null;
+      const nextRevisionKm = currentKm ? (Math.ceil(currentKm / 10000) * 10000 || 10000) : 0;
+      return getOrderTypeDescription(order.tipoOs || 'avulsa', {
+        dataInicio: order.dataInicio || '',
+        vehicle,
+        revisionKm: nextRevisionKm
+      });
+    }
+
     function updateOrderDescriptionFromType(force = false) {
       const typeField = document.getElementById('order-tipo-os');
       const dateField = document.getElementById('order-data-inicio');
@@ -3787,6 +3949,44 @@
 
     window.updateOrderDescriptionFromType = updateOrderDescriptionFromType;
 
+    function openNativeDatePicker(fieldId) {
+      const field = document.getElementById(fieldId);
+      if (!field) return;
+      if (typeof field.showPicker === 'function') {
+        try {
+          field.showPicker();
+        } catch (error) {
+          field.focus();
+        }
+      } else {
+        field.focus();
+      }
+    }
+
+    function setDefaultOrderDates() {
+      const startField = document.getElementById('order-data-inicio');
+      const endField = document.getElementById('order-data-termino');
+      if (!startField || !endField) return;
+      const today = getLocalIsoDate();
+      startField.value = today;
+      endField.value = getLastDayOfMonthIso(today);
+      endField.dataset.autoEndDate = endField.value;
+    }
+
+    function syncOrderEndDateWithStart() {
+      const startField = document.getElementById('order-data-inicio');
+      const endField = document.getElementById('order-data-termino');
+      if (!startField || !endField || !startField.value) return;
+      const suggestedEndDate = getLastDayOfMonthIso(startField.value);
+      const previousAutoEndDate = endField.dataset.autoEndDate || '';
+      if (!endField.value || endField.value === previousAutoEndDate) {
+        endField.value = suggestedEndDate;
+        endField.dataset.autoEndDate = suggestedEndDate;
+      }
+    }
+
+    window.openNativeDatePicker = openNativeDatePicker;
+
     function updateOrderDateConstraints() {
       const startField = document.getElementById('order-data-inicio');
       const endField = document.getElementById('order-data-termino');
@@ -3807,6 +4007,7 @@
     }
 
     function handleOrderStartDateChange() {
+      syncOrderEndDateWithStart();
       updateOrderDescriptionFromType();
       updateOrderDateConstraints();
     }
@@ -4098,7 +4299,7 @@
       });
 
       allFinanceEntries
-        .filter(entry => isDistributedCostEntry(entry))
+        .filter(entry => isDistributedFuelCostEntry(entry))
         .forEach(entry => {
           const currentVehicleId = getEntryLinkedVehicleId(entry);
           if (!currentVehicleId) return;
@@ -4109,13 +4310,14 @@
 
           const stats = statsMap.get(currentVehicleId);
           if (!stats) return;
-          stats.totalCost += Number(entry.total || 0);
+          stats.totalCost += getFinanceNetTotal(entry);
           stats.entries += isFuelGroupEntry(entry) ? Math.max(getFuelGroupChildren(entry).length, 1) : 1;
         });
 
       const vehicleEntriesMap = new Map();
       allFinanceEntries
         .filter(entry => !entry.groupedIntoId)
+        .filter(entry => isFuelEntry(entry) || isFuelGroupEntry(entry))
         .flatMap(entry => isFuelGroupEntry(entry) ? getFuelGroupChildren(entry) : [entry])
         .filter(entry => entry && entry.km !== undefined && entry.km !== null && String(entry.km).trim() !== '')
         .forEach((entry) => {
@@ -4199,6 +4401,14 @@
           vehicle,
           total: getVehicleDistributedCostTotal(vehicle.id, start, end)
         }));
+    }
+
+    function getCostPerKmTone(costPerKm) {
+      const value = Number(costPerKm || 0);
+      if (value > 1) return 'red';
+      if (value > 0.8 && value <= 0.9) return 'yellow';
+      if (value <= 0.8) return 'green';
+      return 'neutral';
     }
 
     function renderMonthlyVehicleCostChart() {
@@ -5631,7 +5841,8 @@
       const financeStatusTableNode = document.getElementById('home-finance-status-table');
       const insuranceTableNode = document.getElementById('home-insurance-table');
       const maintenanceTableNode = document.getElementById('home-maintenance-table');
-      const vehicleStats = getVehicleCostStats().filter(item => item.entries > 0);
+      const costKmFilters = getHomeCostPerKmFilters();
+      const vehicleStats = getVehicleCostStats(costKmFilters).filter(item => item.entries > 0);
       const bestVehicle = vehicleStats[0];
       const { cnhItems, insuranceItems } = getDashboardExpirations();
       const financeStatusItems = getHomeFinanceStatusItems();
@@ -5666,35 +5877,40 @@
       renderStorageDashboard();
       renderMonthlyVehicleCostChart();
       if (costTableNode) {
-        costTableNode.innerHTML = renderDashboardTableRows(
-          vehicleStats.slice(0, 6),
-          item => `
-            <button type="button" class="dashboard-action-row" onclick="openOrdersForVehicle('${item.vehicleId}')">
-              <div>
-                <p class="font-bold text-slate-800">${escapeHtml(item.placa)}  ${escapeHtml(item.modelo)}</p>
-                <p class="text-xs text-slate-500">Frota ${escapeHtml(item.frota)}  ${item.totalKm} km  ${item.entries} lançamento(s)</p>
-              </div>
-              <div class="text-right">
-                <p class="font-extrabold text-[#6267d9]">${escapeHtml(formatCurrency(item.costPerKm))}</p>
-                <p class="text-xs text-slate-500">${escapeHtml(formatCurrency(item.totalCost))}</p>
-              </div>
-            </button>
-          `
-        );
+        if (!vehicleStats.length) {
+          costTableNode.innerHTML = '<div class="home-km-empty">Nenhum abastecimento distribuído em OS para calcular custo por KM.</div>';
+        } else {
+          const rows = vehicleStats.slice(0, 9);
+          const maxCostPerKm = Math.max(...rows.map(item => item.costPerKm), 0);
+          costTableNode.innerHTML = rows.map((item) => {
+            const percent = maxCostPerKm > 0 ? Math.max((item.costPerKm / maxCostPerKm) * 100, item.costPerKm > 0 ? 10 : 3) : 3;
+            const tone = getCostPerKmTone(item.costPerKm);
+            return `
+              <button type="button" class="home-monthly-bar-item home-km-bar-item home-km-bar-item--${tone}" onclick="openOrdersForVehicle('${item.vehicleId}')" title="Ver OS de ${escapeHtml(item.frota)} - ${escapeHtml(item.placa)}">
+                <div class="home-monthly-bar-value">${escapeHtml(formatCurrency(item.costPerKm))}</div>
+                <div class="home-monthly-bar-track home-km-bar-track">
+                  <div class="home-monthly-bar-fill home-km-bar-fill" style="height:${percent.toFixed(2)}%;"></div>
+                </div>
+                <div class="home-monthly-bar-label">
+                  <strong>${escapeHtml(item.frota)}</strong>
+                  <span>${escapeHtml(item.placa)}</span>
+                  <small>${escapeHtml(formatCurrency(item.totalCost))} / ${Number(item.totalKm || 0).toLocaleString('pt-BR')} km</small>
+                </div>
+              </button>
+            `;
+          }).join('');
+        }
       }
       if (financeStatusTableNode) {
         financeStatusTableNode.innerHTML = renderDashboardTableRows(
           financeStatusItems,
           item => `
-            <button type="button" class="dashboard-action-row" onclick="openFinanceStatusFromHome('${item.group}')">
+            <button type="button" class="home-finance-status-card home-finance-status-card--${item.group}" onclick="openFinanceStatusFromHome('${item.group}')">
               <div>
-                <p class="font-bold text-slate-800">${escapeHtml(item.label)}</p>
-                <p class="text-xs text-slate-500">${item.count} lançamento(s)</p>
+                <p>${escapeHtml(item.label)}</p>
+                <span>${item.count} lançamento(s)</span>
               </div>
-              <div class="text-right">
-                <p class="font-extrabold ${item.group === 'pending' ? 'text-amber-600' : 'text-emerald-600'}">${escapeHtml(formatCurrency(item.total))}</p>
-                <p class="text-xs text-slate-500">${escapeHtml(item.help)}</p>
-              </div>
+              <strong>${escapeHtml(formatCurrency(item.total))}</strong>
             </button>
           `
         );
@@ -5705,15 +5921,13 @@
           item => {
             const alertTone = getInsuranceAlertTone(item.days);
             return `
-              <button type="button" class="dashboard-action-row insurance-alert-row insurance-alert-row--${alertTone}" onclick="openVehicleFromHome('${item.id}')">
+              <button type="button" class="home-insurance-row insurance-alert-row--${alertTone}" onclick="openVehicleFromHome('${item.id}')">
                 <div>
-                  <p class="font-bold text-slate-800">${escapeHtml(item.placa)}  ${escapeHtml(item.modelo)}</p>
-                  <p class="text-xs text-slate-500">Frota ${escapeHtml(item.numeroFrota || '-')}</p>
+                  <p>${escapeHtml(item.placa)} ${escapeHtml(item.modelo)}</p>
+                  <span>Frota ${escapeHtml(item.numeroFrota || '-')}</span>
                 </div>
-                <div class="text-right">
-                  <p class="font-extrabold insurance-alert-date">${escapeHtml(formatDate(item.seguroVencimento))}</p>
-                  <p class="text-xs font-bold insurance-alert-label">${escapeHtml(getInsuranceAlertLabel(item.days))}</p>
-                </div>
+                <strong>${escapeHtml(formatDate(item.seguroVencimento))}</strong>
+                <span class="home-insurance-status">${escapeHtml(getInsuranceAlertLabel(item.days))}</span>
               </button>
             `;
           }
@@ -5724,40 +5938,28 @@
           maintenanceItems,
           ({ vehicle, maintenance }) => {
             const currentKmLabel = maintenance.currentKm === null ? 'Sem KM atual' : `${maintenance.currentKm.toLocaleString('pt-BR')} km`;
-            const nextRevisionLabel = maintenance.nextRevisionKm === null ? 'Aguardando KM' : `${maintenance.nextRevisionKm.toLocaleString('pt-BR')} km`;
-            const alertLabel = maintenance.currentKm === null
-              ? 'Registre abastecimentos com KM para ativar o controle.'
-              : maintenance.openOrder
-                ? `OS ${getOrderNumberLabel(maintenance.openOrder)} aberta para ${nextRevisionLabel}.`
-                : maintenance.isAlert
-                  ? `Faltam ${maintenance.remainingKm.toLocaleString('pt-BR')} km para a próxima revisão.`
-                  : `Faltam ${maintenance.remainingKm.toLocaleString('pt-BR')} km para a próxima revisão.`;
-            const badgeClass = maintenance.openOrder
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              : maintenance.isAlert
-                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                : 'bg-slate-50 text-slate-600 border-slate-200';
+            const remainingLabel = maintenance.currentKm === null
+              ? 'Aguardando KM'
+              : `${maintenance.remainingKm.toLocaleString('pt-BR')} km`;
             const shortcutAction = maintenance.openOrder
               ? `openOrderFromHome('${maintenance.openOrder.id}')`
               : `openVehicleFromHome('${vehicle.id}')`;
 
             return `
-              <div class="dashboard-action-row dashboard-action-row--stacked" role="button" tabindex="0" onclick="${shortcutAction}" onkeydown="handleDashboardShortcutKey(event, '${maintenance.openOrder ? 'openOrderFromHome' : 'openVehicleFromHome'}', '${maintenance.openOrder ? maintenance.openOrder.id : vehicle.id}')">
-                <div class="flex items-start justify-between gap-4 flex-wrap">
-                  <div>
-                    <p class="font-extrabold text-slate-900">${escapeHtml(vehicle.numeroFrota || '-')} - ${escapeHtml(vehicle.placa || '-')} - ${escapeHtml(vehicle.modelo || 'Veículo')}</p>
-                    <p class="text-xs text-slate-500 mt-2">KM atual: ${escapeHtml(currentKmLabel)}  Próxima revisão: ${escapeHtml(nextRevisionLabel)}</p>
-                  </div>
-                  <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${badgeClass}">
-                    ${maintenance.openOrder ? 'OS aberta' : maintenance.isAlert ? 'Agendar revisão' : 'No prazo'}
-                  </span>
+              <div class="home-maintenance-row home-maintenance-row--${maintenance.openOrder ? 'open' : maintenance.isAlert ? 'alert' : 'ok'}" role="button" tabindex="0" onclick="${shortcutAction}" onkeydown="handleDashboardShortcutKey(event, '${maintenance.openOrder ? 'openOrderFromHome' : 'openVehicleFromHome'}', '${maintenance.openOrder ? maintenance.openOrder.id : vehicle.id}')">
+                <div>
+                  <p>${escapeHtml(vehicle.numeroFrota || '-')} - ${escapeHtml(vehicle.placa || '-')}</p>
+                  <span>${escapeHtml(vehicle.modelo || 'Veículo')}</span>
                 </div>
-                <div class="mt-4 flex items-center justify-between gap-4 flex-wrap">
-                  <p class="text-sm text-slate-600">${escapeHtml(alertLabel)}</p>
-                  ${maintenance.isAlert && !maintenance.openOrder
-                    ? `<button type="button" class="soft-btn primary" onclick="event.stopPropagation(); openRevisionOrderForVehicle('${vehicle.id}')">Abrir OS</button>`
-                    : ''}
+                <div class="home-maintenance-metrics">
+                  <span>KM atual <strong>${escapeHtml(currentKmLabel)}</strong></span>
+                  <span>Faltam <strong>${escapeHtml(remainingLabel)}</strong></span>
                 </div>
+                ${maintenance.openOrder
+                  ? `<span class="home-maintenance-pill">OS ${escapeHtml(getOrderNumberLabel(maintenance.openOrder))}</span>`
+                  : maintenance.isAlert
+                    ? `<button type="button" class="home-maintenance-btn" onclick="event.stopPropagation(); openRevisionOrderForVehicle('${vehicle.id}')">Abrir OS</button>`
+                    : `<span class="home-maintenance-pill">No prazo</span>`}
               </div>
             `;
           }
@@ -5883,6 +6085,90 @@
             <img class="logo" src="${getActiveLogoSrc()}" alt="WeFrotas">
           </div>
           ${rows.length ? `<div class="chart">${barsHtml}</div>` : '<div class="empty">Nenhum veículo cadastrado para exibir.</div>'}
+          <script>
+            window.onload = function () {
+              setTimeout(function () {
+                window.print();
+                window.close();
+              }, 180);
+            };
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+
+    function printCostPerKmDashboard() {
+      const filters = getHomeCostPerKmFilters();
+      const rows = getVehicleCostStats(filters).filter(item => item.entries > 0).slice(0, 9);
+      const maxCostPerKm = Math.max(...rows.map(item => item.costPerKm), 0);
+      const printWindow = window.open('', '_blank', 'width=1080,height=900');
+      if (!printWindow) {
+        showToast('Não foi possível abrir a impressão do dashboard.');
+        return;
+      }
+
+      const barsHtml = rows.map((item) => {
+        const percent = maxCostPerKm > 0 ? Math.max((item.costPerKm / maxCostPerKm) * 100, item.costPerKm > 0 ? 10 : 3) : 3;
+        const tone = getCostPerKmTone(item.costPerKm);
+        return `
+          <div class="bar-item bar-item--${tone}">
+            <div class="bar-value">${escapeHtml(formatCurrency(item.costPerKm))}</div>
+            <div class="bar-track">
+              <div class="bar-fill" style="height:${percent.toFixed(2)}%;"></div>
+            </div>
+            <div class="bar-label">
+              <strong>${escapeHtml(item.frota || '-')}</strong>
+              <span>${escapeHtml(item.placa || '-')}</span>
+              <small>${escapeHtml(formatCurrency(item.totalCost))} / ${Number(item.totalKm || 0).toLocaleString('pt-BR')} km</small>
+            </div>
+          </div>
+        `;
+      }).join('') || '<p>Nenhum abastecimento distribuído em OS para calcular custo por KM.</p>';
+
+      printWindow.document.open();
+      printWindow.document.write(`
+        <!doctype html>
+        <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8">
+          <title>Custo por KM por veículo</title>
+          <style>
+            * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { margin: 28px; color: #0f172a; }
+            .head { display:flex; align-items:flex-start; justify-content:space-between; gap:22px; margin-bottom:28px; }
+            .logo { max-width:${getReportLogoStyle().width}px; max-height:${getReportLogoStyle().height}px; object-fit:contain; }
+            h1 { margin:0; font-size:26px; }
+            p { margin:6px 0 0; color:#64748b; font-size:14px; }
+            .chart { display:grid; grid-template-columns:repeat(9, minmax(0, 1fr)); gap:18px; align-items:end; min-height:360px; margin-top:22px; }
+            .bar-item { height:330px; display:grid; grid-template-rows:auto 1fr auto; gap:10px; text-align:center; }
+            .bar-value { font-size:14px; font-weight:900; color:#334155; }
+            .bar-track { display:flex; align-items:flex-end; border:1px solid #dbe3ef; border-radius:20px; background:#f8fafc; overflow:hidden; min-height:220px; }
+            .bar-fill { width:100%; min-height:8px; border-radius:18px 18px 0 0; background:linear-gradient(180deg,#94a3b8,#64748b); }
+            .bar-item--green .bar-fill { background:linear-gradient(180deg,#4ade80,#16a34a); }
+            .bar-item--green .bar-value { color:#15803d; }
+            .bar-item--yellow .bar-fill { background:linear-gradient(180deg,#facc15,#f59e0b); }
+            .bar-item--yellow .bar-value { color:#b45309; }
+            .bar-item--red .bar-fill { background:linear-gradient(180deg,#fb7185,#dc2626); }
+            .bar-item--red .bar-value { color:#b91c1c; }
+            .bar-item--neutral .bar-fill { background:linear-gradient(180deg,#fb923c,#ea580c); }
+            .bar-item--neutral .bar-value { color:#c2410c; }
+            .bar-label strong, .bar-label span, .bar-label small { display:block; }
+            .bar-label strong { font-size:13px; font-weight:900; }
+            .bar-label span { font-size:12px; color:#475569; }
+            .bar-label small { font-size:10px; color:#64748b; margin-top:3px; line-height:1.25; }
+          </style>
+        </head>
+        <body>
+          <div class="head">
+            <div>
+              <h1>Custo por KM por veículo</h1>
+              <p>${escapeHtml(filters.label)} • apenas abastecimentos distribuídos em OS</p>
+            </div>
+            <img class="logo" src="${getActiveLogoSrc()}" alt="WeFrotas">
+          </div>
+          <div class="chart">${barsHtml}</div>
           <script>
             window.onload = function () {
               setTimeout(function () {
@@ -6699,7 +6985,11 @@
       if (orderVehicleFilterId) items = items.filter(order => order.vehicleId === orderVehicleFilterId);
       if (start) items = items.filter(order => !order.dataInicio || order.dataInicio >= start);
       if (end) items = items.filter(order => !order.dataInicio || order.dataInicio <= end);
-      if (status) items = items.filter(order => order.status === status);
+      if (status && status !== 'todos') {
+        items = items.filter(order => order.status === status);
+      } else if (!status) {
+        items = items.filter(order => ['aberta', 'andamento'].includes(order.status || 'aberta'));
+      }
       if (quickSearch) {
         items = items.filter(order => {
           const vehicle = allVehicles.find(item => item.id === order.vehicleId);
@@ -6749,6 +7039,9 @@
       const direction = orderSortState.direction === 'asc' ? 1 : -1;
       withPosition.sort((a, b) => {
         if (orderSortState.key === 'default') {
+          const statusPriority = { andamento: 0, aberta: 1, fechada: 2 };
+          const statusCompare = (statusPriority[a.order.status || 'aberta'] ?? 3) - (statusPriority[b.order.status || 'aberta'] ?? 3);
+          if (statusCompare !== 0) return statusCompare;
           const numberCompare = getNumericOrderValue(a.order.numero) - getNumericOrderValue(b.order.numero);
           return defaultSort === 'antigas' ? numberCompare : -numberCompare;
         }
@@ -7098,11 +7391,13 @@
       document.getElementById('order-driver').value = order.driverId || '';
       document.getElementById('order-data-inicio').value = order.dataInicio || '';
       document.getElementById('order-data-termino').value = order.dataTermino || '';
+      document.getElementById('order-data-termino').dataset.autoEndDate = order.dataTermino || '';
       document.getElementById('order-status').value = order.status || 'aberta';
       updateOrderDateConstraints();
-      ['order-tipo-os', 'order-veiculo', 'order-driver', 'order-status'].forEach(syncCustomSelectById);
+      ['order-tipo-os', 'order-administracao', 'order-veiculo', 'order-driver', 'order-status'].forEach(syncCustomSelectById);
       document.getElementById('order-descricao').value = order.descricao || '';
-      document.getElementById('order-descricao').dataset.generatedDescription = '';
+      const generatedDescription = getOrderGeneratedDescription(order);
+      document.getElementById('order-descricao').dataset.generatedDescription = order.descricao === generatedDescription ? generatedDescription : '';
       document.getElementById('modal-title').textContent = 'Editar OS';
     }
 
@@ -7321,19 +7616,28 @@
         && (['pendente_os', 'distribuido'].includes(getFinanceEntryStatus(entry)) || !!entry.orderId || !!entry.closedExpense)
       );
       openPromptModal({
-        mode: 'confirm',
+        mode: hasAllocatedEntry ? 'prompt' : 'confirm',
         title: selectedCount === 1 ? 'Excluir lançamento' : 'Excluir lançamentos',
         text: hasAllocatedEntry
           ? (selectedCount === 1
-            ? 'Este lançamento está alocado em OS. O sistema vai estornar o vínculo da OS e excluir o lançamento. Essa ação não poderá ser desfeita.'
-            : `Existem lançamentos alocados em OS nesta seleção. O sistema vai estornar os vínculos das OS e excluir os ${selectedCount} lançamentos. Essa ação não poderá ser desfeita.`)
+            ? 'Este lançamento está alocado em OS. Informe o motivo para estornar o vínculo da OS e excluir o lançamento.'
+            : `Existem lançamentos alocados em OS nesta seleção. Informe o motivo para estornar os vínculos das OS e excluir os ${selectedCount} lançamentos.`)
           : (selectedCount === 1
             ? 'Tem certeza que deseja excluir este lançamento? Essa ação não poderá ser desfeita.'
             : `Tem certeza que deseja excluir ${selectedCount} lançamentos? Essa ação não poderá ser desfeita.`),
+        placeholder: 'Ex.: lançamento duplicado, nota errada, correção de OS...',
         confirmLabel: 'Excluir',
         cancelLabel: 'Cancelar',
-        onConfirm: () => {
+        onConfirm: (justification) => {
           const impactedOrderIds = selectedEntries.map(entry => entry.orderId).filter(Boolean);
+          if (hasAllocatedEntry && impactedOrderIds.length) {
+            const impactedOrderSet = new Set(impactedOrderIds);
+            const historyEntry = createOrderHistoryEntry(
+              'finance_reversal',
+              `${justification} (${selectedCount} lançamento${selectedCount === 1 ? '' : 's'} excluído${selectedCount === 1 ? '' : 's'} após estorno).`
+            );
+            allOrders = allOrders.map(order => impactedOrderSet.has(order.id) ? appendOrderHistory(order, historyEntry) : order);
+          }
           allFinanceEntries = allFinanceEntries.filter(entry => !selectedFinance.has(entry.id));
           syncOrderStatusesAfterFinancialReversal(impactedOrderIds);
           selectedFinance.clear();
@@ -7365,15 +7669,16 @@
 
       const selectedCount = selectedEntries.length;
       openPromptModal({
-        mode: 'confirm',
         title: selectedCount === 1 ? 'Estornar despesa' : 'Estornar despesas',
         text: selectedCount === 1
-          ? 'Tem certeza que deseja estornar esta despesa? Ela voltará para pendente e poderá ser editada.'
-          : `Tem certeza que deseja estornar ${selectedCount} despesas? Elas voltarão para pendente e poderão ser editadas.`,
+          ? 'Informe o motivo do estorno. A despesa voltará para pendente e essa justificativa ficará no Histórico da OS.'
+          : `Informe o motivo do estorno de ${selectedCount} despesas. Elas voltarão para pendente e essa justificativa ficará no Histórico da OS.`,
+        placeholder: 'Ex.: nota lançada na OS errada, correção de agrupamento, ajuste financeiro...',
         confirmLabel: 'Estornar',
         cancelLabel: 'Cancelar',
-        onConfirm: () => {
+        onConfirm: (justification) => {
           const impactedOrderIds = selectedEntries.map(entry => entry.orderId).filter(Boolean);
+          const impactedOrderSet = new Set(impactedOrderIds);
           allFinanceEntries = allFinanceEntries.map((entry) => {
             if (!selectedFinance.has(entry.id)) return entry;
             return {
@@ -7383,6 +7688,13 @@
               closedExpense: false
             };
           });
+          if (impactedOrderSet.size) {
+            const historyEntry = createOrderHistoryEntry(
+              'finance_reversal',
+              `${justification} (${selectedCount} lançamento${selectedCount === 1 ? '' : 's'} estornado${selectedCount === 1 ? '' : 's'}).`
+            );
+            allOrders = allOrders.map(order => impactedOrderSet.has(order.id) ? appendOrderHistory(order, historyEntry) : order);
+          }
           syncOrderStatusesAfterFinancialReversal(impactedOrderIds);
           saveToLocalStorage();
           renderAll();
@@ -7425,6 +7737,35 @@
       });
     }
 
+    function createOrderHistoryEntry(type, reason) {
+      const now = new Date();
+      const dateIso = getLocalIsoDate();
+      return {
+        type,
+        date: dateIso,
+        dateLabel: formatDate(dateIso),
+        timeLabel: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        reason
+      };
+    }
+
+    function appendOrderHistory(order, entry) {
+      return {
+        ...order,
+        reopenHistory: [
+          ...(Array.isArray(order.reopenHistory) ? order.reopenHistory : []),
+          entry
+        ]
+      };
+    }
+
+    function getOrderHistoryTypeLabel(type) {
+      if (type === 'description_edit') return 'Edição da descrição';
+      if (type === 'finance_reversal') return 'Estorno de despesa';
+      if (type === 'order_reopen') return 'Reabertura';
+      return 'Movimentação';
+    }
+
     function getOrderReopenHistory(order) {
       const savedHistory = Array.isArray(order?.reopenHistory) ? order.reopenHistory : [];
       const legacyHistory = String(order?.descricao || '')
@@ -7434,6 +7775,7 @@
         .map(line => {
           const match = line.match(/^OS REABERTA EM\s+(.+?)(?:\s+motivo:\s*(.*))?$/i);
           return {
+            type: 'order_reopen',
             dateLabel: match?.[1] || '',
             timeLabel: '',
             reason: match?.[2] || line
@@ -7471,23 +7813,9 @@
         text: 'Informe o motivo da reabertura. Essa justificativa ficará no histórico da OS e sairá em página separada na impressão.',
         placeholder: 'Ex.: retorno da oficina, ajuste interno, complemento financeiro...',
         onConfirm: (justification) => {
-          const now = new Date();
-          const dateIso = getLocalIsoDate();
-          const timeLabel = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          const historyEntry = createOrderHistoryEntry('order_reopen', justification);
           allOrders = allOrders.map(order => reopenableIds.has(order.id)
-            ? {
-                ...order,
-                status: 'aberta',
-                reopenHistory: [
-                  ...(Array.isArray(order.reopenHistory) ? order.reopenHistory : []),
-                  {
-                    date: dateIso,
-                    dateLabel: formatDate(dateIso),
-                    timeLabel,
-                    reason: justification
-                  }
-                ]
-              }
+            ? appendOrderHistory({ ...order, status: 'aberta' }, historyEntry)
             : order);
           saveToLocalStorage();
           renderAll();
@@ -7533,6 +7861,7 @@
           <td>${index + 1}</td>
           <td>${escapeHtml(item.dateLabel || formatDate(item.date) || '-')}</td>
           <td>${escapeHtml(item.timeLabel || '-')}</td>
+          <td>${escapeHtml(getOrderHistoryTypeLabel(item.type))}</td>
           <td>${escapeHtml(item.reason || '-')}</td>
         </tr>
       `).join('');
@@ -7606,7 +7935,7 @@
               <thead><tr><th style="width:14%;">DATA<br>VENCIMENTO</th><th>FORNECEDOR E NFs</th><th style="width:17%;">DÉBITO</th><th style="width:16%;">CRÉDITO</th><th style="width:16%;">TOTAL</th></tr></thead>
               <tbody>${rows}<tr class="total-row"><td colspan="3" class="finance-total-spacer"></td><td class="finance-total-label">TOTAL</td><td class="money">${entries.length ? escapeHtml(formatCurrency(totalEntries)) : 'R$'}</td></tr></tbody>
             </table>
-            ${reopenHistory.length ? `<h2 class="reopen-title">Histórico de reaberturas da OS</h2><table class="reopen-table"><thead><tr><th style="width:8%;">#</th><th style="width:18%;">Data</th><th style="width:14%;">Hora</th><th>Justificativa</th></tr></thead><tbody>${reopenRows}</tbody></table>` : ''}
+            ${reopenHistory.length ? `<h2 class="reopen-title">Histórico da OS</h2><table class="reopen-table"><thead><tr><th style="width:8%;">#</th><th style="width:16%;">Data</th><th style="width:12%;">Hora</th><th style="width:22%;">Movimentação</th><th>Justificativa</th></tr></thead><tbody>${reopenRows}</tbody></table>` : ''}
           </div>
         </body>
         </html>
@@ -7680,6 +8009,7 @@
           <td>${index + 1}</td>
           <td>${escapeHtml(item.dateLabel || formatDate(item.date) || '-')}</td>
           <td>${escapeHtml(item.timeLabel || '-')}</td>
+          <td>${escapeHtml(getOrderHistoryTypeLabel(item.type))}</td>
           <td>${escapeHtml(item.reason || '-')}</td>
         </tr>
       `).join('');
@@ -7808,7 +8138,7 @@
                 <td class="header-logo-cell"><img class="brand-logo" src="${getActiveLogoSrc()}" alt="WeFrotas"></td>
                 <td class="header-main-cell">
                   <div class="admin-line">${escapeHtml(order.administracao || 'NOME PREENCHIDO NA ADMINISTRAÇÃO')}</div>
-                  <div class="title-line">Histórico de reaberturas da OS</div>
+                  <div class="title-line">Histórico da OS</div>
                   <div class="status-line">OS Nº: ${escapeHtml(getOrderNumberLabel(order))}</div>
                 </td>
                 <td class="header-number-cell">
@@ -7823,8 +8153,9 @@
               <thead>
                 <tr>
                   <th style="width:8%;">#</th>
-                  <th style="width:18%;">Data</th>
-                  <th style="width:14%;">Hora</th>
+                  <th style="width:16%;">Data</th>
+                  <th style="width:12%;">Hora</th>
+                  <th style="width:22%;">Movimentação</th>
                   <th>Justificativa</th>
                 </tr>
               </thead>
@@ -7862,6 +8193,7 @@
           <td>${index + 1}</td>
           <td>${escapeHtml(item.dateLabel || formatDate(item.date) || '-')}</td>
           <td>${escapeHtml(item.timeLabel || '-')}</td>
+          <td>${escapeHtml(getOrderHistoryTypeLabel(item.type))}</td>
           <td>${escapeHtml(item.reason || '-')}</td>
         </tr>
       `).join('');
@@ -8266,7 +8598,7 @@
                   <td class="header-logo-cell"><img class="brand-logo" src="${getActiveLogoSrc()}" alt="WeFrotas"></td>
                   <td class="header-main-cell">
                     <div class="admin-line">${escapeHtml(order.administracao || 'NOME PREENCHIDO NA ADMINISTRAÇÃO')}</div>
-                    <div class="title-line">Histórico de reaberturas da OS</div>
+                    <div class="title-line">Histórico da OS</div>
                     <div class="status-line">OS Nº: ${escapeHtml(getOrderNumberLabel(order))}</div>
                   </td>
                   <td class="header-number-cell">
@@ -8281,8 +8613,9 @@
                 <thead>
                   <tr>
                     <th style="width:8%;">#</th>
-                    <th style="width:18%;">Data</th>
-                    <th style="width:14%;">Hora</th>
+                    <th style="width:16%;">Data</th>
+                    <th style="width:12%;">Hora</th>
+                    <th style="width:22%;">Movimentação</th>
                     <th>Justificativa</th>
                   </tr>
                 </thead>
@@ -8314,6 +8647,110 @@
       renderFinance();
       renderReports();
     }
+
+    function getBatchOrderRevisionKm(vehicle) {
+      const currentKm = vehicle ? getVehicleCurrentKm(vehicle.id) : null;
+      if (currentKm === null || Number.isNaN(currentKm)) return 0;
+      return Math.ceil(currentKm / 10000) * 10000 || 10000;
+    }
+
+    function buildBatchOrderDescription(item, vehicle) {
+      const tipoOs = item.tipoOs || 'avulsa';
+      const manualDescription = String(item.descricao || '').trim();
+      if (manualDescription) return manualDescription;
+      return getOrderTypeDescription(tipoOs, {
+        dataInicio: item.dataInicio || '',
+        vehicle,
+        revisionKm: getBatchOrderRevisionKm(vehicle)
+      });
+    }
+
+    function createBatchOrdersFromPayload(payload = {}) {
+      const items = Array.isArray(payload.items) ? payload.items : [];
+      const validItems = [];
+      const nextAdministrations = [];
+
+      items.forEach((item) => {
+        const vehicle = allVehicles.find(vehicleItem => vehicleItem.id === item.vehicleId);
+        if (!vehicle) return;
+
+        const tipoOs = item.tipoOs || 'avulsa';
+        const dataInicio = item.dataInicio || '';
+        const dataTermino = item.dataTermino || '';
+        const administracao = String(item.administracao || '').trim();
+        const status = item.status || 'aberta';
+        const descricao = buildBatchOrderDescription(item, vehicle);
+
+        if (!validateOrderDateRange(dataInicio, dataTermino)) {
+          throw new Error('Revise as datas: a data de fim não pode ser anterior à data de início.');
+        }
+        if (!descricao) {
+          throw new Error('Preencha a descrição para OS avulsa ou selecione um tipo com descrição automática.');
+        }
+        if (administracao) nextAdministrations.push(administracao);
+
+        validItems.push({
+          vehicle,
+          tipoOs,
+          dataInicio,
+          dataTermino,
+          administracao,
+          status,
+          descricao
+        });
+      });
+
+      if (!validItems.length) {
+        throw new Error('Selecione ao menos um veículo para abrir OS em lote.');
+      }
+
+      const firstNumber = getNextOrderCounterValue();
+      const createdOrders = validItems.map((item, index) => {
+        const driverId = item.vehicle.motoristaId || '';
+        return {
+          id: generateId(),
+          numero: String(firstNumber + index),
+          administracao: item.administracao,
+          tipoOs: item.tipoOs,
+          vehicleId: item.vehicle.id,
+          driverId,
+          responsavelNome: getDriverLabel(driverId),
+          dataInicio: item.dataInicio,
+          dataTermino: item.dataTermino,
+          status: item.status,
+          descricao: item.descricao
+        };
+      });
+
+      allOrders = [...createdOrders, ...allOrders];
+      if (nextAdministrations.length) {
+        allAdministrations = normalizeAdministrationList([...allAdministrations, ...nextAdministrations]);
+      }
+      syncOrderCounterWithOrders();
+      saveToLocalStorage();
+      renderAll();
+      showToast(`${createdOrders.length} OS criada${createdOrders.length === 1 ? '' : 's'} em lote com sucesso.`);
+      return createdOrders;
+    }
+
+    window.wefrotasBatchOrdersApi = {
+      getVehicles: () => getSortedVehicles().map(vehicle => ({
+        id: vehicle.id,
+        numeroFrota: vehicle.numeroFrota || '',
+        placa: vehicle.placa || '',
+        modelo: vehicle.modelo || '',
+        motoristaId: vehicle.motoristaId || '',
+        currentKm: getVehicleCurrentKm(vehicle.id)
+      })),
+      getAdministrations: () => getAdministrationOptions(),
+      getDefaultAdministration: () => getLastAdministrationValue(),
+      getLocalIsoDate,
+      buildDescription: (item = {}) => {
+        const vehicle = allVehicles.find(vehicleItem => vehicleItem.id === item.vehicleId);
+        return buildBatchOrderDescription(item, vehicle);
+      },
+      createOrders: createBatchOrdersFromPayload
+    };
 
     document.getElementById('cadastro-form').addEventListener('submit', function (event) {
       event.preventDefault();
@@ -8453,11 +8890,34 @@
           return;
         }
         if (currentEditingId) {
-          allOrders = allOrders.map(order => order.id === currentEditingId
-            ? { ...order, numero, administracao, tipoOs, vehicleId, driverId, responsavelNome, dataInicio, dataTermino, status, descricao }
-            : order);
-          syncOrderCounterWithOrders();
-          showToast('OS atualizada com sucesso.');
+          const previousOrder = allOrders.find(order => order.id === currentEditingId);
+          const nextOrderPayload = { numero, administracao, tipoOs, vehicleId, driverId, responsavelNome, dataInicio, dataTermino, status, descricao };
+          const persistUpdatedOrder = (historyEntry = null) => {
+            allOrders = allOrders.map(order => {
+              if (order.id !== currentEditingId) return order;
+              const updatedOrder = { ...order, ...nextOrderPayload };
+              return historyEntry ? appendOrderHistory(updatedOrder, historyEntry) : updatedOrder;
+            });
+            syncOrderCounterWithOrders();
+            saveToLocalStorage();
+            renderAll();
+            closeCadastroModal();
+            showToast('OS atualizada com sucesso.');
+          };
+
+          if (previousOrder && String(previousOrder.descricao || '').trim() !== descricao) {
+            openPromptModal({
+              title: 'Justificar alteração da OS',
+              text: 'Informe o motivo da alteração na descrição do serviço. Essa justificativa ficará no Histórico da OS.',
+              placeholder: 'Ex.: ajuste da referência mensal, revisão corrigida, complemento do serviço...',
+              confirmLabel: 'Salvar alteração',
+              cancelLabel: 'Cancelar',
+              onConfirm: (justification) => persistUpdatedOrder(createOrderHistoryEntry('description_edit', justification))
+            });
+            return;
+          }
+          persistUpdatedOrder();
+          return;
         } else {
           allOrders.unshift({ id: generateId(), numero, administracao, tipoOs, vehicleId, driverId, responsavelNome, dataInicio, dataTermino, status, descricao });
           syncOrderCounterWithOrders();
@@ -8836,9 +9296,20 @@
       updateCustomLogoUi();
       updateManagerIdentityUi();
       updateOperationSettingsUi();
+      try {
+        await connectWeFrotasOnline();
+      } catch (error) {
+        console.error('Não foi possível iniciar o backend do WeFrotas.', error);
+        toggleOnlineLogin(true);
+        updateOnlineStatus({
+          state: 'error',
+          message: 'Backend indisponível. A cópia local continua funcionando.'
+        });
+      }
     }
 
     initializeWeFrotas();
+    document.getElementById('online-auth-form')?.addEventListener('submit', loginWeFrotasOnline);
     document.getElementById('settings-custom-logo-file')?.addEventListener('change', handleCustomLogoUpload);
     document.getElementById('settings-custom-logo-size')?.addEventListener('input', (event) => {
       const sizeLabel = document.getElementById('settings-custom-logo-size-label');

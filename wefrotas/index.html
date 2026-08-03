@@ -11,10 +11,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260729-24">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260729-28">
   
 </head>
-<body>
+<body class="auth-locked">
   <div id="search-focus-overlay" class="search-focus-overlay hidden"></div>
   <div id="mobile-search-backdrop" class="mobile-search-backdrop"></div>
   <div id="mobile-search-modal" class="mobile-search-modal">
@@ -126,7 +126,7 @@
             </div>
           </div>
 
-          <button class="sidebar-logout-btn" onclick="window.location.href='https://gaveblue.com.br/'">
+          <button class="sidebar-logout-btn" onclick="window.logoutWeFrotasOnline?.() || (window.location.href='https://gaveblue.com.br/')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
@@ -198,7 +198,8 @@
               <div class="orders-filter-field">
                 <label>Status</label>
                 <select id="order-filter-status" class="soft-input w-full">
-                  <option value="">Todos os Status</option>
+                  <option value="">Abertas e em andamento</option>
+                  <option value="todos">Todos os Status</option>
                   <option value="aberta">Aberta</option>
                   <option value="andamento">Em andamento</option>
                   <option value="fechada">Fechada</option>
@@ -232,6 +233,13 @@
                 <button class="icon-action text-[#8b3dff]" title="Nova OS" onclick="openCadastroModal('order')">
                   <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 5v14M5 12h14"/>
+                  </svg>
+                </button>
+                <button class="icon-action" title="Abrir OS em lote" onclick="openBatchOrderModal()">
+                  <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M8 5v8M4 9h8"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M17 11v8M13 15h8"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M15 4h4a1 1 0 0 1 1 1v4M4 17v2a1 1 0 0 0 1 1h4"/>
                   </svg>
                 </button>
                 <button id="edit-order-btn" class="icon-action text-[#81a4ff]" title="Editar" onclick="editSelectedOrder()">
@@ -314,24 +322,55 @@
             <div id="home-monthly-cost-chart" class="home-monthly-chart"></div>
           </div>
           <div class="grid xl:grid-cols-3 gap-5 mt-6">
-            <div class="filter-card p-6 xl:col-span-1">
-              <h3 class="text-lg font-extrabold text-slate-900 mb-4">Custo por KM por veículo</h3>
-              <div id="home-cost-table" class="space-y-3 text-sm text-slate-600"></div>
+            <div class="filter-card p-6 xl:col-span-3">
+              <div class="flex items-start justify-between gap-4 flex-wrap mb-5">
+                <div>
+                  <h3 class="text-lg font-extrabold text-slate-900">Custo por KM por veículo</h3>
+                  <p class="text-sm text-slate-500 mt-1">Comparativo calculado apenas com abastecimentos distribuídos em OS.</p>
+                </div>
+                <div class="home-km-toolbar">
+                  <div class="home-km-filters">
+                    <select id="home-km-cost-mode" onchange="renderHomeCards()">
+                      <option value="all">Todo histórico</option>
+                      <option value="month">Mês</option>
+                    </select>
+                    <input id="home-km-cost-filter" type="month" onchange="renderHomeCards()">
+                  </div>
+                  <div class="home-chart-actions">
+                    <button type="button" class="home-chart-action-btn" title="Abrir relatório" onclick="openCostPerKmReport()">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M9 7h8v8"/>
+                      </svg>
+                    </button>
+                    <button type="button" class="home-chart-action-btn" title="Imprimir dashboard" onclick="printCostPerKmDashboard()">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8V4h10v4M7 17H5a2 2 0 01-2-2v-4a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2h-2M7 14h10v6H7z"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="home-km-legend">
+                    <span class="home-km-legend-item home-km-legend-item--green">Até R$ 0,80</span>
+                    <span class="home-km-legend-item home-km-legend-item--yellow">R$ 0,81 a R$ 0,90</span>
+                    <span class="home-km-legend-item home-km-legend-item--red">Acima de R$ 1,00</span>
+                  </div>
+                </div>
+              </div>
+              <div id="home-cost-table" class="home-monthly-chart home-km-chart"></div>
             </div>
-            <div class="filter-card p-6 xl:col-span-1">
+            <div class="filter-card p-5 xl:col-span-1 home-compact-card">
               <h3 class="text-lg font-extrabold text-slate-900 mb-4">Despesas</h3>
-              <div id="home-finance-status-table" class="space-y-3 text-sm text-slate-600"></div>
+              <div id="home-finance-status-table" class="home-finance-status-compact"></div>
             </div>
-            <div class="filter-card p-6 xl:col-span-1">
+            <div class="filter-card p-5 xl:col-span-2 home-compact-card">
               <h3 class="text-lg font-extrabold text-slate-900 mb-4">Seguro</h3>
-              <div id="home-insurance-table" class="space-y-3 text-sm text-slate-600"></div>
+              <div id="home-insurance-table" class="home-insurance-compact"></div>
             </div>
           </div>
-          <div class="filter-card p-6 mt-6">
+          <div class="filter-card p-5 mt-6 home-compact-card">
             <div class="mb-4">
               <h3 class="text-lg font-extrabold text-slate-900">Revisões por KM</h3>
             </div>
-            <div id="home-maintenance-table" class="space-y-3 text-sm text-slate-600"></div>
+            <div id="home-maintenance-table" class="home-maintenance-compact"></div>
           </div>
           <div id="home-storage-card" class="storage-dashboard-card mt-6">
             <div>
@@ -584,7 +623,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M5 21h14"/>
                     </svg>
                   </button>
-                  <button id="group-finance-btn" class="icon-action text-[#5f6ef5]" title="Agrupar abastecimentos" onclick="openFuelGroupingModal()">
+                  <button id="group-finance-btn" class="icon-action text-[#5f6ef5]" title="Agrupar lançamentos" onclick="openFuelGroupingModal()">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M3 7V5c0-1.1.9-2 2-2h2"/>
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M17 3h2c1.1 0 2 .9 2 2v2"/>
@@ -1178,7 +1217,33 @@
   <input id="wefrotas-import-backup-input" type="file" accept=".json" class="hidden" onchange="handleBackupImportFile(event)">
   <input id="wefrotas-batch-import-input" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleBatchImportFile(event)">
 
-  <script src="./wefrotas.js?v=20260729-24"></script>
+  <div id="online-status" class="online-status is-local" role="status" aria-live="polite">
+    <span class="online-status-dot"></span>
+    <span id="online-status-text">Preparando WeFrotas Online...</span>
+    <button id="online-sync-btn" type="button" onclick="syncWeFrotasOnline()" hidden>Sincronizar</button>
+    <button id="online-logout-btn" type="button" onclick="logoutWeFrotasOnline()" hidden>Sair</button>
+  </div>
+
+  <div id="online-auth-backdrop" class="online-auth-backdrop">
+    <form id="online-auth-form" class="online-auth-card">
+      <img src="./wefrotas.png" alt="WeFrotas" class="online-auth-logo">
+      <p class="panel-kicker">WeFrotas Online</p>
+      <h2>Acesse os dados compartilhados</h2>
+      <p>Entre com o usuário criado para sua empresa. O cadastro público permanece desativado.</p>
+      <label for="online-auth-email">E-mail</label>
+      <input id="online-auth-email" type="email" autocomplete="username" required>
+      <label for="online-auth-password">Senha</label>
+      <input id="online-auth-password" type="password" autocomplete="current-password" required>
+      <button id="online-auth-submit" type="submit">Entrar</button>
+      <span id="online-auth-error" class="online-auth-error" aria-live="polite"></span>
+    </form>
+  </div>
+
+  <script src="./appwrite-config.js?v=1"></script>
+  <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
+  <script src="./wefrotas-backend.js?v=1"></script>
+  <script src="./wefrotas.js?v=20260803-auth-merge-1"></script>
+  <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
 
