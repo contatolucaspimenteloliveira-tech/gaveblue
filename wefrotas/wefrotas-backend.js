@@ -19,6 +19,10 @@
   let lastSerializedSnapshot = '';
   const LOGOUT_PENDING_KEY = 'wefrotas_online_logout_pending';
   const SYNC_PENDING_KEY = 'wefrotas_online_sync_pending';
+  const CHUNK_MANIFEST_PREFIX = 'chunked-v1:';
+  const SNAPSHOT_CHUNK_SIZE = 600 * 1024;
+  const CHUNK_REQUEST_BATCH_SIZE = 4;
+  let primaryRowId = '';
 
   function hasPendingLogout() {
     try { return localStorage.getItem(LOGOUT_PENDING_KEY) === '1'; } catch (error) { return false; }
@@ -151,17 +155,106 @@
     ];
   }
 
-  async function loadRemoteRecord() {
-    if (!currentUser) return null;
-    const rowId = await digestId(config.companyId);
+  async function getPrimaryRowId() {
+    if (!primaryRowId) primaryRowId = await digestId(config.companyId);
+    return primaryRowId;
+  }
+
+  async function getChunkRowId(generation, index) {
+    return digestId(`${config.companyId}:snapshot:${generation}:${index}`);
+  }
+
+  function parseChunkManifest(value) {
+    const storedValue = String(value || '');
+    if (!storedValue.startsWith(CHUNK_MANIFEST_PREFIX)) return null;
+    const manifest = JSON.parse(storedValue.slice(CHUNK_MANIFEST_PREFIX.length));
+    if (!manifest?.generation || !Number.isInteger(manifest.count) || manifest.count < 1 || manifest.count > 10000) {
+      throw new Error('O índice do backup online está inválido.');
+    }
+    return manifest;
+  }
+
+  async function getRow(rowId) {
+    return tablesDB.getRow({
+      databaseId: config.databaseId,
+      tableId: config.tableId,
+      rowId
+    });
+  }
+
+  async function updateOrCreateRow(rowId, data, permissionsOnCreate = getPermissions()) {
     try {
-      const row = await tablesDB.getRow({
+      return await tablesDB.updateRow({
         databaseId: config.databaseId,
         tableId: config.tableId,
-        rowId
+        rowId,
+        data
       });
+    } catch (error) {
+      if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
+      return tablesDB.createRow({
+        databaseId: config.databaseId,
+        tableId: config.tableId,
+        rowId,
+        data,
+        permissions: permissionsOnCreate
+      });
+    }
+  }
+
+  async function createSnapshotChunk(rowId, data) {
+    return tablesDB.createRow({
+      databaseId: config.databaseId,
+      tableId: config.tableId,
+      rowId,
+      data,
+      permissions: getPermissions()
+    });
+  }
+
+  async function loadChunkedSnapshot(manifest) {
+    const chunks = new Array(manifest.count);
+    for (let start = 0; start < manifest.count; start += CHUNK_REQUEST_BATCH_SIZE) {
+      const end = Math.min(start + CHUNK_REQUEST_BATCH_SIZE, manifest.count);
+      await Promise.all(Array.from({ length: end - start }, async (_, offset) => {
+        const index = start + offset;
+        const row = await getRow(await getChunkRowId(manifest.generation, index));
+        chunks[index] = String(row?.snapshot || '');
+      }));
+    }
+    const storedSnapshot = chunks.join('');
+    if (manifest.length && storedSnapshot.length !== manifest.length) {
+      throw new Error('O backup online está incompleto. Tente sincronizar novamente no dispositivo principal.');
+    }
+    return decodeSnapshot(storedSnapshot);
+  }
+
+  async function cleanupChunkGeneration(manifest) {
+    if (!manifest?.generation || !manifest?.count) return;
+    for (let start = 0; start < manifest.count; start += CHUNK_REQUEST_BATCH_SIZE) {
+      const end = Math.min(start + CHUNK_REQUEST_BATCH_SIZE, manifest.count);
+      await Promise.all(Array.from({ length: end - start }, async (_, offset) => {
+        try {
+          await tablesDB.deleteRow({
+            databaseId: config.databaseId,
+            tableId: config.tableId,
+            rowId: await getChunkRowId(manifest.generation, start + offset)
+          });
+        } catch (error) {
+          if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
+        }
+      }));
+    }
+  }
+
+  async function loadRemoteRecord() {
+    if (!currentUser) return null;
+    const rowId = await getPrimaryRowId();
+    try {
+      const row = await getRow(rowId);
+      const manifest = parseChunkManifest(row?.snapshot);
       return row?.snapshot ? {
-        snapshot: await decodeSnapshot(row.snapshot),
+        snapshot: manifest ? await loadChunkedSnapshot(manifest) : await decodeSnapshot(row.snapshot),
         updatedAt: row.updatedAt || row.$updatedAt || ''
       } : null;
     } catch (error) {
@@ -180,34 +273,53 @@
     emitStatus('syncing', 'Sincronizando dados...');
     const serialized = JSON.stringify(snapshot);
     const storedSnapshot = await encodeSnapshot(serialized);
-    const rowId = await digestId(config.companyId);
+    const rowId = await getPrimaryRowId();
+    let previousManifest = null;
+    try {
+      previousManifest = parseChunkManifest((await getRow(rowId))?.snapshot);
+    } catch (error) {
+      if (error?.code !== 404 && error?.type !== 'row_not_found') console.warn('Não foi possível ler o índice anterior.', error);
+    }
+    const generation = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    const chunks = [];
+    for (let offset = 0; offset < storedSnapshot.length; offset += SNAPSHOT_CHUNK_SIZE) {
+      chunks.push(storedSnapshot.slice(offset, offset + SNAPSHOT_CHUNK_SIZE));
+    }
+    const updatedAt = new Date().toISOString();
+    for (let start = 0; start < chunks.length; start += CHUNK_REQUEST_BATCH_SIZE) {
+      const end = Math.min(start + CHUNK_REQUEST_BATCH_SIZE, chunks.length);
+      await Promise.all(Array.from({ length: end - start }, async (_, offset) => {
+        const index = start + offset;
+        await createSnapshotChunk(await getChunkRowId(generation, index), {
+          workspaceId: config.companyId,
+          snapshot: chunks[index],
+          updatedAt,
+          updatedBy: currentUser.$id
+        });
+      }));
+      emitStatus('syncing', `Enviando dados: ${end} de ${chunks.length} blocos...`);
+    }
+    const manifestValue = `${CHUNK_MANIFEST_PREFIX}${JSON.stringify({
+      generation,
+      count: chunks.length,
+      length: storedSnapshot.length
+    })}`;
     const data = {
       workspaceId: config.companyId,
-      snapshot: storedSnapshot,
-      updatedAt: new Date().toISOString(),
+      snapshot: manifestValue,
+      updatedAt,
       updatedBy: currentUser.$id
     };
-    try {
-      await tablesDB.updateRow({
-        databaseId: config.databaseId,
-        tableId: config.tableId,
-        rowId,
-        data
-      });
-    } catch (error) {
-      if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
-      await tablesDB.createRow({
-        databaseId: config.databaseId,
-        tableId: config.tableId,
-        rowId,
-        data,
-        permissions: getPermissions()
-      });
-    }
+    await updateOrCreateRow(rowId, data);
 
     lastSerializedSnapshot = serialized;
     setPendingSync(false);
     emitStatus('online', 'Dados sincronizados.');
+    if (previousManifest?.generation && previousManifest.generation !== generation) {
+      cleanupChunkGeneration(previousManifest).catch((error) => {
+        console.warn('Não foi possível remover todos os blocos antigos do snapshot.', error);
+      });
+    }
   }
 
   function queueSnapshot(snapshot, delay = 1200) {
@@ -226,12 +338,14 @@
     }, delay);
   }
 
-  function subscribeRealtime() {
+  async function subscribeRealtime() {
     unsubscribeRealtime?.();
     if (!currentUser) return;
+    const expectedRowId = await getPrimaryRowId();
     const channel = `tablesdb.${config.databaseId}.tables.${config.tableId}.rows`;
     unsubscribeRealtime = client.subscribe(channel, (event) => {
       if (event?.payload?.workspaceId !== config.companyId) return;
+      if (event?.payload?.$id && event.payload.$id !== expectedRowId) return;
       if (hasPendingSync()) return;
       clearTimeout(remoteApplyTimer);
       remoteApplyTimer = setTimeout(async () => {
