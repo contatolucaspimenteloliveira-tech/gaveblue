@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260803-access-3">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260803-access-4">
   
 </head>
 <body class="auth-locked">
@@ -1187,24 +1187,18 @@
 
   <div id="online-auth-backdrop" class="online-auth-backdrop">
     <div id="online-auth-checking" class="online-auth-checking" role="status" aria-live="polite">
-      <img src="./wefrotas.png" alt="WeFrotas" class="online-auth-checking-logo">
-      <span class="online-auth-loader" aria-hidden="true"></span>
-      <strong id="online-auth-checking-text">Verificando seu acesso...</strong>
-      <small>Aguarde enquanto protegemos seus dados.</small>
+      <span class="online-auth-progress" aria-hidden="true"></span>
+      <span id="online-auth-checking-text" class="sr-only">Verificando seu acesso...</span>
     </div>
 
-    <div id="online-auth-layout" class="online-auth-layout hidden">
-      <a class="online-auth-back-link" href="https://gaveblue.com.br/">
-        <span aria-hidden="true">←</span>
-        Voltar ao site principal
+    <div id="online-auth-layout" class="online-auth-layout">
+      <a class="online-auth-promo" href="https://wa.me/5527988790381?text=Ol%C3%A1%21%20Quero%20conhecer%20o%20WeFrotas%20Online." target="_blank" rel="noopener noreferrer" aria-label="Falar sobre o WeFrotas pelo WhatsApp">
+        <img src="./wefrotas-login-promo.jpg" alt="Gestão completa da sua frota com o WeFrotas">
       </a>
 
-      <section class="online-auth-promo" aria-label="Conheça o WeFrotas">
-        <img src="./wefrotas-login-promo.jpg" alt="Gestão completa da sua frota com o WeFrotas">
-      </section>
-
       <section class="online-auth-panel">
-        <form id="online-auth-form" class="online-auth-card">
+        <a class="online-auth-close" href="https://gaveblue.com.br/" aria-label="Fechar e voltar ao site principal" title="Voltar ao site principal">×</a>
+        <form id="online-auth-form" class="online-auth-card" onsubmit="document.getElementById('online-auth-checking')?.classList.remove('hidden')">
           <img src="./wefrotas.png" alt="WeFrotas" class="online-auth-logo">
           <p class="panel-kicker">WeFrotas Online</p>
           <h2>Fazer login</h2>
@@ -1214,7 +1208,6 @@
           <label for="online-auth-password">Senha</label>
           <input id="online-auth-password" type="password" autocomplete="current-password" required>
           <button id="online-auth-submit" type="submit">
-            <span class="online-auth-button-spinner" aria-hidden="true"></span>
             <span id="online-auth-submit-label">Entrar</span>
           </button>
           <p class="online-auth-signup">
@@ -1230,7 +1223,7 @@
   <script src="./appwrite-config.js?v=1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=1"></script>
-  <script src="./wefrotas.js?v=20260803-access-3"></script>
+  <script src="./wefrotas.js?v=20260803-access-4"></script>
 </body>
 </html>
 <!-- deploy: auth-visibility-fix -->
