@@ -1233,7 +1233,23 @@
   <div id="online-auth-backdrop" class="online-auth-backdrop">
     <div id="online-auth-checking" class="online-auth-checking" role="status" aria-live="polite">
       <span class="online-auth-progress" aria-hidden="true"></span>
-      <span id="online-auth-checking-text" class="sr-only">Verificando seu acesso...</span>
+      <div class="online-auth-loading-card">
+        <img src="./wefrotas.png" alt="WeFrotas" class="online-auth-loading-logo">
+        <div id="online-auth-loading-icon" class="online-auth-loading-icon" aria-hidden="true">
+          <span class="online-auth-loading-spinner"></span>
+          <svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"></path></svg>
+        </div>
+        <p class="online-auth-loading-kicker">Acesso seguro</p>
+        <h2 id="online-auth-loading-title">Validando seu acesso</h2>
+        <p id="online-auth-checking-text" class="online-auth-loading-description">Confirmando sua sessão com segurança.</p>
+        <div class="online-auth-loading-steps" aria-label="Etapas do login">
+          <div class="online-auth-loading-step is-active" data-auth-stage="validating"><span>1</span><strong>Validando acesso</strong></div>
+          <div class="online-auth-loading-step" data-auth-stage="consulting"><span>2</span><strong>Consultando informações</strong></div>
+          <div class="online-auth-loading-step" data-auth-stage="preparing"><span>3</span><strong>Preparando seu ambiente</strong></div>
+          <div class="online-auth-loading-step" data-auth-stage="done"><span>4</span><strong>Login validado</strong></div>
+        </div>
+        <p id="online-auth-loading-note" class="online-auth-loading-note">Aguarde só um instante.</p>
+      </div>
     </div>
 
     <div id="online-auth-layout" class="online-auth-layout">
@@ -1268,7 +1284,7 @@
   <script src="./appwrite-config.js?v=1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260803-storage-optimization-1"></script>
-  <script src="./wefrotas.js?v=20260803-storage-optimization-1"></script>
+  <script src="./wefrotas.js?v=20260803-login-progress-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

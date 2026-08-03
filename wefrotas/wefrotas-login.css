@@ -23,8 +23,11 @@
 
 .online-auth-checking {
   z-index: 20;
-  background: rgba(241, 245, 249, 0.58);
-  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(241, 245, 249, 0.76);
+  backdrop-filter: blur(6px);
 }
 
 .online-platform-loading {
@@ -44,6 +47,100 @@
   box-shadow: 0 2px 12px rgba(37, 99, 235, 0.48);
   animation: online-auth-progress 1.25s ease-in-out infinite alternate;
 }
+
+.online-auth-loading-card {
+  width: min(440px, calc(100vw - 32px));
+  padding: 30px 30px 26px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.2);
+  text-align: center;
+}
+
+.online-auth-loading-logo {
+  width: 150px;
+  max-height: 58px;
+  margin: 0 auto 18px;
+  object-fit: contain;
+}
+
+.online-auth-loading-icon {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #eff6ff, #eef2ff);
+  color: #2563eb;
+}
+
+.online-auth-loading-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(37, 99, 235, 0.16);
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: online-auth-spin 0.8s linear infinite;
+}
+
+.online-auth-loading-icon svg {
+  display: none;
+  width: 29px;
+  height: 29px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.online-auth-loading-icon.is-done {
+  color: #16a34a;
+  background: #ecfdf3;
+}
+
+.online-auth-loading-icon.is-done .online-auth-loading-spinner { display: none; }
+.online-auth-loading-icon.is-done svg { display: block; }
+.online-auth-loading-kicker { margin: 0 0 5px; color: #2563eb; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+.online-auth-loading-card h2 { margin: 0; color: #0f172a; font-size: 24px; letter-spacing: -0.03em; }
+.online-auth-loading-description { min-height: 42px; margin: 8px 0 18px; color: #64748b; font-size: 14px; line-height: 1.5; }
+.online-auth-loading-steps { display: grid; gap: 8px; text-align: left; }
+
+.online-auth-loading-step {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 11px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #94a3b8;
+  background: #f8fafc;
+}
+
+.online-auth-loading-step span {
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.online-auth-loading-step strong { font-size: 13px; }
+.online-auth-loading-step.is-active { border-color: rgba(37, 99, 235, 0.2); color: #1d4ed8; background: #eff6ff; }
+.online-auth-loading-step.is-active span { background: #2563eb; color: #fff; box-shadow: 0 5px 14px rgba(37, 99, 235, 0.24); }
+.online-auth-loading-step.is-complete { color: #15803d; background: #f0fdf4; }
+.online-auth-loading-step.is-complete span { background: #22c55e; color: transparent; }
+.online-auth-loading-step.is-complete span::after { content: '✓'; color: #fff; font-size: 13px; }
+.online-auth-loading-note { margin: 15px 0 0; color: #94a3b8; font-size: 12px; }
 
 .online-auth-layout {
   position: relative;
@@ -186,6 +283,8 @@
   to { transform: translateX(265%); }
 }
 
+@keyframes online-auth-spin { to { transform: rotate(360deg); } }
+
 @media (max-width: 920px) {
   .online-auth-backdrop { padding: 16px; }
   .online-auth-layout { grid-template-columns: minmax(0, 1fr) minmax(350px, 0.56fr); min-height: min(660px, calc(100vh - 32px)); }
@@ -200,4 +299,7 @@
   .online-auth-close { top: 14px; right: 14px; width: 36px; height: 36px; }
   .online-auth-logo { width: 158px; }
   .online-auth-card h2 { font-size: 26px; }
+  .online-auth-loading-card { padding: 25px 20px 22px; border-radius: 20px; }
+  .online-auth-loading-logo { width: 135px; margin-bottom: 14px; }
+  .online-auth-loading-card h2 { font-size: 21px; }
 }
