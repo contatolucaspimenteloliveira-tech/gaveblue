@@ -9,6 +9,7 @@
   let storage = null;
   let currentUser = null;
   let currentSnapshotGetter = null;
+  let currentSnapshotUpdatedAtGetter = null;
   let currentSnapshotApplier = null;
   let statusListener = null;
   let unsubscribeRealtime = null;
@@ -150,7 +151,7 @@
     ];
   }
 
-  async function loadRemoteSnapshot() {
+  async function loadRemoteRecord() {
     if (!currentUser) return null;
     const rowId = await digestId(config.companyId);
     try {
@@ -159,11 +160,19 @@
         tableId: config.tableId,
         rowId
       });
-      return row?.snapshot ? await decodeSnapshot(row.snapshot) : null;
+      return row?.snapshot ? {
+        snapshot: await decodeSnapshot(row.snapshot),
+        updatedAt: row.updatedAt || row.$updatedAt || ''
+      } : null;
     } catch (error) {
       if (error?.code === 404 || error?.type === 'row_not_found') return null;
       throw error;
     }
+  }
+
+  async function loadRemoteSnapshot() {
+    const record = await loadRemoteRecord();
+    return record?.snapshot || null;
   }
 
   async function persistSnapshot(snapshot) {
@@ -329,6 +338,7 @@
 
   async function initialize(options = {}) {
     currentSnapshotGetter = options.getSnapshot;
+    currentSnapshotUpdatedAtGetter = options.getSnapshotUpdatedAt;
     currentSnapshotApplier = options.applySnapshot;
     statusListener = options.onStatus;
     return restoreSession();
@@ -341,11 +351,22 @@
       await persistSnapshot(localSnapshot);
       return { mode: 'uploaded-pending-local', snapshot: localSnapshot };
     }
-    const remoteSnapshot = await loadRemoteSnapshot();
-    if (remoteSnapshot) {
-      lastSerializedSnapshot = JSON.stringify(remoteSnapshot);
-      await currentSnapshotApplier?.(remoteSnapshot);
-      return { mode: 'remote', snapshot: remoteSnapshot };
+    const remoteRecord = await loadRemoteRecord();
+    if (remoteRecord?.snapshot) {
+      const localSerialized = localSnapshot ? JSON.stringify(localSnapshot) : '';
+      const remoteSerialized = JSON.stringify(remoteRecord.snapshot);
+      if (localSerialized && localSerialized !== remoteSerialized) {
+        const localUpdatedAt = Date.parse(currentSnapshotUpdatedAtGetter?.() || '') || 0;
+        const remoteUpdatedAt = Date.parse(remoteRecord.updatedAt || '') || 0;
+        if (localUpdatedAt > remoteUpdatedAt) {
+          setPendingSync(true);
+          await persistSnapshot(localSnapshot);
+          return { mode: 'uploaded-newer-local', snapshot: localSnapshot };
+        }
+      }
+      lastSerializedSnapshot = remoteSerialized;
+      await currentSnapshotApplier?.(remoteRecord.snapshot);
+      return { mode: 'remote', snapshot: remoteRecord.snapshot };
     }
     if (localSnapshot) await persistSnapshot(localSnapshot);
     return { mode: 'uploaded-local', snapshot: localSnapshot };
