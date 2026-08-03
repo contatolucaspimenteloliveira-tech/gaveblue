@@ -71,6 +71,11 @@
     let customLogoUrl = '';
     let customLogoScale = 60;
     let receiptViewerZoomLevel = 1;
+    const ONLINE_IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+    let onlineIdleTimer = null;
+    let onlineIdleListenersRegistered = false;
+    let onlineLoginInProgress = false;
+    let onlineLogoutInProgress = false;
     const importedDriverVehiclePlateMap = {
       amanda: 'TOJ1D23'
     };
@@ -1478,12 +1483,95 @@
       if (logoutButton) logoutButton.hidden = !user;
     }
 
-    function toggleOnlineLogin(show) {
+    function showOnlineAuthChecking(message = 'Verificando seu acesso...') {
       const backdrop = document.getElementById('online-auth-backdrop');
+      const checking = document.getElementById('online-auth-checking');
+      const layout = document.getElementById('online-auth-layout');
+      const checkingText = document.getElementById('online-auth-checking-text');
       if (!backdrop) return;
+      document.body.classList.add('auth-locked');
+      backdrop.classList.remove('hidden');
+      checking?.classList.remove('hidden');
+      layout?.classList.add('hidden');
+      if (checkingText) checkingText.textContent = message;
+    }
+
+    function toggleOnlineLogin(show, errorMessage = '') {
+      const backdrop = document.getElementById('online-auth-backdrop');
+      const checking = document.getElementById('online-auth-checking');
+      const layout = document.getElementById('online-auth-layout');
+      const errorNode = document.getElementById('online-auth-error');
+      if (!backdrop) return;
+      checking?.classList.add('hidden');
+      layout?.classList.toggle('hidden', !show);
       document.body.classList.toggle('auth-locked', show);
       backdrop.classList.toggle('hidden', !show);
-      if (show) document.getElementById('online-auth-email')?.focus();
+      if (errorMessage && errorNode) errorNode.textContent = errorMessage;
+      if (show) window.setTimeout(() => document.getElementById('online-auth-email')?.focus(), 50);
+    }
+
+    function setOnlineLoginLoading(loading) {
+      const submitButton = document.getElementById('online-auth-submit');
+      const submitLabel = document.getElementById('online-auth-submit-label');
+      if (submitButton) {
+        submitButton.disabled = loading;
+        submitButton.classList.toggle('is-loading', loading);
+      }
+      if (submitLabel) submitLabel.textContent = loading ? 'Entrando...' : 'Entrar';
+    }
+
+    function toggleOnlinePlatformLoading(show, message = 'Carregando...') {
+      const loadingNode = document.getElementById('online-platform-loading');
+      const loadingText = document.getElementById('online-platform-loading-text');
+      loadingNode?.classList.toggle('hidden', !show);
+      if (loadingText) loadingText.textContent = message;
+    }
+
+    async function waitForOnlineLogout(timeoutMs = 6000) {
+      let timeoutId;
+      const timeout = new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error('O servidor demorou para confirmar o logout.')), timeoutMs);
+      });
+      try {
+        await Promise.race([window.WeFrotasBackend?.signOut(), timeout]);
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    }
+
+    function stopOnlineIdleTimer() {
+      window.clearTimeout(onlineIdleTimer);
+      onlineIdleTimer = null;
+    }
+
+    function scheduleOnlineIdleLogout() {
+      stopOnlineIdleTimer();
+      if (!window.WeFrotasBackend?.getUser() || document.body.classList.contains('auth-locked')) return;
+      onlineIdleTimer = window.setTimeout(expireOnlineSessionByInactivity, ONLINE_IDLE_TIMEOUT_MS);
+    }
+
+    async function expireOnlineSessionByInactivity() {
+      if (onlineLogoutInProgress || !window.WeFrotasBackend?.getUser()) return;
+      onlineLogoutInProgress = true;
+      stopOnlineIdleTimer();
+      toggleOnlinePlatformLoading(true, 'Encerrando sessão por inatividade...');
+      try {
+        await waitForOnlineLogout();
+      } catch (error) {
+        console.warn('Não foi possível encerrar a sessão remota por inatividade.', error);
+      } finally {
+        toggleOnlinePlatformLoading(false);
+        onlineLogoutInProgress = false;
+        toggleOnlineLogin(true, 'Sua sessão foi encerrada após 10 minutos sem atividade.');
+      }
+    }
+
+    function registerOnlineIdleListeners() {
+      if (onlineIdleListenersRegistered) return;
+      onlineIdleListenersRegistered = true;
+      ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach((eventName) => {
+        window.addEventListener(eventName, scheduleOnlineIdleLogout, { passive: true });
+      });
     }
 
     async function applyRemoteStorageSnapshot(snapshot) {
@@ -1505,10 +1593,11 @@
     }
 
     async function connectWeFrotasOnline() {
+      showOnlineAuthChecking('Verificando seu acesso...');
       const backend = window.WeFrotasBackend;
       if (!backend) {
         updateOnlineStatus({ state: 'error', message: 'Backend não carregado.' });
-        toggleOnlineLogin(true);
+        toggleOnlineLogin(true, 'Não foi possível carregar o acesso online. Tente novamente.');
         return null;
       }
       const user = await backend.initialize({
@@ -1517,42 +1606,76 @@
         onStatus: updateOnlineStatus
       });
       if (!backend.isConfigured()) {
-        toggleOnlineLogin(false);
+        toggleOnlineLogin(true, 'O acesso online ainda não foi configurado.');
         return null;
       }
       if (!user) {
         toggleOnlineLogin(true);
         return null;
       }
+      showOnlineAuthChecking('Carregando seus dados...');
       const result = await backend.adoptRemoteOrUploadLocal();
       toggleOnlineLogin(false);
+      scheduleOnlineIdleLogout();
       return result;
     }
 
     async function loginWeFrotasOnline(event) {
       event?.preventDefault();
+      if (onlineLoginInProgress) return;
       const backend = window.WeFrotasBackend;
       const email = document.getElementById('online-auth-email')?.value.trim() || '';
       const password = document.getElementById('online-auth-password')?.value || '';
       const errorNode = document.getElementById('online-auth-error');
-      const submitButton = document.getElementById('online-auth-submit');
       if (errorNode) errorNode.textContent = '';
-      if (submitButton) submitButton.disabled = true;
+      if (!backend) {
+        if (errorNode) errorNode.textContent = 'O serviço de acesso não foi carregado. Atualize a página.';
+        return;
+      }
+      onlineLoginInProgress = true;
+      let signedIn = false;
+      setOnlineLoginLoading(true);
       try {
         await backend.signIn(email, password);
+        signedIn = true;
+        showOnlineAuthChecking('Carregando seus dados...');
         await backend.adoptRemoteOrUploadLocal();
         toggleOnlineLogin(false);
+        scheduleOnlineIdleLogout();
         showToast('WeFrotas Online conectado com sucesso.');
       } catch (error) {
-        if (errorNode) errorNode.textContent = error?.message || 'Não foi possível entrar.';
+        if (signedIn) await backend.signOut().catch(() => {});
+        toggleOnlineLogin(true, error?.message || 'Não foi possível entrar.');
       } finally {
-        if (submitButton) submitButton.disabled = false;
+        onlineLoginInProgress = false;
+        setOnlineLoginLoading(false);
       }
     }
 
     async function logoutWeFrotasOnline() {
-      await window.WeFrotasBackend?.signOut();
-      toggleOnlineLogin(true);
+      if (onlineLogoutInProgress) return;
+      onlineLogoutInProgress = true;
+      stopOnlineIdleTimer();
+      const logoutButton = document.getElementById('online-logout-btn');
+      const previousLabel = logoutButton?.textContent || 'Sair';
+      if (logoutButton) {
+        logoutButton.disabled = true;
+        logoutButton.textContent = 'Saindo...';
+      }
+      toggleOnlinePlatformLoading(true, 'Encerrando sua sessão...');
+      try {
+        await waitForOnlineLogout();
+      } catch (error) {
+        console.warn('Não foi possível encerrar a sessão remota.', error);
+      } finally {
+        toggleOnlinePlatformLoading(false);
+        onlineLogoutInProgress = false;
+        if (logoutButton) {
+          logoutButton.disabled = false;
+          logoutButton.textContent = previousLabel;
+        }
+        toggleOnlineLogin(true);
+      }
     }
 
     async function syncWeFrotasOnline() {
@@ -9300,15 +9423,19 @@
         await connectWeFrotasOnline();
       } catch (error) {
         console.error('Não foi possível iniciar o backend do WeFrotas.', error);
-        toggleOnlineLogin(true);
+        toggleOnlineLogin(true, 'Não foi possível validar seu acesso. Atualize a página e tente novamente.');
         updateOnlineStatus({
           state: 'error',
-          message: 'Backend indisponível. A cópia local continua funcionando.'
+          message: 'Não foi possível validar o acesso online.'
         });
       }
     }
 
-    initializeWeFrotas();
+    registerOnlineIdleListeners();
+    initializeWeFrotas().catch((error) => {
+      console.error('Falha inesperada ao iniciar o WeFrotas.', error);
+      toggleOnlineLogin(true, 'Não foi possível iniciar o sistema. Atualize a página e tente novamente.');
+    });
     document.getElementById('online-auth-form')?.addEventListener('submit', loginWeFrotasOnline);
     document.getElementById('settings-custom-logo-file')?.addEventListener('change', handleCustomLogoUpload);
     document.getElementById('settings-custom-logo-size')?.addEventListener('input', (event) => {

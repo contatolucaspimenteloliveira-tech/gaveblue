@@ -16,6 +16,36 @@
   let syncChain = Promise.resolve();
   let remoteApplyTimer = null;
   let lastSerializedSnapshot = '';
+  const LOGOUT_PENDING_KEY = 'wefrotas_online_logout_pending';
+
+  function hasPendingLogout() {
+    try { return localStorage.getItem(LOGOUT_PENDING_KEY) === '1'; } catch (error) { return false; }
+  }
+
+  function setPendingLogout(pending) {
+    try {
+      if (pending) localStorage.setItem(LOGOUT_PENDING_KEY, '1');
+      else localStorage.removeItem(LOGOUT_PENDING_KEY);
+    } catch (error) {
+      console.warn('Não foi possível atualizar o estado local do logout.', error);
+    }
+  }
+
+  async function clearPendingRemoteSession() {
+    if (!account || !hasPendingLogout()) return true;
+    try {
+      await account.deleteSession({ sessionId: 'current' });
+      setPendingLogout(false);
+      return true;
+    } catch (error) {
+      if (error?.code === 401 || error?.code === 404) {
+        setPendingLogout(false);
+        return true;
+      }
+      console.warn('A sessão remota ainda não pôde ser encerrada.', error);
+      return false;
+    }
+  }
 
   function isConfigured() {
     return config.enabled === true
@@ -142,6 +172,11 @@
       emitStatus('local', 'Modo local: Appwrite ainda não configurado.');
       return null;
     }
+    if (hasPendingLogout() && !await clearPendingRemoteSession()) {
+      currentUser = null;
+      emitStatus('signed-out', 'Logout pendente. Entre novamente quando a conexão for restabelecida.');
+      return null;
+    }
     try {
       currentUser = await account.get();
       emitStatus('online', `Conectado como ${currentUser.name || currentUser.email}.`);
@@ -157,6 +192,9 @@
   async function signIn(email, password) {
     if (!isConfigured()) throw new Error('Appwrite ainda não foi configurado.');
     if (!account) buildServices();
+    if (hasPendingLogout() && !await clearPendingRemoteSession()) {
+      throw new Error('Ainda estamos encerrando a sessão anterior. Tente novamente em instantes.');
+    }
     await account.createEmailPasswordSession({ email, password });
     currentUser = await account.get();
     emitStatus('online', `Conectado como ${currentUser.name || currentUser.email}.`);
@@ -165,11 +203,20 @@
   }
 
   async function signOut() {
-    if (account && currentUser) await account.deleteSession({ sessionId: 'current' });
+    const shouldDeleteRemoteSession = Boolean(account && currentUser);
+    setPendingLogout(shouldDeleteRemoteSession);
     currentUser = null;
+    clearTimeout(syncTimer);
+    clearTimeout(remoteApplyTimer);
     unsubscribeRealtime?.();
     unsubscribeRealtime = null;
     emitStatus('signed-out', 'Sessão encerrada. Os dados locais foram preservados.');
+    if (!shouldDeleteRemoteSession) {
+      setPendingLogout(false);
+      return;
+    }
+    await account.deleteSession({ sessionId: 'current' });
+    setPendingLogout(false);
   }
 
   async function uploadReceipt(file) {
