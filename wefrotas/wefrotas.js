@@ -3505,23 +3505,30 @@
           }
           syncOrderCounterWithOrders();
           await saveToLocalStorage();
-          if (!window.WeFrotasBackend?.getUser()) {
-            throw new Error('Entre no WeFrotas para restaurar este backup para todos os usuários.');
-          }
-          await window.WeFrotasBackend.syncNow(buildStorageSnapshot());
           renderAll();
           renderNotifications();
           updateCustomLogoUi();
           updateOperationSettingsUi();
+          toggleSettings(false);
+          if (!window.WeFrotasBackend?.getUser()) {
+            showToast('Backup restaurado neste dispositivo. Entre no WeFrotas para sincronizar com os demais usuários.');
+            return;
+          }
+          try {
+            await window.WeFrotasBackend.syncNow(buildStorageSnapshot());
+          } catch (syncError) {
+            console.error('Falha ao sincronizar o backup restaurado.', syncError);
+            showToast('Backup restaurado neste dispositivo, mas o Appwrite não confirmou a sincronização.');
+            return;
+          }
           showToast('Backup restaurado e sincronizado para todos os usuários.', {
             notify: true,
             notifyTitle: 'Backup importado',
             notifyMessage: `Os dados de ${file.name} foram restaurados e enviados ao Appwrite.`
           });
-          toggleSettings(false);
         } catch (error) {
           console.error(error);
-          showToast(error?.message || 'Não foi possível sincronizar esse backup. A cópia local foi preservada.');
+          showToast(error?.message || 'Não foi possível ler e restaurar esse backup.');
         }
       };
       reader.readAsText(file, 'utf-8');

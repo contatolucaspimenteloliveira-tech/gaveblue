@@ -79,6 +79,45 @@
       .slice(0, 36);
   }
 
+  function bytesToBase64(bytes) {
+    const chunkSize = 0x8000;
+    let binary = '';
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+    }
+    return btoa(binary);
+  }
+
+  function base64ToBytes(value) {
+    const binary = atob(value);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return bytes;
+  }
+
+  async function encodeSnapshot(serialized) {
+    if (!global.CompressionStream) return serialized;
+    const stream = new Blob([serialized]).stream().pipeThrough(new CompressionStream('gzip'));
+    const compressed = new Uint8Array(await new Response(stream).arrayBuffer());
+    const encoded = `gzip-base64:${bytesToBase64(compressed)}`;
+    return encoded.length < serialized.length ? encoded : serialized;
+  }
+
+  async function decodeSnapshot(storedSnapshot) {
+    const value = String(storedSnapshot || '');
+    const prefix = 'gzip-base64:';
+    if (!value.startsWith(prefix)) return JSON.parse(value);
+    if (!global.DecompressionStream) {
+      throw new Error('Este navegador não consegue abrir o backup compactado. Atualize o navegador.');
+    }
+    const bytes = base64ToBytes(value.slice(prefix.length));
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    const serialized = await new Response(stream).text();
+    return JSON.parse(serialized);
+  }
+
   function getPermissions() {
     const { Permission, Role } = global.Appwrite;
     const role = config.teamId
@@ -100,7 +139,7 @@
         tableId: config.tableId,
         rowId
       });
-      return row?.snapshot ? JSON.parse(row.snapshot) : null;
+      return row?.snapshot ? await decodeSnapshot(row.snapshot) : null;
     } catch (error) {
       if (error?.code === 404 || error?.type === 'row_not_found') return null;
       throw error;
@@ -111,6 +150,7 @@
     if (!currentUser) throw new Error('Entre no WeFrotas antes de sincronizar os dados.');
     emitStatus('syncing', 'Sincronizando dados...');
     const serialized = JSON.stringify(snapshot);
+    const storedSnapshot = await encodeSnapshot(serialized);
     const rowId = await digestId(config.companyId);
     await tablesDB.upsertRow({
       databaseId: config.databaseId,
@@ -118,7 +158,7 @@
       rowId,
       data: {
         workspaceId: config.companyId,
-        snapshot: serialized,
+        snapshot: storedSnapshot,
         updatedAt: new Date().toISOString(),
         updatedBy: currentUser.$id
       },
