@@ -77,6 +77,7 @@
     let onlineIdleListenersRegistered = false;
     let onlineLoginInProgress = false;
     let onlineLogoutInProgress = false;
+    let onlineAuthSlowTimer = null;
     const importedDriverVehiclePlateMap = {
       amanda: 'TOJ1D23'
     };
@@ -1573,17 +1574,52 @@
       if (user) updateManagerIdentityUi();
     }
 
-    function showOnlineAuthChecking(message = 'Verificando seu acesso...') {
+    const onlineAuthStageOrder = ['validating', 'consulting', 'preparing', 'done'];
+
+    function setOnlineAuthStage(stage = 'validating', message = '') {
+      const stageIndex = Math.max(0, onlineAuthStageOrder.indexOf(stage));
+      const titleNode = document.getElementById('online-auth-loading-title');
+      const descriptionNode = document.getElementById('online-auth-checking-text');
+      const iconNode = document.getElementById('online-auth-loading-icon');
+      const defaultContent = {
+        validating: ['Validando seu acesso', 'Confirmando sua sessão com segurança.'],
+        consulting: ['Consultando informações', 'Buscando os dados atualizados da sua frota.'],
+        preparing: ['Preparando seu ambiente', 'Organizando módulos, registros e preferências.'],
+        done: ['Login validado', 'Tudo pronto. Abrindo o WeFrotas.']
+      };
+      const [title, description] = defaultContent[stage] || defaultContent.validating;
+      if (titleNode) titleNode.textContent = title;
+      if (descriptionNode) descriptionNode.textContent = message || description;
+      iconNode?.classList.toggle('is-done', stage === 'done');
+      document.querySelectorAll('[data-auth-stage]').forEach((node) => {
+        const nodeIndex = onlineAuthStageOrder.indexOf(node.dataset.authStage);
+        node.classList.toggle('is-complete', nodeIndex < stageIndex || stage === 'done');
+        node.classList.toggle('is-active', nodeIndex === stageIndex && stage !== 'done');
+      });
+    }
+
+    function showOnlineAuthChecking(message = 'Confirmando sua sessão com segurança.', stage = 'validating') {
       const backdrop = document.getElementById('online-auth-backdrop');
       const checking = document.getElementById('online-auth-checking');
       const layout = document.getElementById('online-auth-layout');
-      const checkingText = document.getElementById('online-auth-checking-text');
       if (!backdrop) return;
       document.body.classList.add('auth-locked');
       backdrop.classList.remove('hidden');
       checking?.classList.remove('hidden');
       layout?.classList.add('hidden');
-      if (checkingText) checkingText.textContent = message;
+      setOnlineAuthStage(stage, message);
+      window.clearTimeout(onlineAuthSlowTimer);
+      const noteNode = document.getElementById('online-auth-loading-note');
+      if (noteNode) noteNode.textContent = 'Aguarde só um instante.';
+      onlineAuthSlowTimer = window.setTimeout(() => {
+        if (noteNode) noteNode.textContent = 'A conexão está levando um pouco mais, mas seus dados continuam protegidos.';
+      }, 5000);
+    }
+
+    async function finishOnlineAuthChecking() {
+      setOnlineAuthStage('done');
+      window.clearTimeout(onlineAuthSlowTimer);
+      await new Promise((resolve) => window.setTimeout(resolve, 380));
     }
 
     function toggleOnlineLogin(show, errorMessage = '') {
@@ -1592,6 +1628,7 @@
       const layout = document.getElementById('online-auth-layout');
       const errorNode = document.getElementById('online-auth-error');
       if (!backdrop) return;
+      window.clearTimeout(onlineAuthSlowTimer);
       checking?.classList.add('hidden');
       layout?.classList.toggle('hidden', !show);
       document.body.classList.toggle('auth-locked', show);
@@ -1683,7 +1720,7 @@
     }
 
     async function connectWeFrotasOnline() {
-      showOnlineAuthChecking('Verificando seu acesso...');
+      showOnlineAuthChecking('Confirmando se já existe uma sessão ativa.', 'validating');
       const backend = window.WeFrotasBackend;
       if (!backend) {
         updateOnlineStatus({ state: 'error', message: 'Backend não carregado.' });
@@ -1705,13 +1742,18 @@
         toggleOnlineLogin(true);
         return null;
       }
-      showOnlineAuthChecking('Carregando seus dados...');
+      setOnlineAuthStage('consulting');
+      let preparingTimer = window.setTimeout(() => setOnlineAuthStage('preparing'), 700);
       try {
         const result = await backend.adoptRemoteOrUploadLocal();
+        window.clearTimeout(preparingTimer);
+        preparingTimer = null;
+        await finishOnlineAuthChecking();
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
         return result;
       } catch (error) {
+        window.clearTimeout(preparingTimer);
         console.error('Sessão recuperada, mas os dados continuam pendentes.', error);
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
@@ -1740,9 +1782,11 @@
       let signedIn = false;
       setOnlineLoginLoading(true);
       try {
+        showOnlineAuthChecking('Validando e-mail e senha.', 'validating');
         const user = await backend.signIn(email, password);
         signedIn = true;
-        showOnlineAuthChecking('Carregando seus dados...');
+        setOnlineAuthStage('consulting');
+        let preparingTimer = window.setTimeout(() => setOnlineAuthStage('preparing'), 700);
         try {
           await backend.adoptRemoteOrUploadLocal();
         } catch (syncError) {
@@ -1752,7 +1796,10 @@
             message: `Conectado, mas a sincronização está pendente: ${syncError?.message || 'erro no Appwrite'}`,
             user
           });
+        } finally {
+          window.clearTimeout(preparingTimer);
         }
+        await finishOnlineAuthChecking();
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
         showToast('WeFrotas Online conectado.');
