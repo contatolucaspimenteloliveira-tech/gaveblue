@@ -9,7 +9,7 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
     body.auth-locked {
       overflow: hidden;
     }
-    body.auth-locked .workspace-shell {
+    body.auth-locked .workspace-shell > .app-layout {
       visibility: hidden;
       pointer-events: none;
       user-select: none;
