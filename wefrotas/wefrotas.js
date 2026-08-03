@@ -305,6 +305,59 @@
       updateCustomLogoUi();
     }
 
+    function readBlobAsDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(reader.error || new Error('Falha ao ler a imagem.'));
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function optimizeCustomLogoDataUrl(dataUrl) {
+      const source = String(dataUrl || '');
+      if (!source.startsWith('data:image/') || source.length <= 450000) return source;
+      try {
+        const blob = await (await fetch(source)).blob();
+        const bitmap = await createImageBitmap(blob);
+        const scale = Math.min(1, 1200 / bitmap.width, 600 / bitmap.height);
+        const width = Math.max(1, Math.round(bitmap.width * scale));
+        const height = Math.max(1, Math.round(bitmap.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d', { alpha: true });
+        context.drawImage(bitmap, 0, 0, width, height);
+        bitmap.close?.();
+        const optimizedBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.82));
+        if (!optimizedBlob) return source;
+        const optimized = await readBlobAsDataUrl(optimizedBlob);
+        return optimized.length < source.length ? optimized : source;
+      } catch (error) {
+        console.warn('Não foi possível otimizar a logo personalizada.', error);
+        return source;
+      }
+    }
+
+    async function prepareSnapshotForOnline(snapshot = buildStorageSnapshot()) {
+      const sourceLogo = String(snapshot.customLogoUrl || '');
+      const optimizedLogo = await optimizeCustomLogoDataUrl(sourceLogo);
+      if (!optimizedLogo || optimizedLogo === sourceLogo) return snapshot;
+      customLogoUrl = optimizedLogo;
+      const optimizedSnapshot = { ...snapshot, customLogoUrl: optimizedLogo };
+      try {
+        wefrotasStorageEngine = 'IndexedDB';
+        await writeWeFrotasIndexedDbSnapshot(optimizedSnapshot);
+        saveSmallSettingsToLocalStorage(optimizedSnapshot);
+        clearLegacyLargeLocalStorageData();
+      } catch (error) {
+        wefrotasStorageEngine = 'localStorage';
+        saveFullSnapshotToLocalStorage(optimizedSnapshot);
+      }
+      updateCustomLogoUi();
+      return optimizedSnapshot;
+    }
+
     function handleCustomLogoUpload(event) {
       const file = event.target.files?.[0];
       if (!file) return;
@@ -316,8 +369,8 @@
       }
 
       const reader = new FileReader();
-      reader.onload = (loadEvent) => {
-        customLogoUrl = String(loadEvent.target?.result || '');
+      reader.onload = async (loadEvent) => {
+        customLogoUrl = await optimizeCustomLogoDataUrl(String(loadEvent.target?.result || ''));
         customLogoEnabled = true;
         updateCustomLogoUi();
         showToast('Logo carregada. Agora clique em salvar para aplicar.');
@@ -1640,6 +1693,7 @@
       const user = await backend.initialize({
         getSnapshot: buildStorageSnapshot,
         getSnapshotUpdatedAt: () => wefrotasLocalSnapshotUpdatedAt,
+        prepareSnapshot: prepareSnapshotForOnline,
         applySnapshot: applyRemoteStorageSnapshot,
         onStatus: updateOnlineStatus
       });
