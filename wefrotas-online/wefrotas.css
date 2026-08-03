@@ -3643,6 +3643,7 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
   width: min(420px, 100%);
   display: grid;
   gap: 12px;
+  text-align: center;
   padding: 30px;
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 24px;
@@ -3650,10 +3651,10 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
   box-shadow: 0 30px 90px rgba(15, 23, 42, 0.3);
 }
 
-.online-auth-logo { width: 150px; max-height: 58px; object-fit: contain; object-position: left center; }
+.online-auth-logo { width: 150px; max-height: 58px; margin: 0 auto; object-fit: contain; object-position: center; }
 .online-auth-card h2 { margin: 0; color: #0f172a; font-size: 24px; }
 .online-auth-card p { margin: 0 0 8px; color: #64748b; line-height: 1.55; }
-.online-auth-card label { color: #334155; font-size: 13px; font-weight: 700; }
+.online-auth-card label { color: #334155; font-size: 13px; font-weight: 700; text-align: left; }
 .online-auth-card input {
   width: 100%;
   min-height: 48px;
@@ -3673,6 +3674,22 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
   font-weight: 800;
   cursor: pointer;
 }
+.online-auth-card .online-auth-signup {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 2px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+.online-auth-signup a {
+  color: #2563eb;
+  font-weight: 800;
+  text-decoration: none;
+}
+.online-auth-signup a:hover { text-decoration: underline; }
 .online-auth-error { min-height: 18px; color: #dc2626; font-size: 12px; }
 .online-receipt-upload { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .online-receipt-upload input[type="file"] { max-width: 280px; }
