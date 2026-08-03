@@ -83,7 +83,7 @@
     const { Permission, Role } = global.Appwrite;
     const role = config.teamId
       ? Role.team(config.teamId)
-      : Role.user(currentUser.$id);
+      : Role.users();
     return [
       Permission.read(role),
       Permission.update(role),
@@ -108,7 +108,7 @@
   }
 
   async function persistSnapshot(snapshot) {
-    if (!currentUser) return;
+    if (!currentUser) throw new Error('Entre no WeFrotas antes de sincronizar os dados.');
     emitStatus('syncing', 'Sincronizando dados...');
     const serialized = JSON.stringify(snapshot);
     const rowId = await digestId(config.companyId);

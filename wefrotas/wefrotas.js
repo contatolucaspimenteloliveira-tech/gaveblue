@@ -3476,7 +3476,7 @@
       event.target.value = '';
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (loadEvent) => {
+      reader.onload = async (loadEvent) => {
         try {
           const parsed = JSON.parse(loadEvent.target.result);
           if (!Array.isArray(parsed.vehicles) || !Array.isArray(parsed.drivers) || !Array.isArray(parsed.suppliers) || !Array.isArray(parsed.orders) || !Array.isArray(parsed.finance)) {
@@ -3504,20 +3504,24 @@
             applyThemeState(parsed.theme === 'dark');
           }
           syncOrderCounterWithOrders();
-          saveToLocalStorage();
+          await saveToLocalStorage();
+          if (!window.WeFrotasBackend?.getUser()) {
+            throw new Error('Entre no WeFrotas para restaurar este backup para todos os usuários.');
+          }
+          await window.WeFrotasBackend.syncNow(buildStorageSnapshot());
           renderAll();
           renderNotifications();
           updateCustomLogoUi();
           updateOperationSettingsUi();
-          showToast('Backup importado com sucesso.', {
+          showToast('Backup restaurado e sincronizado para todos os usuários.', {
             notify: true,
             notifyTitle: 'Backup importado',
-            notifyMessage: `Os dados de ${file.name} foram restaurados no WeFrotas.`
+            notifyMessage: `Os dados de ${file.name} foram restaurados e enviados ao Appwrite.`
           });
           toggleSettings(false);
         } catch (error) {
           console.error(error);
-          showToast('Não foi possível importar esse backup.');
+          showToast(error?.message || 'Não foi possível sincronizar esse backup. A cópia local foi preservada.');
         }
       };
       reader.readAsText(file, 'utf-8');
