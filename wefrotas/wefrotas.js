@@ -173,12 +173,37 @@
         .toUpperCase();
     }
 
+    function getAuthenticatedUserDisplayName(user) {
+      const appwriteName = String(user?.name || '').trim();
+      if (appwriteName) return appwriteName;
+      const emailName = String(user?.email || '').split('@')[0].trim();
+      return emailName || 'Usuário';
+    }
+
+    function getAuthenticatedUserRoleLabel(user) {
+      const labels = Array.isArray(user?.labels)
+        ? user.labels.map((label) => String(label).trim().toLowerCase())
+        : [];
+      if (labels.includes('admin') || labels.includes('administrador')) return 'Administrador';
+      if (labels.includes('gestor')) return 'Gestor';
+      return 'Operador';
+    }
+
     function updateManagerIdentityUi() {
       const nameNode = document.getElementById('sidebar-user-name');
+      const roleNode = document.getElementById('sidebar-user-role');
       const avatarNode = document.getElementById('sidebar-user-avatar');
       const topbarAvatarNode = document.getElementById('topbar-avatar');
-      const initials = getNameInitials(managerDisplayName, 'GB');
-      if (nameNode) nameNode.textContent = managerDisplayName || 'Gestor';
+      const authenticatedUser = window.WeFrotasBackend?.getUser?.() || null;
+      const displayName = authenticatedUser
+        ? getAuthenticatedUserDisplayName(authenticatedUser)
+        : managerDisplayName || 'Usuário';
+      const initials = getNameInitials(displayName, 'GB');
+      if (authenticatedUser) managerDisplayName = displayName;
+      if (nameNode) nameNode.textContent = displayName;
+      if (roleNode) roleNode.textContent = authenticatedUser
+        ? getAuthenticatedUserRoleLabel(authenticatedUser)
+        : 'Usuário';
       if (avatarNode) avatarNode.textContent = initials;
       if (topbarAvatarNode) topbarAvatarNode.textContent = initials;
     }
@@ -260,11 +285,14 @@
 
     async function saveOperationSettings() {
       const adminInput = document.getElementById('settings-manager-name');
-      managerDisplayName = String(adminInput?.value || '').trim() || 'Gestor';
+      const authenticatedUser = window.WeFrotasBackend?.getUser?.() || null;
+      managerDisplayName = authenticatedUser
+        ? getAuthenticatedUserDisplayName(authenticatedUser)
+        : String(adminInput?.value || '').trim() || 'Usuário';
       updateManagerIdentityUi();
       updateOperationSettingsUi();
       await saveToLocalStorage();
-      showToast(`Gestor atualizado para ${managerDisplayName}. Alteração salva com sucesso.`);
+      showToast('Configurações da operação salvas com sucesso.');
     }
 
     function toggleCustomLogoEnabled() {
@@ -1481,6 +1509,7 @@
       textNode.textContent = message || 'WeFrotas Online';
       if (syncButton) syncButton.hidden = !user;
       if (logoutButton) logoutButton.hidden = !user;
+      if (user) updateManagerIdentityUi();
     }
 
     function showOnlineAuthChecking(message = 'Verificando seu acesso...') {

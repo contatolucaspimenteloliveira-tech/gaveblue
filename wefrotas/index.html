@@ -123,7 +123,7 @@
             <div id="sidebar-user-avatar" class="sidebar-user-avatar">GB</div>
             <div class="sidebar-user-meta">
               <p id="sidebar-user-name" class="sidebar-user-name">Gestor</p>
-              <p class="sidebar-user-role">Administrador</p>
+              <p id="sidebar-user-role" class="sidebar-user-role">Usuário</p>
             </div>
           </div>
 
@@ -803,7 +803,7 @@
           <button type="button" class="settings-menu-item" onclick="openSettingsScreen('operation')">
             <div>
               <p class="settings-menu-title">Operação</p>
-              <p class="settings-menu-subtitle">Nome do gestor e edição do número da OS</p>
+              <p class="settings-menu-subtitle">Usuário conectado e edição do número da OS</p>
             </div>
             <span class="settings-menu-arrow"></span>
           </button>
@@ -891,12 +891,12 @@
           <h3 class="settings-subtitle-title">Operação</h3>
         </div>
         <section class="settings-block">
-          <p class="settings-label">Gestor do sistema</p>
+          <p class="settings-label">Usuário conectado</p>
           <div class="settings-list">
             <div class="settings-field-stack">
-              <label class="settings-input-label" for="settings-manager-name">Nome exibido no menu lateral</label>
-              <input type="text" id="settings-manager-name" class="settings-text-input" placeholder="Ex: João da Silva">
-              <p class="settings-description !mb-0">As duas iniciais desse nome aparecem automaticamente no avatar do gestor.</p>
+              <label class="settings-input-label" for="settings-manager-name">Nome cadastrado no Appwrite</label>
+              <input type="text" id="settings-manager-name" class="settings-text-input" readonly aria-readonly="true">
+              <p class="settings-description !mb-0">O nome, as iniciais e o perfil são carregados automaticamente do usuário autenticado. Para alterar, edite o usuário no Appwrite.</p>
             </div>
           </div>
         </section>
