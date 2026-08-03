@@ -3632,48 +3632,124 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
   z-index: 1500;
   display: grid;
   place-items: center;
-  padding: 20px;
-  background: rgba(15, 23, 42, 0.58);
-  backdrop-filter: blur(10px);
+  overflow: auto;
+  padding: 28px;
+  background:
+    radial-gradient(circle at 12% 16%, rgba(37, 99, 235, 0.12), transparent 32%),
+    linear-gradient(135deg, #f8fbff 0%, #edf4ff 48%, #ffffff 100%);
 }
 
 .online-auth-backdrop.hidden { display: none; }
+.online-auth-layout.hidden,
+.online-auth-checking.hidden { display: none; }
+
+.online-auth-checking {
+  width: min(390px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 38px 32px;
+  text-align: center;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.14);
+}
+.online-auth-checking-logo { width: 170px; max-height: 64px; object-fit: contain; }
+.online-auth-checking strong { color: #0f172a; font-size: 18px; }
+.online-auth-checking small { color: #64748b; font-size: 13px; }
+.online-auth-loader,
+.online-auth-button-spinner {
+  border-radius: 999px;
+  border: 3px solid rgba(37, 99, 235, 0.18);
+  border-top-color: #2563eb;
+  animation: online-auth-spin 0.8s linear infinite;
+}
+.online-auth-loader { width: 34px; height: 34px; }
+
+.online-auth-layout {
+  position: relative;
+  width: min(1160px, 100%);
+  min-height: min(760px, calc(100vh - 56px));
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(390px, 0.88fr);
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 32px;
+  background: #ffffff;
+  box-shadow: 0 34px 100px rgba(15, 23, 42, 0.18);
+}
+.online-auth-back-link {
+  position: absolute;
+  z-index: 3;
+  top: 22px;
+  left: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 15px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  background: rgba(8, 21, 47, 0.76);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  backdrop-filter: blur(12px);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.online-auth-back-link:hover { transform: translateY(-1px); background: rgba(8, 21, 47, 0.92); }
+.online-auth-promo { min-height: 100%; overflow: hidden; background: #07152f; }
+.online-auth-promo img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; }
+.online-auth-panel { display: grid; place-items: center; padding: 68px 46px 46px; background: #ffffff; }
 
 .online-auth-card {
   width: min(420px, 100%);
   display: grid;
-  gap: 12px;
+  gap: 13px;
   text-align: center;
-  padding: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.3);
+  padding: 0;
 }
 
-.online-auth-logo { width: 150px; max-height: 58px; margin: 0 auto; object-fit: contain; object-position: center; }
-.online-auth-card h2 { margin: 0; color: #0f172a; font-size: 24px; }
+.online-auth-logo { width: 178px; max-height: 68px; margin: 0 auto 3px; object-fit: contain; object-position: center; }
+.online-auth-card .panel-kicker { margin: 0; color: #2563eb; letter-spacing: 0.16em; }
+.online-auth-card h2 { margin: 0; color: #0f172a; font-size: 30px; letter-spacing: -0.03em; }
 .online-auth-card p { margin: 0 0 8px; color: #64748b; line-height: 1.55; }
+.online-auth-card .online-auth-description { margin: 0 0 8px; font-size: 14px; }
 .online-auth-card label { color: #334155; font-size: 13px; font-weight: 700; text-align: left; }
 .online-auth-card input {
   width: 100%;
-  min-height: 48px;
-  padding: 0 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
+  min-height: 52px;
+  padding: 0 15px;
+  border: 1px solid #d7e0ec;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 14px;
   outline: none;
 }
-.online-auth-card input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+.online-auth-card input:focus { border-color: #2563eb; background: #ffffff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
 .online-auth-card button {
-  min-height: 48px;
-  margin-top: 4px;
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
   border: 0;
-  border-radius: 12px;
-  background: #2563eb;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
   color: #fff;
   font-weight: 800;
   cursor: pointer;
+  box-shadow: 0 15px 30px rgba(37, 99, 235, 0.22);
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
+.online-auth-card button:hover:not(:disabled) { transform: translateY(-1px); }
+.online-auth-card button:disabled { cursor: wait; opacity: 0.72; }
+.online-auth-button-spinner { display: none; width: 19px; height: 19px; border-color: rgba(255, 255, 255, 0.32); border-top-color: #ffffff; }
+.online-auth-card button.is-loading .online-auth-button-spinner { display: inline-block; }
 .online-auth-card .online-auth-signup {
   display: flex;
   justify-content: center;
@@ -3695,8 +3771,21 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
 .online-receipt-upload input[type="file"] { max-width: 280px; }
 
 @keyframes online-pulse { 50% { opacity: 0.45; transform: scale(0.86); } }
+@keyframes online-auth-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 920px) {
+  .online-auth-backdrop { padding: 16px; }
+  .online-auth-layout { grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr); min-height: min(700px, calc(100vh - 32px)); }
+  .online-auth-panel { padding: 70px 30px 36px; }
+}
 
 @media (max-width: 720px) {
   .online-status { left: 12px; right: 12px; bottom: 12px; justify-content: center; }
-  .online-auth-card { padding: 24px 20px; }
+  .online-auth-layout { display: block; min-height: 0; overflow: visible; border-radius: 24px; }
+  .online-auth-promo { height: 260px; }
+  .online-auth-promo img { object-position: center 24%; }
+  .online-auth-panel { padding: 38px 22px 28px; }
+  .online-auth-back-link { top: 14px; left: 14px; }
+  .online-auth-logo { width: 158px; }
+  .online-auth-card h2 { font-size: 26px; }
 }
