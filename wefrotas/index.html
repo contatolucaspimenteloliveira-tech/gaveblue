@@ -11,7 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260803-white-fix-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260803-login-port-1">
+  <link rel="stylesheet" href="./wefrotas-login.css?v=20260803-login-port-1">
   
 </head>
 <body class="auth-locked">
@@ -1224,25 +1225,50 @@
     <button id="online-logout-btn" type="button" onclick="logoutWeFrotasOnline()" hidden>Sair</button>
   </div>
 
+  <div id="online-platform-loading" class="online-platform-loading hidden" role="status" aria-live="polite">
+    <span class="online-auth-progress" aria-hidden="true"></span>
+    <span id="online-platform-loading-text" class="sr-only">Encerrando sua sessão...</span>
+  </div>
+
   <div id="online-auth-backdrop" class="online-auth-backdrop">
-    <form id="online-auth-form" class="online-auth-card">
-      <img src="./wefrotas.png" alt="WeFrotas" class="online-auth-logo">
-      <p class="panel-kicker">WeFrotas Online</p>
-      <h2>Acesse os dados compartilhados</h2>
-      <p>Entre com o usuário criado para sua empresa. O cadastro público permanece desativado.</p>
-      <label for="online-auth-email">E-mail</label>
-      <input id="online-auth-email" type="email" autocomplete="username" required>
-      <label for="online-auth-password">Senha</label>
-      <input id="online-auth-password" type="password" autocomplete="current-password" required>
-      <button id="online-auth-submit" type="submit">Entrar</button>
-      <span id="online-auth-error" class="online-auth-error" aria-live="polite"></span>
-    </form>
+    <div id="online-auth-checking" class="online-auth-checking" role="status" aria-live="polite">
+      <span class="online-auth-progress" aria-hidden="true"></span>
+      <span id="online-auth-checking-text" class="sr-only">Verificando seu acesso...</span>
+    </div>
+
+    <div id="online-auth-layout" class="online-auth-layout">
+      <a class="online-auth-promo" href="https://wa.me/5527988790381?text=Ol%C3%A1%21%20Quero%20conhecer%20o%20WeFrotas%20Online." target="_blank" rel="noopener noreferrer" aria-label="Falar sobre o WeFrotas pelo WhatsApp">
+        <img src="./wefrotas-login-promo.jpg" alt="Gestão completa da sua frota com o WeFrotas">
+      </a>
+
+      <section class="online-auth-panel">
+        <a class="online-auth-close" href="https://gaveblue.com.br/" aria-label="Fechar e voltar ao site principal" title="Voltar ao site principal">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg>
+        </a>
+        <form id="online-auth-form" class="online-auth-card" onsubmit="document.getElementById('online-auth-checking')?.classList.remove('hidden')">
+          <img src="./wefrotas.png" alt="WeFrotas" class="online-auth-logo">
+          <p class="panel-kicker">WeFrotas Online</p>
+          <h2>Fazer login</h2>
+          <p class="online-auth-description">Acesse o ambiente exclusivo de gestão da sua frota.</p>
+          <label for="online-auth-email">E-mail</label>
+          <input id="online-auth-email" type="email" autocomplete="username" required>
+          <label for="online-auth-password">Senha</label>
+          <input id="online-auth-password" type="password" autocomplete="current-password" required>
+          <button id="online-auth-submit" type="submit"><span id="online-auth-submit-label">Entrar</span></button>
+          <p class="online-auth-signup">
+            <span>Não tem cadastro ainda?</span>
+            <a href="https://wa.me/5527988790381?text=Ol%C3%A1%21%20Quero%20me%20cadastrar%20no%20WeFrotas%20Online." target="_blank" rel="noopener noreferrer">Quero me cadastrar</a>
+          </p>
+          <span id="online-auth-error" class="online-auth-error" aria-live="polite"></span>
+        </form>
+      </section>
+    </div>
   </div>
 
   <script src="./appwrite-config.js?v=1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
-  <script src="./wefrotas-backend.js?v=1"></script>
-  <script src="./wefrotas.js?v=20260803-auth-merge-1"></script>
+  <script src="./wefrotas-backend.js?v=20260803-login-port-1"></script>
+  <script src="./wefrotas.js?v=20260803-login-port-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
