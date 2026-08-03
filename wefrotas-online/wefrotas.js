@@ -1484,6 +1484,7 @@
     function toggleOnlineLogin(show) {
       const backdrop = document.getElementById('online-auth-backdrop');
       if (!backdrop) return;
+      document.body.classList.toggle('auth-locked', show);
       backdrop.classList.toggle('hidden', !show);
       if (show) document.getElementById('online-auth-email')?.focus();
     }
@@ -1510,6 +1511,7 @@
       const backend = window.WeFrotasBackend;
       if (!backend) {
         updateOnlineStatus({ state: 'error', message: 'Backend não carregado.' });
+        toggleOnlineLogin(true);
         return null;
       }
       const user = await backend.initialize({
@@ -1517,7 +1519,10 @@
         applySnapshot: applyRemoteStorageSnapshot,
         onStatus: updateOnlineStatus
       });
-      if (!backend.isConfigured()) return null;
+      if (!backend.isConfigured()) {
+        toggleOnlineLogin(false);
+        return null;
+      }
       if (!user) {
         toggleOnlineLogin(true);
         return null;
@@ -8980,6 +8985,7 @@
         await connectWeFrotasOnline();
       } catch (error) {
         console.error('Não foi possível iniciar o backend do WeFrotas.', error);
+        toggleOnlineLogin(true);
         updateOnlineStatus({
           state: 'error',
           message: 'Backend indisponível. A cópia local continua funcionando.'
