@@ -318,3 +318,65 @@
   .online-auth-loading-logo { width: 135px; margin-bottom: 14px; }
   .online-auth-loading-card h2 { font-size: 21px; }
 }
+
+/* Compact online status: keep sync controls in the header area instead of floating over content. */
+#online-status.online-status {
+  position: fixed !important;
+  top: 92px !important;
+  right: 28px !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: 120 !important;
+  max-width: min(520px, calc(100vw - 340px)) !important;
+  min-height: 38px !important;
+  padding: 7px 9px 7px 12px !important;
+  gap: 9px !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+#online-status #online-status-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#online-status #online-sync-btn {
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border-radius: 9px !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+
+#online-status #online-sync-btn::before {
+  content: '↻';
+  display: block;
+  font-size: 21px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+#online-status #online-logout-btn {
+  display: none !important;
+}
+
+@media (max-width: 1100px) {
+  #online-status.online-status {
+    top: 84px !important;
+    right: 18px !important;
+    max-width: min(460px, calc(100vw - 110px)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  #online-status.online-status {
+    top: 70px !important;
+    right: 12px !important;
+    left: 12px !important;
+    max-width: none !important;
+  }
+}
