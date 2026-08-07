@@ -336,8 +336,12 @@
     setPendingSync(true);
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => {
+      syncTimer = null;
       const serialized = JSON.stringify(snapshot);
-      if (serialized === lastSerializedSnapshot) return;
+      if (serialized === lastSerializedSnapshot) {
+        setPendingSync(false);
+        return;
+      }
       syncChain = syncChain
         .then(() => persistSnapshot(snapshot))
         .catch((error) => {
@@ -430,21 +434,48 @@
     return currentUser;
   }
 
+  async function flushPendingSnapshot() {
+    if (!currentUser) return;
+    clearTimeout(syncTimer);
+    syncTimer = null;
+    await syncChain;
+
+    const snapshot = currentSnapshotGetter?.();
+    if (!snapshot) {
+      setPendingSync(false);
+      return;
+    }
+    const serialized = JSON.stringify(snapshot);
+    if (!hasPendingSync() && serialized === lastSerializedSnapshot) return;
+    await persistSnapshot(snapshot);
+  }
+
   async function signOut() {
     const shouldDeleteRemoteSession = Boolean(account && currentUser);
-    setPendingLogout(shouldDeleteRemoteSession);
-    currentUser = null;
-    clearTimeout(syncTimer);
+    if (!shouldDeleteRemoteSession) {
+      setPendingLogout(false);
+      currentUser = null;
+      return;
+    }
+
+    setPendingLogout(true);
+    emitStatus('syncing', 'Salvando alterações antes de sair...');
+    try {
+      await flushPendingSnapshot();
+    } catch (error) {
+      setPendingLogout(false);
+      setPendingSync(true);
+      emitStatus('error', `Não foi possível salvar antes de sair: ${describeError(error)}. Tente novamente.`, { error });
+      throw error;
+    }
+
     clearTimeout(remoteApplyTimer);
     unsubscribeRealtime?.();
     unsubscribeRealtime = null;
-    emitStatus('signed-out', 'Sessão encerrada. Os dados locais foram preservados.');
-    if (!shouldDeleteRemoteSession) {
-      setPendingLogout(false);
-      return;
-    }
     await account.deleteSession({ sessionId: 'current' });
+    currentUser = null;
     setPendingLogout(false);
+    emitStatus('signed-out', 'Sessão encerrada. Os dados foram sincronizados e a cópia local foi preservada.');
   }
 
   async function uploadReceipt(file) {
