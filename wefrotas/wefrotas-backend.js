@@ -146,14 +146,8 @@
 
   function getPermissions() {
     const { Permission, Role } = global.Appwrite;
-    const role = config.teamId
-      ? Role.team(config.teamId)
-      : Role.users();
-    return [
-      Permission.read(role),
-      Permission.update(role),
-      Permission.delete(role)
-    ];
+    const role = config.teamId ? Role.team(config.teamId) : Role.users();
+    return [Permission.read(role), Permission.update(role), Permission.delete(role)];
   }
 
   async function getPrimaryRowId() {
@@ -176,41 +170,20 @@
   }
 
   async function getRow(rowId) {
-    return tablesDB.getRow({
-      databaseId: config.databaseId,
-      tableId: config.tableId,
-      rowId
-    });
+    return tablesDB.getRow({ databaseId: config.databaseId, tableId: config.tableId, rowId });
   }
 
   async function updateOrCreateRow(rowId, data, permissionsOnCreate = getPermissions()) {
     try {
-      return await tablesDB.updateRow({
-        databaseId: config.databaseId,
-        tableId: config.tableId,
-        rowId,
-        data
-      });
+      return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.tableId, rowId, data });
     } catch (error) {
       if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
-      return tablesDB.createRow({
-        databaseId: config.databaseId,
-        tableId: config.tableId,
-        rowId,
-        data,
-        permissions: permissionsOnCreate
-      });
+      return tablesDB.createRow({ databaseId: config.databaseId, tableId: config.tableId, rowId, data, permissions: permissionsOnCreate });
     }
   }
 
   async function createSnapshotChunk(rowId, data) {
-    return tablesDB.createRow({
-      databaseId: config.databaseId,
-      tableId: config.tableId,
-      rowId,
-      data,
-      permissions: getPermissions()
-    });
+    return tablesDB.createRow({ databaseId: config.databaseId, tableId: config.tableId, rowId, data, permissions: getPermissions() });
   }
 
   async function loadChunkedSnapshot(manifest) {
@@ -236,11 +209,7 @@
       const end = Math.min(start + CHUNK_REQUEST_BATCH_SIZE, manifest.count);
       await Promise.all(Array.from({ length: end - start }, async (_, offset) => {
         try {
-          await tablesDB.deleteRow({
-            databaseId: config.databaseId,
-            tableId: config.tableId,
-            rowId: await getChunkRowId(manifest.generation, start + offset)
-          });
+          await tablesDB.deleteRow({ databaseId: config.databaseId, tableId: config.tableId, rowId: await getChunkRowId(manifest.generation, start + offset) });
         } catch (error) {
           if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
         }
@@ -277,15 +246,11 @@
     const storedSnapshot = await encodeSnapshot(serialized);
     const rowId = await getPrimaryRowId();
     let previousManifest = null;
-    try {
-      previousManifest = parseChunkManifest((await getRow(rowId))?.snapshot);
-    } catch (error) {
+    try { previousManifest = parseChunkManifest((await getRow(rowId))?.snapshot); } catch (error) {
       if (error?.code !== 404 && error?.type !== 'row_not_found') console.warn('Não foi possível ler o índice anterior.', error);
     }
     const chunks = [];
-    for (let offset = 0; offset < storedSnapshot.length; offset += SNAPSHOT_CHUNK_SIZE) {
-      chunks.push(storedSnapshot.slice(offset, offset + SNAPSHOT_CHUNK_SIZE));
-    }
+    for (let offset = 0; offset < storedSnapshot.length; offset += SNAPSHOT_CHUNK_SIZE) chunks.push(storedSnapshot.slice(offset, offset + SNAPSHOT_CHUNK_SIZE));
     const updatedAt = new Date().toISOString();
     let valueForPrimaryRow = storedSnapshot;
     let generation = '';
@@ -295,39 +260,19 @@
         const end = Math.min(start + CHUNK_REQUEST_BATCH_SIZE, chunks.length);
         await Promise.all(Array.from({ length: end - start }, async (_, offset) => {
           const index = start + offset;
-          await createSnapshotChunk(await getChunkRowId(generation, index), {
-            workspaceId: config.companyId,
-            snapshot: chunks[index],
-            updatedAt,
-            updatedBy: currentUser.$id
-          });
+          await createSnapshotChunk(await getChunkRowId(generation, index), { workspaceId: config.companyId, snapshot: chunks[index], updatedAt, updatedBy: currentUser.$id });
         }));
         emitStatus('syncing', `Enviando dados: ${end} de ${chunks.length} blocos...`);
       }
-      valueForPrimaryRow = `${CHUNK_MANIFEST_PREFIX}${JSON.stringify({
-        generation,
-        count: chunks.length,
-        length: storedSnapshot.length
-      })}`;
+      valueForPrimaryRow = `${CHUNK_MANIFEST_PREFIX}${JSON.stringify({ generation, count: chunks.length, length: storedSnapshot.length })}`;
     } else {
       emitStatus('syncing', 'Enviando dados otimizados...');
     }
-    const data = {
-      workspaceId: config.companyId,
-      snapshot: valueForPrimaryRow,
-      updatedAt,
-      updatedBy: currentUser.$id
-    };
-    await updateOrCreateRow(rowId, data);
-
+    await updateOrCreateRow(rowId, { workspaceId: config.companyId, snapshot: valueForPrimaryRow, updatedAt, updatedBy: currentUser.$id });
     lastSerializedSnapshot = serialized;
     setPendingSync(false);
     emitStatus('online', 'Dados sincronizados.');
-    if (previousManifest?.generation && previousManifest.generation !== generation) {
-      cleanupChunkGeneration(previousManifest).catch((error) => {
-        console.warn('Não foi possível remover todos os blocos antigos do snapshot.', error);
-      });
-    }
+    if (previousManifest?.generation && previousManifest.generation !== generation) cleanupChunkGeneration(previousManifest).catch(error => console.warn('Não foi possível remover todos os blocos antigos do snapshot.', error));
     return preparedSnapshot;
   }
 
@@ -336,14 +281,13 @@
     setPendingSync(true);
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => {
+      syncTimer = null;
       const serialized = JSON.stringify(snapshot);
-      if (serialized === lastSerializedSnapshot) return;
-      syncChain = syncChain
-        .then(() => persistSnapshot(snapshot))
-        .catch((error) => {
-          console.error('Falha ao sincronizar WeFrotas.', error);
-          emitStatus('error', `Falha na sincronização: ${describeError(error)}. Cópia local pendente.`, { error });
-        });
+      if (serialized === lastSerializedSnapshot) { setPendingSync(false); return; }
+      syncChain = syncChain.then(() => persistSnapshot(snapshot)).catch(error => {
+        console.error('Falha ao sincronizar WeFrotas.', error);
+        emitStatus('error', `Falha na sincronização: ${describeError(error)}. Cópia local pendente.`, { error });
+      });
     }, delay);
   }
 
@@ -352,7 +296,7 @@
     if (!currentUser) return;
     const expectedRowId = await getPrimaryRowId();
     const channel = `tablesdb.${config.databaseId}.tables.${config.tableId}.rows`;
-    unsubscribeRealtime = client.subscribe(channel, (event) => {
+    unsubscribeRealtime = client.subscribe(channel, event => {
       if (event?.payload?.workspaceId !== config.companyId) return;
       if (event?.payload?.$id && event.payload.$id !== expectedRowId) return;
       if (hasPendingSync()) return;
@@ -366,62 +310,37 @@
           lastSerializedSnapshot = serialized;
           await currentSnapshotApplier?.(remoteSnapshot);
           emitStatus('online', 'Atualização recebida de outro dispositivo.');
-        } catch (error) {
-          console.warn('Não foi possível aplicar a atualização em tempo real.', error);
-        }
+        } catch (error) { console.warn('Não foi possível aplicar a atualização em tempo real.', error); }
       }, 700);
     });
   }
 
   async function restoreSession() {
-    if (!buildServices()) {
-      emitStatus('local', 'Modo local: Appwrite ainda não configurado.');
-      return null;
-    }
-    if (hasPendingLogout() && !await clearPendingRemoteSession()) {
-      currentUser = null;
-      emitStatus('signed-out', 'Logout pendente. Entre novamente quando a conexão for restabelecida.');
-      return null;
-    }
+    if (!buildServices()) { emitStatus('local', 'Modo local: Appwrite ainda não configurado.'); return null; }
+    if (hasPendingLogout() && !await clearPendingRemoteSession()) { currentUser = null; emitStatus('signed-out', 'Logout pendente. Entre novamente quando a conexão for restabelecida.'); return null; }
     try {
       currentUser = await account.get();
       emitStatus('online', `Conectado como ${currentUser.name || currentUser.email}.`);
       subscribeRealtime();
       return currentUser;
-    } catch (error) {
-      currentUser = null;
-      emitStatus('signed-out', 'Entre para acessar os dados online.');
-      return null;
-    }
+    } catch (error) { currentUser = null; emitStatus('signed-out', 'Entre para acessar os dados online.'); return null; }
   }
 
   async function signIn(email, password) {
     if (!isConfigured()) throw new Error('Appwrite ainda não foi configurado.');
     if (!account) buildServices();
-    if (hasPendingLogout() && !await clearPendingRemoteSession()) {
-      throw new Error('Ainda estamos encerrando a sessão anterior. Tente novamente em instantes.');
-    }
+    if (hasPendingLogout() && !await clearPendingRemoteSession()) throw new Error('Ainda estamos encerrando a sessão anterior. Tente novamente em instantes.');
     try {
       const activeUser = await account.get();
       if (activeUser) {
         const requestedEmail = String(email || '').trim().toLowerCase();
         const activeEmail = String(activeUser.email || '').trim().toLowerCase();
-        if (!requestedEmail || requestedEmail === activeEmail) {
-          currentUser = activeUser;
-          emitStatus('online', `Sessão existente recuperada para ${currentUser.name || currentUser.email}.`);
-          subscribeRealtime();
-          return currentUser;
-        }
+        if (!requestedEmail || requestedEmail === activeEmail) { currentUser = activeUser; emitStatus('online', `Sessão existente recuperada para ${currentUser.name || currentUser.email}.`); subscribeRealtime(); return currentUser; }
         await account.deleteSession({ sessionId: 'current' });
       }
-    } catch (error) {
-      // Sem sessão recuperável: o login normal continua abaixo.
-    }
-    try {
-      await account.createEmailPasswordSession({ email, password });
-    } catch (error) {
-      const sessionAlreadyExists = error?.type === 'user_session_already_exists'
-        || /session is active|session already exists/i.test(String(error?.message || ''));
+    } catch (error) {}
+    try { await account.createEmailPasswordSession({ email, password }); } catch (error) {
+      const sessionAlreadyExists = error?.type === 'user_session_already_exists' || /session is active|session already exists/i.test(String(error?.message || ''));
       if (!sessionAlreadyExists) throw error;
     }
     currentUser = await account.get();
@@ -430,32 +349,36 @@
     return currentUser;
   }
 
+  async function flushPendingSnapshot() {
+    if (!currentUser) return;
+    clearTimeout(syncTimer); syncTimer = null; await syncChain;
+    const snapshot = currentSnapshotGetter?.();
+    if (!snapshot) { setPendingSync(false); return; }
+    const serialized = JSON.stringify(snapshot);
+    if (!hasPendingSync() && serialized === lastSerializedSnapshot) return;
+    await persistSnapshot(snapshot);
+  }
+
   async function signOut() {
     const shouldDeleteRemoteSession = Boolean(account && currentUser);
-    setPendingLogout(shouldDeleteRemoteSession);
-    currentUser = null;
-    clearTimeout(syncTimer);
-    clearTimeout(remoteApplyTimer);
-    unsubscribeRealtime?.();
-    unsubscribeRealtime = null;
-    emitStatus('signed-out', 'Sessão encerrada. Os dados locais foram preservados.');
-    if (!shouldDeleteRemoteSession) {
-      setPendingLogout(false);
-      return;
+    if (!shouldDeleteRemoteSession) { setPendingLogout(false); currentUser = null; return; }
+    setPendingLogout(true);
+    emitStatus('syncing', 'Salvando alterações antes de sair...');
+    try { await flushPendingSnapshot(); } catch (error) {
+      setPendingLogout(false); setPendingSync(true);
+      emitStatus('error', `Não foi possível salvar antes de sair: ${describeError(error)}. Tente novamente.`, { error });
+      throw error;
     }
+    clearTimeout(remoteApplyTimer); unsubscribeRealtime?.(); unsubscribeRealtime = null;
     await account.deleteSession({ sessionId: 'current' });
-    setPendingLogout(false);
+    currentUser = null; setPendingLogout(false);
+    emitStatus('signed-out', 'Sessão encerrada. Os dados foram sincronizados e a cópia local foi preservada.');
   }
 
   async function uploadReceipt(file) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online antes de enviar arquivos.');
     if (!file) throw new Error('Selecione um comprovante.');
-    const uploaded = await storage.createFile({
-      bucketId: config.bucketId,
-      fileId: global.Appwrite.ID.unique(),
-      file,
-      permissions: getPermissions()
-    });
+    const uploaded = await storage.createFile({ bucketId: config.bucketId, fileId: global.Appwrite.ID.unique(), file, permissions: getPermissions() });
     return String(storage.getFileView({ bucketId: config.bucketId, fileId: uploaded.$id }));
   }
 
@@ -470,54 +393,38 @@
 
   async function adoptRemoteOrUploadLocal() {
     if (!currentUser) return { mode: 'signed-out' };
-    let localSnapshot = currentSnapshotGetter?.();
-    if (localSnapshot && currentSnapshotPreparer) {
-      const preparedLocalSnapshot = await currentSnapshotPreparer(localSnapshot) || localSnapshot;
-      if (JSON.stringify(preparedLocalSnapshot) !== JSON.stringify(localSnapshot)) {
-        localSnapshot = preparedLocalSnapshot;
-        setPendingSync(true);
-      }
-    }
-    if (hasPendingSync() && localSnapshot) {
-      await persistSnapshot(localSnapshot);
-      return { mode: 'uploaded-pending-local', snapshot: localSnapshot };
-    }
+
+    // The Appwrite copy is authoritative whenever it exists. A fresh browser starts
+    // with an empty/default local snapshot, and must NEVER upload that snapshot
+    // before first downloading the company data.
     const remoteRecord = await loadRemoteRecord();
     if (remoteRecord?.snapshot) {
-      const localSerialized = localSnapshot ? JSON.stringify(localSnapshot) : '';
       const remoteSerialized = JSON.stringify(remoteRecord.snapshot);
-      if (localSerialized && localSerialized !== remoteSerialized) {
-        const localUpdatedAt = Date.parse(currentSnapshotUpdatedAtGetter?.() || '') || 0;
-        const remoteUpdatedAt = Date.parse(remoteRecord.updatedAt || '') || 0;
-        if (localUpdatedAt > remoteUpdatedAt) {
-          setPendingSync(true);
-          await persistSnapshot(localSnapshot);
-          return { mode: 'uploaded-newer-local', snapshot: localSnapshot };
-        }
-      }
       lastSerializedSnapshot = remoteSerialized;
+      setPendingSync(false);
       await currentSnapshotApplier?.(remoteRecord.snapshot);
-      return { mode: 'remote', snapshot: remoteRecord.snapshot };
+      emitStatus('online', 'Dados da empresa carregados do servidor.');
+      return { mode: 'remote-authoritative', snapshot: remoteRecord.snapshot };
     }
-    if (localSnapshot) await persistSnapshot(localSnapshot);
-    return { mode: 'uploaded-local', snapshot: localSnapshot };
+
+    // Only bootstrap Appwrite from local storage when no remote company snapshot
+    // exists yet. This is the one safe case for an initial local upload.
+    let localSnapshot = currentSnapshotGetter?.();
+    if (localSnapshot && currentSnapshotPreparer) localSnapshot = await currentSnapshotPreparer(localSnapshot) || localSnapshot;
+    if (localSnapshot) {
+      setPendingSync(true);
+      const persistedSnapshot = await persistSnapshot(localSnapshot);
+      return { mode: 'uploaded-initial-local', snapshot: persistedSnapshot };
+    }
+    setPendingSync(false);
+    return { mode: 'empty-workspace', snapshot: null };
   }
 
   global.WeFrotasBackend = Object.freeze({
-    config,
-    isConfigured,
-    initialize,
-    signIn,
-    signOut,
+    config, isConfigured, initialize, signIn, signOut,
     getUser: () => currentUser,
-    loadRemoteSnapshot,
-    adoptRemoteOrUploadLocal,
-    queueSnapshot,
-    syncNow: (snapshot) => {
-      const nextSnapshot = snapshot || currentSnapshotGetter?.();
-      setPendingSync(true);
-      return persistSnapshot(nextSnapshot);
-    },
+    loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
+    syncNow: snapshot => { const nextSnapshot = snapshot || currentSnapshotGetter?.(); setPendingSync(true); return persistSnapshot(nextSnapshot); },
     uploadReceipt
   });
 })(window);
