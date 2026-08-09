@@ -1677,6 +1677,7 @@ function backToSearch() {
 }
 
 function setMobileNavActive(target) {
+  document.body.dataset.mobileNav = target;
   document.querySelectorAll('[data-mobile-nav]').forEach((button) => {
     button.classList.toggle('active', button.dataset.mobileNav === target);
   });
@@ -1895,6 +1896,7 @@ window.addEventListener('DOMContentLoaded', function() {
   if (header) {
     header.style.zIndex = '20';
   }
+  setMobileNavActive('home');
   populateDriverOptions();
 });
 
