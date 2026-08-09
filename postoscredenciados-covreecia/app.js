@@ -21,12 +21,17 @@ const COMPRESSED_RECEIPT_QUALITY = 0.72;
 const DRIVER_NAMES_STORAGE_KEY = 'postoscredenciados-covreecia:driver-names';
 const LAST_FUEL_ENTRY_STORAGE_KEY = 'postoscredenciados-covreecia:last-fuel-entry';
 const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
+const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
+const PWA_INSTALL_DONE_KEY = 'pwa-install-installed';
+const PWA_DISMISS_DAYS = 7;
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
 let fuelReceiptUploadPromise = null;
 let selectedFuelReceiptFile = null;
 let currentFuelFormMode = 'rapido';
 let receiptValidationType = 'fuel';
+let deferredPwaPrompt = null;
+let pwaInstallModalMode = 'android';
 let uploadedLooseNoteReceipt = null;
 let looseNoteReceiptUploadPromise = null;
 let selectedLooseNoteReceiptFile = null;
@@ -215,6 +220,152 @@ function toggleMenu() {
 function closeMenu() {
   document.getElementById('menu-dropdown').classList.add('hidden');
 }
+
+function isMobileViewport() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
+
+function isIosDevice() {
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent || '');
+}
+
+function isRunningStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function wasPwaPromptRecentlyDismissed() {
+  const dismissedAt = Number(localStorage.getItem(PWA_INSTALL_DISMISSED_KEY) || 0);
+  if (!dismissedAt) {
+    return false;
+  }
+
+  const dismissedAgeMs = Date.now() - dismissedAt;
+  return dismissedAgeMs < PWA_DISMISS_DAYS * 24 * 60 * 60 * 1000;
+}
+
+function shouldOfferPwaInstall() {
+  return isMobileViewport() && !isRunningStandalone() && localStorage.getItem(PWA_INSTALL_DONE_KEY) !== 'true' && !wasPwaPromptRecentlyDismissed();
+}
+
+function setPwaInstallModalContent(mode) {
+  pwaInstallModalMode = mode === 'ios' ? 'ios' : 'android';
+  const platform = document.getElementById('pwa-install-platform');
+  const steps = document.getElementById('pwa-install-steps');
+  const primary = document.getElementById('pwa-install-primary');
+  const footnote = document.getElementById('pwa-install-footnote');
+
+  if (!platform || !steps || !primary || !footnote) {
+    return;
+  }
+
+  if (pwaInstallModalMode === 'ios') {
+    platform.textContent = 'iPhone / iPad';
+    steps.innerHTML = `
+      <li>Toque no botão Compartilhar do Safari.</li>
+      <li>Escolha Adicionar à Tela de Início.</li>
+      <li>Abra pelo novo ícone criado no celular.</li>
+    `;
+    primary.querySelector('span').textContent = 'Entendi';
+    footnote.textContent = 'No iPhone, a instalação é feita pelo menu Compartilhar do Safari.';
+    return;
+  }
+
+  platform.textContent = 'Android';
+  steps.innerHTML = `
+    <li>Toque em Instalar aplicativo.</li>
+    <li>Confirme a instalação quando o navegador solicitar.</li>
+    <li>Abra pelo novo ícone na tela inicial.</li>
+  `;
+  primary.querySelector('span').textContent = 'Instalar aplicativo';
+  footnote.textContent = 'Se o prompt não aparecer, abra o menu do navegador e toque em Instalar app ou Adicionar à tela inicial.';
+}
+
+function showPwaInstallModal(mode = 'android') {
+  if (!shouldOfferPwaInstall()) {
+    return;
+  }
+
+  setPwaInstallModalContent(mode);
+  const modal = document.getElementById('pwa-install-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+}
+
+function hidePwaInstallModal() {
+  const modal = document.getElementById('pwa-install-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+}
+
+function dismissPwaInstallModal() {
+  localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, String(Date.now()));
+  hidePwaInstallModal();
+}
+
+async function handlePwaInstallClick() {
+  if (pwaInstallModalMode === 'ios') {
+    dismissPwaInstallModal();
+    return;
+  }
+
+  if (!deferredPwaPrompt) {
+    dismissPwaInstallModal();
+    return;
+  }
+
+  deferredPwaPrompt.prompt();
+  const result = await deferredPwaPrompt.userChoice;
+  deferredPwaPrompt = null;
+
+  if (result?.outcome !== 'accepted') {
+    localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, String(Date.now()));
+  }
+
+  hidePwaInstallModal();
+}
+
+function setupPwaInstallExperience() {
+  const primaryButton = document.getElementById('pwa-install-primary');
+  const dismissButton = document.getElementById('pwa-install-dismiss');
+  const dismissAreas = document.querySelectorAll('[data-pwa-install-dismiss]');
+
+  primaryButton?.addEventListener('click', handlePwaInstallClick);
+  dismissButton?.addEventListener('click', dismissPwaInstallModal);
+  dismissAreas.forEach((element) => element.addEventListener('click', dismissPwaInstallModal));
+
+  if (isIosDevice() && shouldOfferPwaInstall()) {
+    window.setTimeout(() => showPwaInstallModal('ios'), 900);
+  }
+}
+
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      return null;
+    });
+  });
+}
+
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  deferredPwaPrompt = event;
+  showPwaInstallModal('android');
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPwaPrompt = null;
+  localStorage.setItem(PWA_INSTALL_DONE_KEY, 'true');
+  localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
+  hidePwaInstallModal();
+});
 
 function getTodayLocalDateString() {
   const now = new Date();
@@ -1714,6 +1865,9 @@ window.addEventListener('DOMContentLoaded', function() {
   if (window.lucide) {
     lucide.createIcons();
   }
+
+  setupPwaInstallExperience();
+  registerServiceWorker();
 });
 
 const cityImageCards = [
