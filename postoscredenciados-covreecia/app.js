@@ -1563,18 +1563,22 @@ function showComingSoon() {
 }
 
 function goToWelcome() {
+  closeOpenFormsSilently();
   document.getElementById('welcome-screen').classList.remove('hidden');
   document.getElementById('postos-display').classList.add('hidden');
   document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('about-section')?.classList.add('hidden');
   currentView = 'welcome';
   setMobileNavActive('home');
   updateBackButtonVisibility();
 }
 
 function showDashboard() {
+  closeOpenFormsSilently();
   document.getElementById('welcome-screen').classList.add('hidden');
   document.getElementById('postos-display').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('about-section')?.classList.add('hidden');
   currentView = 'dashboard';
   setMobileNavActive('postos');
   updateBackButtonVisibility();
@@ -1656,6 +1660,7 @@ function selectCity(cityName) {
 
   welcomeScreen.classList.add('hidden');
   dashboard.classList.add('hidden');
+  document.getElementById('about-section')?.classList.add('hidden');
   postosDisplay.classList.remove('hidden');
   currentView = 'postos';
   setMobileNavActive('postos');
@@ -1664,6 +1669,7 @@ function selectCity(cityName) {
 
 function backToSearch() {
   document.getElementById('postos-display').classList.add('hidden');
+  document.getElementById('about-section')?.classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   currentView = 'dashboard';
   setMobileNavActive('postos');
@@ -1677,12 +1683,45 @@ function setMobileNavActive(target) {
 }
 
 function restoreMobileNavForCurrentView() {
+  if (currentView === 'about') {
+    setMobileNavActive('about');
+    return;
+  }
   setMobileNavActive(currentView === 'welcome' ? 'home' : 'postos');
 }
 
 function showAboutSection() {
+  closeOpenFormsSilently();
+  document.getElementById('welcome-screen').classList.add('hidden');
+  document.getElementById('postos-display').classList.add('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('about-section')?.classList.remove('hidden');
+  currentView = 'about';
   setMobileNavActive('about');
-  document.querySelector('.bg-gradient-to-br.from-white')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  updateBackButtonVisibility();
+}
+
+function closeOpenFormsSilently() {
+  const fuelModal = document.getElementById('fuel-form-modal');
+  const looseModal = document.getElementById('loose-note-modal');
+
+  if (fuelModal && !fuelModal.classList.contains('hidden')) {
+    fuelModal.classList.add('hidden');
+    closeReceiptValidationModal();
+    document.getElementById('fuel-form')?.reset();
+    resetFuelPhotoState();
+    setFuelDateToToday();
+    applyFuelFormMode('rapido');
+    populateDriverOptions();
+  }
+
+  if (looseModal && !looseModal.classList.contains('hidden')) {
+    looseModal.classList.add('hidden');
+    document.getElementById('loose-note-form')?.reset();
+    resetLoosePhotoState();
+    setLooseDateToToday();
+    populateDriverOptions();
+  }
 }
 
 function updateBackButtonVisibility() {

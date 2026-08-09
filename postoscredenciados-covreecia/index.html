@@ -19,7 +19,7 @@
    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
-  <link rel="stylesheet" href="./styles.css?v=20260809-1715">
+  <link rel="stylesheet" href="./styles.css?v=20260809-1740">
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full flex flex-col">
@@ -95,7 +95,7 @@
    </section>
   </div>
 
-  <div id="fuel-form-modal" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
+  <div id="fuel-form-modal" class="app-form-modal fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
     <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all max-h-[85vh] overflow-y-auto">
      <div id="fuel-form-header" class="bg-gradient-to-r from-red-500 to-red-600 px-5 sm:px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-30">
       <span class="w-9" aria-hidden="true"></span>
@@ -230,7 +230,7 @@
    </div>
   </div>
 
-   <div id="loose-note-modal" class="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
+   <div id="loose-note-modal" class="app-form-modal fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
     <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full transform transition-all max-h-[85vh] overflow-y-auto">
      <div class="bg-gradient-to-r from-amber-500 to-orange-600 px-5 sm:px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-30">
       <h2 class="text-lg sm:text-xl font-bold text-white">REGISTRO DE NOTINHA AVULSA</h2>
@@ -461,16 +461,6 @@
        <div class="home-hero-content">
         <h1>CENTRAL DE<br>REGISTROS</h1>
         <p>Abaste&ccedil;a, registre e siga viagem.</p>
-        <div class="home-hero-meta">
-         <span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20V6a2 2 0 0 1 2-2h8v16M14 8h2.5A2.5 2.5 0 0 1 19 10.5V17a3 3 0 0 0 3 3M8 8h3M8 12h3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Postos credenciados
-         </span>
-         <span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 3h6l2 2h3v16H4V5h3l2-2Zm3 5v8m-4-4h8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Registro de abastecimentos
-         </span>
-        </div>
        </div>
       </section>
 
@@ -647,7 +637,8 @@
      </div>
     </div>
 
-    <div class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border-t border-gray-200 py-3 sm:py-4">
+    <div id="about-section" class="hidden w-full px-3 sm:px-6 pt-4 sm:pt-6 pb-28 sm:pb-20">
+     <div class="max-w-4xl mx-auto rounded-[1.6rem] bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 py-5 sm:py-8 shadow-xl">
      <div class="max-w-7xl mx-auto px-3 sm:px-6">
       <div class="flex flex-col items-center gap-2">
        <div class="flex items-center justify-center">
@@ -675,9 +666,10 @@
        <div class="text-center">
         <p class="text-xs sm:text-sm text-gray-600">Desenvolvido e criado por <a href="https://gaveblue.com.br/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700 transition-colors font-medium">gaveblue.com.br</a></p>
         <p class="text-xs sm:text-sm text-gray-600 mt-1"><a href="https://gaveblue.com.br/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700 transition-colors font-medium">Conhe&ccedil;a nossos produtos</a></p>
-        <p class="text-xs sm:text-sm text-gray-500 mt-1">&copy; 2026 Todos os direitos reservados</p>
+       <p class="text-xs sm:text-sm text-gray-500 mt-1">&copy; 2026 Todos os direitos reservados</p>
        </div>
       </div>
+     </div>
      </div>
     </div>
    </div>
@@ -706,6 +698,6 @@
     <span>Sobre</span>
    </button>
   </nav>
-  <script src="./app.js?v=20260809-1715"></script>
+  <script src="./app.js?v=20260809-1740"></script>
  </body>
 </html>
