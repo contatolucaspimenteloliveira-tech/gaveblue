@@ -657,11 +657,39 @@ function openWhatsAppDirect(numero, mensagem) {
   try {
     const popup = window.open(webUrl, '_blank', 'noopener,noreferrer');
     if (!popup) {
-      window.location.assign(webUrl);
+      showWhatsAppFallbackLink(webUrl);
+      return false;
     }
+    return true;
   } catch (error) {
-    window.location.assign(webUrl);
+    showWhatsAppFallbackLink(webUrl);
+    return false;
   }
+}
+
+function showWhatsAppFallbackLink(url) {
+  const existingToast = document.getElementById('whatsapp-fallback-toast');
+  if (existingToast) {
+    existingToast.remove();
+  }
+
+  const toast = document.createElement('div');
+  toast.id = 'whatsapp-fallback-toast';
+  toast.className = 'fixed inset-x-4 bottom-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 bg-white border border-emerald-200 text-gray-900 px-4 py-4 rounded-2xl shadow-2xl z-[80] animate-fade-in max-w-md mx-auto';
+  toast.innerHTML = `
+    <p class="text-sm font-bold text-gray-900">O navegador bloqueou a abertura automática.</p>
+    <p class="text-xs text-gray-600 mt-1">Clique no botão abaixo para abrir o WhatsApp em nova aba e validar o comprovante.</p>
+    <div class="mt-3 flex gap-2">
+      <button type="button" class="flex-1 px-3 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold text-sm" data-close-whatsapp-fallback>Fechar</button>
+      <a href="${url}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm text-center">Abrir WhatsApp</a>
+    </div>
+  `;
+
+  toast.querySelector('[data-close-whatsapp-fallback]')?.addEventListener('click', () => {
+    toast.remove();
+  });
+
+  document.body.appendChild(toast);
 }
 
 function parseKmValue(kmValue) {
@@ -687,10 +715,10 @@ function getRevisionWarningMessage(kmValue) {
   }
 
   if (remainingKm === 0) {
-    return `\u26a0\ufe0f *Alerta:* Ve\u00edculo atingiu a quilometragem de revis\u00e3o (${formatKmValue(nextRevisionKm)} km).`;
+    return `\`\u26a0\ufe0f Ve\u00edculo atingiu a quilometragem de revis\u00e3o (${formatKmValue(nextRevisionKm)} km).\``;
   }
 
-  return `\u26a0\ufe0f *Alerta:* Ve\u00edculo pr\u00f3ximo de realizar a revis\u00e3o. Faltam ${formatKmValue(remainingKm)} km para ${formatKmValue(nextRevisionKm)} km.`;
+  return `\`\u26a0\ufe0f Ve\u00edculo pr\u00f3ximo de realizar a revis\u00e3o. Faltam ${formatKmValue(remainingKm)} km para ${formatKmValue(nextRevisionKm)} km.\``;
 }
 
 function getFuelFormData() {
@@ -1192,21 +1220,30 @@ async function submitFuelForm(e) {
     return;
   }
 
-  const mensagem = [
+  const fuelMessageDetails = [
+    `> *Motorista:* ${formData.motorista}`,
+    `> *Cidade:* ${formData.cidade}`,
+    `> *Posto:* ${formData.posto}`,
+    `> *Data/Hora:* ${formData.dataFormatada} às ${formData.horaFormatada}`,
+    isComplete ? `> *Valor:* ${formData.valor}` : '',
+    isComplete ? `> *Litros:* ${formData.litros}` : '',
+    isComplete ? `> *Combustível:* ${formData.tipoCombustivel}` : '',
+    `> *KM:* ${formData.km || 'Não informado'}`
+  ].filter(Boolean);
+
+  const mensagemLines = [
     '\u26fd *COMPROVANTE DE ABASTECIMENTO*',
     '',
-    `\ud83d\udc64 *Motorista:* ${formData.motorista}`,
-    `\ud83c\udfd9\ufe0f *Cidade:* ${formData.cidade}`,
-    `\u26fd *Posto:* ${formData.posto}`,
-    `\ud83d\udcc5 *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
-    isComplete ? `\ud83d\udcb0 *Valor:* ${formData.valor}` : '',
-    isComplete ? `\ud83d\udee2\ufe0f *Litros:* ${formData.litros}` : '',
-    isComplete ? `\u26fd *Combust\u00edvel:* ${formData.tipoCombustivel}` : '',
-    `\ud83d\udee3\ufe0f *KM:* ${formData.km || 'N\u00e3o informado'}`,
-    revisionWarning,
-    '',
-    `\ud83e\uddfe *Comprovante:* ${uploadedFuelReceipt.result.secure_url}`
-  ].filter(Boolean).join('\n');
+    ...fuelMessageDetails,
+    ''
+  ];
+
+  if (revisionWarning) {
+    mensagemLines.push(revisionWarning, '', '');
+  }
+
+  mensagemLines.push(`\ud83e\uddfe *Comprovante:* ${uploadedFuelReceipt.result.secure_url}`);
+  const mensagem = mensagemLines.join('\n');
 
   openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
   saveDriverNameSuggestion(formData.motorista);
@@ -1241,19 +1278,23 @@ function submitLooseNoteForm(e) {
     return;
   }
 
+  const looseNoteMessageDetails = [
+    `> *Motorista:* ${formData.motorista}`,
+    `> *Fornecedor:* ${formData.fornecedor}`,
+    `> *Tipo do serviço:* ${formData.tipoServico}`,
+    `> *Valor:* ${formData.valor}`,
+    `> *Data/Hora:* ${formData.dataFormatada} às ${formData.horaFormatada}`,
+    formData.km ? `> *KM:* ${formData.km}` : '',
+    formData.observacoes ? `> *Observações:* ${formData.observacoes}` : ''
+  ].filter(Boolean);
+
   const mensagem = [
     '\ud83e\uddfe *REGISTRO DE NOTINHA AVULSA*',
     '',
-    `\ud83d\udc64 *Motorista:* ${formData.motorista}`,
-    `\ud83c\udfe2 *Fornecedor:* ${formData.fornecedor}`,
-    `\ud83d\udee0\ufe0f *Tipo do servi\u00e7o:* ${formData.tipoServico}`,
-    `\ud83d\udcb0 *Valor:* ${formData.valor}`,
-    `\ud83d\udcc5 *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
-    formData.km ? `\ud83d\udee3\ufe0f *KM:* ${formData.km}` : '',
-    formData.observacoes ? `\ud83d\udcdd *Observa\u00e7\u00f5es:* ${formData.observacoes}` : '',
+    ...looseNoteMessageDetails,
     '',
     `\ud83e\uddfe *Comprovante:* ${uploadedLooseNoteReceipt.result.secure_url}`
-  ].filter(Boolean).join('\n');
+  ].join('\n');
 
   openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
   saveDriverNameSuggestion(formData.motorista);
