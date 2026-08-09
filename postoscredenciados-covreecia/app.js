@@ -25,6 +25,11 @@ let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
 let fuelReceiptUploadPromise = null;
 let selectedFuelReceiptFile = null;
+let currentFuelFormMode = 'rapido';
+let receiptValidationType = 'fuel';
+let uploadedLooseNoteReceipt = null;
+let looseNoteReceiptUploadPromise = null;
+let selectedLooseNoteReceiptFile = null;
 const DEFAULT_DRIVER_NAMES = [
   'AMANDA P. BONATTO',
   'ALAN CHRISTIE',
@@ -171,6 +176,37 @@ document.getElementById('fuel-km').addEventListener('input', function() {
   markFuelReceiptUploadDirty();
 });
 
+document.getElementById('fuel-value')?.addEventListener('input', function() {
+  markFuelReceiptUploadDirty();
+});
+
+document.getElementById('fuel-liters')?.addEventListener('input', function() {
+  markFuelReceiptUploadDirty();
+});
+
+document.getElementById('fuel-type')?.addEventListener('change', function() {
+  markFuelReceiptUploadDirty();
+});
+
+document.getElementById('loose-driver-name')?.addEventListener('change', function() {
+  toggleLooseCustomDriverField();
+  markLooseReceiptUploadDirty();
+});
+
+document.getElementById('loose-custom-driver-name')?.addEventListener('input', function() {
+  markLooseReceiptUploadDirty();
+});
+
+['loose-supplier', 'loose-value', 'loose-date', 'loose-km', 'loose-notes'].forEach((id) => {
+  document.getElementById(id)?.addEventListener('input', function() {
+    markLooseReceiptUploadDirty();
+  });
+});
+
+document.getElementById('loose-service-type')?.addEventListener('change', function() {
+  markLooseReceiptUploadDirty();
+});
+
 function toggleMenu() {
   const menu = document.getElementById('menu-dropdown');
   menu.classList.toggle('hidden');
@@ -205,27 +241,35 @@ function getStoredDriverNames() {
 }
 
 function populateDriverOptions() {
-  const driverSelect = document.getElementById('driver-name');
-  if (!driverSelect) {
+  const driverSelects = [
+    document.getElementById('driver-name'),
+    document.getElementById('loose-driver-name')
+  ].filter(Boolean);
+
+  if (!driverSelects.length) {
     return;
   }
 
-  const currentValue = driverSelect.value;
   const driverNames = getStoredDriverNames();
-  driverSelect.innerHTML = '<option value="">Selecione um motorista</option>';
 
-  driverNames.forEach((driverName) => {
-    const option = document.createElement('option');
-    option.value = driverName;
-    option.textContent = driverName;
-    driverSelect.appendChild(option);
+  driverSelects.forEach((driverSelect) => {
+    const currentValue = driverSelect.value;
+    driverSelect.innerHTML = '<option value="">Selecione um motorista</option>';
+
+    driverNames.forEach((driverName) => {
+      const option = document.createElement('option');
+      option.value = driverName;
+      option.textContent = driverName;
+      driverSelect.appendChild(option);
+    });
+
+    if (currentValue && driverNames.includes(currentValue)) {
+      driverSelect.value = currentValue;
+    }
   });
 
-  if (currentValue && driverNames.includes(currentValue)) {
-    driverSelect.value = currentValue;
-  }
-
   toggleCustomDriverField();
+  toggleLooseCustomDriverField();
 }
 
 function saveDriverNameSuggestion(driverName) {
@@ -294,6 +338,29 @@ function buildFuelReceiptFileName(driverName, dateValue, originalFileName) {
 
 function createRenamedFuelReceiptFile(file, driverName, dateValue) {
   const renamedFileName = buildFuelReceiptFileName(driverName, dateValue, file.name || '');
+  return new File([file], renamedFileName, {
+    type: file.type || 'image/jpeg',
+    lastModified: file.lastModified || Date.now()
+  });
+}
+
+function buildLooseNoteReceiptFileName(supplierName, originalFileName) {
+  const normalizedSupplierName = String(supplierName || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '+')
+    .replace(/[^a-z0-9+_-]/g, '');
+
+  const today = getTodayLocalDateString().split('-').reverse().join('.');
+  const extensionMatch = String(originalFileName || '').match(/\.[^.]+$/);
+  const extension = extensionMatch ? extensionMatch[0].toLowerCase() : '.jpg';
+  return `${normalizedSupplierName || 'notinha-avulsa'}+${today}${extension}`;
+}
+
+function createRenamedLooseNoteReceiptFile(file, supplierName) {
+  const renamedFileName = buildLooseNoteReceiptFileName(supplierName, file.name || '');
   return new File([file], renamedFileName, {
     type: file.type || 'image/jpeg',
     lastModified: file.lastModified || Date.now()
@@ -370,10 +437,46 @@ function resetFuelPhotoState() {
   setSaveReceiptButtonVisible(true);
 }
 
+function resetLoosePhotoState() {
+  const cameraInput = document.getElementById('loose-photo-camera');
+  const uploadInput = document.getElementById('loose-photo-upload');
+  if (cameraInput) cameraInput.value = '';
+  if (uploadInput) uploadInput.value = '';
+  document.getElementById('loose-photo-preview-container')?.classList.add('hidden');
+  document.getElementById('loose-photo-buttons')?.classList.remove('hidden');
+  const preview = document.getElementById('loose-photo-preview');
+  if (preview) {
+    preview.src = '';
+  }
+  selectedLooseNoteReceiptFile = null;
+  uploadedLooseNoteReceipt = null;
+  looseNoteReceiptUploadPromise = null;
+  updateLooseReceiptUploadStatus('Salve o comprovante para liberar o envio pelo WhatsApp.');
+  setLooseActionButtonsVisible(false);
+  setSaveLooseReceiptButtonVisible(true);
+}
+
 function toggleCustomDriverField() {
   const driverSelect = document.getElementById('driver-name');
   const customContainer = document.getElementById('custom-driver-container');
   const customInput = document.getElementById('custom-driver-name');
+  const shouldShowCustomInput = driverSelect?.value === OTHER_DRIVER_OPTION;
+
+  if (!customContainer || !customInput) {
+    return;
+  }
+
+  customContainer.classList.toggle('hidden', !shouldShowCustomInput);
+  customInput.required = shouldShowCustomInput;
+  if (!shouldShowCustomInput) {
+    customInput.value = '';
+  }
+}
+
+function toggleLooseCustomDriverField() {
+  const driverSelect = document.getElementById('loose-driver-name');
+  const customContainer = document.getElementById('loose-custom-driver-container');
+  const customInput = document.getElementById('loose-custom-driver-name');
   const shouldShowCustomInput = driverSelect?.value === OTHER_DRIVER_OPTION;
 
   if (!customContainer || !customInput) {
@@ -398,6 +501,17 @@ function getSelectedDriverName() {
   return driverSelect?.value.trim() || '';
 }
 
+function getSelectedLooseDriverName() {
+  const driverSelect = document.getElementById('loose-driver-name');
+  const customInput = document.getElementById('loose-custom-driver-name');
+
+  if (driverSelect?.value === OTHER_DRIVER_OPTION) {
+    return customInput?.value.trim() || '';
+  }
+
+  return driverSelect?.value.trim() || '';
+}
+
 function markFuelReceiptUploadDirty() {
   if (!selectedFuelReceiptFile) {
     return;
@@ -410,8 +524,50 @@ function markFuelReceiptUploadDirty() {
   updateReceiptUploadStatus('Dados alterados. Salve o comprovante novamente antes de enviar.', 'neutral');
 }
 
+function markLooseReceiptUploadDirty() {
+  if (!selectedLooseNoteReceiptFile) {
+    return;
+  }
+
+  uploadedLooseNoteReceipt = null;
+  looseNoteReceiptUploadPromise = null;
+  setSaveLooseReceiptButtonVisible(true);
+  setLooseActionButtonsVisible(false);
+  updateLooseReceiptUploadStatus('Dados alterados. Salve o comprovante novamente antes de enviar.', 'neutral');
+}
+
+function applyFuelFormMode(mode = 'rapido') {
+  currentFuelFormMode = mode === 'completo' ? 'completo' : 'rapido';
+
+  const isComplete = currentFuelFormMode === 'completo';
+  const header = document.getElementById('fuel-form-header');
+  const title = document.getElementById('fuel-form-title');
+  const completeFields = document.getElementById('fuel-complete-fields');
+  const valueInput = document.getElementById('fuel-value');
+  const litersInput = document.getElementById('fuel-liters');
+  const fuelTypeInput = document.getElementById('fuel-type');
+
+  header?.classList.toggle('from-red-500', !isComplete);
+  header?.classList.toggle('to-red-600', !isComplete);
+  header?.classList.toggle('from-amber-500', isComplete);
+  header?.classList.toggle('to-orange-600', isComplete);
+  if (title) {
+    title.textContent = isComplete ? 'REGISTRO COMPLETO' : 'REGISTRO R\u00c1PIDO';
+  }
+
+  completeFields?.classList.toggle('hidden', !isComplete);
+  [valueInput, litersInput, fuelTypeInput].forEach((input) => {
+    if (input) {
+      input.required = isComplete;
+      if (!isComplete) {
+        input.value = '';
+      }
+    }
+  });
+}
+
 function prepareFuelForm(options = {}) {
-  const { cidade = '', posto = '', useLastEntry = false } = options;
+  const { cidade = '', posto = '', useLastEntry = false, mode = 'rapido' } = options;
   const citySelect = document.getElementById('fuel-city');
   const stationSelect = document.getElementById('fuel-station');
   const driverInput = document.getElementById('driver-name');
@@ -421,6 +577,7 @@ function prepareFuelForm(options = {}) {
   const selectedDriver = lastFuelEntry?.motorista || '';
 
   document.getElementById('fuel-form').reset();
+  applyFuelFormMode(mode);
   citySelect.value = selectedCity;
   populateDriverOptions();
   if (selectedDriver && getStoredDriverNames().includes(selectedDriver)) {
@@ -448,9 +605,9 @@ function prepareFuelForm(options = {}) {
   resetFuelPhotoState();
 }
 
-function openFuelFormMenu() {
+function openFuelFormMenu(mode = 'rapido') {
   document.getElementById('fuel-form-modal').classList.remove('hidden');
-  prepareFuelForm({ useLastEntry: true });
+  prepareFuelForm({ useLastEntry: true, mode });
 }
 
 function closeFuelForm() {
@@ -459,6 +616,38 @@ function closeFuelForm() {
   document.getElementById('fuel-form').reset();
   resetFuelPhotoState();
   setFuelDateToToday();
+  applyFuelFormMode('rapido');
+  populateDriverOptions();
+}
+
+function setLooseDateToToday() {
+  const dateInput = document.getElementById('loose-date');
+  if (dateInput) {
+    dateInput.value = getTodayLocalDateString();
+  }
+}
+
+function prepareLooseNoteForm() {
+  const form = document.getElementById('loose-note-form');
+  if (form) {
+    form.reset();
+  }
+  populateDriverOptions();
+  setLooseDateToToday();
+  resetLoosePhotoState();
+  toggleLooseCustomDriverField();
+}
+
+function openLooseNoteForm() {
+  document.getElementById('loose-note-modal')?.classList.remove('hidden');
+  prepareLooseNoteForm();
+}
+
+function closeLooseNoteForm() {
+  document.getElementById('loose-note-modal')?.classList.add('hidden');
+  document.getElementById('loose-note-form')?.reset();
+  resetLoosePhotoState();
+  setLooseDateToToday();
   populateDriverOptions();
 }
 
@@ -475,6 +664,35 @@ function openWhatsAppDirect(numero, mensagem) {
   }
 }
 
+function parseKmValue(kmValue) {
+  const numericValue = String(kmValue || '').replace(/\D/g, '');
+  return numericValue ? Number(numericValue) : 0;
+}
+
+function formatKmValue(kmValue) {
+  return Number(kmValue || 0).toLocaleString('pt-BR');
+}
+
+function getRevisionWarningMessage(kmValue) {
+  const km = parseKmValue(kmValue);
+  if (!km) {
+    return '';
+  }
+
+  const nextRevisionKm = Math.ceil(km / 10000) * 10000;
+  const remainingKm = nextRevisionKm - km;
+
+  if (remainingKm < 0 || remainingKm > 2000) {
+    return '';
+  }
+
+  if (remainingKm === 0) {
+    return `\u26a0\ufe0f *Alerta:* Ve\u00edculo atingiu a quilometragem de revis\u00e3o (${formatKmValue(nextRevisionKm)} km).`;
+  }
+
+  return `\u26a0\ufe0f *Alerta:* Ve\u00edculo pr\u00f3ximo de realizar a revis\u00e3o. Faltam ${formatKmValue(remainingKm)} km para ${formatKmValue(nextRevisionKm)} km.`;
+}
+
 function getFuelFormData() {
   const data = document.getElementById('fuel-date').value;
   const dateObj = data ? new Date(`${data}T00:00:00`) : null;
@@ -488,6 +706,9 @@ function getFuelFormData() {
     dataFormatada: dateObj ? dateObj.toLocaleDateString('pt-BR') : '',
     horaFormatada: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     km: document.getElementById('fuel-km').value.trim(),
+    valor: document.getElementById('fuel-value')?.value.trim() || '',
+    litros: document.getElementById('fuel-liters')?.value.trim() || '',
+    tipoCombustivel: document.getElementById('fuel-type')?.value || '',
     file: selectedFuelReceiptFile
   };
 }
@@ -506,12 +727,73 @@ function getFuelReceiptUploadKey(formData) {
     formData.cidade,
     formData.posto,
     formData.data,
-    formData.km
+    formData.km,
+    formData.valor,
+    formData.litros,
+    formData.tipoCombustivel,
+    currentFuelFormMode
+  ].join('|');
+}
+
+function getLooseNoteFormData() {
+  const data = document.getElementById('loose-date')?.value || '';
+  const dateObj = data ? new Date(`${data}T00:00:00`) : null;
+  const now = new Date();
+
+  return {
+    motorista: getSelectedLooseDriverName(),
+    fornecedor: document.getElementById('loose-supplier')?.value.trim() || '',
+    tipoServico: document.getElementById('loose-service-type')?.value || '',
+    valor: document.getElementById('loose-value')?.value.trim() || '',
+    data,
+    dataFormatada: dateObj ? dateObj.toLocaleDateString('pt-BR') : '',
+    horaFormatada: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    km: document.getElementById('loose-km')?.value.trim() || '',
+    observacoes: document.getElementById('loose-notes')?.value.trim() || '',
+    file: selectedLooseNoteReceiptFile
+  };
+}
+
+function getLooseNoteReceiptUploadKey(formData) {
+  const file = formData.file;
+  if (!file) {
+    return '';
+  }
+
+  return [
+    file.name,
+    file.size,
+    file.lastModified,
+    formData.motorista,
+    formData.fornecedor,
+    formData.tipoServico,
+    formData.valor,
+    formData.data,
+    formData.km,
+    formData.observacoes
   ].join('|');
 }
 
 function updateReceiptUploadStatus(message, tone = 'neutral') {
   const statusEl = document.getElementById('receipt-upload-status');
+  if (!statusEl) {
+    return;
+  }
+
+  const toneClasses = {
+    neutral: 'text-gray-500',
+    progress: 'text-blue-600',
+    success: 'text-emerald-700',
+    error: 'text-red-600'
+  };
+
+  statusEl.classList.remove('text-gray-500', 'text-blue-600', 'text-emerald-700', 'text-red-600');
+  statusEl.classList.add(toneClasses[tone] || toneClasses.neutral);
+  statusEl.textContent = message;
+}
+
+function updateLooseReceiptUploadStatus(message, tone = 'neutral') {
+  const statusEl = document.getElementById('loose-receipt-upload-status');
   if (!statusEl) {
     return;
   }
@@ -540,8 +822,27 @@ function setSaveReceiptButtonLoading(isLoading) {
   button.textContent = isLoading ? 'Salvando comprovante...' : 'Salvar comprovante';
 }
 
+function setSaveLooseReceiptButtonLoading(isLoading) {
+  const button = document.getElementById('save-loose-receipt-btn');
+  if (!button) {
+    return;
+  }
+
+  button.disabled = isLoading;
+  button.classList.toggle('opacity-70', isLoading);
+  button.classList.toggle('cursor-wait', isLoading);
+  button.textContent = isLoading ? 'Salvando comprovante...' : 'Salvar comprovante';
+}
+
 function setSaveReceiptButtonVisible(isVisible) {
   const button = document.getElementById('save-receipt-btn');
+  if (button) {
+    button.classList.toggle('hidden', !isVisible);
+  }
+}
+
+function setSaveLooseReceiptButtonVisible(isVisible) {
+  const button = document.getElementById('save-loose-receipt-btn');
   if (button) {
     button.classList.toggle('hidden', !isVisible);
   }
@@ -554,8 +855,16 @@ function setFuelActionButtonsVisible(isVisible) {
   }
 }
 
-function openReceiptValidationModal() {
-  const formModal = document.getElementById('fuel-form-modal');
+function setLooseActionButtonsVisible(isVisible) {
+  const actions = document.getElementById('loose-action-buttons');
+  if (actions) {
+    actions.classList.toggle('hidden', !isVisible);
+  }
+}
+
+function openReceiptValidationModal(type = 'fuel') {
+  receiptValidationType = type === 'loose' ? 'loose' : 'fuel';
+  const formModal = document.getElementById(receiptValidationType === 'loose' ? 'loose-note-modal' : 'fuel-form-modal');
   const validationModal = document.getElementById('receipt-validation-modal');
   if (formModal) {
     formModal.classList.add('hidden');
@@ -574,7 +883,7 @@ function closeReceiptValidationModal() {
 
 function cancelReceiptValidationModal() {
   closeReceiptValidationModal();
-  const formModal = document.getElementById('fuel-form-modal');
+  const formModal = document.getElementById(receiptValidationType === 'loose' ? 'loose-note-modal' : 'fuel-form-modal');
   if (formModal) {
     formModal.classList.remove('hidden');
   }
@@ -582,7 +891,7 @@ function cancelReceiptValidationModal() {
 
 function confirmReceiptValidationModal() {
   closeReceiptValidationModal();
-  const form = document.getElementById('fuel-form');
+  const form = document.getElementById(receiptValidationType === 'loose' ? 'loose-note-form' : 'fuel-form');
   if (form?.requestSubmit) {
     form.requestSubmit();
   } else {
@@ -591,8 +900,14 @@ function confirmReceiptValidationModal() {
 }
 
 function validateFuelReceiptUploadFields(formData) {
+  const isComplete = currentFuelFormMode === 'completo';
   if (!formData.motorista || !formData.cidade || !formData.posto || !formData.data) {
     showErrorMessage('Preencha motorista, cidade, posto e data antes de salvar o comprovante.');
+    return false;
+  }
+
+  if (isComplete && (!formData.valor || !formData.litros || !formData.tipoCombustivel)) {
+    showErrorMessage('Preencha valor, litros e combust\u00edvel antes de salvar o comprovante completo.');
     return false;
   }
 
@@ -602,6 +917,85 @@ function validateFuelReceiptUploadFields(formData) {
   }
 
   return true;
+}
+
+function validateLooseNoteReceiptUploadFields(formData) {
+  if (!formData.motorista || !formData.fornecedor || !formData.tipoServico || !formData.valor || !formData.data) {
+    showErrorMessage('Preencha motorista, fornecedor, tipo do servi\u00e7o, valor e data antes de salvar o comprovante.');
+    return false;
+  }
+
+  if (!formData.file) {
+    showErrorMessage('Selecione uma foto do comprovante primeiro.');
+    return false;
+  }
+
+  return true;
+}
+
+async function saveLooseNoteReceiptUpload(options = {}) {
+  const { silent = false } = options;
+  const formData = getLooseNoteFormData();
+
+  if (!validateLooseNoteReceiptUploadFields(formData)) {
+    return null;
+  }
+
+  const uploadKey = getLooseNoteReceiptUploadKey(formData);
+  if (uploadedLooseNoteReceipt && uploadedLooseNoteReceipt.key === uploadKey) {
+    if (!silent) {
+      openReceiptValidationModal('loose');
+    }
+    return uploadedLooseNoteReceipt.result;
+  }
+
+  if (looseNoteReceiptUploadPromise) {
+    return looseNoteReceiptUploadPromise;
+  }
+
+  setSaveLooseReceiptButtonLoading(true);
+  updateLooseReceiptUploadStatus('Comprimindo e salvando comprovante na nuvem...', 'progress');
+
+  looseNoteReceiptUploadPromise = (async () => {
+    const compressedFile = await compressFuelReceiptIfNeeded(formData.file);
+    const renamedFile = createRenamedLooseNoteReceiptFile(compressedFile, formData.fornecedor);
+    const result = await uploadLooseNoteReceiptToCloudinary(renamedFile, {
+      motorista: formData.motorista,
+      fornecedor: formData.fornecedor,
+      tipoServico: formData.tipoServico,
+      valor: formData.valor,
+      data: formData.dataFormatada,
+      km: formData.km
+    });
+
+    uploadedLooseNoteReceipt = {
+      key: uploadKey,
+      result
+    };
+    updateLooseReceiptUploadStatus('Comprovante salvo. Agora envie pelo WhatsApp para validar.', 'success');
+    setSaveLooseReceiptButtonVisible(false);
+    setLooseActionButtonsVisible(true);
+    if (!silent) {
+      openReceiptValidationModal('loose');
+    }
+
+    return result;
+  })();
+
+  try {
+    return await looseNoteReceiptUploadPromise;
+  } catch (error) {
+    uploadedLooseNoteReceipt = null;
+    updateLooseReceiptUploadStatus('N\u00e3o foi poss\u00edvel salvar. Tente novamente antes de enviar.', 'error');
+    if (!silent) {
+      showErrorMessage('Erro ao salvar comprovante. Tente novamente.');
+      return null;
+    }
+    throw error;
+  } finally {
+    looseNoteReceiptUploadPromise = null;
+    setSaveLooseReceiptButtonLoading(false);
+  }
 }
 
 async function saveFuelReceiptUpload(options = {}) {
@@ -635,7 +1029,11 @@ async function saveFuelReceiptUpload(options = {}) {
       cidade: formData.cidade,
       posto: formData.posto,
       data: formData.dataFormatada,
-      km: formData.km
+      km: formData.km,
+      valor: formData.valor,
+      litros: formData.litros,
+      tipoCombustivel: formData.tipoCombustivel,
+      modo: currentFuelFormMode
     });
 
     uploadedFuelReceipt = {
@@ -721,7 +1119,30 @@ async function uploadFuelReceiptToCloudinary(file, metadata) {
   formData.append('filename_override', file.name.replace(/\.[^.]+$/, ''));
   formData.append(
     'context',
-    `motorista=${metadata.motorista}|cidade=${metadata.cidade}|posto=${metadata.posto}|data=${metadata.data}|km=${metadata.km || 'nao informado'}`
+    `modo=${metadata.modo || 'rapido'}|motorista=${metadata.motorista}|cidade=${metadata.cidade}|posto=${metadata.posto}|data=${metadata.data}|km=${metadata.km || 'nao informado'}|valor=${metadata.valor || 'nao informado'}|litros=${metadata.litros || 'nao informado'}|combustivel=${metadata.tipoCombustivel || 'nao informado'}`
+  );
+
+  const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    throw new Error('Falha ao enviar comprovante para o Cloudinary.');
+  }
+
+  return response.json();
+}
+
+async function uploadLooseNoteReceiptToCloudinary(file, metadata) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('folder', 'comprovantes-frota/notinhas-avulsas');
+  formData.append('filename_override', file.name.replace(/\.[^.]+$/, ''));
+  formData.append(
+    'context',
+    `motorista=${metadata.motorista}|fornecedor=${metadata.fornecedor}|servico=${metadata.tipoServico}|valor=${metadata.valor}|data=${metadata.data}|km=${metadata.km || 'nao informado'}`
   );
 
   const response = await fetch(CLOUDINARY_UPLOAD_URL, {
@@ -758,6 +1179,8 @@ async function submitFuelForm(e) {
 
   const formData = getFuelFormData();
   const uploadKey = getFuelReceiptUploadKey(formData);
+  const isComplete = currentFuelFormMode === 'completo';
+  const revisionWarning = getRevisionWarningMessage(formData.km);
 
   if (!formData.file) {
     showErrorMessage('Por favor, selecione uma foto do comprovante');
@@ -776,10 +1199,14 @@ async function submitFuelForm(e) {
     `\ud83c\udfd9\ufe0f *Cidade:* ${formData.cidade}`,
     `\u26fd *Posto:* ${formData.posto}`,
     `\ud83d\udcc5 *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
+    isComplete ? `\ud83d\udcb0 *Valor:* ${formData.valor}` : '',
+    isComplete ? `\ud83d\udee2\ufe0f *Litros:* ${formData.litros}` : '',
+    isComplete ? `\u26fd *Combust\u00edvel:* ${formData.tipoCombustivel}` : '',
     `\ud83d\udee3\ufe0f *KM:* ${formData.km || 'N\u00e3o informado'}`,
+    revisionWarning,
     '',
     `\ud83e\uddfe *Comprovante:* ${uploadedFuelReceipt.result.secure_url}`
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 
   openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
   saveDriverNameSuggestion(formData.motorista);
@@ -788,8 +1215,50 @@ async function submitFuelForm(e) {
   document.getElementById('fuel-form-modal').classList.add('hidden');
   resetFuelPhotoState();
   setFuelDateToToday();
+  applyFuelFormMode('rapido');
   populateDriverOptions();
   showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar o abastecimento.');
+}
+
+function submitLooseNoteForm(e) {
+  e.preventDefault();
+
+  const formData = getLooseNoteFormData();
+  const uploadKey = getLooseNoteReceiptUploadKey(formData);
+
+  if (!formData.motorista || !formData.fornecedor || !formData.tipoServico || !formData.valor || !formData.data) {
+    showErrorMessage('Preencha motorista, fornecedor, tipo do servi\u00e7o, valor e data.');
+    return;
+  }
+
+  if (!formData.file) {
+    showErrorMessage('Por favor, selecione uma foto do comprovante.');
+    return;
+  }
+
+  if (!uploadedLooseNoteReceipt || uploadedLooseNoteReceipt.key !== uploadKey) {
+    showErrorMessage('Salve o comprovante antes de enviar pelo WhatsApp.');
+    return;
+  }
+
+  const mensagem = [
+    '\ud83e\uddfe *REGISTRO DE NOTINHA AVULSA*',
+    '',
+    `\ud83d\udc64 *Motorista:* ${formData.motorista}`,
+    `\ud83c\udfe2 *Fornecedor:* ${formData.fornecedor}`,
+    `\ud83d\udee0\ufe0f *Tipo do servi\u00e7o:* ${formData.tipoServico}`,
+    `\ud83d\udcb0 *Valor:* ${formData.valor}`,
+    `\ud83d\udcc5 *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
+    formData.km ? `\ud83d\udee3\ufe0f *KM:* ${formData.km}` : '',
+    formData.observacoes ? `\ud83d\udcdd *Observa\u00e7\u00f5es:* ${formData.observacoes}` : '',
+    '',
+    `\ud83e\uddfe *Comprovante:* ${uploadedLooseNoteReceipt.result.secure_url}`
+  ].filter(Boolean).join('\n');
+
+  openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
+  saveDriverNameSuggestion(formData.motorista);
+  closeLooseNoteForm();
+  showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar a notinha avulsa.');
 }
 
 function showSuccessMessage(message) {
@@ -814,7 +1283,7 @@ function openMap(link) {
 
 function openFuelForm(postoNome, cidadeNome) {
   document.getElementById('fuel-form-modal').classList.remove('hidden');
-  prepareFuelForm({ cidade: cidadeNome, posto: postoNome });
+  prepareFuelForm({ cidade: cidadeNome, posto: postoNome, mode: 'rapido' });
 }
 
 function openWhatsAppSuggestions() {
@@ -938,6 +1407,10 @@ function backToSearch() {
 
 function updateBackButtonVisibility() {
   const backButton = document.getElementById('back-button');
+  if (!backButton) {
+    return;
+  }
+
   if (currentView === 'welcome') {
     backButton.classList.add('hidden');
   } else {
@@ -967,8 +1440,34 @@ function updatePhotoPreview(fileInput) {
   }
 }
 
+function updateLoosePhotoPreview(fileInput) {
+  const previewContainer = document.getElementById('loose-photo-preview-container');
+  const photoButtons = document.getElementById('loose-photo-buttons');
+  const preview = document.getElementById('loose-photo-preview');
+  selectedLooseNoteReceiptFile = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+  uploadedLooseNoteReceipt = null;
+  looseNoteReceiptUploadPromise = null;
+
+  if (selectedLooseNoteReceiptFile) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.src = e.target.result;
+      previewContainer.classList.remove('hidden');
+      photoButtons.classList.add('hidden');
+      updateLooseReceiptUploadStatus('Clique em Salvar comprovante para antecipar o upload.', 'neutral');
+      setSaveLooseReceiptButtonVisible(true);
+      setLooseActionButtonsVisible(false);
+    };
+    reader.readAsDataURL(selectedLooseNoteReceiptFile);
+  }
+}
+
 function deletePhoto() {
   resetFuelPhotoState();
+}
+
+function deleteLoosePhoto() {
+  resetLoosePhotoState();
 }
 
 function formatCurrency(input) {
