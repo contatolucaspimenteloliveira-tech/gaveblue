@@ -1175,3 +1175,80 @@ window.addEventListener('DOMContentLoaded', function() {
     lucide.createIcons();
   }
 });
+
+const cityImageCards = [
+  {
+    name: 'Boa Esperan\u00e7a',
+    image: 'assets/cidades/boa-esperanca.jpeg',
+    postos: '1 posto'
+  },
+  {
+    name: 'Montanha',
+    image: 'assets/cidades/montanha.jpeg',
+    postos: '1 posto'
+  },
+  {
+    name: 'Nova Ven\u00e9cia',
+    image: 'assets/cidades/nova-venecia.jpeg',
+    postos: '1 posto'
+  },
+  {
+    name: 'Pedro Can\u00e1rio',
+    image: 'assets/cidades/pedro-canario.jpeg',
+    postos: '1 posto'
+  },
+  {
+    name: 'Pinheiros',
+    image: 'assets/cidades/pinheiros.jpeg',
+    postos: '3 postos',
+    featured: true
+  },
+  {
+    name: 'S\u00e3o Mateus',
+    image: 'assets/cidades/sao-mateus.jpeg',
+    postos: '2 postos'
+  }
+];
+
+function renderCityImageCards() {
+  const dashboard = document.getElementById('dashboard');
+  const grid = dashboard?.querySelector('.grid');
+
+  if (!grid) {
+    return;
+  }
+
+  grid.className = 'city-card-grid';
+  grid.innerHTML = '';
+
+  cityImageCards.forEach((city) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'city-image-card';
+    button.setAttribute('aria-label', `Ver postos em ${city.name}`);
+    button.addEventListener('click', () => selectCity(city.name));
+
+    const image = document.createElement('img');
+    image.src = city.image;
+    image.alt = city.name;
+    image.loading = 'lazy';
+
+    const badge = document.createElement('span');
+    badge.className = 'city-card-badge';
+    badge.textContent = city.postos;
+
+    button.appendChild(image);
+    button.appendChild(badge);
+
+    if (city.featured) {
+      const featured = document.createElement('span');
+      featured.className = 'city-card-featured';
+      featured.textContent = 'Recomendado';
+      button.appendChild(featured);
+    }
+
+    grid.appendChild(button);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', renderCityImageCards);
