@@ -113,6 +113,40 @@ body {
   line-height: 1.65;
 }
 
+.pwa-install-status {
+  margin-top: 0.85rem;
+  border-radius: 0.8rem;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  padding: 0.75rem;
+}
+
+.pwa-install-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: #9a3412;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.pwa-install-progress-track {
+  margin-top: 0.55rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(251, 146, 60, 0.22);
+}
+
+.pwa-install-progress-bar {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f97316, #dc2626, #be123c);
+  transition: width 0.24s ease;
+}
+
 .pwa-install-primary,
 .pwa-install-secondary {
   width: 100%;

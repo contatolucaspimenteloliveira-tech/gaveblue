@@ -1,9 +1,9 @@
-const CACHE_NAME = 'central-registros-static-v20260809-2';
+const CACHE_NAME = 'central-registros-static-v20260809-4';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=20260809-1535',
-  './app.js?v=20260809-1535',
+  './styles.css?v=20260809-1610',
+  './app.js?v=20260809-1610',
   './manifest.webmanifest',
   './assets/pwa/icon-192.png',
   './assets/pwa/icon-512.png',
@@ -24,6 +24,12 @@ self.addEventListener('activate', (event) => {
       .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {

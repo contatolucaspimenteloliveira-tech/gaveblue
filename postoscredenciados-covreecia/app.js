@@ -1,4 +1,4 @@
-const defaultConfig = {
+﻿const defaultConfig = {
   page_title: 'Postos Credenciados',
   background_color: '#f9fafb',
   card_color: '#ffffff',
@@ -24,6 +24,7 @@ const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
 const PWA_INSTALL_DONE_KEY = 'pwa-install-installed';
 const PWA_DISMISS_DAYS = 7;
+const REMOVED_DRIVER_NAMES = ['ELOIS DOS SANTOS'];
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
 let fuelReceiptUploadPromise = null;
@@ -53,15 +54,15 @@ const postosPorCidade = {
     { nome: 'Auto Posto 4 Rodas', endereco: 'Boa Esperan\u00e7a, ES', link: 'https://www.google.com/maps/place/Auto+Posto+4+Rodas/@-18.5404958,-40.2937824,826m/data=!3m2!1e3!4b1!4m6!3m5!1s0xb5956c7feac48d:0xc15be322b9fed420!8m2!3d-18.5404958!4d-40.2912075!16s%2Fg%2F1tfp3pxm' }
   ],
   Pinheiros: [
-    { nome: 'Posto Rede Nater (Shell)', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Rede+Nater+(Shell)+em+Pinheiros/@-18.4168459,-40.2107607,153m/data=!3m1!1e3!4m6!3m5!1s0xb59b33d7ff34b9:0x82053208dc2a16f8!8m2!3d-18.4163054!4d-40.2110065!16s%2Fg%2F11qpbrwj22' },
-    { nome: 'Posto Pinheiros', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Pinheiros/@-18.413462,-40.2128249,156m/data=!3m1!1e3!4m6!3m5!1s0xb59a1481427d61:0xeba41bb1a2b24a1e!8m2!3d-18.4135384!4d-40.2127649!16s%2Fg%2F1tj7xmm_' },
-    { nome: 'Posto Nort\u00e3o', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Nort%C3%A3o/@-18.4045169,-40.2319949,1969m/data=!3m1!1e3!4m6!3m5!1s0xb59a201628e4ab:0xcd6c4ad08d8fb206!8m2!3d-18.4045175!4d-40.2258587!16s%2Fg%2F11b6yqny3l?entry=ttu&g_ep=EgoyMDI2MDEyNi4wIKXMDSoKLDEwMDc5MjA2OUgBUAM%3D' }
+    { nome: 'Posto Nater Coop - Shell', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Rede+Nater+(Shell)+em+Pinheiros/@-18.4168459,-40.2107607,153m/data=!3m1!1e3!4m6!3m5!1s0xb59b33d7ff34b9:0x82053208dc2a16f8!8m2!3d-18.4163054!4d-40.2110065!16s%2Fg%2F11qpbrwj22' },
+    { nome: 'Posto Pinheiros - Ipiranga', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Pinheiros/@-18.413462,-40.2128249,156m/data=!3m1!1e3!4m6!3m5!1s0xb59a1481427d61:0xeba41bb1a2b24a1e!8m2!3d-18.4135384!4d-40.2127649!16s%2Fg%2F1tj7xmm_' },
+    { nome: 'Posto Nort\u00e3o - Ale', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Nort%C3%A3o/@-18.4045169,-40.2319949,1969m/data=!3m1!1e3!4m6!3m5!1s0xb59a201628e4ab:0xcd6c4ad08d8fb206!8m2!3d-18.4045175!4d-40.2258587!16s%2Fg%2F11b6yqny3l?entry=ttu&g_ep=EgoyMDI2MDEyNi4wIKXMDSoKLDEwMDc5MjA2OUgBUAM%3D' }
   ],
   'Nova Ven\u00e9cia': [
     { nome: 'Posto Cidade Alta', endereco: 'Nova Ven\u00e9cia, ES', link: 'https://www.google.com/maps/place/Posto+Cidade+Alta/@-18.693836,-40.4136076,2405m/data=!3m1!1e3!4m10!1m2!2m1!1sposto!3m6!1s0xb5db2293e5e22b:0xeb619e2ab30e53b2!8m2!3d-18.693836!4d-40.3997215!15sCgVwb3N0b1oHIgVwb3N0b5IBC2dhc19zdGF0aW9u4AEA!16s%2Fg%2F11k62_1v8g' }
   ],
   Montanha: [
-    { nome: 'Posto Atl\u00e2ntico Servicentro', endereco: 'Montanha, ES', link: 'https://www.google.com/maps/place/Posto+Atlantico+Servicentro/@-18.1277285,-40.3620985,1655m/data=!3m1!1e3!4m10!1m2!2m1!1sauto+posto+servicentro+motanha!3m6!1s0xb50c56fe1af699:0xdce102eb786d422d!8m2!3d-18.1277285!4d-40.3525713!15sCh9hdXRvIHBvc3RvIHNlcnZpY2VudHJvIG1vbnRhbmhhkgELZ2FzX3N0YXRpb27gAQA!16s%2Fg%2F11hblk2rbr' }
+    { nome: 'Auto Posto Servicentro Oliveira Rios - Atl\u00e2ntico', endereco: 'Montanha, ES', link: 'https://www.google.com/maps/place/Posto+Atlantico+Servicentro/@-18.1277285,-40.3620985,1655m/data=!3m1!1e3!4m10!1m2!2m1!1sauto+posto+servicentro+motanha!3m6!1s0xb50c56fe1af699:0xdce102eb786d422d!8m2!3d-18.1277285!4d-40.3525713!15sCh9hdXRvIHBvc3RvIHNlcnZpY2VudHJvIG1vbnRhbmhhkgELZ2FzX3N0YXRpb27gAQA!16s%2Fg%2F11hblk2rbr' }
   ],
   'Pedro Can\u00e1rio': [
     { nome: 'Posto Can\u00e1rio', endereco: 'ES-209, 10 - Centro, Pedro Can\u00e1rio - ES', link: 'https://www.google.com/maps/place/ES-209,+10+-+Centro,+Pedro+Can%C3%A1rio+-+ES,+29970-000/@-18.2990761,-39.9587556,19z/data=!4m6!3m5!1s0xca804b02de6b95:0x50166aeec8735e0f!8m2!3d-18.2991215!4d-39.9579864!16s%2Fg%2F11f613rqzg?hl=pt-BR&entry=ttu&g_ep=EgoyMDI2MDIwMS4wIKXMDSoASAFQAw%3D%3D' }
@@ -243,8 +244,30 @@ function wasPwaPromptRecentlyDismissed() {
   return dismissedAgeMs < PWA_DISMISS_DAYS * 24 * 60 * 60 * 1000;
 }
 
-function shouldOfferPwaInstall() {
-  return isMobileViewport() && !isRunningStandalone() && localStorage.getItem(PWA_INSTALL_DONE_KEY) !== 'true' && !wasPwaPromptRecentlyDismissed();
+function shouldOfferPwaInstall(force = false) {
+  return isMobileViewport()
+    && !isRunningStandalone()
+    && (force || localStorage.getItem(PWA_INSTALL_DONE_KEY) !== 'true')
+    && (force || !wasPwaPromptRecentlyDismissed());
+}
+
+function updatePwaInstallStatus(text, percent) {
+  const statusText = document.getElementById('pwa-install-status-text');
+  const statusPercent = document.getElementById('pwa-install-status-percent');
+  const progressBar = document.getElementById('pwa-install-progress-bar');
+  const safePercent = Math.max(0, Math.min(100, Number(percent) || 0));
+
+  if (statusText) {
+    statusText.textContent = text;
+  }
+
+  if (statusPercent) {
+    statusPercent.textContent = `${safePercent}%`;
+  }
+
+  if (progressBar) {
+    progressBar.style.width = `${safePercent}%`;
+  }
 }
 
 function setPwaInstallModalContent(mode) {
@@ -261,36 +284,56 @@ function setPwaInstallModalContent(mode) {
   if (pwaInstallModalMode === 'ios') {
     platform.textContent = 'iPhone / iPad';
     steps.innerHTML = `
-      <li>Toque no botão Compartilhar do Safari.</li>
-      <li>Escolha Adicionar à Tela de Início.</li>
-      <li>Abra pelo novo ícone criado no celular.</li>
+      <li>Toque no bot\u00e3o Compartilhar do Safari.</li>
+      <li>Escolha Adicionar \u00e0 Tela de In\u00edcio.</li>
+      <li>Abra pelo novo \u00edcone criado no celular.</li>
     `;
     primary.querySelector('span').textContent = 'Entendi';
-    footnote.textContent = 'No iPhone, a instalação é feita pelo menu Compartilhar do Safari.';
+    footnote.textContent = 'No iPhone, a instala\u00e7\u00e3o \u00e9 feita pelo menu Compartilhar do Safari.';
     return;
   }
 
   platform.textContent = 'Android';
   steps.innerHTML = `
     <li>Toque em Instalar aplicativo.</li>
-    <li>Confirme a instalação quando o navegador solicitar.</li>
-    <li>Abra pelo novo ícone na tela inicial.</li>
+    <li>Confirme a instala\u00e7\u00e3o quando o navegador solicitar.</li>
+    <li>Abra pelo novo \u00edcone na tela inicial.</li>
   `;
   primary.querySelector('span').textContent = 'Instalar aplicativo';
-  footnote.textContent = 'Se o prompt não aparecer, abra o menu do navegador e toque em Instalar app ou Adicionar à tela inicial.';
+  footnote.textContent = 'Se o prompt n\u00e3o aparecer, abra o menu do navegador e toque em Instalar app ou Adicionar \u00e0 tela inicial.';
 }
 
-function showPwaInstallModal(mode = 'android') {
-  if (!shouldOfferPwaInstall()) {
+function showPwaInstallModal(mode = 'android', force = false) {
+  if (!shouldOfferPwaInstall(force)) {
     return;
   }
 
   setPwaInstallModalContent(mode);
+  updatePwaInstallStatus(mode === 'ios' ? 'Instala\u00e7\u00e3o manual pelo Safari' : 'Pronto para instalar', mode === 'ios' ? 20 : 15);
   const modal = document.getElementById('pwa-install-modal');
   if (modal) {
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
   }
+}
+
+function openPwaInstallFromMenu() {
+  if (isRunningStandalone()) {
+    showSuccessMessage('A Central de Registros j\u00e1 est\u00e1 instalada neste aparelho.');
+    return;
+  }
+
+  if (!isMobileViewport()) {
+    showErrorMessage('A instala\u00e7\u00e3o do app deve ser feita pelo navegador do celular.');
+    return;
+  }
+
+  if (isIosDevice()) {
+    showPwaInstallModal('ios', true);
+    return;
+  }
+
+  showPwaInstallModal('android', true);
 }
 
 function hidePwaInstallModal() {
@@ -308,21 +351,30 @@ function dismissPwaInstallModal() {
 
 async function handlePwaInstallClick() {
   if (pwaInstallModalMode === 'ios') {
+    updatePwaInstallStatus('Siga as instru\u00e7\u00f5es no Safari', 40);
     dismissPwaInstallModal();
     return;
   }
 
   if (!deferredPwaPrompt) {
-    dismissPwaInstallModal();
+    updatePwaInstallStatus('Use o menu do navegador para instalar', 35);
+    const footnote = document.getElementById('pwa-install-footnote');
+    if (footnote) {
+      footnote.textContent = 'Se o bot\u00e3o nativo n\u00e3o aparecer, toque no menu do Chrome e escolha Instalar app ou Adicionar \u00e0 tela inicial.';
+    }
     return;
   }
 
+  updatePwaInstallStatus('Aguardando confirma\u00e7\u00e3o do navegador', 55);
   deferredPwaPrompt.prompt();
   const result = await deferredPwaPrompt.userChoice;
   deferredPwaPrompt = null;
 
   if (result?.outcome !== 'accepted') {
     localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, String(Date.now()));
+    updatePwaInstallStatus('Instala\u00e7\u00e3o cancelada', 0);
+  } else {
+    updatePwaInstallStatus('Concluindo instala\u00e7\u00e3o', 85);
   }
 
   hidePwaInstallModal();
@@ -334,6 +386,9 @@ function setupPwaInstallExperience() {
   const dismissAreas = document.querySelectorAll('[data-pwa-install-dismiss]');
 
   primaryButton?.addEventListener('click', handlePwaInstallClick);
+  if (dismissButton) {
+    dismissButton.textContent = 'Agora n\u00e3o';
+  }
   dismissButton?.addEventListener('click', dismissPwaInstallModal);
   dismissAreas.forEach((element) => element.addEventListener('click', dismissPwaInstallModal));
 
@@ -348,9 +403,15 @@ function registerServiceWorker() {
   }
 
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {
-      return null;
-    });
+    navigator.serviceWorker.register('./sw.js')
+      .then((registration) => {
+        registration.update();
+
+        if (registration.waiting) {
+          registration.waiting.postMessage('SKIP_WAITING');
+        }
+      })
+      .catch(() => null);
   });
 }
 
@@ -364,6 +425,7 @@ window.addEventListener('appinstalled', () => {
   deferredPwaPrompt = null;
   localStorage.setItem(PWA_INSTALL_DONE_KEY, 'true');
   localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
+  updatePwaInstallStatus('Instala\u00e7\u00e3o conclu\u00edda', 100);
   hidePwaInstallModal();
 });
 
@@ -385,7 +447,8 @@ function getStoredDriverNames() {
     const storedNames = localStorage.getItem(DRIVER_NAMES_STORAGE_KEY);
     const parsedNames = storedNames ? JSON.parse(storedNames) : [];
     const validStoredNames = Array.isArray(parsedNames) ? parsedNames : [];
-    return Array.from(new Set([...DEFAULT_DRIVER_NAMES, ...validStoredNames]));
+    return Array.from(new Set([...DEFAULT_DRIVER_NAMES, ...validStoredNames]))
+      .filter((name) => !REMOVED_DRIVER_NAMES.includes(String(name || '').trim().toUpperCase()));
   } catch (error) {
     return [...DEFAULT_DRIVER_NAMES];
   }
@@ -806,11 +869,14 @@ function openWhatsAppDirect(numero, mensagem) {
   const webUrl = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
 
   try {
-    const popup = window.open(webUrl, '_blank', 'noopener,noreferrer');
-    if (!popup) {
-      showWhatsAppFallbackLink(webUrl);
-      return false;
-    }
+    const link = document.createElement('a');
+    link.href = webUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
     return true;
   } catch (error) {
     showWhatsAppFallbackLink(webUrl);
@@ -828,8 +894,8 @@ function showWhatsAppFallbackLink(url) {
   toast.id = 'whatsapp-fallback-toast';
   toast.className = 'fixed inset-x-4 bottom-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 bg-white border border-emerald-200 text-gray-900 px-4 py-4 rounded-2xl shadow-2xl z-[80] animate-fade-in max-w-md mx-auto';
   toast.innerHTML = `
-    <p class="text-sm font-bold text-gray-900">O navegador bloqueou a abertura automática.</p>
-    <p class="text-xs text-gray-600 mt-1">Clique no botão abaixo para abrir o WhatsApp em nova aba e validar o comprovante.</p>
+    <p class="text-sm font-bold text-gray-900">O navegador bloqueou a abertura autom\u00e1tica.</p>
+    <p class="text-xs text-gray-600 mt-1">Clique no bot\u00e3o abaixo para abrir o WhatsApp em nova aba e validar o comprovante.</p>
     <div class="mt-3 flex gap-2">
       <button type="button" class="flex-1 px-3 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold text-sm" data-close-whatsapp-fallback>Fechar</button>
       <a href="${url}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm text-center">Abrir WhatsApp</a>
@@ -1375,11 +1441,11 @@ async function submitFuelForm(e) {
     `> *Motorista:* ${formData.motorista}`,
     `> *Cidade:* ${formData.cidade}`,
     `> *Posto:* ${formData.posto}`,
-    `> *Data/Hora:* ${formData.dataFormatada} às ${formData.horaFormatada}`,
+    `> *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
     isComplete ? `> *Valor:* ${formData.valor}` : '',
     isComplete ? `> *Litros:* ${formData.litros}` : '',
-    isComplete ? `> *Combustível:* ${formData.tipoCombustivel}` : '',
-    `> *KM:* ${formData.km || 'Não informado'}`
+    isComplete ? `> *Combust\u00edvel:* ${formData.tipoCombustivel}` : '',
+    `> *KM:* ${formData.km || 'N\u00e3o informado'}`
   ].filter(Boolean);
 
   const mensagemLines = [
@@ -1432,11 +1498,11 @@ function submitLooseNoteForm(e) {
   const looseNoteMessageDetails = [
     `> *Motorista:* ${formData.motorista}`,
     `> *Fornecedor:* ${formData.fornecedor}`,
-    `> *Tipo do serviço:* ${formData.tipoServico}`,
+    `> *Tipo do servi\u00e7o:* ${formData.tipoServico}`,
     `> *Valor:* ${formData.valor}`,
-    `> *Data/Hora:* ${formData.dataFormatada} às ${formData.horaFormatada}`,
+    `> *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
     formData.km ? `> *KM:* ${formData.km}` : '',
-    formData.observacoes ? `> *Observações:* ${formData.observacoes}` : ''
+    formData.observacoes ? `> *Observa\u00e7\u00f5es:* ${formData.observacoes}` : ''
   ].filter(Boolean);
 
   const mensagem = [
@@ -1946,3 +2012,7 @@ function renderCityImageCards() {
 }
 
 window.addEventListener('DOMContentLoaded', renderCityImageCards);
+
+
+
+
