@@ -643,10 +643,36 @@ button {
 
   .home-action-card {
     min-height: 96px;
+    display: flex;
+    align-items: center;
+    padding: 0.88rem 3rem 0.88rem 4.75rem;
   }
 
   .home-action-copy {
-    padding: 0.8rem 0.95rem;
+    padding: 0;
+  }
+
+  .home-action-copy strong {
+    font-size: 1.05rem;
+    line-height: 1.08;
+  }
+
+  .home-action-copy small {
+    font-size: 0.78rem;
+    line-height: 1.25;
+  }
+
+  .home-action-icon {
+    left: 0.9rem;
+    top: 50%;
+    width: 3.25rem;
+    height: 3.25rem;
+    transform: translateY(-50%);
+  }
+
+  .home-action-badge {
+    right: 0.72rem;
+    top: 0.55rem;
   }
 
   #fuel-form-modal,

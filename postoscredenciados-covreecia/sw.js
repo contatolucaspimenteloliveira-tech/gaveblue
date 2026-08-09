@@ -1,9 +1,9 @@
-const CACHE_NAME = 'central-registros-static-v20260809-9';
+const CACHE_NAME = 'central-registros-static-v20260809-10';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=20260809-1815',
-  './app.js?v=20260809-1815',
+  './styles.css?v=20260809-1820',
+  './app.js?v=20260809-1820',
   './manifest.webmanifest',
   './assets/home/hero-posto.png',
   './assets/home/buscar-postos.jpeg',
