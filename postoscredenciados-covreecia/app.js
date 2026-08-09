@@ -820,6 +820,7 @@ function prepareFuelForm(options = {}) {
 }
 
 function openFuelFormMenu(mode = 'rapido') {
+  setMobileNavActive(mode === 'completo' ? 'complete' : 'fast');
   document.getElementById('fuel-form-modal').classList.remove('hidden');
   prepareFuelForm({ useLastEntry: true, mode });
 }
@@ -832,6 +833,7 @@ function closeFuelForm() {
   setFuelDateToToday();
   applyFuelFormMode('rapido');
   populateDriverOptions();
+  restoreMobileNavForCurrentView();
 }
 
 function setLooseDateToToday() {
@@ -863,6 +865,7 @@ function closeLooseNoteForm() {
   resetLoosePhotoState();
   setLooseDateToToday();
   populateDriverOptions();
+  restoreMobileNavForCurrentView();
 }
 
 function openWhatsAppDirect(numero, mensagem) {
@@ -1564,6 +1567,7 @@ function goToWelcome() {
   document.getElementById('postos-display').classList.add('hidden');
   document.getElementById('dashboard').classList.add('hidden');
   currentView = 'welcome';
+  setMobileNavActive('home');
   updateBackButtonVisibility();
 }
 
@@ -1572,6 +1576,7 @@ function showDashboard() {
   document.getElementById('postos-display').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   currentView = 'dashboard';
+  setMobileNavActive('postos');
   updateBackButtonVisibility();
 }
 
@@ -1653,6 +1658,7 @@ function selectCity(cityName) {
   dashboard.classList.add('hidden');
   postosDisplay.classList.remove('hidden');
   currentView = 'postos';
+  setMobileNavActive('postos');
   updateBackButtonVisibility();
 }
 
@@ -1660,7 +1666,23 @@ function backToSearch() {
   document.getElementById('postos-display').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   currentView = 'dashboard';
+  setMobileNavActive('postos');
   updateBackButtonVisibility();
+}
+
+function setMobileNavActive(target) {
+  document.querySelectorAll('[data-mobile-nav]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.mobileNav === target);
+  });
+}
+
+function restoreMobileNavForCurrentView() {
+  setMobileNavActive(currentView === 'welcome' ? 'home' : 'postos');
+}
+
+function showAboutSection() {
+  setMobileNavActive('about');
+  document.querySelector('.bg-gradient-to-br.from-white')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function updateBackButtonVisibility() {

@@ -19,7 +19,7 @@
    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
-  <link rel="stylesheet" href="./styles.css?v=20260809-1610">
+  <link rel="stylesheet" href="./styles.css?v=20260809-1715">
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full flex flex-col">
@@ -453,60 +453,65 @@
    </div>
 
    <div class="flex-1 overflow-y-auto">
-    <div id="welcome-screen" class="w-full px-3 sm:px-6 pt-6 sm:pt-8 pb-16 sm:pb-20 flex items-center justify-center">
-     <div class="max-w-4xl mx-auto w-full">
-      <div class="text-center mb-8 sm:mb-12">
-       <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">Bem-vindo &agrave; <span class="bg-gradient-to-r from-orange-500 via-red-500 to-rose-700 bg-clip-text text-transparent">Central de Registros</span></h1>
-       <p class="hidden sm:block text-xs sm:text-sm font-black uppercase tracking-[0.28em] text-orange-600 mb-3">Postos Credenciados</p>
-       <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">Encontre os melhores postos para abastecimento e registre suas viagens com facilidade</p>
-      </div>
-      <div class="space-y-3 sm:space-y-5 mb-4 sm:mb-6">
-       <button onclick="showDashboard()" class="group relative w-full bg-gradient-to-br from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 rounded-xl p-5 sm:p-6 text-white text-left overflow-hidden transition-all hover:shadow-2xl hover:scale-[1.01] transform active:scale-[0.99]">
-        <div class="absolute bottom-0 left-0 w-40 h-40 bg-white opacity-5 rounded-full -ml-20 -mb-20 group-hover:scale-150 transition-transform duration-300"></div>
-        <div class="relative z-10 flex items-center justify-between gap-4">
-         <div class="flex items-center gap-4">
-          <div class="h-12 w-12 sm:h-14 sm:w-14 bg-white bg-opacity-20 rounded-lg flex items-center justify-center group-hover:bg-opacity-30 transition-colors">
-           <svg class="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          </div>
-          <div>
-           <h2 class="text-xl sm:text-2xl font-bold mb-1">Buscar por Cidade</h2>
-           <p class="text-green-100 text-sm sm:text-base">Encontre postos credenciados na sua regi&atilde;o.</p>
-          </div>
-         </div>
-         <svg class="w-6 h-6 text-green-100 group-hover:translate-x-1 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M9 5l7 7-7 7"/></svg>
+    <div id="welcome-screen" class="w-full px-3 sm:px-6 pt-4 sm:pt-8 pb-28 sm:pb-20 flex items-center justify-center">
+     <div class="home-shell max-w-4xl mx-auto w-full">
+      <section class="home-hero-card">
+       <img src="./assets/home/hero-posto.png" alt="Posto de combust&iacute;vel" class="home-hero-image">
+       <div class="home-hero-overlay"></div>
+       <div class="home-hero-content">
+        <h1>CENTRAL DE<br>REGISTROS</h1>
+        <p>Abaste&ccedil;a, registre e siga viagem.</p>
+        <div class="home-hero-meta">
+         <span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20V6a2 2 0 0 1 2-2h8v16M14 8h2.5A2.5 2.5 0 0 1 19 10.5V17a3 3 0 0 0 3 3M8 8h3M8 12h3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Postos credenciados
+         </span>
+         <span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 3h6l2 2h3v16H4V5h3l2-2Zm3 5v8m-4-4h8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Registro de abastecimentos
+         </span>
         </div>
-       </button>
-       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
-        <button onclick="openFuelFormMenu('completo')" class="order-2 sm:order-1 group relative bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden transition-all hover:shadow-2xl hover:scale-105 transform active:scale-95 min-h-[120px] sm:min-h-[160px]">
-         <div class="absolute bottom-0 left-0 w-36 h-36 bg-white opacity-5 rounded-full -ml-16 -mb-16 group-hover:scale-150 transition-transform duration-300"></div>
-         <div class="relative z-10 h-full flex flex-col justify-between">
-          <div class="h-10 w-10 sm:h-14 sm:w-14 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-opacity-30 transition-colors">
-           <svg class="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h6m-6 4h6m-6 4h4m-8 8h14a2 2 0 002-2V7l-4-4H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-          </div>
-          <div>
-           <h2 class="text-xl sm:text-2xl font-bold mb-2">Registro Completo</h2>
-           <p class="text-orange-100 text-sm sm:text-base">Preencha todos os dados do abastecimento.</p>
-          </div>
-         </div>
-        </button>
-        <button onclick="openFuelFormMenu('rapido')" class="order-1 sm:order-2 group relative bg-gradient-to-br from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 rounded-xl p-4 sm:p-6 text-white text-left overflow-hidden transition-all hover:shadow-2xl hover:scale-105 transform active:scale-95 min-h-[145px] sm:min-h-[160px]">
-         <div class="absolute top-0 left-0 w-36 h-36 bg-white opacity-5 rounded-full -ml-16 -mt-16 group-hover:scale-150 transition-transform duration-300"></div>
-         <div class="relative z-10 h-full flex flex-col justify-between">
-          <div class="h-11 w-11 sm:h-14 sm:w-14 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-opacity-30 transition-colors">
-           <svg class="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-          </div>
-          <div class="flex items-end justify-between gap-3">
-           <div>
-            <h2 class="text-xl sm:text-2xl font-bold mb-2">Registro R&aacute;pido</h2>
-            <p class="text-red-100 text-sm sm:text-base">Preenchimento resumido para mais agilidade.</p>
-           </div>
-           <span class="h-9 w-9 rounded-full bg-white bg-opacity-20 flex items-center justify-center group-hover:translate-x-1 transition-transform flex-shrink-0">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M9 5l7 7-7 7"/></svg>
-           </span>
-          </div>
-         </div>
-        </button>
        </div>
+      </section>
+
+      <p class="home-section-label">O QUE DESEJA FAZER?</p>
+      <div class="home-action-list">
+       <button onclick="showDashboard()" class="home-action-card action-search">
+        <img src="./assets/home/buscar-postos.jpeg" alt="" aria-hidden="true">
+        <span class="home-action-icon">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21s7-4.7 7-11a7 7 0 0 0-14 0c0 6.3 7 11 7 11Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke-width="2"/></svg>
+        </span>
+        <span class="home-action-copy">
+         <strong>Buscar Postos</strong>
+         <small>Encontre postos credenciados pr&oacute;ximos &agrave; sua rota.</small>
+        </span>
+        <span class="home-action-arrow">&rsaquo;</span>
+       </button>
+
+       <button onclick="openFuelFormMenu('rapido')" class="home-action-card action-fast">
+        <img src="./assets/home/registro-rapido.jpeg" alt="" aria-hidden="true">
+        <span class="home-action-icon">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="home-action-copy">
+         <strong>Registro R&aacute;pido</strong>
+         <small>Registre seu abastecimento em poucos segundos.</small>
+        </span>
+        <span class="home-action-badge">MAIS USADO <span aria-hidden="true">★</span></span>
+        <span class="home-action-arrow">&rsaquo;</span>
+       </button>
+
+       <button onclick="openFuelFormMenu('completo')" class="home-action-card action-complete">
+        <img src="./assets/home/registro-completo.jpeg" alt="" aria-hidden="true">
+        <span class="home-action-icon">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 5h8M8 9h8M8 13h5M5 3h14v18H5z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="home-action-copy">
+         <strong>Registro Completo</strong>
+         <small>Informe todos os dados do abastecimento.</small>
+        </span>
+        <span class="home-action-arrow">&rsaquo;</span>
+       </button>
       </div>
      </div>
     </div>
@@ -677,6 +682,30 @@
     </div>
    </div>
   </div>
-  <script src="./app.js?v=20260809-1610"></script>
+  <nav class="mobile-bottom-nav" aria-label="Navega&ccedil;&atilde;o principal">
+   <button type="button" class="mobile-nav-item active" data-mobile-nav="home" onclick="goToWelcome()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m3 11 9-8 9 8v10h-6v-6H9v6H3V11Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>In&iacute;cio</span>
+   </button>
+   <button type="button" class="mobile-nav-item" data-mobile-nav="complete" onclick="openFuelFormMenu('completo')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 5h8M8 9h8M8 13h5M5 3h14v18H5z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Registro Completo</span>
+   </button>
+   <button type="button" class="mobile-nav-item mobile-nav-primary" data-mobile-nav="fast" onclick="openFuelFormMenu('rapido')">
+    <span class="mobile-nav-fab">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+    <span>Registro R&aacute;pido</span>
+   </button>
+   <button type="button" class="mobile-nav-item" data-mobile-nav="postos" onclick="showDashboard()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21s7-4.7 7-11a7 7 0 0 0-14 0c0 6.3 7 11 7 11Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke-width="2"/></svg>
+    <span>Buscar Postos</span>
+   </button>
+   <button type="button" class="mobile-nav-item" data-mobile-nav="about" onclick="showAboutSection()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9" stroke-width="2"/><path d="M12 11v6M12 7h.01" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <span>Sobre</span>
+   </button>
+  </nav>
+  <script src="./app.js?v=20260809-1715"></script>
  </body>
 </html>
