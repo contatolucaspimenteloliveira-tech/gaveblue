@@ -24,6 +24,152 @@ body {
   animation: fadeIn 0.2s ease;
 }
 
+.pwa-install-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.85rem;
+}
+
+.pwa-install-overlay.hidden {
+  display: none;
+}
+
+.pwa-install-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(8px);
+}
+
+.pwa-install-card {
+  position: relative;
+  width: min(100%, 430px);
+  margin: 0 auto;
+  border-radius: 1.35rem;
+  background: #ffffff;
+  padding: 1rem;
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.26);
+  animation: pwaSlideUp 0.24s ease-out;
+}
+
+.pwa-install-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.pwa-install-logo {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.9rem;
+  box-shadow: 0 10px 24px rgba(239, 68, 68, 0.22);
+}
+
+.pwa-install-kicker {
+  color: #64748b;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.pwa-install-title {
+  color: #111827;
+  font-size: 1.08rem;
+  font-weight: 900;
+  line-height: 1.18;
+  margin-top: 0.12rem;
+}
+
+.pwa-install-description {
+  margin-top: 0.9rem;
+  color: #475569;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.pwa-install-info {
+  margin-top: 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  padding: 0.85rem;
+}
+
+.pwa-install-platform {
+  color: #111827;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.pwa-install-steps {
+  margin: 0.45rem 0 0;
+  padding-left: 1.05rem;
+  color: #64748b;
+  font-size: 0.72rem;
+  line-height: 1.65;
+}
+
+.pwa-install-primary,
+.pwa-install-secondary {
+  width: 100%;
+  min-height: 2.9rem;
+  border-radius: 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 900;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.pwa-install-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #f97316, #dc2626 52%, #be123c);
+  box-shadow: 0 14px 34px rgba(220, 38, 38, 0.25);
+}
+
+.pwa-install-primary:active,
+.pwa-install-secondary:active {
+  transform: scale(0.985);
+}
+
+.pwa-install-secondary {
+  margin-top: 0.55rem;
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.pwa-install-secondary:hover {
+  background: #f8fafc;
+}
+
+.pwa-install-footnote {
+  margin-top: 0.75rem;
+  color: #64748b;
+  text-align: center;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+@keyframes pwaSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .card-hover {
   transition: box-shadow 0.15s ease, transform 0.15s ease;
   will-change: transform;
