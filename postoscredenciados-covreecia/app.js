@@ -2192,10 +2192,13 @@ window.addEventListener('DOMContentLoaded', renderCityImageCards);
 
 function initHomeHeroCarousel() {
   const carousel = document.getElementById('home-hero-carousel');
-  const slides = Array.from(carousel?.querySelectorAll('.home-hero-slide') || []);
-  const dots = Array.from(carousel?.querySelectorAll('.home-hero-dots span') || []);
+  const allSlides = Array.from(carousel?.querySelectorAll('.home-hero-slide') || []);
+  const dotsContainer = carousel?.querySelector('.home-hero-dots');
+  const mobileQuery = window.matchMedia('(max-width: 767px)');
+  let slides = [];
+  let dots = [];
 
-  if (!carousel || slides.length < 2) {
+  if (!carousel || allSlides.length < 2 || !dotsContainer) {
     return;
   }
 
@@ -2205,11 +2208,31 @@ function initHomeHeroCarousel() {
   let dragStartY = 0;
   let isDragging = false;
 
+  const getActiveSlides = () => allSlides.filter((slide) => mobileQuery.matches || !slide.classList.contains('hero-mobile-only'));
+
+  const rebuildDots = () => {
+    dotsContainer.innerHTML = slides.map(() => '<span></span>').join('');
+    dots = Array.from(dotsContainer.querySelectorAll('span'));
+  };
+
+  const refreshSlides = () => {
+    slides = getActiveSlides();
+    allSlides.forEach((slide) => slide.classList.remove('is-active'));
+    rebuildDots();
+    currentSlide = 0;
+    showSlide(0);
+  };
+
   const showSlide = (nextIndex) => {
+    if (!slides.length) {
+      return;
+    }
+
     currentSlide = (nextIndex + slides.length) % slides.length;
-    slides.forEach((slide, index) => slide.classList.toggle('is-active', index === currentSlide));
+    allSlides.forEach((slide) => slide.classList.remove('is-active'));
+    slides[currentSlide]?.classList.add('is-active');
     dots.forEach((dot, index) => dot.classList.toggle('is-active', index === currentSlide));
-    carousel.classList.toggle('is-message-slide', currentSlide !== 0);
+    carousel.classList.toggle('is-message-slide', !slides[currentSlide]?.classList.contains('hero-main'));
   };
 
   const restartAutoplay = () => {
@@ -2267,7 +2290,11 @@ function initHomeHeroCarousel() {
   });
 
   carousel.setAttribute('tabindex', '0');
-  showSlide(0);
+  refreshSlides();
+  mobileQuery.addEventListener('change', () => {
+    refreshSlides();
+    restartAutoplay();
+  });
   restartAutoplay();
 }
 

@@ -711,6 +711,10 @@ button {
   object-position: center;
 }
 
+.home-hero-slide.hero-mobile-only {
+  display: none;
+}
+
 .home-hero-slide.is-active {
   opacity: 1;
   transform: scale(1);
@@ -1189,6 +1193,14 @@ button {
   .home-hero-slide.hero-revision img,
   .home-hero-slide.hero-nearby img {
     object-position: 38% center;
+  }
+
+  .home-hero-slide.hero-mobile-only {
+    display: block;
+  }
+
+  .home-hero-slide.hero-mobile-only img {
+    object-position: center;
   }
 
   .home-hero-dots {
