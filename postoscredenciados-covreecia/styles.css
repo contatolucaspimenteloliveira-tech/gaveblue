@@ -1172,7 +1172,9 @@ button {
   }
 
   body[data-mobile-nav="home"] .flex-1.overflow-y-auto {
-    overflow-y: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   body[data-mobile-nav="home"] #welcome-screen {
