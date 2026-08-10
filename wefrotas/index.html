@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260803-login-port-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260810-docs-register-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260803-login-port-1">
   
 </head>
@@ -98,7 +98,7 @@
             <span class="nav-label">Calendário</span>
           </button>
 
-          <button class="nav-btn hidden" type="button" aria-hidden="true" tabindex="-1" onclick="showModule('documentos', this)">
+          <button class="nav-btn" type="button" onclick="showModule('documentos', this)">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 3h7l5 5v13H7z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M14 3v5h5"/>
@@ -694,21 +694,53 @@
           </div>
         </section>
 
-        <section id="panel-documentos" class="module-panel content-card orders-page-shell p-8 sm:p-10 hidden" aria-hidden="true">
-          <div class="orders-table-shell">
-            <div id="documents-list-shell" class="orders-table-scroll documents-table-scroll">
-              <div class="orders-table-head documents-table-head">
-                <div>Documento</div>
-                <div>Veículo</div>
-                <div>OS</div>
-                <div>Data</div>
-                <div>Valor</div>
-                <div>Ações</div>
-              </div>
-              <div id="documents-list" class="orders-table-body documents-table-body">
-                <div class="empty-state">Nenhum comprovante encontrado.</div>
-              </div>
+        <section id="panel-documentos" class="module-panel content-card documents-workspace p-6 sm:p-8">
+          <div class="documents-sheet-header">
+            <div>
+              <p class="documents-sheet-kicker">Documentos</p>
+              <h2>Registro de Abastecimentos</h2>
+              <span>Planilha interna moldável usando os abastecimentos já cadastrados no financeiro.</span>
             </div>
+            <div class="documents-sheet-actions">
+              <button type="button" class="documents-action-btn documents-action-btn--primary" onclick="toggleFuelColumnsPanel()">Colunas</button>
+              <button type="button" class="documents-action-btn" onclick="clearFuelSheetFilters()">Limpar filtros</button>
+              <button type="button" class="documents-action-btn" onclick="resetFuelSheetView()">Restaurar visual padrão</button>
+              <button type="button" class="documents-action-btn" onclick="triggerFuelSheetImport()">Importar planilha</button>
+              <button type="button" class="documents-action-btn" onclick="exportFuelSheet('xlsx')">XLSX</button>
+              <button type="button" class="documents-action-btn" onclick="exportFuelSheet('xls')">XLS</button>
+              <button type="button" class="documents-action-btn" onclick="exportFuelSheet('pdf')">PDF</button>
+              <button type="button" class="documents-action-btn" onclick="printFuelSheet()">Imprimir</button>
+            </div>
+          </div>
+
+          <input id="fuel-sheet-import-input" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleFuelSheetImport(event)">
+
+          <div class="documents-sheet-summary">
+            <div>
+              <span>Registros</span>
+              <strong id="fuel-sheet-total-records">0</strong>
+            </div>
+            <div>
+              <span>Litros</span>
+              <strong id="fuel-sheet-total-liters">0,000 L</strong>
+            </div>
+            <div>
+              <span>Valor</span>
+              <strong id="fuel-sheet-total-value">R$ 0,00</strong>
+            </div>
+          </div>
+
+          <div id="fuel-columns-panel" class="documents-columns-panel hidden"></div>
+          <div id="fuel-filter-menu" class="documents-filter-menu hidden"></div>
+
+          <div class="documents-sheet-shell">
+            <div id="fuel-sheet-table-wrap" class="documents-sheet-scroll">
+              <table class="documents-sheet-table">
+                <thead id="fuel-sheet-head"></thead>
+                <tbody id="fuel-sheet-body"></tbody>
+              </table>
+            </div>
+            <div id="fuel-sheet-pagination" class="documents-pagination"></div>
           </div>
         </section>
 
@@ -1284,7 +1316,7 @@
   <script src="./appwrite-config.js?v=1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260803-storage-optimization-1"></script>
-  <script src="./wefrotas.js?v=20260803-login-progress-1"></script>
+  <script src="./wefrotas.js?v=20260810-docs-register-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

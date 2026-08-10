@@ -2865,11 +2865,6 @@
     window.toggleSidebar = toggleSidebar;
 
     function showModule(module, button) {
-      if (module === 'documentos') {
-        showToast('A aba Documentos está desativada.');
-        showModule('home', getModuleNavButton('home'));
-        return;
-      }
       document.querySelectorAll('.module-panel').forEach(panel => panel.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(btn => {
         if (btn.id !== 'theme-toggle-btn') btn.classList.remove('active');
@@ -2880,6 +2875,9 @@
       updateModuleHeader(module);
       if (window.innerWidth <= 1120 && sidebarCollapsed) {
         toggleSidebar(false);
+      }
+      if (module === 'documentos') {
+        renderDocuments();
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -6294,19 +6292,924 @@
       return null;
     }
 
-    function getFinanceDocuments() {
-      return [];
+    const FUEL_SHEET_STORAGE_KEY = 'wefrotas:fuel-register-sheet:v1';
+    const FUEL_SHEET_PAGE_SIZE = 100;
+    const FUEL_SHEET_DEFAULT_COLUMNS = ['date', 'vehicle', 'plate', 'km', 'liters', 'value', 'driver', 'supplier'];
+    const FUEL_SHEET_ALL_COLUMNS = [
+      'date',
+      'vehicle',
+      'plate',
+      'km',
+      'liters',
+      'value',
+      'driver',
+      'supplier',
+      'fuelType',
+      'city',
+      'createdDate',
+      'createdTime',
+      'documentNumber',
+      'receipt',
+      'status',
+      'unitValue',
+      'order',
+      'notes'
+    ];
+    let fuelSheetPreferences = loadFuelSheetPreferences();
+    let fuelSheetDraggedColumn = '';
+
+    function getFuelSheetColumnDefinitions() {
+      return {
+        date: {
+          label: 'Data abastecimento',
+          type: 'date',
+          width: 168,
+          value: row => getFinanceEntryDate(row.entry),
+          display: value => formatDate(value)
+        },
+        vehicle: {
+          label: 'Veículo',
+          type: 'text',
+          width: 220,
+          value: row => [row.vehicle?.numeroFrota, row.vehicle?.modelo].filter(Boolean).join(' ') || row.vehicleLabel || ''
+        },
+        plate: {
+          label: 'Placa',
+          type: 'text',
+          width: 140,
+          value: row => row.vehicle?.placa || row.entry.placa || ''
+        },
+        km: {
+          label: 'KM',
+          type: 'number',
+          width: 120,
+          value: row => Number(row.entry.km || 0) || 0,
+          display: value => value ? Number(value).toLocaleString('pt-BR') : '-'
+        },
+        liters: {
+          label: 'Litros',
+          type: 'number',
+          width: 125,
+          value: row => Number(String(row.entry.litros || '').replace(',', '.')) || 0,
+          display: value => value ? `${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} L` : '-'
+        },
+        value: {
+          label: 'Valor',
+          type: 'currency',
+          width: 140,
+          value: row => getFinanceTotal(row.entry),
+          display: value => formatCurrency(value)
+        },
+        driver: {
+          label: 'Motorista',
+          type: 'text',
+          width: 210,
+          value: row => row.driver?.nome || row.entry.motorista || row.entry.driverName || ''
+        },
+        supplier: {
+          label: 'Posto',
+          type: 'text',
+          width: 230,
+          value: row => row.entry.fornecedor || row.supplier?.nome || ''
+        },
+        fuelType: {
+          label: 'Tipo de combustível',
+          type: 'text',
+          width: 190,
+          value: row => row.entry.fuelType || ''
+        },
+        city: {
+          label: 'Cidade',
+          type: 'text',
+          width: 170,
+          value: row => row.entry.cidade || row.entry.city || ''
+        },
+        createdDate: {
+          label: 'Data de entrada',
+          type: 'date',
+          width: 165,
+          value: row => String(row.entry.createdAt || '').slice(0, 10),
+          display: value => formatDate(value)
+        },
+        createdTime: {
+          label: 'Hora',
+          type: 'text',
+          width: 110,
+          value: row => {
+            const date = new Date(row.entry.createdAt || '');
+            return Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          }
+        },
+        documentNumber: {
+          label: 'Nº documento',
+          type: 'text',
+          width: 150,
+          value: row => row.entry.nf || row.entry.documentNumber || row.entry.numeroNota || ''
+        },
+        receipt: {
+          label: 'Comprovante',
+          type: 'text',
+          width: 150,
+          value: row => row.entry.comprovanteUrl || '',
+          display: (value, row) => value
+            ? `<button type="button" class="documents-link-btn" onclick="event.stopPropagation(); openFinanceReceiptByEntryId('${row.entry.id}')">Ver comprovante</button>`
+            : '-'
+        },
+        status: {
+          label: 'Status',
+          type: 'text',
+          width: 150,
+          value: row => getFinanceEntryStatusLabel(row.entry)
+        },
+        unitValue: {
+          label: 'Valor por litro',
+          type: 'currency',
+          width: 155,
+          value: row => {
+            const liters = Number(String(row.entry.litros || '').replace(',', '.')) || 0;
+            return liters ? getFinanceTotal(row.entry) / liters : 0;
+          },
+          display: value => value ? formatCurrency(value) : '-'
+        },
+        order: {
+          label: 'OS',
+          type: 'text',
+          width: 130,
+          value: row => row.order ? `OS ${getOrderNumberLabel(row.order)}` : ''
+        },
+        notes: {
+          label: 'Observações',
+          type: 'text',
+          width: 260,
+          value: row => row.entry.observacoes || ''
+        }
+      };
+    }
+
+    function getDefaultFuelSheetPreferences() {
+      return {
+        order: [...FUEL_SHEET_ALL_COLUMNS],
+        visible: FUEL_SHEET_ALL_COLUMNS.reduce((acc, key) => {
+          acc[key] = FUEL_SHEET_DEFAULT_COLUMNS.includes(key);
+          return acc;
+        }, {}),
+        widths: {},
+        pinned: [],
+        filters: {},
+        sort: null,
+        page: 1
+      };
+    }
+
+    function loadFuelSheetPreferences() {
+      const defaults = getDefaultFuelSheetPreferences();
+      try {
+        const saved = JSON.parse(localStorage.getItem(FUEL_SHEET_STORAGE_KEY) || 'null');
+        if (!saved || typeof saved !== 'object') return defaults;
+        return {
+          ...defaults,
+          ...saved,
+          order: Array.from(new Set([...(saved.order || []), ...FUEL_SHEET_ALL_COLUMNS])).filter(key => FUEL_SHEET_ALL_COLUMNS.includes(key)),
+          visible: { ...defaults.visible, ...(saved.visible || {}) },
+          widths: { ...(saved.widths || {}) },
+          pinned: (saved.pinned || []).filter(key => FUEL_SHEET_ALL_COLUMNS.includes(key)),
+          filters: { ...(saved.filters || {}) }
+        };
+      } catch (error) {
+        return defaults;
+      }
+    }
+
+    function saveFuelSheetPreferences() {
+      localStorage.setItem(FUEL_SHEET_STORAGE_KEY, JSON.stringify(fuelSheetPreferences));
+    }
+
+    function getFuelSheetRows() {
+      const rows = [];
+      const seen = new Set();
+      allFinanceEntries.forEach((entry) => {
+        if (isFuelEntry(entry) && !seen.has(entry.id)) {
+          rows.push(buildFuelSheetRow(entry));
+          seen.add(entry.id);
+        }
+        if (isFuelGroupEntry(entry)) {
+          getFuelGroupChildren(entry).forEach((child) => {
+            if (seen.has(child.id)) return;
+            rows.push(buildFuelSheetRow({
+              ...child,
+              orderId: child.orderId || entry.orderId || '',
+              dataVencimento: child.dataVencimento || entry.dataVencimento || '',
+              workflowStatus: child.workflowStatus || entry.workflowStatus || ''
+            }));
+            seen.add(child.id);
+          });
+        }
+      });
+      return rows;
+    }
+
+    function buildFuelSheetRow(entry) {
+      const vehicle = allVehicles.find(item => item.id === getEntryVehicleId(entry)) || null;
+      const supplier = allSuppliers.find(item => item.id === entry.supplierId) || null;
+      const driver = allDrivers.find(item => item.id === entry.driverId) || null;
+      const order = getFinanceDocumentOrder(entry);
+      return {
+        id: entry.id,
+        entry,
+        vehicle,
+        supplier,
+        driver,
+        order,
+        vehicleLabel: vehicle ? getVehicleLabel(vehicle.id) : ''
+      };
+    }
+
+    function getVisibleFuelSheetColumns() {
+      return fuelSheetPreferences.order.filter(key => fuelSheetPreferences.visible[key]);
+    }
+
+    function getFuelSheetColumnWidth(columnId) {
+      const definitions = getFuelSheetColumnDefinitions();
+      return Number(fuelSheetPreferences.widths[columnId] || definitions[columnId]?.width || 150);
+    }
+
+    function getFuelSheetRawValue(row, columnId) {
+      const definition = getFuelSheetColumnDefinitions()[columnId];
+      return definition ? definition.value(row) : '';
+    }
+
+    function getFuelSheetDisplayValue(row, columnId) {
+      const definition = getFuelSheetColumnDefinitions()[columnId];
+      const value = getFuelSheetRawValue(row, columnId);
+      if (!definition) return escapeHtml(value);
+      if (definition.display) return definition.display(value, row);
+      return escapeHtml(value || '-');
+    }
+
+    function normalizeFuelSheetComparable(value) {
+      return normalizeSearchText(String(value || ''));
+    }
+
+    function isFuelSheetFilterActive(filter) {
+      if (!filter) return false;
+      if (filter.search) return true;
+      if (Array.isArray(filter.selected) && filter.selected.length) return true;
+      if (filter.operator) return true;
+      return false;
+    }
+
+    function applyFuelSheetFilters(rows) {
+      const definitions = getFuelSheetColumnDefinitions();
+      return rows.filter(row => Object.entries(fuelSheetPreferences.filters || {}).every(([columnId, filter]) => {
+        if (!isFuelSheetFilterActive(filter)) return true;
+        const definition = definitions[columnId];
+        if (!definition) return true;
+        const value = getFuelSheetRawValue(row, columnId);
+        if (definition.type === 'date') {
+          const textValue = String(value || '');
+          if (!filter.operator) return true;
+          if (filter.operator === 'eq') return textValue === filter.value;
+          if (filter.operator === 'before') return textValue && textValue < filter.value;
+          if (filter.operator === 'after') return textValue && textValue > filter.value;
+          if (filter.operator === 'between') return textValue && (!filter.from || textValue >= filter.from) && (!filter.to || textValue <= filter.to);
+          return true;
+        }
+        if (definition.type === 'number' || definition.type === 'currency') {
+          const numericValue = Number(value || 0);
+          const first = Number(filter.value || 0);
+          const from = Number(filter.from || 0);
+          const to = Number(filter.to || 0);
+          if (!filter.operator) return true;
+          if (filter.operator === 'eq') return numericValue === first;
+          if (filter.operator === 'gt') return numericValue > first;
+          if (filter.operator === 'lt') return numericValue < first;
+          if (filter.operator === 'between') return numericValue >= from && numericValue <= to;
+          return true;
+        }
+        const normalizedValue = normalizeFuelSheetComparable(value);
+        if (filter.search && !normalizedValue.includes(normalizeFuelSheetComparable(filter.search))) return false;
+        if (Array.isArray(filter.selected) && filter.selected.length) {
+          return filter.selected.map(normalizeFuelSheetComparable).includes(normalizedValue);
+        }
+        return true;
+      }));
+    }
+
+    function applyFuelSheetSort(rows) {
+      const sort = fuelSheetPreferences.sort;
+      if (!sort?.columnId || !sort.direction) return rows;
+      const definition = getFuelSheetColumnDefinitions()[sort.columnId];
+      if (!definition) return rows;
+      return rows.slice().sort((a, b) => {
+        const aValue = getFuelSheetRawValue(a, sort.columnId);
+        const bValue = getFuelSheetRawValue(b, sort.columnId);
+        let result = 0;
+        if (definition.type === 'number' || definition.type === 'currency') {
+          result = Number(aValue || 0) - Number(bValue || 0);
+        } else {
+          result = String(aValue || '').localeCompare(String(bValue || ''), 'pt-BR', { numeric: true, sensitivity: 'base' });
+        }
+        return sort.direction === 'desc' ? -result : result;
+      });
+    }
+
+    function getFilteredFuelSheetRows() {
+      return applyFuelSheetSort(applyFuelSheetFilters(getFuelSheetRows()));
+    }
+
+    function renderFuelSheetTotals(rows) {
+      const totalRecordsNode = document.getElementById('fuel-sheet-total-records');
+      const totalLitersNode = document.getElementById('fuel-sheet-total-liters');
+      const totalValueNode = document.getElementById('fuel-sheet-total-value');
+      const litersTotal = rows.reduce((sum, row) => sum + Number(String(row.entry.litros || '').replace(',', '.') || 0), 0);
+      const valueTotal = rows.reduce((sum, row) => sum + getFinanceTotal(row.entry), 0);
+      if (totalRecordsNode) totalRecordsNode.textContent = rows.length.toLocaleString('pt-BR');
+      if (totalLitersNode) totalLitersNode.textContent = `${litersTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} L`;
+      if (totalValueNode) totalValueNode.textContent = formatCurrency(valueTotal);
+    }
+
+    function getFuelSheetPinnedLeft(columnId, visibleColumns) {
+      if (!fuelSheetPreferences.pinned.includes(columnId)) return '';
+      const left = visibleColumns
+        .slice(0, visibleColumns.indexOf(columnId))
+        .filter(key => fuelSheetPreferences.pinned.includes(key))
+        .reduce((sum, key) => sum + getFuelSheetColumnWidth(key), 0);
+      return `left:${left}px;`;
+    }
+
+    function renderFuelSheetHead(visibleColumns) {
+      const head = document.getElementById('fuel-sheet-head');
+      if (!head) return;
+      const definitions = getFuelSheetColumnDefinitions();
+      head.innerHTML = `
+        <tr>
+          ${visibleColumns.map((columnId) => {
+            const definition = definitions[columnId];
+            const width = getFuelSheetColumnWidth(columnId);
+            const isPinned = fuelSheetPreferences.pinned.includes(columnId);
+            const hasFilter = isFuelSheetFilterActive(fuelSheetPreferences.filters[columnId]);
+            const sort = fuelSheetPreferences.sort?.columnId === columnId ? fuelSheetPreferences.sort.direction : '';
+            return `
+              <th
+                class="${isPinned ? 'is-pinned' : ''}"
+                draggable="true"
+                data-column-id="${columnId}"
+                style="width:${width}px;min-width:${width}px;${getFuelSheetPinnedLeft(columnId, visibleColumns)}"
+                ondragstart="handleFuelHeaderDragStart(event, '${columnId}')"
+                ondragover="event.preventDefault()"
+                ondrop="handleFuelHeaderDrop(event, '${columnId}')"
+              >
+                <button type="button" class="documents-head-btn" onclick="openFuelColumnMenu(event, '${columnId}')">
+                  <span>${escapeHtml(definition.label)}</span>
+                  <span class="documents-head-icons">
+                    ${sort ? (sort === 'asc' ? '↑' : '↓') : ''}
+                    <span class="${hasFilter ? 'is-active' : ''}">⌄</span>
+                  </span>
+                </button>
+                <span class="documents-column-resizer" onmousedown="startFuelColumnResize(event, '${columnId}')"></span>
+              </th>
+            `;
+          }).join('')}
+        </tr>
+      `;
+    }
+
+    function renderFuelSheetBody(rows, visibleColumns) {
+      const body = document.getElementById('fuel-sheet-body');
+      if (!body) return;
+      const pageCount = Math.max(1, Math.ceil(rows.length / FUEL_SHEET_PAGE_SIZE));
+      fuelSheetPreferences.page = Math.min(Math.max(1, Number(fuelSheetPreferences.page || 1)), pageCount);
+      const start = (fuelSheetPreferences.page - 1) * FUEL_SHEET_PAGE_SIZE;
+      const pageRows = rows.slice(start, start + FUEL_SHEET_PAGE_SIZE);
+      if (!pageRows.length) {
+        body.innerHTML = `<tr><td colspan="${Math.max(visibleColumns.length, 1)}" class="documents-empty-cell">Nenhum abastecimento encontrado.</td></tr>`;
+        return;
+      }
+      body.innerHTML = pageRows.map(row => `
+        <tr ondblclick="openFinanceEntryFromDocuments('${row.entry.id}')">
+          ${visibleColumns.map((columnId) => {
+            const width = getFuelSheetColumnWidth(columnId);
+            const isPinned = fuelSheetPreferences.pinned.includes(columnId);
+            return `
+              <td
+                class="${isPinned ? 'is-pinned' : ''}"
+                style="width:${width}px;min-width:${width}px;${getFuelSheetPinnedLeft(columnId, visibleColumns)}"
+              >
+                ${getFuelSheetDisplayValue(row, columnId)}
+              </td>
+            `;
+          }).join('')}
+        </tr>
+      `).join('');
+    }
+
+    function renderFuelSheetPagination(rows) {
+      const node = document.getElementById('fuel-sheet-pagination');
+      if (!node) return;
+      const pageCount = Math.max(1, Math.ceil(rows.length / FUEL_SHEET_PAGE_SIZE));
+      const start = rows.length ? ((fuelSheetPreferences.page - 1) * FUEL_SHEET_PAGE_SIZE) + 1 : 0;
+      const end = Math.min(rows.length, fuelSheetPreferences.page * FUEL_SHEET_PAGE_SIZE);
+      node.innerHTML = `
+        <span>${start}-${end} de ${rows.length.toLocaleString('pt-BR')} registros</span>
+        <div>
+          <button type="button" onclick="setFuelSheetPage(${fuelSheetPreferences.page - 1})" ${fuelSheetPreferences.page <= 1 ? 'disabled' : ''}>Anterior</button>
+          <strong>${fuelSheetPreferences.page} / ${pageCount}</strong>
+          <button type="button" onclick="setFuelSheetPage(${fuelSheetPreferences.page + 1})" ${fuelSheetPreferences.page >= pageCount ? 'disabled' : ''}>Próxima</button>
+        </div>
+      `;
+    }
+
+    function renderDocuments() {
+      const panel = document.getElementById('panel-documentos');
+      if (!panel) return;
+      const rows = getFilteredFuelSheetRows();
+      const visibleColumns = getVisibleFuelSheetColumns();
+      renderFuelColumnsPanel();
+      renderFuelSheetTotals(rows);
+      renderFuelSheetHead(visibleColumns);
+      renderFuelSheetBody(rows, visibleColumns);
+      renderFuelSheetPagination(rows);
+      saveFuelSheetPreferences();
+    }
+
+    function setFuelSheetPage(page) {
+      fuelSheetPreferences.page = page;
+      renderDocuments();
+    }
+
+    function renderFuelColumnsPanel() {
+      const panel = document.getElementById('fuel-columns-panel');
+      if (!panel) return;
+      const definitions = getFuelSheetColumnDefinitions();
+      panel.innerHTML = `
+        <div class="documents-columns-title">
+          <strong>Colunas visíveis</strong>
+          <button type="button" onclick="toggleFuelColumnsPanel()">Fechar</button>
+        </div>
+        <div class="documents-columns-grid">
+          ${fuelSheetPreferences.order.map(columnId => `
+            <label>
+              <input type="checkbox" ${fuelSheetPreferences.visible[columnId] ? 'checked' : ''} onchange="toggleFuelSheetColumn('${columnId}', this.checked)">
+              <span>${escapeHtml(definitions[columnId]?.label || columnId)}</span>
+            </label>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function toggleFuelColumnsPanel() {
+      document.getElementById('fuel-columns-panel')?.classList.toggle('hidden');
+    }
+
+    function toggleFuelSheetColumn(columnId, visible) {
+      fuelSheetPreferences.visible[columnId] = visible;
+      fuelSheetPreferences.page = 1;
+      renderDocuments();
+    }
+
+    function openFuelColumnMenu(event, columnId) {
+      event.stopPropagation();
+      const menu = document.getElementById('fuel-filter-menu');
+      if (!menu) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      menu.style.left = `${Math.min(rect.left, window.innerWidth - 330)}px`;
+      menu.style.top = `${rect.bottom + 8}px`;
+      menu.innerHTML = buildFuelColumnMenuHtml(columnId);
+      menu.classList.remove('hidden');
+    }
+
+    function buildFuelColumnMenuHtml(columnId) {
+      const definitions = getFuelSheetColumnDefinitions();
+      const definition = definitions[columnId];
+      const filter = fuelSheetPreferences.filters[columnId] || {};
+      const uniqueValues = getFuelSheetRows()
+        .map(row => String(getFuelSheetRawValue(row, columnId) || '').trim())
+        .filter(Boolean)
+        .filter((value, index, list) => list.findIndex(item => normalizeFuelSheetComparable(item) === normalizeFuelSheetComparable(value)) === index)
+        .sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true, sensitivity: 'base' }))
+        .slice(0, 160);
+      const filterHtml = definition.type === 'date'
+        ? `
+          <label>Condição</label>
+          <select onchange="setFuelDateFilter('${columnId}', 'operator', this.value)">
+            <option value="">Sem filtro</option>
+            <option value="eq" ${filter.operator === 'eq' ? 'selected' : ''}>Igual a</option>
+            <option value="before" ${filter.operator === 'before' ? 'selected' : ''}>Antes de</option>
+            <option value="after" ${filter.operator === 'after' ? 'selected' : ''}>Depois de</option>
+            <option value="between" ${filter.operator === 'between' ? 'selected' : ''}>Entre duas datas</option>
+          </select>
+          <input type="date" value="${escapeHtml(filter.value || filter.from || '')}" onchange="setFuelDateFilter('${columnId}', '${filter.operator === 'between' ? 'from' : 'value'}', this.value)">
+          <input type="date" value="${escapeHtml(filter.to || '')}" onchange="setFuelDateFilter('${columnId}', 'to', this.value)">
+        `
+        : (definition.type === 'number' || definition.type === 'currency')
+          ? `
+            <label>Condição</label>
+            <select onchange="setFuelNumberFilter('${columnId}', 'operator', this.value)">
+              <option value="">Sem filtro</option>
+              <option value="eq" ${filter.operator === 'eq' ? 'selected' : ''}>Igual</option>
+              <option value="gt" ${filter.operator === 'gt' ? 'selected' : ''}>Maior que</option>
+              <option value="lt" ${filter.operator === 'lt' ? 'selected' : ''}>Menor que</option>
+              <option value="between" ${filter.operator === 'between' ? 'selected' : ''}>Entre</option>
+            </select>
+            <input type="number" step="0.01" value="${escapeHtml(filter.value || filter.from || '')}" oninput="setFuelNumberFilter('${columnId}', '${filter.operator === 'between' ? 'from' : 'value'}', this.value)">
+            <input type="number" step="0.01" value="${escapeHtml(filter.to || '')}" oninput="setFuelNumberFilter('${columnId}', 'to', this.value)">
+          `
+          : `
+            <label>Pesquisar</label>
+            <input type="search" value="${escapeHtml(filter.search || '')}" placeholder="Digite para pesquisar..." oninput="setFuelTextFilter('${columnId}', 'search', this.value)">
+            <div class="documents-filter-actions-inline">
+              <button type="button" onclick="selectAllFuelFilterValues('${columnId}')">Selecionar todos</button>
+              <button type="button" onclick="clearFuelColumnFilter('${columnId}')">Limpar seleção</button>
+            </div>
+            <div class="documents-filter-values">
+              ${uniqueValues.map(value => {
+                const checked = !Array.isArray(filter.selected) || !filter.selected.length || filter.selected.map(normalizeFuelSheetComparable).includes(normalizeFuelSheetComparable(value));
+                return `
+                  <label>
+                    <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleFuelFilterValue('${columnId}', '${escapeHtml(value)}', this.checked)">
+                    <span>${escapeHtml(value)}</span>
+                  </label>
+                `;
+              }).join('') || '<span class="documents-filter-empty">Sem valores para filtrar.</span>'}
+            </div>
+          `;
+      return `
+        <div class="documents-menu-title">${escapeHtml(definition.label)}</div>
+        <button type="button" onclick="sortFuelSheet('${columnId}', 'asc')">Ordenar crescente</button>
+        <button type="button" onclick="sortFuelSheet('${columnId}', 'desc')">Ordenar decrescente</button>
+        <button type="button" onclick="clearFuelSort()">Limpar ordenação</button>
+        <hr>
+        <div class="documents-filter-block">${filterHtml}</div>
+        <hr>
+        <button type="button" onclick="toggleFuelPinnedColumn('${columnId}')">${fuelSheetPreferences.pinned.includes(columnId) ? 'Desafixar coluna' : 'Fixar coluna'}</button>
+        <button type="button" onclick="moveFuelColumn('${columnId}', -1)">Mover para esquerda</button>
+        <button type="button" onclick="moveFuelColumn('${columnId}', 1)">Mover para direita</button>
+        <button type="button" onclick="hideFuelSheetColumn('${columnId}')">Ocultar coluna</button>
+        <button type="button" onclick="closeFuelColumnMenu()">Fechar</button>
+      `;
+    }
+
+    function closeFuelColumnMenu() {
+      document.getElementById('fuel-filter-menu')?.classList.add('hidden');
+    }
+
+    function sortFuelSheet(columnId, direction) {
+      fuelSheetPreferences.sort = { columnId, direction };
+      fuelSheetPreferences.page = 1;
+      closeFuelColumnMenu();
+      renderDocuments();
+    }
+
+    function clearFuelSort() {
+      fuelSheetPreferences.sort = null;
+      closeFuelColumnMenu();
+      renderDocuments();
+    }
+
+    function setFuelTextFilter(columnId, key, value) {
+      fuelSheetPreferences.filters[columnId] = { ...(fuelSheetPreferences.filters[columnId] || {}), [key]: value };
+      fuelSheetPreferences.page = 1;
+      renderDocuments();
+    }
+
+    function toggleFuelFilterValue(columnId, value, checked) {
+      const allValues = getFuelSheetRows()
+        .map(row => String(getFuelSheetRawValue(row, columnId) || '').trim())
+        .filter(Boolean);
+      const normalizedAllValues = Array.from(new Set(allValues.map(normalizeFuelSheetComparable)));
+      const current = fuelSheetPreferences.filters[columnId]?.selected?.map(normalizeFuelSheetComparable) || normalizedAllValues;
+      const normalizedValue = normalizeFuelSheetComparable(value);
+      const next = checked
+        ? Array.from(new Set([...current, normalizedValue]))
+        : current.filter(item => item !== normalizedValue);
+      fuelSheetPreferences.filters[columnId] = { ...(fuelSheetPreferences.filters[columnId] || {}), selected: next };
+      fuelSheetPreferences.page = 1;
+      renderDocuments();
+    }
+
+    function selectAllFuelFilterValues(columnId) {
+      fuelSheetPreferences.filters[columnId] = { ...(fuelSheetPreferences.filters[columnId] || {}), selected: [] };
+      renderDocuments();
+    }
+
+    function setFuelDateFilter(columnId, key, value) {
+      fuelSheetPreferences.filters[columnId] = { ...(fuelSheetPreferences.filters[columnId] || {}), [key]: value };
+      fuelSheetPreferences.page = 1;
+      renderDocuments();
+    }
+
+    function setFuelNumberFilter(columnId, key, value) {
+      fuelSheetPreferences.filters[columnId] = { ...(fuelSheetPreferences.filters[columnId] || {}), [key]: value };
+      fuelSheetPreferences.page = 1;
+      renderDocuments();
+    }
+
+    function clearFuelColumnFilter(columnId) {
+      delete fuelSheetPreferences.filters[columnId];
+      fuelSheetPreferences.page = 1;
+      closeFuelColumnMenu();
+      renderDocuments();
+    }
+
+    function clearFuelSheetFilters() {
+      fuelSheetPreferences.filters = {};
+      fuelSheetPreferences.sort = null;
+      fuelSheetPreferences.page = 1;
+      closeFuelColumnMenu();
+      renderDocuments();
+    }
+
+    function resetFuelSheetView() {
+      fuelSheetPreferences = getDefaultFuelSheetPreferences();
+      closeFuelColumnMenu();
+      document.getElementById('fuel-columns-panel')?.classList.add('hidden');
+      renderDocuments();
+      showToast('Visual padrão restaurado.');
+    }
+
+    function toggleFuelPinnedColumn(columnId) {
+      const current = new Set(fuelSheetPreferences.pinned);
+      if (current.has(columnId)) current.delete(columnId);
+      else current.add(columnId);
+      fuelSheetPreferences.pinned = fuelSheetPreferences.order.filter(key => current.has(key));
+      closeFuelColumnMenu();
+      renderDocuments();
+    }
+
+    function hideFuelSheetColumn(columnId) {
+      fuelSheetPreferences.visible[columnId] = false;
+      closeFuelColumnMenu();
+      renderDocuments();
+    }
+
+    function moveFuelColumn(columnId, offset) {
+      const index = fuelSheetPreferences.order.indexOf(columnId);
+      const targetIndex = index + offset;
+      if (index < 0 || targetIndex < 0 || targetIndex >= fuelSheetPreferences.order.length) return;
+      const nextOrder = [...fuelSheetPreferences.order];
+      nextOrder.splice(index, 1);
+      nextOrder.splice(targetIndex, 0, columnId);
+      fuelSheetPreferences.order = nextOrder;
+      closeFuelColumnMenu();
+      renderDocuments();
+    }
+
+    function handleFuelHeaderDragStart(event, columnId) {
+      fuelSheetDraggedColumn = columnId;
+      event.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleFuelHeaderDrop(event, targetColumnId) {
+      event.preventDefault();
+      if (!fuelSheetDraggedColumn || fuelSheetDraggedColumn === targetColumnId) return;
+      const nextOrder = [...fuelSheetPreferences.order];
+      const fromIndex = nextOrder.indexOf(fuelSheetDraggedColumn);
+      const toIndex = nextOrder.indexOf(targetColumnId);
+      if (fromIndex < 0 || toIndex < 0) return;
+      nextOrder.splice(fromIndex, 1);
+      nextOrder.splice(toIndex, 0, fuelSheetDraggedColumn);
+      fuelSheetPreferences.order = nextOrder;
+      fuelSheetDraggedColumn = '';
+      renderDocuments();
+    }
+
+    function startFuelColumnResize(event, columnId) {
+      event.preventDefault();
+      event.stopPropagation();
+      const startX = event.clientX;
+      const startWidth = getFuelSheetColumnWidth(columnId);
+      const onMove = (moveEvent) => {
+        fuelSheetPreferences.widths[columnId] = Math.max(90, startWidth + moveEvent.clientX - startX);
+        renderDocuments();
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        saveFuelSheetPreferences();
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
     }
 
     function openFinanceEntryFromDocuments(entryId) {
-      showToast('A aba Documentos está desativada.');
+      viewFinanceEntryById(entryId);
     }
+
+    function getFuelSheetExportRows() {
+      const definitions = getFuelSheetColumnDefinitions();
+      const visibleColumns = getVisibleFuelSheetColumns();
+      return getFilteredFuelSheetRows().map(row => visibleColumns.reduce((acc, columnId) => {
+        const definition = definitions[columnId];
+        const value = getFuelSheetRawValue(row, columnId);
+        acc[definition.label] = definition.type === 'date'
+          ? formatDate(value)
+          : (definition.type === 'currency'
+            ? Number(value || 0)
+            : value);
+        return acc;
+      }, {}));
+    }
+
+    function exportFuelSheet(type = 'xlsx') {
+      const rows = getFuelSheetExportRows();
+      if (!rows.length) {
+        showToast('Não há registros para exportar.');
+        return;
+      }
+      if (type === 'pdf') {
+        printFuelSheet(true);
+        return;
+      }
+      if (!window.XLSX) {
+        showToast('Biblioteca de exportação ainda não carregada.');
+        return;
+      }
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(workbook, sheet, 'Abastecimentos');
+      XLSX.writeFile(workbook, `registro_abastecimentos.${type}`, { bookType: type === 'xls' ? 'xls' : 'xlsx' });
+    }
+
+    function printFuelSheet(asPdf = false) {
+      const rows = getFuelSheetExportRows();
+      const headers = Object.keys(rows[0] || {});
+      if (!rows.length) {
+        showToast('Não há registros para imprimir.');
+        return;
+      }
+      const printWindow = window.open('', '_blank', 'width=1200,height=900');
+      if (!printWindow) {
+        showToast('Não foi possível abrir a impressão.');
+        return;
+      }
+      printWindow.document.open();
+      printWindow.document.write(`
+        <!doctype html>
+        <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8">
+          <title>Registro de Abastecimentos</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #0f172a; padding: 24px; }
+            h1 { font-size: 22px; margin: 0 0 6px; }
+            p { margin: 0 0 18px; color: #64748b; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th, td { border: 1px solid #cbd5e1; padding: 7px; text-align: left; }
+            th { background: #eef2ff; text-transform: uppercase; font-size: 10px; }
+          </style>
+        </head>
+        <body>
+          <h1>Registro de Abastecimentos</h1>
+          <p>${rows.length.toLocaleString('pt-BR')} registro(s) conforme filtros e colunas visíveis.</p>
+          <table>
+            <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+            <tbody>
+              ${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function () { setTimeout(function () { window.print(); ${asPdf ? '' : ''} }, 200); };
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+
+    function triggerFuelSheetImport() {
+      document.getElementById('fuel-sheet-import-input')?.click();
+    }
+
+    function normalizeFuelSheetImportKey(value) {
+      return normalizeSearchText(value).replace(/[^a-z0-9]/g, '');
+    }
+
+    function readFuelImportCell(row, keys) {
+      const normalizedMap = Object.entries(row).reduce((acc, [key, value]) => {
+        acc[normalizeFuelSheetImportKey(key)] = value;
+        return acc;
+      }, {});
+      const foundKey = keys.map(normalizeFuelSheetImportKey).find(key => Object.prototype.hasOwnProperty.call(normalizedMap, key));
+      return foundKey ? normalizedMap[foundKey] : '';
+    }
+
+    function parseFuelSheetDateValue(value) {
+      if (!value) return '';
+      if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+      const text = String(value).trim();
+      const brMatch = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (brMatch) return `${brMatch[3]}-${brMatch[2].padStart(2, '0')}-${brMatch[1].padStart(2, '0')}`;
+      const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      return isoMatch ? isoMatch[0] : '';
+    }
+
+    function parseFuelSheetNumberValue(value) {
+      if (typeof value === 'number') return value;
+      const text = String(value || '').trim();
+      if (!text) return 0;
+      if (text.includes(',') || /R\$/i.test(text)) return parseCurrencyInputValue(text);
+      return Number(text.replace(/[^\d.-]/g, '')) || 0;
+    }
+
+    function handleFuelSheetImport(event) {
+      const file = event.target.files?.[0];
+      event.target.value = '';
+      if (!file) return;
+      if (!window.XLSX) {
+        showToast('Biblioteca de importação ainda não carregada.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        try {
+          const workbook = XLSX.read(loadEvent.target.result, { type: 'array', cellDates: true });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
+          const payloads = rows.map((row) => {
+            const vehicleText = readFuelImportCell(row, ['Veículo', 'Veiculo', 'Placa']);
+            const supplierText = readFuelImportCell(row, ['Posto', 'Fornecedor']);
+            const driverText = readFuelImportCell(row, ['Motorista']);
+            const vehicle = resolveVehicleFromSearch(vehicleText);
+            const supplier = resolveSupplierByRelevantTerms(supplierText, allSuppliers.filter(item => item.tipo === 'posto')) || resolveSupplierByRelevantTerms(supplierText);
+            const driver = resolveDriverByImportedName(driverText);
+            const dataAbastecimento = parseFuelSheetDateValue(readFuelImportCell(row, ['Data abastecimento', 'Data', 'Data/Hora']));
+            if (!vehicle || !dataAbastecimento || !supplierText) return null;
+            return {
+              id: generateId(),
+              createdAt: new Date().toISOString(),
+              entryType: 'combustivel',
+              vehicleId: vehicle.id,
+              orderId: '',
+              kind: 'despesa',
+              kindLabel: 'Despesa',
+              supplierId: supplier?.id || '',
+              supplierType: supplier?.tipo || 'posto',
+              fornecedor: supplier?.nome || String(supplierText || '').trim(),
+              fuelType: String(readFuelImportCell(row, ['Tipo de combustível', 'Combustível', 'Combustivel']) || '').trim(),
+              km: String(readFuelImportCell(row, ['KM']) || '').replace(/[^\d]/g, ''),
+              litros: String(readFuelImportCell(row, ['Litros', 'QTD em litros']) || '').replace(',', '.'),
+              driverId: driver?.id || '',
+              comprovanteUrl: String(readFuelImportCell(row, ['Comprovante']) || '').trim(),
+              dataAbastecimento,
+              dataVencimento: '',
+              nf: String(readFuelImportCell(row, ['Nº documento', 'Numero documento', 'NF', 'Nota']) || '').trim(),
+              total: parseFuelSheetNumberValue(readFuelImportCell(row, ['Valor'])),
+              observacoes: String(readFuelImportCell(row, ['Observações', 'Observacoes']) || '').trim(),
+              groupedIntoId: '',
+              workflowStatus: 'pendente',
+              closedExpense: false,
+              discount: 0
+            };
+          }).filter(Boolean);
+          if (!payloads.length) {
+            showToast('Nenhum abastecimento válido foi encontrado na planilha.');
+            return;
+          }
+          if (!confirm(`Importar ${payloads.length} abastecimento(s) para o financeiro?`)) return;
+          allFinanceEntries = [...payloads.reverse(), ...allFinanceEntries];
+          saveToLocalStorage();
+          renderAll();
+          showToast(`${payloads.length} abastecimento(s) importado(s).`);
+        } catch (error) {
+          showToast('Não foi possível importar essa planilha.');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    document.addEventListener('click', (event) => {
+      const menu = document.getElementById('fuel-filter-menu');
+      if (menu && !menu.classList.contains('hidden') && !menu.contains(event.target) && !event.target.closest('.documents-head-btn')) {
+        closeFuelColumnMenu();
+      }
+    });
 
     window.openFinanceEntryFromDocuments = openFinanceEntryFromDocuments;
-
-    function renderDocuments() {
-      return;
-    }
+    window.toggleFuelColumnsPanel = toggleFuelColumnsPanel;
+    window.toggleFuelSheetColumn = toggleFuelSheetColumn;
+    window.clearFuelSheetFilters = clearFuelSheetFilters;
+    window.resetFuelSheetView = resetFuelSheetView;
+    window.exportFuelSheet = exportFuelSheet;
+    window.printFuelSheet = printFuelSheet;
+    window.triggerFuelSheetImport = triggerFuelSheetImport;
+    window.handleFuelSheetImport = handleFuelSheetImport;
+    window.setFuelSheetPage = setFuelSheetPage;
+    window.openFuelColumnMenu = openFuelColumnMenu;
+    window.closeFuelColumnMenu = closeFuelColumnMenu;
+    window.sortFuelSheet = sortFuelSheet;
+    window.clearFuelSort = clearFuelSort;
+    window.setFuelTextFilter = setFuelTextFilter;
+    window.toggleFuelFilterValue = toggleFuelFilterValue;
+    window.selectAllFuelFilterValues = selectAllFuelFilterValues;
+    window.setFuelDateFilter = setFuelDateFilter;
+    window.setFuelNumberFilter = setFuelNumberFilter;
+    window.clearFuelColumnFilter = clearFuelColumnFilter;
+    window.toggleFuelPinnedColumn = toggleFuelPinnedColumn;
+    window.moveFuelColumn = moveFuelColumn;
+    window.hideFuelSheetColumn = hideFuelSheetColumn;
+    window.handleFuelHeaderDragStart = handleFuelHeaderDragStart;
+    window.handleFuelHeaderDrop = handleFuelHeaderDrop;
+    window.startFuelColumnResize = startFuelColumnResize;
 
     function printMonthlyVehicleCostDashboard() {
       const monthKey = document.getElementById('home-monthly-cost-filter')?.value || getCurrentMonthKey();
@@ -8939,6 +9842,7 @@
       renderSuppliers();
       renderOrders();
       renderFinance();
+      renderDocuments();
       renderReports();
     }
 
