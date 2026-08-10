@@ -584,7 +584,7 @@ button {
 }
 
 .home-hero-card {
-  min-height: 280px;
+  min-height: 315px;
   background: #0b3b91;
   cursor: grab;
   touch-action: pan-y;
@@ -601,7 +601,8 @@ button {
   z-index: -2;
 }
 
-.home-hero-image,
+.home-hero-slide,
+.home-hero-slide img,
 .home-action-card > img {
   position: absolute;
   inset: 0;
@@ -611,23 +612,27 @@ button {
   object-position: center;
 }
 
-.home-hero-image {
+.home-hero-slide {
   opacity: 0;
   transform: scale(1.035);
   transition: opacity 0.65s ease, transform 0.9s ease;
+}
+
+.home-hero-slide img {
   object-fit: cover;
+  object-position: center;
   background: transparent;
 }
 
-.home-hero-image.hero-revision {
-  object-position: 43% center;
+.home-hero-slide.hero-revision img {
+  object-position: center;
 }
 
-.home-hero-image.hero-nearby {
-  object-position: 46% center;
+.home-hero-slide.hero-nearby img {
+  object-position: center;
 }
 
-.home-hero-image.is-active {
+.home-hero-slide.is-active {
   opacity: 1;
   transform: scale(1);
 }
@@ -659,7 +664,7 @@ button {
 .home-hero-content {
   position: relative;
   z-index: 1;
-  min-height: 280px;
+  min-height: 315px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1094,11 +1099,11 @@ button {
   }
 
   .home-hero-card {
-    min-height: 250px;
+    min-height: 285px;
   }
 
   .home-hero-content {
-    min-height: 250px;
+    min-height: 285px;
     padding: 1.55rem;
   }
 

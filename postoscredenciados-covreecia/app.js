@@ -2161,7 +2161,7 @@ window.addEventListener('DOMContentLoaded', renderCityImageCards);
 
 function initHomeHeroCarousel() {
   const carousel = document.getElementById('home-hero-carousel');
-  const slides = Array.from(carousel?.querySelectorAll('.home-hero-image') || []);
+  const slides = Array.from(carousel?.querySelectorAll('.home-hero-slide') || []);
   const dots = Array.from(carousel?.querySelectorAll('.home-hero-dots span') || []);
 
   if (!carousel || slides.length < 2) {
@@ -2241,5 +2241,4 @@ function initHomeHeroCarousel() {
 }
 
 window.addEventListener('DOMContentLoaded', initHomeHeroCarousel);
-
 
