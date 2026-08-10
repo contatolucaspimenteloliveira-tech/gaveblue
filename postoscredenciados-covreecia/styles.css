@@ -1099,12 +1099,17 @@ button {
   }
 
   .home-hero-card {
-    min-height: 285px;
+    min-height: 220px;
   }
 
   .home-hero-content {
-    min-height: 285px;
+    min-height: 220px;
     padding: 1.55rem;
+  }
+
+  .home-hero-slide.hero-revision img,
+  .home-hero-slide.hero-nearby img {
+    object-position: 38% center;
   }
 
   .home-hero-dots {
