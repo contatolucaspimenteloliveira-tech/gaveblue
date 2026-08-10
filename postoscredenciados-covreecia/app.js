@@ -270,6 +270,31 @@ function updatePwaInstallStatus(text, percent) {
   }
 }
 
+function setPwaManualInstallFallback() {
+  const steps = document.getElementById('pwa-install-steps');
+  const primary = document.getElementById('pwa-install-primary');
+  const footnote = document.getElementById('pwa-install-footnote');
+
+  updatePwaInstallStatus('Instala\u00e7\u00e3o manual pelo navegador', 100);
+
+  if (steps) {
+    steps.innerHTML = `
+      <li>Toque no menu do navegador, geralmente os tr\u00eas pontinhos.</li>
+      <li>Escolha Instalar app ou Adicionar \u00e0 tela inicial.</li>
+      <li>Confirme e abra pelo novo \u00edcone do celular.</li>
+    `;
+  }
+
+  if (primary) {
+    primary.querySelector('span').textContent = 'Use o menu do navegador';
+    primary.setAttribute('aria-disabled', 'true');
+  }
+
+  if (footnote) {
+    footnote.textContent = 'O navegador n\u00e3o liberou o bot\u00e3o autom\u00e1tico agora. Isso pode acontecer ap\u00f3s instalar e remover o app. Use o menu do Chrome para instalar novamente.';
+  }
+}
+
 function setPwaInstallModalContent(mode) {
   pwaInstallModalMode = mode === 'ios' ? 'ios' : 'android';
   const platform = document.getElementById('pwa-install-platform');
@@ -300,6 +325,7 @@ function setPwaInstallModalContent(mode) {
     <li>Abra pelo novo \u00edcone na tela inicial.</li>
   `;
   primary.querySelector('span').textContent = 'Instalar aplicativo';
+  primary.removeAttribute('aria-disabled');
   footnote.textContent = 'Se o prompt n\u00e3o aparecer, abra o menu do navegador e toque em Instalar app ou Adicionar \u00e0 tela inicial.';
 }
 
@@ -328,12 +354,18 @@ function openPwaInstallFromMenu() {
     return;
   }
 
+  localStorage.removeItem(PWA_INSTALL_DONE_KEY);
+  localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
+
   if (isIosDevice()) {
     showPwaInstallModal('ios', true);
     return;
   }
 
   showPwaInstallModal('android', true);
+  if (!deferredPwaPrompt) {
+    setPwaManualInstallFallback();
+  }
 }
 
 function hidePwaInstallModal() {
@@ -357,11 +389,7 @@ async function handlePwaInstallClick() {
   }
 
   if (!deferredPwaPrompt) {
-    updatePwaInstallStatus('Use o menu do navegador para instalar', 35);
-    const footnote = document.getElementById('pwa-install-footnote');
-    if (footnote) {
-      footnote.textContent = 'Se o bot\u00e3o nativo n\u00e3o aparecer, toque no menu do Chrome e escolha Instalar app ou Adicionar \u00e0 tela inicial.';
-    }
+    setPwaManualInstallFallback();
     return;
   }
 
@@ -426,6 +454,7 @@ window.addEventListener('appinstalled', () => {
   localStorage.setItem(PWA_INSTALL_DONE_KEY, 'true');
   localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
   updatePwaInstallStatus('Instala\u00e7\u00e3o conclu\u00edda', 100);
+  showSuccessMessage('Central de Registros instalada com sucesso.');
   hidePwaInstallModal();
 });
 
@@ -570,7 +599,7 @@ function buildLooseNoteReceiptFileName(supplierName, originalFileName) {
   const today = getTodayLocalDateString().split('-').reverse().join('.');
   const extensionMatch = String(originalFileName || '').match(/\.[^.]+$/);
   const extension = extensionMatch ? extensionMatch[0].toLowerCase() : '.jpg';
-  return `${normalizedSupplierName || 'notinha-avulsa'}+${today}${extension}`;
+  return `${normalizedSupplierName || 'registro-servicos'}+${today}${extension}`;
 }
 
 function createRenamedLooseNoteReceiptFile(file, supplierName) {
@@ -756,6 +785,7 @@ function applyFuelFormMode(mode = 'rapido') {
   const isComplete = currentFuelFormMode === 'completo';
   const header = document.getElementById('fuel-form-header');
   const title = document.getElementById('fuel-form-title');
+  const subtitle = document.getElementById('fuel-form-subtitle');
   const completeFields = document.getElementById('fuel-complete-fields');
   const valueInput = document.getElementById('fuel-value');
   const litersInput = document.getElementById('fuel-liters');
@@ -765,8 +795,14 @@ function applyFuelFormMode(mode = 'rapido') {
   header?.classList.toggle('to-red-600', !isComplete);
   header?.classList.toggle('from-amber-500', isComplete);
   header?.classList.toggle('to-orange-600', isComplete);
+  header?.classList.toggle('is-complete', isComplete);
   if (title) {
-    title.textContent = isComplete ? 'REGISTRO COMPLETO' : 'REGISTRO R\u00c1PIDO';
+    title.textContent = isComplete ? 'Registro Completo' : 'Registro R\u00e1pido';
+  }
+  if (subtitle) {
+    subtitle.textContent = isComplete
+      ? 'Preencha todos os dados do abastecimento.'
+      : 'Preenchimento resumido para mais agilidade no seu dia a dia.';
   }
 
   completeFields?.classList.toggle('hidden', !isComplete);
@@ -855,8 +891,55 @@ function prepareLooseNoteForm() {
 }
 
 function openLooseNoteForm() {
+  setMobileNavActive('services');
   document.getElementById('loose-note-modal')?.classList.remove('hidden');
   prepareLooseNoteForm();
+}
+
+async function copyCentralLink() {
+  const link = 'https://gaveblue.com.br/postoscredenciados-covreecia/';
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(link);
+    } else {
+      const input = document.createElement('input');
+      input.value = link;
+      input.setAttribute('readonly', '');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      input.remove();
+    }
+    showSuccessMessage('Link copiado com sucesso.');
+  } catch (error) {
+    console.error('Erro ao copiar link:', error);
+    showSuccessMessage('N\u00e3o foi poss\u00edvel copiar o link. Tente novamente.');
+  }
+}
+
+async function shareCentralLink() {
+  const shareData = {
+    title: 'Central de Registros',
+    text: 'Acesse a Central de Registros:',
+    url: 'https://gaveblue.com.br/postoscredenciados-covreecia/'
+  };
+
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+      return;
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        return;
+      }
+      console.error('Erro ao compartilhar link:', error);
+    }
+  }
+
+  await copyCentralLink();
 }
 
 function closeLooseNoteForm() {
@@ -1509,7 +1592,7 @@ function submitLooseNoteForm(e) {
   ].filter(Boolean);
 
   const mensagem = [
-    '\ud83e\uddfe *REGISTRO DE NOTINHA AVULSA*',
+    '\ud83d\udd27 *REGISTRO DE SERVI\u00c7OS*',
     '',
     ...looseNoteMessageDetails,
     '',
@@ -1519,7 +1602,7 @@ function submitLooseNoteForm(e) {
   openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
   saveDriverNameSuggestion(formData.motorista);
   closeLooseNoteForm();
-  showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar a notinha avulsa.');
+  showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar o registro de servi\u00e7os.');
 }
 
 function showSuccessMessage(message) {
@@ -2076,6 +2159,87 @@ function renderCityImageCards() {
 
 window.addEventListener('DOMContentLoaded', renderCityImageCards);
 
+function initHomeHeroCarousel() {
+  const carousel = document.getElementById('home-hero-carousel');
+  const slides = Array.from(carousel?.querySelectorAll('.home-hero-image') || []);
+  const dots = Array.from(carousel?.querySelectorAll('.home-hero-dots span') || []);
 
+  if (!carousel || slides.length < 2) {
+    return;
+  }
+
+  let currentSlide = 0;
+  let autoplayId = null;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let isDragging = false;
+
+  const showSlide = (nextIndex) => {
+    currentSlide = (nextIndex + slides.length) % slides.length;
+    slides.forEach((slide, index) => slide.classList.toggle('is-active', index === currentSlide));
+    dots.forEach((dot, index) => dot.classList.toggle('is-active', index === currentSlide));
+    carousel.classList.toggle('is-message-slide', currentSlide !== 0);
+  };
+
+  const restartAutoplay = () => {
+    window.clearInterval(autoplayId);
+    autoplayId = window.setInterval(() => showSlide(currentSlide + 1), 5500);
+  };
+
+  const goToSlide = (direction) => {
+    showSlide(currentSlide + direction);
+    restartAutoplay();
+  };
+
+  const startDrag = (clientX, clientY) => {
+    dragStartX = clientX;
+    dragStartY = clientY;
+    isDragging = true;
+  };
+
+  const finishDrag = (clientX, clientY) => {
+    if (!isDragging) {
+      return;
+    }
+
+    const deltaX = clientX - dragStartX;
+    const deltaY = clientY - dragStartY;
+    isDragging = false;
+
+    if (Math.abs(deltaX) < 45 || Math.abs(deltaX) < Math.abs(deltaY)) {
+      return;
+    }
+
+    goToSlide(deltaX < 0 ? 1 : -1);
+  };
+
+  carousel.addEventListener('pointerdown', (event) => {
+    startDrag(event.clientX, event.clientY);
+  });
+
+  carousel.addEventListener('pointerup', (event) => {
+    finishDrag(event.clientX, event.clientY);
+  });
+
+  carousel.addEventListener('pointercancel', () => {
+    isDragging = false;
+  });
+
+  carousel.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft') {
+      goToSlide(-1);
+    }
+
+    if (event.key === 'ArrowRight') {
+      goToSlide(1);
+    }
+  });
+
+  carousel.setAttribute('tabindex', '0');
+  showSlide(0);
+  restartAutoplay();
+}
+
+window.addEventListener('DOMContentLoaded', initHomeHeroCarousel);
 
 

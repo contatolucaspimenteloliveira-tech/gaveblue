@@ -19,7 +19,7 @@
    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
-  <link rel="stylesheet" href="./styles.css?v=20260809-1820">
+  <link rel="stylesheet" href="./styles.css?v=20260810-1115">
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full flex flex-col">
@@ -36,8 +36,8 @@
        <span>Registro Completo</span>
       </button>
       <button onclick="openLooseNoteForm(); closeMenu()" class="w-full text-left px-4 py-3 hover:bg-orange-50 rounded-lg text-gray-900 font-medium transition flex items-center gap-3">
-       <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-       <span>Registro de Notinha Avulsa</span>
+       <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.7 6.3a4 4 0 00-5.1 5.1L4 17v3h3l5.6-5.6a4 4 0 005.1-5.1l-2.4 2.4-2.1-2.1 2.4-2.4z"/></svg>
+       <span>Registro de Servi&ccedil;os</span>
       </button>
       <button onclick="openPwaInstallFromMenu(); closeMenu()" class="w-full text-left px-4 py-3 hover:bg-rose-50 rounded-lg text-gray-900 font-medium transition flex items-center gap-3">
        <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14"/></svg>
@@ -96,18 +96,28 @@
   </div>
 
   <div id="fuel-form-modal" class="app-form-modal fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all max-h-[85vh] overflow-y-auto">
-     <div id="fuel-form-header" class="bg-gradient-to-r from-red-500 to-red-600 px-5 sm:px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-30">
-      <span class="w-9" aria-hidden="true"></span>
-      <h2 id="fuel-form-title" class="text-lg sm:text-xl font-bold text-white text-center">REGISTRO R&Aacute;PIDO</h2>
-      <button onclick="closeFuelForm()" class="text-white hover:bg-white/20 p-2 rounded-lg transition">
+    <div class="fuel-form-card bg-white rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all max-h-[85vh] overflow-y-auto">
+     <div id="fuel-form-header" class="fuel-form-hero bg-gradient-to-r from-red-500 to-red-600 px-5 sm:px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-30">
+      <div class="fuel-form-heading">
+       <span class="fuel-form-hero-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+       </span>
+       <span>
+        <h2 id="fuel-form-title" class="text-lg sm:text-xl font-bold text-white">Registro R&aacute;pido</h2>
+        <p id="fuel-form-subtitle" class="fuel-form-subtitle">Preenchimento resumido para mais agilidade no seu dia a dia.</p>
+       </span>
+      </div>
+      <button onclick="closeFuelForm()" class="fuel-form-close text-white hover:bg-white/20 p-2 rounded-lg transition" aria-label="Fechar">
        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
      </div>
-     <form id="fuel-form" class="px-5 sm:px-6 py-6 space-y-4" onsubmit="submitFuelForm(event)">
-      <div>
-       <label class="block text-sm font-semibold text-gray-900 mb-2">Motorista <span class="text-red-500">*</span></label>
-       <div class="select-shell">
+     <form id="fuel-form" class="fuel-form-body px-5 sm:px-6 py-6 space-y-4" onsubmit="submitFuelForm(event)">
+      <div class="form-field">
+       <label class="modern-label">Motorista <span class="text-red-500">*</span></label>
+       <div class="select-shell form-control-shell">
+        <span class="control-leading-icon" aria-hidden="true">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21a8 8 0 0 0-16 0" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7" r="4" stroke-width="2"/></svg>
+        </span>
         <select id="driver-name" required class="select-field">
          <option value="">Selecione um motorista</option>
         </select>
@@ -117,13 +127,19 @@
          </svg>
         </span>
        </div>
-       <div id="custom-driver-container" class="hidden mt-3">
-        <input id="custom-driver-name" type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-gray-900" placeholder="Digite o nome do motorista" autocomplete="name">
+       <div id="custom-driver-container" class="hidden mt-3 input-shell">
+        <span class="control-leading-icon" aria-hidden="true">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20h16" stroke-width="2" stroke-linecap="round"/><path d="M14.7 4.3a2.1 2.1 0 0 1 3 3L8 17l-4 1 1-4 9.7-9.7Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <input id="custom-driver-name" type="text" class="modern-input" placeholder="Digite o nome do motorista" autocomplete="name">
        </div>
       </div>
-      <div>
-       <label class="block text-sm font-semibold text-gray-900 mb-2">Cidade <span class="text-red-500">*</span></label>
-       <div class="select-shell">
+      <div class="form-field">
+       <label class="modern-label">Cidade <span class="text-red-500">*</span></label>
+       <div class="select-shell form-control-shell">
+        <span class="control-leading-icon" aria-hidden="true">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21s7-4.7 7-11a7 7 0 0 0-14 0c0 6.3 7 11 7 11Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke-width="2"/></svg>
+        </span>
         <select id="fuel-city" required class="select-field">
          <option value="">Selecione uma cidade</option>
          <option value="Boa Esperan&ccedil;a">Boa Esperan&ccedil;a</option>
@@ -140,9 +156,12 @@
         </span>
        </div>
       </div>
-      <div>
-       <label class="block text-sm font-semibold text-gray-900 mb-2">Posto <span class="text-red-500">*</span></label>
-       <div class="select-shell">
+      <div class="form-field">
+       <label class="modern-label">Posto <span class="text-red-500">*</span></label>
+       <div class="select-shell form-control-shell">
+        <span class="control-leading-icon" aria-hidden="true">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12" stroke-width="2" stroke-linecap="round"/><path d="M8 10h6M8 14h5M18 9h1a1 1 0 0 1 1 1v7a2 2 0 0 0 2 2" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
         <select id="fuel-station" required class="select-field">
          <option value="">Selecione uma cidade primeiro</option>
         </select>
@@ -153,13 +172,23 @@
         </span>
        </div>
       </div>
-      <div>
-       <label class="block text-sm font-semibold text-gray-900 mb-2">Data <span class="text-red-500">*</span></label>
-       <input type="date" id="fuel-date" required class="w-full px-3 sm:px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition text-sm">
+      <div class="form-field">
+       <label class="modern-label">Data <span class="text-red-500">*</span></label>
+       <div class="input-shell">
+        <span class="control-leading-icon" aria-hidden="true">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <input type="date" id="fuel-date" required class="modern-input">
+       </div>
       </div>
-      <div>
-       <label class="block text-sm font-semibold text-gray-900 mb-2">KM</label>
-       <input type="number" id="fuel-km" min="0" step="1" placeholder="Informe o KM atual do ve&iacute;culo" class="w-full px-3 sm:px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition text-sm">
+      <div class="form-field">
+       <label class="modern-label">KM Atual do Ve&iacute;culo</label>
+       <div class="input-shell">
+        <span class="control-leading-icon" aria-hidden="true">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 14a8 8 0 0 1 16 0" stroke-width="2" stroke-linecap="round"/><path d="m12 14 4-4" stroke-width="2" stroke-linecap="round"/><path d="M4 14h2M18 14h2M7 9l1.5 1.5M17 9l-1.5 1.5" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <input type="number" id="fuel-km" min="0" step="1" placeholder="Informe o KM atual do ve&iacute;culo" class="modern-input">
+       </div>
       </div>
       <div id="fuel-complete-fields" class="hidden space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -192,8 +221,9 @@
        </div>
       </div>
       </div>
-      <div>
-       <label class="block text-sm font-semibold text-gray-900 mb-3">Comprovante (Foto) <span class="text-red-500">*</span></label>
+      <div class="form-field">
+       <label class="modern-label">Comprovante (Foto) <span class="text-red-500">*</span></label>
+       <div class="receipt-dropzone">
        <div id="photo-preview-container" class="hidden mb-4">
        <div class="relative">
          <img id="photo-preview" src="" alt="Preview" class="w-full h-48 object-cover rounded-lg border border-gray-300">
@@ -206,15 +236,26 @@
         </button>
         <p id="receipt-upload-status" class="mt-2 text-xs font-medium text-gray-500">Salve o comprovante para deixar o envio pelo WhatsApp mais r&aacute;pido.</p>
        </div>
-       <div id="photo-buttons" class="space-y-2">
-        <label for="fuel-photo-camera" class="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer">
+       <div id="photo-buttons" class="receipt-empty-state">
+        <span class="receipt-camera-icon" aria-hidden="true">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9a2 2 0 0 1 2-2h1.2a2 2 0 0 0 1.6-.8L9 4.6A2 2 0 0 1 10.6 4h2.8a2 2 0 0 1 1.6.8l1.2 1.6a2 2 0 0 0 1.6.8H19a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg>
+        </span>
+        <div class="receipt-copy">
+         <strong>Adicione o comprovante do abastecimento</strong>
+         <small>Tire uma foto ou fa&ccedil;a upload do arquivo</small>
+        </div>
+        <div class="receipt-actions">
+        <label for="fuel-photo-camera" class="receipt-btn receipt-btn-camera">
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
          Tirar Foto
         </label>
-        <label for="fuel-photo-upload" class="w-full px-4 py-2.5 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer">
-         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <label for="fuel-photo-upload" class="receipt-btn receipt-btn-upload">
+         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 20h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
          Fazer Upload
         </label>
+        </div>
+        <p class="receipt-help">Formatos aceitos: JPG, PNG, HEIC &bull; M&aacute;x. 10MB</p>
+       </div>
        </div>
        <input type="file" id="fuel-photo-camera" accept="image/*" capture="environment" class="sr-only" onchange="updatePhotoPreview(this)">
        <input type="file" id="fuel-photo-upload" accept="image/*" class="sr-only" onchange="updatePhotoPreview(this)">
@@ -233,7 +274,12 @@
    <div id="loose-note-modal" class="app-form-modal fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
     <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full transform transition-all max-h-[85vh] overflow-y-auto">
      <div class="bg-gradient-to-r from-amber-500 to-orange-600 px-5 sm:px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-30">
-      <h2 class="text-lg sm:text-xl font-bold text-white">REGISTRO DE NOTINHA AVULSA</h2>
+      <div class="flex items-center gap-3 min-w-0">
+       <span class="service-form-icon" aria-hidden="true">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.7 6.3a4 4 0 00-5.1 5.1L4 17v3h3l5.6-5.6a4 4 0 005.1-5.1l-2.4 2.4-2.1-2.1 2.4-2.4z"/></svg>
+       </span>
+       <h2 class="text-lg sm:text-xl font-bold text-white">REGISTRO DE SERVI&Ccedil;OS</h2>
+      </div>
       <button onclick="closeLooseNoteForm()" class="text-white hover:bg-white/20 p-2 rounded-lg transition" aria-label="Fechar registro avulso">
        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
@@ -445,9 +491,6 @@
       <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-1 justify-center">
        <img src="https://i.ibb.co/fGzJKxy8/Grupo-Covre-0000.png" alt="Logo Grupo Covre" loading="lazy" decoding="async" class="h-16 sm:h-24 lg:h-32 w-auto object-contain" onerror="console.error('Image failed to load:', this.src); this.style.display='none';">
       </div>
-      <button onclick="toggleMenu()" class="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg flex items-center justify-center transition-all hover:shadow-lg flex-shrink-0">
-       <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-      </button>
      </div>
     </div>
    </div>
@@ -455,12 +498,21 @@
    <div class="flex-1 overflow-y-auto">
     <div id="welcome-screen" class="w-full px-3 sm:px-6 pt-4 sm:pt-8 pb-28 sm:pb-20 flex items-center justify-center">
      <div class="home-shell max-w-4xl mx-auto w-full">
-      <section class="home-hero-card">
-       <img src="./assets/home/hero-posto.png" alt="Posto de combust&iacute;vel" class="home-hero-image">
+      <section class="home-hero-card" id="home-hero-carousel" aria-label="Destaques da Central de Registros">
+       <div class="home-hero-slides" aria-hidden="true">
+        <img src="./assets/home/hero-posto.png" alt="" class="home-hero-image is-active hero-main" draggable="false">
+        <img src="./assets/home/hero-revisao-km.jpeg" alt="" class="home-hero-image hero-revision" draggable="false">
+        <img src="./assets/home/hero-posto-proximo.jpeg" alt="" class="home-hero-image hero-nearby" draggable="false">
+       </div>
        <div class="home-hero-overlay"></div>
        <div class="home-hero-content">
         <h1>Central de<br>Registros</h1>
         <p>Abaste&ccedil;a, registre e siga viagem.</p>
+       </div>
+       <div class="home-hero-dots" aria-hidden="true">
+        <span class="is-active"></span>
+        <span></span>
+        <span></span>
        </div>
       </section>
 
@@ -469,7 +521,7 @@
        <button onclick="showDashboard()" class="home-action-card action-search">
         <img src="./assets/home/buscar-postos.jpeg" alt="" aria-hidden="true">
         <span class="home-action-icon">
-         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21s7-4.7 7-11a7 7 0 0 0-14 0c0 6.3 7 11 7 11Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke-width="2"/></svg>
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" x2="15" y1="22" y2="22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="4" x2="14" y1="9" y2="9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </span>
         <span class="home-action-copy">
          <strong>Buscar Postos</strong>
@@ -494,7 +546,7 @@
        <button onclick="openFuelFormMenu('completo')" class="home-action-card action-complete">
         <img src="./assets/home/registro-completo.jpeg" alt="" aria-hidden="true">
         <span class="home-action-icon">
-         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 5h8M8 9h8M8 13h5M5 3h14v18H5z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2v4a2 2 0 0 0 2 2h4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 9H8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 13H8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17H8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </span>
         <span class="home-action-copy">
          <strong>Registro Completo</strong>
@@ -509,6 +561,9 @@
     <div id="dashboard" class="w-full px-3 sm:px-6 pt-4 sm:pt-6 pb-16 sm:pb-20 hidden">
      <div class="max-w-7xl mx-auto">
       <div class="mb-4 sm:mb-6 flex items-center gap-3">
+       <button type="button" onclick="goToWelcome()" class="screen-back-button" aria-label="Voltar para o in&iacute;cio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+       </button>
        <h2 class="text-lg sm:text-xl font-bold text-gray-900">Selecione uma Cidade</h2>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -517,7 +572,7 @@
         <div class="relative z-10">
          <div class="flex items-center justify-between mb-3 sm:mb-4">
           <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="4" x2="14" y1="9" y2="9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
           <span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">1 posto</span>
          </div>
@@ -529,7 +584,7 @@
         <div class="relative z-10">
          <div class="flex items-center justify-between mb-3 sm:mb-4">
           <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="4" x2="14" y1="9" y2="9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
           <span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">1 posto</span>
          </div>
@@ -541,7 +596,7 @@
         <div class="relative z-10">
          <div class="flex items-center justify-between mb-3 sm:mb-4">
           <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="4" x2="14" y1="9" y2="9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
           <span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">1 posto</span>
          </div>
@@ -553,7 +608,7 @@
         <div class="relative z-10">
          <div class="flex items-center justify-between mb-3 sm:mb-4">
           <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="4" x2="14" y1="9" y2="9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
           <span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">1 posto</span>
          </div>
@@ -567,7 +622,7 @@
          <div class="relative z-10">
           <div class="flex items-center justify-between mb-3 sm:mb-4 mt-2 sm:mt-1">
            <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="4" x2="14" y1="9" y2="9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
            </div>
            <span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">3 postos</span>
           </div>
@@ -580,7 +635,7 @@
         <div class="relative z-10">
          <div class="flex items-center justify-between mb-3 sm:mb-4">
           <div class="h-10 w-10 sm:h-12 sm:w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="4" x2="14" y1="9" y2="9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
           <span class="bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">2 postos</span>
          </div>
@@ -592,7 +647,7 @@
        <button onclick="selectCity('Todos os Postos')" class="group relative bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg px-6 sm:px-8 py-3 sm:py-4 text-white text-center overflow-hidden transition-all hover:shadow-lg hover:scale-105 transform active:scale-95">
         <div class="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full -ml-12 -mb-12 group-hover:scale-150 transition-transform duration-300"></div>
         <div class="relative z-10 flex items-center gap-2 justify-center">
-         <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+         <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="4" x2="14" y1="9" y2="9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
          <span class="text-sm sm:text-base font-semibold">Ver Todos os Postos</span>
         </div>
        </button>
@@ -603,6 +658,9 @@
     <div id="postos-display" class="w-full px-3 sm:px-6 pt-4 sm:pt-6 pb-16 sm:pb-20 hidden">
      <div class="max-w-7xl mx-auto">
       <div class="mb-4 sm:mb-6 flex items-center gap-3">
+       <button type="button" onclick="backToSearch()" class="screen-back-button" aria-label="Voltar para cidades">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+       </button>
        <h3 id="selected-city-name" class="text-lg sm:text-xl font-bold text-gray-900"></h3>
       </div>
       <div class="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
@@ -612,7 +670,7 @@
          <p id="postos-count" class="text-xl sm:text-2xl font-bold text-gray-900 mt-1">0</p>
         </div>
         <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-         <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+         <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="4" x2="14" y1="9" y2="9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
        </div>
       </div>
@@ -621,7 +679,7 @@
        <button onclick="selectCity('Todos os Postos')" class="group relative bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg px-6 sm:px-8 py-3 sm:py-4 text-white text-center overflow-hidden transition-all hover:shadow-lg hover:scale-105 transform active:scale-95">
         <div class="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full -ml-12 -mb-12 group-hover:scale-150 transition-transform duration-300"></div>
         <div class="relative z-10 flex items-center gap-2 justify-center">
-         <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+         <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="4" x2="14" y1="9" y2="9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
          <span class="text-sm sm:text-base font-semibold">Ver Todos os Postos</span>
         </div>
        </button>
@@ -630,11 +688,17 @@
     </div>
 
     <div id="about-section" class="hidden w-full px-3 sm:px-6 pt-4 sm:pt-6 pb-28 sm:pb-20">
+     <div class="max-w-4xl mx-auto mb-3">
+      <button type="button" onclick="goToWelcome()" class="screen-back-button screen-back-button-soft" aria-label="Voltar para o in&iacute;cio">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+       <span>Voltar</span>
+      </button>
+     </div>
      <div class="max-w-4xl mx-auto rounded-[1.6rem] bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 py-5 sm:py-8 shadow-xl">
      <div class="max-w-7xl mx-auto px-3 sm:px-6">
       <div class="flex flex-col items-center gap-2">
        <div class="flex items-center justify-center">
-        <img src="https://i.ibb.co/fGzJKxy8/Grupo-Covre-0000.png" alt="Logo Grupo Covre" loading="lazy" decoding="async" class="h-20 sm:h-28 lg:h-32 w-auto object-contain" onerror="console.error('Image failed to load:', this.src); this.style.display='none';">
+       <img src="https://i.ibb.co/fGzJKxy8/Grupo-Covre-0000.png" alt="Logo Grupo Covre" loading="lazy" decoding="async" class="h-20 sm:h-28 lg:h-32 w-auto object-contain" onerror="console.error('Image failed to load:', this.src); this.style.display='none';">
        </div>
        <div class="text-center mb-4 border-t border-gray-300 pt-2">
         <p class="text-xs sm:text-sm font-semibold text-gray-800 mb-2">COVRE &amp; CIA LTDA</p>
@@ -656,9 +720,23 @@
         </a>
        </div>
        <div class="text-center">
-        <p class="text-xs sm:text-sm text-gray-600">Desenvolvido e criado por <a href="https://gaveblue.com.br/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700 transition-colors font-medium">gaveblue.com.br</a></p>
+       <p class="text-xs sm:text-sm text-gray-600">Desenvolvido e criado por <a href="https://gaveblue.com.br/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700 transition-colors font-medium">gaveblue.com.br</a></p>
         <p class="text-xs sm:text-sm text-gray-600 mt-1"><a href="https://gaveblue.com.br/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700 transition-colors font-medium">Conhe&ccedil;a nossos produtos</a></p>
        <p class="text-xs sm:text-sm text-gray-500 mt-1">&copy; 2026 Todos os direitos reservados</p>
+       </div>
+       <div class="about-action-panel">
+        <button type="button" onclick="openPwaInstallFromMenu()" class="about-action-button about-action-primary">
+         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14"/></svg>
+         <span>Baixar app</span>
+        </button>
+        <button type="button" onclick="copyCentralLink()" class="about-action-button">
+         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+         <span>Copiar link</span>
+        </button>
+        <button type="button" onclick="shareCentralLink()" class="about-action-button">
+         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="12" r="3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="19" r="3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51 8.59 10.49" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+         <span>Compartilhar</span>
+        </button>
        </div>
       </div>
      </div>
@@ -672,7 +750,7 @@
     <span>In&iacute;cio</span>
    </button>
    <button type="button" class="mobile-nav-item" data-mobile-nav="complete" onclick="openFuelFormMenu('completo')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 5h8M8 9h8M8 13h5M5 3h14v18H5z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2v4a2 2 0 0 0 2 2h4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 9H8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 13H8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17H8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <span>Registro Completo</span>
    </button>
    <button type="button" class="mobile-nav-item mobile-nav-primary" data-mobile-nav="fast" onclick="openFuelFormMenu('rapido')">
@@ -681,15 +759,15 @@
     </span>
     <span>Registro R&aacute;pido</span>
    </button>
-   <button type="button" class="mobile-nav-item" data-mobile-nav="postos" onclick="showDashboard()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21s7-4.7 7-11a7 7 0 0 0-14 0c0 6.3 7 11 7 11Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke-width="2"/></svg>
-    <span>Buscar Postos</span>
+   <button type="button" class="mobile-nav-item" data-mobile-nav="services" onclick="openLooseNoteForm()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.7 6.3a4 4 0 00-5.1 5.1L4 17v3h3l5.6-5.6a4 4 0 005.1-5.1l-2.4 2.4-2.1-2.1 2.4-2.4z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Servi&ccedil;os</span>
    </button>
    <button type="button" class="mobile-nav-item" data-mobile-nav="about" onclick="showAboutSection()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9" stroke-width="2"/><path d="M12 11v6M12 7h.01" stroke-width="2.4" stroke-linecap="round"/></svg>
     <span>Sobre</span>
    </button>
   </nav>
-  <script src="./app.js?v=20260809-1820"></script>
+  <script src="./app.js?v=20260810-1115"></script>
  </body>
 </html>
