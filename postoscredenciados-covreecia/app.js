@@ -856,6 +856,7 @@ function prepareFuelForm(options = {}) {
 }
 
 function openFuelFormMenu(mode = 'rapido') {
+  closeOpenFormsSilently();
   setMobileNavActive(mode === 'completo' ? 'complete' : 'fast');
   document.getElementById('fuel-form-modal').classList.remove('hidden');
   prepareFuelForm({ useLastEntry: true, mode });
@@ -891,6 +892,7 @@ function prepareLooseNoteForm() {
 }
 
 function openLooseNoteForm() {
+  closeOpenFormsSilently();
   setMobileNavActive('services');
   document.getElementById('loose-note-modal')?.classList.remove('hidden');
   prepareLooseNoteForm();
@@ -1873,6 +1875,35 @@ function deleteLoosePhoto() {
   resetLoosePhotoState();
 }
 
+function openReceiptPreview(imageId) {
+  const sourceImage = document.getElementById(imageId);
+  const modal = document.getElementById('receipt-preview-modal');
+  const fullscreenImage = document.getElementById('receipt-preview-fullscreen-image');
+
+  if (!sourceImage || !modal || !fullscreenImage || !sourceImage.src) {
+    return;
+  }
+
+  fullscreenImage.src = sourceImage.src;
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeReceiptPreview() {
+  const modal = document.getElementById('receipt-preview-modal');
+  const fullscreenImage = document.getElementById('receipt-preview-fullscreen-image');
+
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+
+  if (fullscreenImage) {
+    fullscreenImage.src = '';
+  }
+
+  document.body.style.overflow = '';
+}
+
 function formatCurrency(input) {
   let value = input.value.replace(/\D/g, '');
 
@@ -2241,4 +2272,3 @@ function initHomeHeroCarousel() {
 }
 
 window.addEventListener('DOMContentLoaded', initHomeHeroCarousel);
-
