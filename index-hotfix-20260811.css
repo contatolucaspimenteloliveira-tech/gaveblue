@@ -124,6 +124,168 @@
   }
 }
 
+/* APPS E SOLUÇÕES SOB MEDIDA — inspirado na nova referência */
+#main-content section:nth-of-type(2) {
+  position: relative !important;
+  isolation: isolate;
+  overflow: hidden !important;
+  border: 1px solid #dbeafe !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f7fbff 54%, #eef6ff 100%) !important;
+  box-shadow: 0 24px 60px rgba(37, 99, 235, .09) !important;
+  padding: clamp(1.5rem, 3vw, 2.75rem) !important;
+}
+
+#main-content section:nth-of-type(2)::before,
+#main-content section:nth-of-type(2)::after {
+  content: "";
+  position: absolute;
+  left: -8%;
+  width: 116%;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#main-content section:nth-of-type(2)::before {
+  height: 210px;
+  bottom: -105px;
+  background: rgba(59, 130, 246, .08);
+  transform: rotate(-3deg);
+}
+
+#main-content section:nth-of-type(2)::after {
+  height: 150px;
+  bottom: -92px;
+  background: rgba(14, 165, 233, .07);
+  transform: rotate(5deg);
+}
+
+#main-content section:nth-of-type(2) > div.grid {
+  position: relative;
+  z-index: 1;
+  gap: clamp(1.75rem, 4vw, 4rem) !important;
+  align-items: center !important;
+}
+
+#main-content section:nth-of-type(2) > div.grid > div:first-child {
+  max-width: 39rem;
+}
+
+#main-content section:nth-of-type(2) > div.grid > div:first-child > span:first-child {
+  background: #eef5ff !important;
+  border-color: #c9dcff !important;
+  color: #2563eb !important;
+  box-shadow: 0 5px 18px rgba(37, 99, 235, .07);
+}
+
+#main-content section:nth-of-type(2) h2 {
+  color: #10255c !important;
+  font-weight: 800 !important;
+  line-height: 1.16 !important;
+  letter-spacing: -.025em;
+  max-width: 14ch;
+}
+
+#main-content section:nth-of-type(2) p {
+  color: #607493 !important;
+  font-size: 1rem;
+  line-height: 1.75 !important;
+  max-width: 37rem !important;
+}
+
+#main-content section:nth-of-type(2) > div.grid > div:first-child > div a {
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%) !important;
+  color: #fff !important;
+  border: 1px solid rgba(37, 99, 235, .12) !important;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, .20) !important;
+}
+
+#main-content section:nth-of-type(2) > div.grid > div:first-child > div > span {
+  background: rgba(255,255,255,.88) !important;
+  color: #3564b7 !important;
+  border-color: #bcd2f7 !important;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, .05);
+}
+
+#main-content section:nth-of-type(2) > div.grid > a {
+  position: relative;
+  display: block !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+#main-content section:nth-of-type(2) > div.grid > a > div {
+  min-height: 390px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background-image: url("https://i.imgur.com/y5VFWvr.png?v=20260812-0115");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  overflow: visible !important;
+  filter: drop-shadow(0 22px 28px rgba(37, 99, 235, .10));
+}
+
+#main-content section:nth-of-type(2) > div.grid > a > div > img {
+  width: 100% !important;
+  height: 390px !important;
+  object-fit: contain !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+@media (min-width: 1280px) {
+  #main-content section:nth-of-type(2) > div.grid {
+    grid-template-columns: minmax(0, .9fr) minmax(470px, 1.1fr) !important;
+  }
+
+  #main-content section:nth-of-type(2) > div.grid > a > div,
+  #main-content section:nth-of-type(2) > div.grid > a > div > img {
+    height: 420px !important;
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 1279px) {
+  #main-content section:nth-of-type(2) h2 {
+    max-width: none;
+  }
+
+  #main-content section:nth-of-type(2) > div.grid > div:first-child {
+    max-width: none;
+  }
+
+  #main-content section:nth-of-type(2) > div.grid > a > div {
+    min-height: 330px;
+  }
+
+  #main-content section:nth-of-type(2) > div.grid > a > div > img {
+    height: 330px !important;
+  }
+}
+
+@media (max-width: 639px) {
+  #main-content section:nth-of-type(2) {
+    padding: 1.25rem !important;
+  }
+
+  #main-content section:nth-of-type(2) > div.grid {
+    gap: 1.25rem !important;
+  }
+
+  #main-content section:nth-of-type(2) > div.grid > a > div {
+    min-height: 260px;
+  }
+
+  #main-content section:nth-of-type(2) > div.grid > a > div > img {
+    height: 260px !important;
+  }
+}
+
 /* MÓDULOS BLOQUEADOS — WeTime e OPF */
 #main-content section:first-of-type > div.grid > a:nth-child(6),
 #main-content section:first-of-type > div.grid > a:nth-child(7) {
