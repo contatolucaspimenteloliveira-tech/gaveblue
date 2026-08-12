@@ -222,13 +222,10 @@
   border: 0 !important;
   border-radius: 0 !important;
   background-color: transparent !important;
-  background-image:
-    url("https://i.imgur.com/y5VFWvr.jpg"),
-    url("https://i.imgur.com/y5VFWvr.jpeg"),
-    url("https://i.imgur.com/y5VFWvr.png");
-  background-repeat: no-repeat, no-repeat, no-repeat;
-  background-position: center, center, center;
-  background-size: contain, contain, contain;
+  background-image: url("./assets/apps-sob-medida-covre.png?v=20260812-0138") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
   overflow: visible !important;
   filter: drop-shadow(0 22px 28px rgba(37, 99, 235, .10));
 }
