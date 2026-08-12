@@ -6662,8 +6662,12 @@
                 <button type="button" class="documents-head-btn" onclick="openFuelColumnMenu(event, '${columnId}')">
                   <span>${escapeHtml(definition.label)}</span>
                   <span class="documents-head-icons">
-                    ${sort ? (sort === 'asc' ? '↑' : '↓') : ''}
-                    <span class="${hasFilter ? 'is-active' : ''}">⌄</span>
+                    ${isPinned ? '<svg class="is-active" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 17v5"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 17h14l-2-6V4H7v7l-2 6z"/></svg>' : ''}
+                    ${sort ? (sort === 'asc'
+                      ? '<svg class="is-active" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m6 15 6-6 6 6"/></svg>'
+                      : '<svg class="is-active" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>'
+                    ) : ''}
+                    <svg class="${hasFilter ? 'is-active' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5h16l-6 7v4l-4 2v-6L4 5z"/></svg>
                   </span>
                 </button>
                 <span class="documents-column-resizer" onmousedown="startFuelColumnResize(event, '${columnId}')"></span>
@@ -6757,8 +6761,41 @@
       `;
     }
 
-    function toggleFuelColumnsPanel() {
-      document.getElementById('fuel-columns-panel')?.classList.toggle('hidden');
+    function positionDocumentsPopover(panel, trigger) {
+      if (!panel) return;
+      const rect = trigger?.getBoundingClientRect?.();
+      if (!rect) {
+        panel.style.left = '';
+        panel.style.top = '';
+        return;
+      }
+      const width = panel.offsetWidth || 360;
+      const left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12));
+      panel.style.left = `${left}px`;
+      panel.style.top = `${rect.bottom + 8}px`;
+    }
+
+    function toggleFuelColumnsPanel(event) {
+      const panel = document.getElementById('fuel-columns-panel');
+      if (!panel) return;
+      const willOpen = panel.classList.contains('hidden');
+      closeFuelExportMenu();
+      panel.classList.toggle('hidden');
+      if (willOpen) positionDocumentsPopover(panel, event?.currentTarget);
+    }
+
+    function closeFuelColumnsPanel() {
+      document.getElementById('fuel-columns-panel')?.classList.add('hidden');
+    }
+
+    function toggleFuelExportMenu(event) {
+      event?.stopPropagation?.();
+      closeFuelColumnsPanel();
+      document.getElementById('fuel-export-menu')?.classList.toggle('hidden');
+    }
+
+    function closeFuelExportMenu() {
+      document.getElementById('fuel-export-menu')?.classList.add('hidden');
     }
 
     function toggleFuelSheetColumn(columnId, visible) {
@@ -6769,6 +6806,8 @@
 
     function openFuelColumnMenu(event, columnId) {
       event.stopPropagation();
+      closeFuelColumnsPanel();
+      closeFuelExportMenu();
       const menu = document.getElementById('fuel-filter-menu');
       if (!menu) return;
       const rect = event.currentTarget.getBoundingClientRect();
@@ -7011,6 +7050,7 @@
     }
 
     function exportFuelSheet(type = 'xlsx') {
+      closeFuelExportMenu();
       const rows = getFuelSheetExportRows();
       if (!rows.length) {
         showToast('Não há registros para exportar.');
@@ -7182,10 +7222,19 @@
       if (menu && !menu.classList.contains('hidden') && !menu.contains(event.target) && !event.target.closest('.documents-head-btn')) {
         closeFuelColumnMenu();
       }
+      const exportMenu = document.getElementById('fuel-export-menu');
+      if (exportMenu && !exportMenu.classList.contains('hidden') && !exportMenu.contains(event.target) && !event.target.closest('.documents-export-wrap')) {
+        closeFuelExportMenu();
+      }
+      const columnsPanel = document.getElementById('fuel-columns-panel');
+      if (columnsPanel && !columnsPanel.classList.contains('hidden') && !columnsPanel.contains(event.target) && !event.target.closest('[title="Colunas"]')) {
+        closeFuelColumnsPanel();
+      }
     });
 
     window.openFinanceEntryFromDocuments = openFinanceEntryFromDocuments;
     window.toggleFuelColumnsPanel = toggleFuelColumnsPanel;
+    window.toggleFuelExportMenu = toggleFuelExportMenu;
     window.toggleFuelSheetColumn = toggleFuelSheetColumn;
     window.clearFuelSheetFilters = clearFuelSheetFilters;
     window.resetFuelSheetView = resetFuelSheetView;

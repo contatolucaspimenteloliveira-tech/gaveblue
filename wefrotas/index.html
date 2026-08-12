@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260810-docs-register-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260810-docs-register-2">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260803-login-port-1">
   
 </head>
@@ -694,22 +694,61 @@
           </div>
         </section>
 
-        <section id="panel-documentos" class="module-panel content-card documents-workspace p-6 sm:p-8">
+        <section id="panel-documentos" class="module-panel content-card documents-workspace orders-page-shell p-8 sm:p-10">
           <div class="documents-sheet-header">
             <div>
-              <p class="documents-sheet-kicker">Documentos</p>
               <h2>Registro de Abastecimentos</h2>
               <span>Planilha interna moldável usando os abastecimentos já cadastrados no financeiro.</span>
             </div>
-            <div class="documents-sheet-actions">
-              <button type="button" class="documents-action-btn documents-action-btn--primary" onclick="toggleFuelColumnsPanel()">Colunas</button>
-              <button type="button" class="documents-action-btn" onclick="clearFuelSheetFilters()">Limpar filtros</button>
-              <button type="button" class="documents-action-btn" onclick="resetFuelSheetView()">Restaurar visual padrão</button>
-              <button type="button" class="documents-action-btn" onclick="triggerFuelSheetImport()">Importar planilha</button>
-              <button type="button" class="documents-action-btn" onclick="exportFuelSheet('xlsx')">XLSX</button>
-              <button type="button" class="documents-action-btn" onclick="exportFuelSheet('xls')">XLS</button>
-              <button type="button" class="documents-action-btn" onclick="exportFuelSheet('pdf')">PDF</button>
-              <button type="button" class="documents-action-btn" onclick="printFuelSheet()">Imprimir</button>
+            <div class="module-action-toolbar module-action-toolbar--table documents-sheet-actions">
+              <button type="button" class="icon-action text-[#8b3dff]" title="Colunas" onclick="toggleFuelColumnsPanel(event)" aria-label="Colunas">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="4" y="5" width="4" height="14" rx="1.5" stroke-width="1.9"></rect>
+                  <rect x="10" y="5" width="4" height="14" rx="1.5" stroke-width="1.9"></rect>
+                  <rect x="16" y="5" width="4" height="14" rx="1.5" stroke-width="1.9"></rect>
+                </svg>
+              </button>
+              <button type="button" class="icon-action" title="Limpar filtros" onclick="clearFuelSheetFilters()" aria-label="Limpar filtros">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 5h16l-6 7v4l-4 2v-6L4 5z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="m16 16 4 4m0-4-4 4"></path>
+                </svg>
+              </button>
+              <button type="button" class="icon-action" title="Restaurar visual" onclick="resetFuelSheetView()" aria-label="Restaurar visual">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 4v6h6"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M20 11a8 8 0 1 0-2.34 5.66"></path>
+                </svg>
+              </button>
+              <button type="button" class="icon-action" title="Importar planilha" onclick="triggerFuelSheetImport()" aria-label="Importar planilha">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 16V4"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="m7 9 5-5 5 5"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M5 20h14"></path>
+                </svg>
+              </button>
+              <div class="documents-export-wrap">
+                <button type="button" class="icon-action" title="Exportar" onclick="toggleFuelExportMenu(event)" aria-label="Exportar">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 4v12"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="m7 11 5 5 5-5"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M5 20h14"></path>
+                  </svg>
+                </button>
+                <div id="fuel-export-menu" class="documents-export-menu hidden">
+                  <strong>Exportar como</strong>
+                  <button type="button" onclick="exportFuelSheet('xlsx')">Excel (.xlsx)</button>
+                  <button type="button" onclick="exportFuelSheet('xls')">Excel 97-2003 (.xls)</button>
+                  <button type="button" onclick="exportFuelSheet('pdf')">PDF</button>
+                </div>
+              </div>
+              <button type="button" class="icon-action" title="Imprimir" onclick="printFuelSheet()" aria-label="Imprimir">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 8V4h10v4"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 14h10v6H7z"></path>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -1316,7 +1355,7 @@
   <script src="./appwrite-config.js?v=1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260803-storage-optimization-1"></script>
-  <script src="./wefrotas.js?v=20260810-docs-register-1"></script>
+  <script src="./wefrotas.js?v=20260810-docs-register-2"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
