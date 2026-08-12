@@ -18,3 +18,19 @@
   background: #ffffff !important;
   border-color: #a7f3d0 !important;
 }
+
+/* Aproxima o primeiro conteúdo do cabeçalho sem encostar na barra fixa. */
+#main-content section:first-of-type {
+  margin-top: 0.75rem !important;
+}
+
+@media (min-width: 640px) {
+  #main-content section:first-of-type {
+    margin-top: 1rem !important;
+  }
+}
+
+/* Corrige visualmente a pontuação do selo inicial. */
+#main-content section:first-of-type > div:first-child > span:first-child::after {
+  content: "?";
+}
