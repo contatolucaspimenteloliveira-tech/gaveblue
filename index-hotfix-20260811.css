@@ -50,13 +50,13 @@
 
 @media (min-width: 1024px) {
   #main-content section:first-of-type > div:first-child {
-    max-width: 80rem !important;
+    max-width: 76rem !important;
     display: grid !important;
-    grid-template-columns: minmax(0, 1.12fr) minmax(360px, .88fr) !important;
-    column-gap: 2.5rem !important;
+    grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr) !important;
+    column-gap: 1.75rem !important;
     align-items: center !important;
     text-align: left !important;
-    margin-bottom: 2.25rem !important;
+    margin-bottom: 2rem !important;
   }
 
   #main-content section:first-of-type > div:first-child > * {
@@ -78,18 +78,18 @@
   }
 
   #main-content section:first-of-type > div:first-child::after {
-    content: url("/assets/gaveblue-hero-devices.png?v=20260811-2345");
+    content: url("/assets/gaveblue-hero-devices.png?v=20260811-2356");
     display: block;
     grid-column: 2 !important;
     grid-row: 1 / span 5 !important;
-    width: min(100%, 430px);
-    max-width: 430px;
+    width: min(100%, 350px) !important;
+    max-width: 350px !important;
     height: auto;
-    justify-self: center;
+    justify-self: end;
     align-self: center;
     line-height: 0;
     overflow: visible;
-    filter: drop-shadow(0 20px 28px rgba(37, 99, 235, .12));
+    filter: drop-shadow(0 16px 22px rgba(37, 99, 235, .10));
   }
 }
 
@@ -109,15 +109,15 @@
   }
 
   #main-content section:first-of-type > div:first-child::after {
-    content: url("/assets/gaveblue-hero-devices.png?v=20260811-2345");
+    content: url("/assets/gaveblue-hero-devices.png?v=20260811-2356");
     display: block;
-    width: min(88vw, 460px);
-    max-width: 460px;
+    width: min(82vw, 340px) !important;
+    max-width: 340px !important;
     height: auto;
     margin: 1.25rem auto 0;
     line-height: 0;
     overflow: hidden;
-    filter: drop-shadow(0 18px 24px rgba(37, 99, 235, .10));
+    filter: drop-shadow(0 14px 20px rgba(37, 99, 235, .09));
   }
 }
 
