@@ -48,17 +48,12 @@
   box-decoration-break: clone;
 }
 
-/*
-  O mockup passa a ser renderizado pelo próprio pseudo-elemento com content:url().
-  Isso evita a área em branco que estava ocorrendo com background-image em alguns
-  navegadores e garante que o PNG seja tratado como uma imagem de fato.
-*/
 @media (min-width: 1024px) {
   #main-content section:first-of-type > div:first-child {
     max-width: 80rem !important;
     display: grid !important;
-    grid-template-columns: minmax(0, 1.05fr) minmax(420px, .95fr) !important;
-    column-gap: 2.25rem !important;
+    grid-template-columns: minmax(0, 1.12fr) minmax(360px, .88fr) !important;
+    column-gap: 2.5rem !important;
     align-items: center !important;
     text-align: left !important;
     margin-bottom: 2.25rem !important;
@@ -83,18 +78,18 @@
   }
 
   #main-content section:first-of-type > div:first-child::after {
-    content: url("/assets/gaveblue-hero-devices.png?v=20260811-2334");
+    content: url("/assets/gaveblue-hero-devices.png?v=20260811-2345");
     display: block;
     grid-column: 2 !important;
     grid-row: 1 / span 5 !important;
-    width: min(100%, 610px);
-    max-width: 100%;
+    width: min(100%, 430px);
+    max-width: 430px;
     height: auto;
     justify-self: center;
     align-self: center;
     line-height: 0;
     overflow: visible;
-    filter: drop-shadow(0 24px 34px rgba(37, 99, 235, .14));
+    filter: drop-shadow(0 20px 28px rgba(37, 99, 235, .12));
   }
 }
 
@@ -114,15 +109,15 @@
   }
 
   #main-content section:first-of-type > div:first-child::after {
-    content: url("/assets/gaveblue-hero-devices.png?v=20260811-2334");
+    content: url("/assets/gaveblue-hero-devices.png?v=20260811-2345");
     display: block;
-    width: min(100%, 680px);
-    max-width: 100%;
+    width: min(88vw, 460px);
+    max-width: 460px;
     height: auto;
     margin: 1.25rem auto 0;
     line-height: 0;
     overflow: hidden;
-    filter: drop-shadow(0 20px 28px rgba(37, 99, 235, .12));
+    filter: drop-shadow(0 18px 24px rgba(37, 99, 235, .10));
   }
 }
 
