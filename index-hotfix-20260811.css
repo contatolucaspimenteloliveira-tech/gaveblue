@@ -1,11 +1,6 @@
 /* Hotfix visual e de contraste da home GaveBlue — 2026-08-11 */
 
-/*
-  PARCEIROS — logos claras sobre cards claros
-  As imagens originais são predominantemente brancas. Em vez de voltar a deixar a seção
-  escura, mantemos os cards e a área da logo claros e convertemos visualmente as logos
-  para um azul-marinho com contraste suficiente.
-*/
+/* PARCEIROS */
 .partner-logo-wrap {
   background: linear-gradient(180deg, #ffffff 0%, #f3f8ff 100%) !important;
   border-color: #d7e5f5 !important;
@@ -18,13 +13,12 @@
   visibility: visible !important;
 }
 
-/* Preserva o card "Sua marca aqui" no tema claro. */
 #main-content section:nth-of-type(3) > div.grid > a:nth-child(3) > div:first-child {
   background: #ffffff !important;
   border-color: #a7f3d0 !important;
 }
 
-/* Aproxima o primeiro conteúdo do cabeçalho sem encostar na barra fixa. */
+/* HERO */
 #main-content section:first-of-type {
   margin-top: 0.75rem !important;
 }
@@ -35,17 +29,10 @@
   }
 }
 
-/* Corrige visualmente a pontuação do selo inicial. */
 #main-content section:first-of-type > div:first-child > span:first-child::after {
   content: "?";
 }
 
-/*
-  Corrige o corte das descendentes das letras (como p e g) no título principal.
-  O texto usa background-clip:text e estava com line-height muito apertado; em alguns
-  navegadores isso recorta a parte inferior dos glifos. Damos respiro à caixa da linha
-  sem alterar o tamanho visual da fonte.
-*/
 #hero-title {
   line-height: 1.18 !important;
   overflow: visible !important;
@@ -61,11 +48,11 @@
   box-decoration-break: clone;
 }
 
-/* =========================================================
-   HERO COM MOCKUP DO PRODUTO
-   Desktop: conteúdo à esquerda e notebook/celular à direita.
-   Mobile: conteúdo centralizado e imagem abaixo.
-   ========================================================= */
+/*
+  O mockup passa a ser renderizado pelo próprio pseudo-elemento com content:url().
+  Isso evita a área em branco que estava ocorrendo com background-image em alguns
+  navegadores e garante que o PNG seja tratado como uma imagem de fato.
+*/
 @media (min-width: 1024px) {
   #main-content section:first-of-type > div:first-child {
     max-width: 80rem !important;
@@ -96,16 +83,17 @@
   }
 
   #main-content section:first-of-type > div:first-child::after {
-    content: "";
+    content: url("/assets/gaveblue-hero-devices.png?v=20260811-2334");
     display: block;
     grid-column: 2 !important;
     grid-row: 1 / span 5 !important;
-    width: 100%;
-    min-height: 430px;
-    background-image: url("./assets/gaveblue-hero-devices.png?v=20260811-2319");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
+    width: min(100%, 610px);
+    max-width: 100%;
+    height: auto;
+    justify-self: center;
+    align-self: center;
+    line-height: 0;
+    overflow: visible;
     filter: drop-shadow(0 24px 34px rgba(37, 99, 235, .14));
   }
 }
@@ -126,23 +114,19 @@
   }
 
   #main-content section:first-of-type > div:first-child::after {
-    content: "";
+    content: url("/assets/gaveblue-hero-devices.png?v=20260811-2334");
     display: block;
     width: min(100%, 680px);
-    height: clamp(245px, 58vw, 390px);
+    max-width: 100%;
+    height: auto;
     margin: 1.25rem auto 0;
-    background-image: url("./assets/gaveblue-hero-devices.png?v=20260811-2319");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
+    line-height: 0;
+    overflow: hidden;
     filter: drop-shadow(0 20px 28px rgba(37, 99, 235, .12));
   }
 }
 
-/* =========================================================
-   MÓDULOS BLOQUEADOS — WeTime e OPF
-   Mesmo padrão visual do WePeople e sem interação.
-   ========================================================= */
+/* MÓDULOS BLOQUEADOS — WeTime e OPF */
 #main-content section:first-of-type > div.grid > a:nth-child(6),
 #main-content section:first-of-type > div.grid > a:nth-child(7) {
   position: relative;
@@ -168,7 +152,7 @@
   font-size: 0.75rem;
   line-height: 1rem;
   font-weight: 700;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 18px rgba(15,23,42,0.08);
 }
 
 #main-content section:first-of-type > div.grid > a:nth-child(6) > div:first-of-type,
@@ -182,7 +166,6 @@
   color: #d97706 !important;
 }
 
-/* Também neutraliza os atalhos correspondentes no rodapé. */
 footer a.module-blocked-link {
   pointer-events: none !important;
   cursor: not-allowed !important;
