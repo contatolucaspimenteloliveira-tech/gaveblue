@@ -222,10 +222,13 @@
   border: 0 !important;
   border-radius: 0 !important;
   background-color: transparent !important;
-  background-image: url("https://i.imgur.com/y5VFWvr.png?v=20260812-0115");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
+  background-image:
+    url("https://i.imgur.com/y5VFWvr.jpg"),
+    url("https://i.imgur.com/y5VFWvr.jpeg"),
+    url("https://i.imgur.com/y5VFWvr.png");
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-position: center, center, center;
+  background-size: contain, contain, contain;
   overflow: visible !important;
   filter: drop-shadow(0 22px 28px rgba(37, 99, 235, .10));
 }
