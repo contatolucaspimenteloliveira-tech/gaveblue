@@ -34,3 +34,24 @@
 #main-content section:first-of-type > div:first-child > span:first-child::after {
   content: "?";
 }
+
+/*
+  Corrige o corte das descendentes das letras (como p e g) no título principal.
+  O texto usa background-clip:text e estava com line-height muito apertado; em alguns
+  navegadores isso recorta a parte inferior dos glifos. Damos respiro à caixa da linha
+  sem alterar o tamanho visual da fonte.
+*/
+#hero-title {
+  line-height: 1.18 !important;
+  overflow: visible !important;
+  padding-bottom: 0.12em;
+}
+
+#hero-title > span {
+  display: block;
+  line-height: 1.18 !important;
+  padding-bottom: 0.08em;
+  overflow: visible !important;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
