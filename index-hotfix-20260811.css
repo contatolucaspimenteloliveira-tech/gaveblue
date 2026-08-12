@@ -1,4 +1,4 @@
-/* Hotfix visual e de contraste da home GaveBlue — 2026-08-11 */
+/* Hotfix visual e de contraste da home GaveBlue — 2026-08-12 */
 
 /* PARCEIROS */
 .partner-logo-wrap {
@@ -52,8 +52,8 @@
   #main-content section:first-of-type > div:first-child {
     max-width: 76rem !important;
     display: grid !important;
-    grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr) !important;
-    column-gap: 1.75rem !important;
+    grid-template-columns: minmax(0, 1.18fr) minmax(320px, .82fr) !important;
+    column-gap: 2rem !important;
     align-items: center !important;
     text-align: left !important;
     margin-bottom: 2rem !important;
@@ -78,17 +78,19 @@
   }
 
   #main-content section:first-of-type > div:first-child::after {
-    content: url("/assets/gaveblue-hero-devices.png?v=20260811-2356");
+    content: "";
     display: block;
     grid-column: 2 !important;
     grid-row: 1 / span 5 !important;
-    width: min(100%, 350px) !important;
-    max-width: 350px !important;
-    height: auto;
+    width: 390px !important;
+    max-width: 100% !important;
+    height: 330px !important;
     justify-self: end;
     align-self: center;
-    line-height: 0;
-    overflow: visible;
+    background-image: url("https://i.imgur.com/dsL7K82.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
     filter: drop-shadow(0 16px 22px rgba(37, 99, 235, .10));
   }
 }
@@ -109,14 +111,15 @@
   }
 
   #main-content section:first-of-type > div:first-child::after {
-    content: url("/assets/gaveblue-hero-devices.png?v=20260811-2356");
+    content: "";
     display: block;
-    width: min(82vw, 340px) !important;
-    max-width: 340px !important;
-    height: auto;
+    width: min(82vw, 320px) !important;
+    height: 270px !important;
     margin: 1.25rem auto 0;
-    line-height: 0;
-    overflow: hidden;
+    background-image: url("https://i.imgur.com/dsL7K82.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
     filter: drop-shadow(0 14px 20px rgba(37, 99, 235, .09));
   }
 }
