@@ -50,10 +50,10 @@
 
 @media (min-width: 1024px) {
   #main-content section:first-of-type > div:first-child {
-    max-width: 76rem !important;
+    max-width: 78rem !important;
     display: grid !important;
-    grid-template-columns: minmax(0, 1.18fr) minmax(320px, .82fr) !important;
-    column-gap: 2rem !important;
+    grid-template-columns: minmax(0, 1.10fr) minmax(360px, .90fr) !important;
+    column-gap: 2.25rem !important;
     align-items: center !important;
     text-align: left !important;
     margin-bottom: 2rem !important;
@@ -82,16 +82,16 @@
     display: block;
     grid-column: 2 !important;
     grid-row: 1 / span 5 !important;
-    width: 390px !important;
+    width: 455px !important;
     max-width: 100% !important;
-    height: 330px !important;
+    height: 385px !important;
     justify-self: end;
     align-self: center;
-    background-image: url("https://i.imgur.com/dsL7K82.png");
+    background-image: url("https://i.imgur.com/dsL7K82.png?v=20260812-0019");
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
-    filter: drop-shadow(0 16px 22px rgba(37, 99, 235, .10));
+    filter: drop-shadow(0 17px 24px rgba(37, 99, 235, .11));
   }
 }
 
@@ -113,14 +113,14 @@
   #main-content section:first-of-type > div:first-child::after {
     content: "";
     display: block;
-    width: min(82vw, 320px) !important;
-    height: 270px !important;
+    width: min(86vw, 365px) !important;
+    height: 305px !important;
     margin: 1.25rem auto 0;
-    background-image: url("https://i.imgur.com/dsL7K82.png");
+    background-image: url("https://i.imgur.com/dsL7K82.png?v=20260812-0019");
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
-    filter: drop-shadow(0 14px 20px rgba(37, 99, 235, .09));
+    filter: drop-shadow(0 15px 21px rgba(37, 99, 235, .10));
   }
 }
 
