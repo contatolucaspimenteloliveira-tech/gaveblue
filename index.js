@@ -103,7 +103,7 @@ const pages = {
             <div>
               <span class="inline-flex items-center px-4 py-1.5 rounded-full bg-fuchsia-500/10 border border-fuchsia-400/20 text-fuchsia-200 text-sm font-semibold mb-4">Apps e soluções sob medida</span>
               <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4">Também desenvolvemos experiências para marcas, campanhas e operações reais</h2>
-              <p class="text-slate-300 leading-relaxed max-w-3xl">Além das ferramentas do ecossistema GaveBlue, também criamos aplicativos e interfaces personalizadas para terceiros. Essa vitrine mostra um material promocional desenvolvido para o Grupo Cover, reforçando nossa atuação em produtos digitais com identidade própria.</p>
+              <p class="text-slate-300 leading-relaxed max-w-3xl">Além das ferramentas do ecossistema GaveBlue, também criamos aplicativos e interfaces personalizadas para terceiros. Essa vitrine mostra um material promocional desenvolvido para o Grupo Covre, reforçando nossa atuação em produtos digitais com identidade própria.</p>
               <div class="mt-6 flex flex-wrap gap-3">
                 <a href="https://wa.me/5527988790381" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-fuchsia-950/30 transition hover:from-fuchsia-600 hover:to-purple-700">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4z" /></svg>
@@ -114,7 +114,7 @@ const pages = {
             </div>
             <a href="https://gaveblue.com.br/postoscredenciados-covreecia/" target="_self" rel="noopener noreferrer" class="block rounded-[1.5rem] border border-fuchsia-400/20 bg-white/[0.04] p-3 shadow-xl shadow-fuchsia-950/20 transition hover:border-fuchsia-300/40 hover:bg-white/[0.06]">
               <div class="overflow-hidden rounded-[1.1rem] border border-white/10 bg-slate-950/70">
-                <img src="https://i.imgur.com/2jRKz0K.png" alt="Material promocional de aplicativo desenvolvido para o Grupo Cover" class="w-full h-auto object-cover" loading="lazy">
+                <img src="https://i.imgur.com/2jRKz0K.png" alt="Material promocional de aplicativo desenvolvido para o Grupo Covre" class="w-full h-auto object-cover" loading="lazy">
               </div>
             </a>
           </div>
