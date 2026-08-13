@@ -98,23 +98,26 @@ const pages = {
             </div>
           </div>
         </section>
-        <section class="mt-12 sm:mt-16 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-700/50 bg-gradient-to-br from-slate-900/90 via-slate-950/85 to-slate-900/90 p-5 sm:p-8 lg:p-10 shadow-2xl shadow-fuchsia-950/20">
-          <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-8 items-center">
-            <div>
+        <section class="custom-solutions-section mt-12 sm:mt-16 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-700/50 bg-gradient-to-br from-slate-900/90 via-slate-950/85 to-slate-900/90 p-5 sm:p-8 lg:p-10 shadow-2xl shadow-fuchsia-950/20">
+          <div class="custom-solutions-grid grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-8 items-center">
+            <div class="custom-solutions-copy">
               <span class="inline-flex items-center px-4 py-1.5 rounded-full bg-fuchsia-500/10 border border-fuchsia-400/20 text-fuchsia-200 text-sm font-semibold mb-4">Apps e soluções sob medida</span>
-              <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4">Também desenvolvemos experiências para marcas, campanhas e operações reais</h2>
-              <p class="text-slate-300 leading-relaxed max-w-3xl">Além das ferramentas do ecossistema GaveBlue, também criamos aplicativos e interfaces personalizadas para terceiros. Essa vitrine mostra um material promocional desenvolvido para o Grupo Covre, reforçando nossa atuação em produtos digitais com identidade própria.</p>
+              <h2 class="custom-solutions-title text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4">Desenvolvemos soluções digitais que <span>transformam ideias em resultados reais</span></h2>
+              <p class="text-slate-300 leading-relaxed max-w-3xl">Além das ferramentas do ecossistema GaveBlue, criamos aplicativos e interfaces personalizadas para marcas, campanhas e operações de todos os tamanhos.</p>
               <div class="mt-6 flex flex-wrap gap-3">
                 <a href="https://wa.me/5527988790381" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-fuchsia-950/30 transition hover:from-fuchsia-600 hover:to-purple-700">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4z" /></svg>
                   Quero um app assim
                 </a>
-                <span class="inline-flex items-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">Projetos pensados para web, mobile e operação interna</span>
+                <a href="https://gaveblue.com.br/postoscredenciados-covreecia/" target="_self" rel="noopener noreferrer" class="custom-solutions-secondary inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-slate-300">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" /></svg>
+                  Ver projetos
+                </a>
               </div>
             </div>
-            <a href="https://gaveblue.com.br/postoscredenciados-covreecia/" target="_self" rel="noopener noreferrer" class="block rounded-[1.5rem] border border-fuchsia-400/20 bg-white/[0.04] p-3 shadow-xl shadow-fuchsia-950/20 transition hover:border-fuchsia-300/40 hover:bg-white/[0.06]">
+            <a href="https://gaveblue.com.br/postoscredenciados-covreecia/" target="_self" rel="noopener noreferrer" class="custom-solutions-visual block rounded-[1.5rem] border border-fuchsia-400/20 bg-white/[0.04] p-3 shadow-xl shadow-fuchsia-950/20 transition hover:border-fuchsia-300/40 hover:bg-white/[0.06]">
               <div class="overflow-hidden rounded-[1.1rem] border border-white/10 bg-slate-950/70">
-                <img src="https://i.imgur.com/2jRKz0K.png" alt="Material promocional de aplicativo desenvolvido para o Grupo Covre" class="w-full h-auto object-cover" loading="lazy">
+                <img src="https://i.imgur.com/y5VFWvr.png" alt="Material promocional de aplicativo desenvolvido para o Grupo Cover" class="w-full h-auto object-cover" loading="lazy">
               </div>
             </a>
           </div>
