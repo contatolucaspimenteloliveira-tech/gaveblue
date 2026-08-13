@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260810-docs-register-2">
-  <link rel="stylesheet" href="./wefrotas-login.css?v=20260803-login-port-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260813-sidebar-white-1">
+  <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
 <body class="auth-locked">
@@ -1332,7 +1332,7 @@
         <a class="online-auth-close" href="https://gaveblue.com.br/" aria-label="Fechar e voltar ao site principal" title="Voltar ao site principal">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg>
         </a>
-        <form id="online-auth-form" class="online-auth-card" onsubmit="document.getElementById('online-auth-checking')?.classList.remove('hidden')">
+        <form id="online-auth-form" class="online-auth-card" novalidate>
           <img src="./wefrotas.png" alt="WeFrotas" class="online-auth-logo">
           <p class="panel-kicker">WeFrotas Online</p>
           <h2>Fazer login</h2>
@@ -1340,7 +1340,21 @@
           <label for="online-auth-email">E-mail</label>
           <input id="online-auth-email" type="email" autocomplete="username" required>
           <label for="online-auth-password">Senha</label>
-          <input id="online-auth-password" type="password" autocomplete="current-password" required>
+          <div class="online-auth-password-field">
+            <input id="online-auth-password" type="password" autocomplete="current-password" required>
+            <button id="online-auth-password-toggle" class="online-auth-password-toggle" type="button" aria-label="Mostrar senha" title="Mostrar senha" aria-pressed="false">
+              <svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg class="icon-eye-off" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 3l18 18"></path>
+                <path d="M10.6 10.6A2 2 0 0012 14a2 2 0 001.4-.6"></path>
+                <path d="M9.9 5.2A9.8 9.8 0 0112 5c6 0 9.5 7 9.5 7a17.8 17.8 0 01-2.1 2.9"></path>
+                <path d="M6.2 6.5C3.8 8.1 2.5 12 2.5 12s3.5 7 9.5 7a9.8 9.8 0 004.1-.9"></path>
+              </svg>
+            </button>
+          </div>
           <button id="online-auth-submit" type="submit"><span id="online-auth-submit-label">Entrar</span></button>
           <p class="online-auth-signup">
             <span>Não tem cadastro ainda?</span>
@@ -1355,7 +1369,7 @@
   <script src="./appwrite-config.js?v=1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260803-storage-optimization-1"></script>
-  <script src="./wefrotas.js?v=20260810-docs-register-2"></script>
+  <script src="./wefrotas.js?v=20260813-auth-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

@@ -1647,6 +1647,59 @@
       if (submitLabel) submitLabel.textContent = loading ? 'Entrando...' : 'Entrar';
     }
 
+    function translateOnlineAuthError(error) {
+      const rawMessage = String(error?.message || error?.type || '').trim();
+      const normalized = rawMessage.toLowerCase();
+      const code = Number(error?.code || 0);
+
+      if (!rawMessage) return 'Não foi possível entrar. Tente novamente.';
+      if (code === 401 || /invalid credentials|invalid email or password|user_invalid_credentials|password.*invalid|email.*invalid/i.test(rawMessage)) {
+        return 'E-mail ou senha incorretos. Confira os dados e tente novamente.';
+      }
+      if (code === 429 || normalized.includes('rate limit') || normalized.includes('too many requests')) {
+        return 'Muitas tentativas em sequência. Aguarde um pouco e tente novamente.';
+      }
+      if (normalized.includes('network') || normalized.includes('failed to fetch') || normalized.includes('load failed')) {
+        return 'Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.';
+      }
+      if (normalized.includes('missing scope') || normalized.includes('unauthorized') || normalized.includes('permission')) {
+        return 'Seu acesso não tem permissão para esta ação. Entre novamente ou fale com o administrador.';
+      }
+      if (normalized.includes('appwrite') && normalized.includes('configured')) {
+        return 'O acesso online ainda não foi configurado corretamente.';
+      }
+      if (normalized.includes('session') && normalized.includes('active')) {
+        return 'Já existe uma sessão ativa. Estamos recuperando seu acesso.';
+      }
+      if (normalized.includes('user') && normalized.includes('not found')) {
+        return 'Usuário não encontrado. Confira o e-mail informado.';
+      }
+      if (normalized.includes('password') && normalized.includes('8')) {
+        return 'A senha precisa ter pelo menos 8 caracteres.';
+      }
+
+      return rawMessage
+        .replace(/Invalid credentials\.?/i, 'E-mail ou senha incorretos.')
+        .replace(/Network request failed\.?/i, 'Falha de conexão com o servidor.')
+        .replace(/Failed to fetch\.?/i, 'Falha ao conectar com o servidor.');
+    }
+
+    function setupOnlinePasswordToggle() {
+      const passwordInput = document.getElementById('online-auth-password');
+      const toggleButton = document.getElementById('online-auth-password-toggle');
+      if (!passwordInput || !toggleButton) return;
+
+      toggleButton.addEventListener('click', () => {
+        const shouldShow = passwordInput.type === 'password';
+        passwordInput.type = shouldShow ? 'text' : 'password';
+        toggleButton.classList.toggle('is-visible', shouldShow);
+        toggleButton.setAttribute('aria-pressed', shouldShow ? 'true' : 'false');
+        toggleButton.setAttribute('aria-label', shouldShow ? 'Ocultar senha' : 'Mostrar senha');
+        toggleButton.setAttribute('title', shouldShow ? 'Ocultar senha' : 'Mostrar senha');
+        passwordInput.focus();
+      });
+    }
+
     function toggleOnlinePlatformLoading(show, message = 'Carregando...') {
       const loadingNode = document.getElementById('online-platform-loading');
       const loadingText = document.getElementById('online-platform-loading-text');
@@ -1778,6 +1831,14 @@
         if (errorNode) errorNode.textContent = 'O serviço de acesso não foi carregado. Atualize a página.';
         return;
       }
+      if (!email || !password) {
+        if (errorNode) errorNode.textContent = 'Informe e-mail e senha para entrar.';
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (errorNode) errorNode.textContent = 'Informe um e-mail válido.';
+        return;
+      }
       onlineLoginInProgress = true;
       let signedIn = false;
       setOnlineLoginLoading(true);
@@ -1805,7 +1866,7 @@
         showToast('WeFrotas Online conectado.');
       } catch (error) {
         if (signedIn) await backend.signOut().catch(() => {});
-        toggleOnlineLogin(true, error?.message || 'Não foi possível entrar.');
+        toggleOnlineLogin(true, translateOnlineAuthError(error));
       } finally {
         onlineLoginInProgress = false;
         setOnlineLoginLoading(false);
@@ -10560,6 +10621,7 @@
       console.error('Falha inesperada ao iniciar o WeFrotas.', error);
       toggleOnlineLogin(true, 'Não foi possível iniciar o sistema. Atualize a página e tente novamente.');
     });
+    setupOnlinePasswordToggle();
     document.getElementById('online-auth-form')?.addEventListener('submit', loginWeFrotasOnline);
     document.getElementById('settings-custom-logo-file')?.addEventListener('change', handleCustomLogoUpload);
     document.getElementById('settings-custom-logo-size')?.addEventListener('input', (event) => {
