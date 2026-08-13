@@ -47,7 +47,7 @@ function imprimirPDF() {
   const recibosVisiveis = obterRecibosVisiveisParaImpressao();
 
   if (!recibosVisiveis.length) {
-    alert('Nenhum recibo visível para imprimir.');
+    alert('Nenhum recibo vis�vel para imprimir.');
     return;
   }
 
@@ -59,7 +59,7 @@ function imprimirPDF() {
   const janelaImpressao = window.open('', '_blank', 'width=900,height=1200');
 
   if (!janelaImpressao) {
-    alert('Não foi possível abrir a janela de impressão. Verifique se o navegador bloqueou pop-ups.');
+    alert('N�o foi poss�vel abrir a janela de impress�o. Verifique se o navegador bloqueou pop-ups.');
     return;
   }
 
@@ -70,7 +70,7 @@ function imprimirPDF() {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Impressão de Recibos</title>
+      <title>Impress�o de Recibos</title>
       ${estilos}
       <style>
         html, body {

@@ -1,4 +1,4 @@
-    // VariÃ¡vel global para controlar o zoom
+﻿    // VariÃ¡vel global para controlar o zoom
     let zoomAtual = 100;
 
     // FunÃ§Ã£o para aumentar zoom
@@ -574,10 +574,7 @@
     }
 
     function mostrarHomeRecibos() {
-      document.body.classList.remove('app-mode');
-      document.getElementById('recibos-app').classList.add('hidden');
-      document.getElementById('recibos-home').classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.location.href = 'https://gaveblue.com.br/';
     }
 
     async function copiarChavePixApoio() {
