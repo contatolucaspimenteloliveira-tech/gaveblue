@@ -4309,73 +4309,36 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
 .central-pending-workspace {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.central-pending-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 20px;
-  border: 1px solid #e3ebf7;
-  border-radius: 26px;
-  background: linear-gradient(135deg, #ffffff 0%, #f6f9ff 100%);
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
-}
-
-.central-pending-header span {
-  display: block;
-  color: #5f6ef5;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.central-pending-header h2 {
-  margin: 6px 0 6px;
-  color: #06152f;
-  font-size: clamp(24px, 2.3vw, 34px);
-  font-weight: 900;
-}
-
-.central-pending-header p {
-  margin: 0;
-  max-width: 720px;
-  color: #64748b;
-  font-size: 15px;
-  line-height: 1.55;
+  gap: 10px;
 }
 
 .central-pending-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .central-pending-summary > div {
-  padding: 16px 18px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 7px 10px;
   border: 1px solid #e3ebf7;
-  border-radius: 22px;
-  background: #fff;
-  box-shadow: 0 14px 38px rgba(15, 23, 42, 0.05);
+  border-radius: 999px;
+  background: #f8fbff;
 }
 
 .central-pending-summary span {
-  display: block;
   color: #7b88a1;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }
 
 .central-pending-summary strong {
-  display: block;
-  margin-top: 4px;
   color: #071632;
-  font-size: 24px;
+  font-size: 15px;
   font-weight: 900;
 }
 
@@ -4497,6 +4460,9 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
   opacity: 0.38;
 }
 
+.central-pending-actions button.is-approve { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
+.central-pending-actions button.is-reject { color: #dc2626; border-color: #fecaca; background: #fff7f7; }
+
 .central-pending-empty {
   padding: 40px 20px !important;
   color: #64748b !important;
@@ -4509,13 +4475,8 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
 }
 
 @media (max-width: 720px) {
-  .central-pending-header {
-    flex-direction: column;
-    padding: 18px;
-  }
-
   .central-pending-summary {
-    grid-template-columns: 1fr;
+    flex-wrap: wrap;
   }
 }
 

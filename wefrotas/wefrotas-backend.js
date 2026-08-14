@@ -404,6 +404,18 @@
     };
   }
 
+  async function updateCentralPendingRecord(rowId, data = {}) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para atualizar registros da Central.');
+    if (!tablesDB) throw new Error('Banco de dados do Appwrite não está conectado.');
+    if (!config.centralTableId) throw new Error('Tabela da Central de Registros não configurada.');
+    return tablesDB.updateRow({
+      databaseId: config.databaseId,
+      tableId: config.centralTableId,
+      rowId,
+      data
+    });
+  }
+
   async function initialize(options = {}) {
     currentSnapshotGetter = options.getSnapshot;
     currentSnapshotUpdatedAtGetter = options.getSnapshotUpdatedAt;
@@ -447,6 +459,6 @@
     getUser: () => currentUser,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
     syncNow: snapshot => { const nextSnapshot = snapshot || currentSnapshotGetter?.(); setPendingSync(true); return persistSnapshot(nextSnapshot); },
-    uploadReceipt, listCentralPendingRecords
+    uploadReceipt, listCentralPendingRecords, updateCentralPendingRecord
   });
 })(window);

@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260814-sync-central-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260814-central-workflow-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -179,11 +179,6 @@
             <button id="online-sync-btn" class="top-action header-utility-btn online-sync-action" type="button" onclick="syncWeFrotasOnline()" aria-label="Sincronizar dados" title="Sincronizar dados" hidden>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M20 10A8 8 0 006.1 6.1L4 10M4 14a8 8 0 0013.9 3.9L20 14"/>
-              </svg>
-            </button>
-            <button id="online-logout-btn" class="top-action header-utility-btn" type="button" onclick="logoutWeFrotasOnline()" aria-label="Sair" title="Sair" hidden>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 17l5-5-5-5M15 12H3m10 7h4a2 2 0 002-2V7a2 2 0 00-2-2h-4"/>
               </svg>
             </button>
             <div id="topbar-avatar" class="topbar-avatar">GB</div>
@@ -707,14 +702,6 @@
 
         <section id="panel-documentos" class="module-panel content-card orders-page-shell p-4 sm:p-6">
           <div class="central-pending-workspace">
-            <div class="central-pending-header">
-              <div>
-                <span>Central de Registros</span>
-                <h2>Registros pendentes</h2>
-                <p>Receba aqui os abastecimentos e serviços enviados pelos motoristas antes de transformar em lançamento financeiro.</p>
-              </div>
-            </div>
-
             <div class="central-pending-summary">
               <div>
                 <span>Pendentes</span>
@@ -739,7 +726,6 @@
                       <th>Tipo</th>
                       <th>Motorista</th>
                       <th>Fornecedor/Posto</th>
-                      <th>Veículo</th>
                       <th>KM</th>
                       <th>Valor</th>
                       <th>Status</th>
@@ -748,7 +734,7 @@
                   </thead>
                   <tbody id="central-pending-list">
                     <tr>
-                      <td colspan="9" class="central-pending-empty">Clique em Atualizar para buscar registros enviados pela Central.</td>
+                      <td colspan="8" class="central-pending-empty">Os registros da Central aparecem aqui automaticamente.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1379,8 +1365,8 @@
 
   <script src="./appwrite-config.js?v=20260814-central-pending-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
-  <script src="./wefrotas-backend.js?v=20260814-central-pending-1"></script>
-  <script src="./wefrotas.js?v=20260814-sync-central-1"></script>
+  <script src="./wefrotas-backend.js?v=20260814-central-workflow-1"></script>
+  <script src="./wefrotas.js?v=20260814-central-workflow-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

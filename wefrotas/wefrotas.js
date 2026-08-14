@@ -7479,6 +7479,7 @@
     function getCentralPendingStatus(record) {
       const status = normalizeComparableText(record?.status || 'pendente');
       if (status.includes('import')) return { label: 'Importado', className: 'imported' };
+      if (status.includes('rejeit')) return { label: 'Rejeitado', className: 'error' };
       if (status.includes('erro')) return { label: 'Erro', className: 'error' };
       if (status.includes('aprov')) return { label: 'Aprovado', className: 'approved' };
       return { label: 'Pendente', className: 'pending' };
@@ -7538,19 +7539,19 @@
       renderCentralPendingSummary(rows);
 
       if (centralPendingLoading) {
-        list.innerHTML = '<tr><td colspan="9" class="central-pending-empty">Buscando registros enviados pela Central...</td></tr>';
+        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Buscando registros enviados pela Central...</td></tr>';
         return;
       }
       if (centralPendingError) {
-        list.innerHTML = `<tr><td colspan="9" class="central-pending-empty central-pending-error">${escapeHtml(centralPendingError)}</td></tr>`;
+        list.innerHTML = `<tr><td colspan="8" class="central-pending-empty central-pending-error">${escapeHtml(centralPendingError)}</td></tr>`;
         return;
       }
       if (!centralPendingLoaded) {
-        list.innerHTML = '<tr><td colspan="9" class="central-pending-empty">Clique em Atualizar para buscar registros enviados pela Central.</td></tr>';
+        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Aguardando a primeira atualização automática.</td></tr>';
         return;
       }
       if (!rows.length) {
-        list.innerHTML = '<tr><td colspan="9" class="central-pending-empty">Nenhum registro recebido da Central até agora.</td></tr>';
+        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Nenhum registro recebido da Central até agora.</td></tr>';
         return;
       }
 
@@ -7564,15 +7565,18 @@
             <td><span class="central-pending-type">${escapeHtml(getCentralPendingRecordType(record))}</span></td>
             <td>${escapeHtml(record?.motorista || '-')}</td>
             <td>${escapeHtml(getCentralPendingSupplier(record))}</td>
-            <td>${escapeHtml(record?.veiculo || record?.placa || '-')}</td>
             <td>${escapeHtml(record?.km || '-')}</td>
             <td class="central-pending-value">${getCentralPendingValue(record)}</td>
             <td><span class="central-pending-status ${status.className}">${status.label}</span></td>
             <td>
               <div class="central-pending-actions">
-                <button type="button" title="Preparar lançamento" onclick="prepareCentralPendingRecord('${rowId}')">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 5v14M5 12h14"/></svg>
+                <button class="is-approve" type="button" title="Aprovar e lançar" onclick="approveCentralPendingRecord('${rowId}')" ${status.className !== 'pending' ? 'disabled' : ''}>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 12l4 4L19 6"/></svg>
                 </button>
+                <button class="is-reject" type="button" title="Rejeitar" onclick="rejectCentralPendingRecord('${rowId}')" ${status.className !== 'pending' ? 'disabled' : ''}>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+                <button type="button" title="Revisar lançamento" onclick="prepareCentralPendingRecord('${rowId}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 5v14M5 12h14"/></svg></button>
                 <button type="button" title="Ver comprovante" ${receiptUrl ? `onclick="viewFinanceReceipt('${escapeHtml(receiptUrl)}')"` : 'disabled'}>
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3" stroke-width="1.9"/></svg>
                 </button>
@@ -7630,6 +7634,83 @@
       }
     }
 
+    async function setCentralPendingRecordStatus(record, data) {
+      const rowId = getCentralPendingRecordId(record);
+      if (!rowId || !window.WeFrotasBackend?.updateCentralPendingRecord) throw new Error('Não foi possível atualizar o status do registro na Central.');
+      const updated = await window.WeFrotasBackend.updateCentralPendingRecord(rowId, {
+        ...data,
+        atualizadoEm: new Date().toISOString()
+      });
+      centralPendingRecords = centralPendingRecords.map(item => getCentralPendingRecordId(item) === rowId ? { ...item, ...updated, ...data } : item);
+      renderCentralPendingRecords();
+    }
+
+    function getCentralRecordTotal(record) {
+      const value = Number(record?.valorNumero ?? parseCurrencyInputValue(record?.valor || ''));
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
+    async function approveCentralPendingRecord(rowId) {
+      const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
+      if (!record) return showToast('Registro da Central não encontrado.');
+      const imported = parseImportedCentralMessage(buildCentralPendingMessage(record));
+      if (!imported) return prepareCentralPendingRecord(rowId);
+
+      const isService = imported.type === 'service' || imported.type === 'loose_note';
+      const supplier = isService
+        ? resolveSupplierByRelevantTerms(imported.fornecedor, allSuppliers.filter(item => item.tipo !== 'posto'))
+        : resolveFuelSupplierByImportedName(imported.posto);
+      const vehicle = isService ? null : resolveVehicleByImportedDriver(imported.motorista, resolveDriverByImportedName(imported.motorista));
+      const total = getCentralRecordTotal(record) || parseCurrencyInputValue(imported.valor || '');
+      const isReady = isService
+        ? !!(supplier && imported.dataIso && total)
+        : !!(supplier && vehicle && imported.dataIso && imported.tipoCombustivel && imported.litros && total);
+
+      if (!isReady) {
+        prepareCentralPendingRecord(rowId);
+        showToast('Revise os campos pendentes para concluir este lançamento.');
+        return;
+      }
+
+      const financeId = generateId();
+      const entry = isService ? {
+        id: financeId, createdAt: new Date().toISOString(), entryType: 'despesa', orderId: '', vehicleId: '', kind: 'despesa', kindLabel: 'Despesa',
+        supplierId: supplier.id, supplierType: supplier.tipo, fornecedor: supplier.nome, nf: 'REGISTRO DE SERVIÇOS', km: imported.km || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '',
+        dataVencimento: imported.dataIso, total, observacoes: [imported.tipoServico, imported.observacoes].filter(Boolean).join(' | ')
+      } : {
+        id: financeId, createdAt: new Date().toISOString(), entryType: 'combustivel', vehicleId: vehicle.id, orderId: '', kind: 'despesa', kindLabel: 'Despesa',
+        supplierId: supplier.id, supplierType: supplier.tipo, fornecedor: supplier.nome, fuelType: imported.tipoCombustivel, km: imported.km || '', litros: String(imported.litros),
+        driverId: resolveDriverByImportedName(imported.motorista)?.id || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '', dataAbastecimento: imported.dataIso,
+        dataVencimento: '', nf: '', total, observacoes: imported.cidade ? `Cidade informada na Central: ${imported.cidade}` : '', groupedIntoId: '', workflowStatus: 'pendente', closedExpense: false, discount: 0
+      };
+
+      allFinanceEntries.unshift(entry);
+      saveToLocalStorage();
+      renderAll();
+      try {
+        await setCentralPendingRecordStatus(record, { status: 'importado', importadoEm: new Date().toISOString(), lancamentoFinanceiroId: financeId, resolucao: 'Aprovado e lançado no financeiro.' });
+        showToast('Registro aprovado e lançado no financeiro.');
+      } catch (error) {
+        showToast(`Lançamento criado, mas a Central não foi atualizada: ${error?.message || 'erro desconhecido'}`);
+      }
+    }
+
+    function rejectCentralPendingRecord(rowId) {
+      const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
+      if (!record) return showToast('Registro da Central não encontrado.');
+      openPromptModal({
+        title: 'Rejeitar registro', text: 'Informe o motivo da rejeição. Ele ficará registrado na Central.', placeholder: 'Ex.: comprovante ilegível ou valor divergente', confirmLabel: 'Rejeitar registro', cancelLabel: 'Cancelar',
+        onConfirm: async (reason) => {
+          try {
+            await setCentralPendingRecordStatus(record, { status: 'rejeitado', resolucao: reason });
+            showToast('Registro rejeitado com justificativa.');
+          } catch (error) {
+            showToast(error?.message || 'Não foi possível rejeitar o registro.');
+          }
+        }
+      });
+    }
+
     function renderDocuments() {
       const panel = document.getElementById('panel-documentos');
       if (!panel) return;
@@ -7642,6 +7723,8 @@
 
     window.refreshCentralPendingRecords = refreshCentralPendingRecords;
     window.prepareCentralPendingRecord = prepareCentralPendingRecord;
+    window.approveCentralPendingRecord = approveCentralPendingRecord;
+    window.rejectCentralPendingRecord = rejectCentralPendingRecord;
 
     function setFuelSheetPage(page) {
       fuelSheetPreferences.page = page;
