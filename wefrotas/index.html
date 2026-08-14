@@ -603,6 +603,12 @@
                 <label>Valor</label>
                 <input id="finance-filter-value" class="soft-input w-full" placeholder="Ex: 1500,00">
               </div>
+              <div class="orders-filter-field"><label>Veículo</label><input id="finance-filter-vehicle" class="soft-input w-full" placeholder="Placa, frota ou modelo"></div>
+              <div class="orders-filter-field"><label>Fornecedor</label><input id="finance-filter-supplier" class="soft-input w-full" placeholder="Fornecedor ou posto"></div>
+              <div class="orders-filter-field"><label>OS</label><input id="finance-filter-order" class="soft-input w-full" placeholder="Nº da OS"></div>
+              <div class="orders-filter-field"><label>Nota fiscal</label><input id="finance-filter-nf" class="soft-input w-full" placeholder="Número da nota"></div>
+              <div class="orders-filter-field"><label>Vencimento de</label><input id="finance-filter-due-start" type="date" class="soft-input w-full"></div>
+              <div class="orders-filter-field"><label>Vencimento até</label><input id="finance-filter-due-end" type="date" class="soft-input w-full"></div>
               <div class="orders-filter-actions">
                 <button class="filter-action-btn" title="Limpar filtros" aria-label="Limpar filtros" onclick="clearFinanceFilters()">⌫</button>
               </div>
@@ -629,6 +635,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M5 21h14"/>
                     </svg>
                   </button>
+                  <button class="finance-filter-trigger" type="button" onclick="toggleFinanceFiltersPopover()">Filtros</button>
                   <button id="group-finance-btn" class="icon-action text-[#5f6ef5]" title="Agrupar lançamentos" onclick="openFuelGroupingModal()">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M3 7V5c0-1.1.9-2 2-2h2"/>
@@ -1397,7 +1404,7 @@
   <script src="./appwrite-config.js?v=20260814-central-pending-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260814-central-audit-1"></script>
-  <script src="./wefrotas.js?v=20260814-central-header-actions-1"></script>
+  <script src="./wefrotas.js?v=20260814-finance-filter-popover-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

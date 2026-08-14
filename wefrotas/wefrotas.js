@@ -6192,6 +6192,12 @@
       const startFilter = document.getElementById('finance-filter-start')?.value || '';
       const endFilter = document.getElementById('finance-filter-end')?.value || '';
       const valueFilter = document.getElementById('finance-filter-value')?.value.trim().toLowerCase() || '';
+      const vehicleFilter = normalizeSearchText(document.getElementById('finance-filter-vehicle')?.value || '');
+      const supplierFilter = normalizeSearchText(document.getElementById('finance-filter-supplier')?.value || '');
+      const orderFilter = normalizeSearchText(document.getElementById('finance-filter-order')?.value || '');
+      const nfFilter = normalizeSearchText(document.getElementById('finance-filter-nf')?.value || '');
+      const dueStart = document.getElementById('finance-filter-due-start')?.value || '';
+      const dueEnd = document.getElementById('finance-filter-due-end')?.value || '';
 
       let visibleEntries = allFinanceEntries
         .filter(entry => !entry.groupedIntoId);
@@ -6203,6 +6209,12 @@
       }
       if (startFilter) visibleEntries = visibleEntries.filter(entry => getFinanceEntryDate(entry) >= startFilter);
       if (endFilter) visibleEntries = visibleEntries.filter(entry => getFinanceEntryDate(entry) <= endFilter);
+      if (dueStart) visibleEntries = visibleEntries.filter(entry => String(entry.dataVencimento || '') >= dueStart);
+      if (dueEnd) visibleEntries = visibleEntries.filter(entry => String(entry.dataVencimento || '') <= dueEnd);
+      if (vehicleFilter) visibleEntries = visibleEntries.filter(entry => normalizeSearchText(buildVehicleSearchValue(allVehicles.find(item => item.id === getEntryVehicleId(entry)) || {})).includes(vehicleFilter));
+      if (supplierFilter) visibleEntries = visibleEntries.filter(entry => normalizeSearchText(entry.fornecedor || '').includes(supplierFilter));
+      if (orderFilter) visibleEntries = visibleEntries.filter(entry => normalizeSearchText(getOrderNumberLabel(allOrders.find(order => order.id === entry.orderId) || {})).includes(orderFilter));
+      if (nfFilter) visibleEntries = visibleEntries.filter(entry => normalizeSearchText(entry.nf || '').includes(nfFilter));
       if (quickSearch) {
         visibleEntries = visibleEntries.filter(entry => {
           const order = allOrders.find(item => item.id === entry.orderId);
@@ -9768,9 +9780,13 @@
       document.getElementById('finance-filter-start').value = '';
       document.getElementById('finance-filter-end').value = '';
       document.getElementById('finance-filter-value').value = '';
+      ['finance-filter-vehicle','finance-filter-supplier','finance-filter-order','finance-filter-nf','finance-filter-due-start','finance-filter-due-end'].forEach(id => { const node=document.getElementById(id); if(node) node.value=''; });
       financeSortState = { key: 'default', direction: 'desc' };
       renderFinance();
     }
+
+    function toggleFinanceFiltersPopover() { document.querySelector('#panel-financeiro .finance-filters-popover')?.classList.toggle('is-open'); }
+    window.toggleFinanceFiltersPopover = toggleFinanceFiltersPopover;
 
     function clearVehicleFilters() {
       document.getElementById('vehicle-filter-search').value = '';
@@ -11830,6 +11846,7 @@
         const searchField = document.getElementById(searchFieldId);
         if (!filterShell || !stickyHeader) return;
         if (!stickyHeader.contains(filterShell)) stickyHeader.prepend(filterShell);
+        if (module === 'financeiro') filterShell.classList.add('finance-filters-popover');
         if (selection && selection.parentElement !== stickyHeader) {
           selection.classList.add('module-selection-sticky');
           stickyHeader.insertBefore(selection, stickyHeader.firstChild);
@@ -11861,12 +11878,12 @@
       const node = document.getElementById(id);
       if (node) node.addEventListener('change', renderOrders);
     });
-    ['finance-filter-search', 'finance-filter-value'].forEach(id => {
+    ['finance-filter-search', 'finance-filter-value', 'finance-filter-vehicle', 'finance-filter-supplier', 'finance-filter-order', 'finance-filter-nf'].forEach(id => {
       const node = document.getElementById(id);
       if (node) node.addEventListener('input', renderFinance);
     });
     applyCurrencyMaskToInput(document.getElementById('finance-filter-value'));
-    ['finance-filter-status', 'finance-filter-start', 'finance-filter-end'].forEach(id => {
+    ['finance-filter-status', 'finance-filter-start', 'finance-filter-end', 'finance-filter-due-start', 'finance-filter-due-end'].forEach(id => {
       const node = document.getElementById(id);
       if (node) node.addEventListener('change', renderFinance);
     });
