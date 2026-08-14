@@ -416,6 +416,12 @@
     });
   }
 
+  async function deleteCentralPendingRecord(rowId) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir registros da Central.');
+    if (!tablesDB || !config.centralTableId) throw new Error('Tabela da Central de Registros não está disponível.');
+    return tablesDB.deleteRow({ databaseId: config.databaseId, tableId: config.centralTableId, rowId });
+  }
+
   async function initialize(options = {}) {
     currentSnapshotGetter = options.getSnapshot;
     currentSnapshotUpdatedAtGetter = options.getSnapshotUpdatedAt;
@@ -459,6 +465,6 @@
     getUser: () => currentUser,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
     syncNow: snapshot => { const nextSnapshot = snapshot || currentSnapshotGetter?.(); setPendingSync(true); return persistSnapshot(nextSnapshot); },
-    uploadReceipt, listCentralPendingRecords, updateCentralPendingRecord
+    uploadReceipt, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord
   });
 })(window);

@@ -15,6 +15,7 @@
     let centralPendingDateStart = '';
     let centralPendingDateEnd = '';
     let centralPendingFiltersLoaded = false;
+    let selectedCentralPending = new Set();
     const globalSearchInputEl = document.getElementById('global-search-input');
     const globalSearchResultsEl = document.getElementById('global-search-results');
     const mobileGlobalSearchInputEl = document.getElementById('mobile-global-search-input');
@@ -1997,7 +1998,10 @@
       centralPendingAutoRefreshTimer = window.setInterval(() => {
         if (document.hidden || !window.WeFrotasBackend?.getUser?.()) return;
         refreshCentralPendingRecords();
-      }, 60000);
+      }, 10000);
+      window.addEventListener('focus', () => {
+        if (window.WeFrotasBackend?.getUser?.()) refreshCentralPendingRecords();
+      });
     }
 
     window.logoutWeFrotasOnline = logoutWeFrotasOnline;
@@ -7526,7 +7530,11 @@
       loadCentralPendingFilters();
       return [...centralPendingRecords]
         .filter(record => normalizeComparableText(record?.workspaceId || '') === normalizeComparableText(window.WeFrotasBackend?.config?.companyId || 'covre-e-cia'))
-        .filter(record => centralPendingStatusFilter === 'todos' || getCentralPendingStatus(record).className === centralPendingStatusFilter || (centralPendingStatusFilter === 'aprovado' && getCentralPendingStatus(record).className === 'approved') || (centralPendingStatusFilter === 'rejeitado' && getCentralPendingStatus(record).className === 'error'))
+        .filter(record => {
+          const className = getCentralPendingStatus(record).className;
+          const statusMap = { pendente: 'pending', aprovado: 'approved', rejeitado: 'error' };
+          return centralPendingStatusFilter === 'todos' || className === statusMap[centralPendingStatusFilter];
+        })
         .filter(record => {
           const date = String(record?.data || record?.criadoEm || '').slice(0, 10);
           return (!centralPendingDateStart || date >= centralPendingDateStart) && (!centralPendingDateEnd || date <= centralPendingDateEnd);
@@ -7574,19 +7582,19 @@
       renderCentralPendingSummary(rows);
 
       if (centralPendingLoading) {
-        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Buscando registros enviados pela Central...</td></tr>';
+        list.innerHTML = '<tr><td colspan="9" class="central-pending-empty">Buscando registros enviados pela Central...</td></tr>';
         return;
       }
       if (centralPendingError) {
-        list.innerHTML = `<tr><td colspan="8" class="central-pending-empty central-pending-error">${escapeHtml(centralPendingError)}</td></tr>`;
+        list.innerHTML = `<tr><td colspan="9" class="central-pending-empty central-pending-error">${escapeHtml(centralPendingError)}</td></tr>`;
         return;
       }
       if (!centralPendingLoaded) {
-        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Aguardando a primeira atualização automática.</td></tr>';
+        list.innerHTML = '<tr><td colspan="9" class="central-pending-empty">Aguardando a primeira atualização automática.</td></tr>';
         return;
       }
       if (!rows.length) {
-        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Nenhum registro recebido da Central até agora.</td></tr>';
+        list.innerHTML = '<tr><td colspan="9" class="central-pending-empty">Nenhum registro recebido da Central até agora.</td></tr>';
         return;
       }
 
@@ -7596,6 +7604,7 @@
         const receiptUrl = String(record?.comprovanteUrl || '').trim();
         return `
           <tr>
+            <td><input type="checkbox" aria-label="Selecionar registro" ${selectedCentralPending.has(getCentralPendingRecordId(record)) ? 'checked' : ''} onchange="toggleCentralPendingRecord('${rowId}', this.checked)"></td>
             <td>${getCentralPendingDate(record)}</td>
             <td><span class="central-pending-type">${escapeHtml(getCentralPendingRecordType(record))}</span></td>
             <td>${escapeHtml(record?.motorista || '-')}</td>
@@ -7769,6 +7778,52 @@
       });
     }
 
+    function toggleCentralPendingRecord(rowId, checked) {
+      if (checked) selectedCentralPending.add(rowId);
+      else selectedCentralPending.delete(rowId);
+    }
+
+    function toggleAllCentralPendingRecords(checked) {
+      const rows = getCentralPendingSortedRows();
+      rows.forEach(record => {
+        const rowId = getCentralPendingRecordId(record);
+        if (checked) selectedCentralPending.add(rowId);
+        else selectedCentralPending.delete(rowId);
+      });
+      renderCentralPendingRecords();
+    }
+
+    async function auditSelectedCentralPendingRecords() {
+      const records = centralPendingRecords.filter(record => selectedCentralPending.has(getCentralPendingRecordId(record)));
+      if (!records.length) return showToast('Selecione ao menos um registro para auditar.');
+      try {
+        await Promise.all(records.map(record => setCentralPendingRecordStatus(record, { status: 'pendente', resolucao: 'Registro devolvido para pendente pela auditoria.', importadoEm: '', lancamentoFinanceiroId: '' })));
+        selectedCentralPending.clear();
+        renderCentralPendingRecords();
+        showToast('Registros devolvidos para pendente.');
+      } catch (error) {
+        showToast(error?.message || 'Não foi possível concluir a auditoria.');
+      }
+    }
+
+    function deleteSelectedCentralPendingRecords() {
+      const records = centralPendingRecords.filter(record => selectedCentralPending.has(getCentralPendingRecordId(record)));
+      if (!records.length) return showToast('Selecione ao menos um registro para excluir.');
+      openPromptModal({
+        mode: 'confirm', title: 'Excluir registros', text: `Excluir ${records.length} registro(s) da Central? Essa ação não poderá ser desfeita.`, confirmLabel: 'Excluir', cancelLabel: 'Cancelar',
+        onConfirm: async () => {
+          try {
+            await Promise.all(records.map(record => window.WeFrotasBackend.deleteCentralPendingRecord(getCentralPendingRecordId(record))));
+            const ids = new Set(records.map(getCentralPendingRecordId));
+            centralPendingRecords = centralPendingRecords.filter(record => !ids.has(getCentralPendingRecordId(record)));
+            selectedCentralPending.clear();
+            renderCentralPendingRecords();
+            showToast('Registros excluídos da Central.');
+          } catch (error) { showToast(error?.message || 'Não foi possível excluir os registros.'); }
+        }
+      });
+    }
+
     function renderDocuments() {
       const panel = document.getElementById('panel-documentos');
       if (!panel) return;
@@ -7790,6 +7845,10 @@
     window.prepareCentralPendingRecord = prepareCentralPendingRecord;
     window.approveCentralPendingRecord = approveCentralPendingRecord;
     window.rejectCentralPendingRecord = rejectCentralPendingRecord;
+    window.toggleCentralPendingRecord = toggleCentralPendingRecord;
+    window.toggleAllCentralPendingRecords = toggleAllCentralPendingRecords;
+    window.auditSelectedCentralPendingRecords = auditSelectedCentralPendingRecords;
+    window.deleteSelectedCentralPendingRecords = deleteSelectedCentralPendingRecords;
 
     function setFuelSheetPage(page) {
       fuelSheetPreferences.page = page;

@@ -4369,6 +4369,14 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
 
 .central-pending-filter input { padding-right: 8px; }
 
+.central-pending-bulk-actions { display: inline-flex; gap: 6px; }
+.central-pending-bulk-actions button {
+  width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid #dbe5f3; border-radius: 10px; background: #fff; color: #475569; cursor: pointer;
+}
+.central-pending-bulk-actions button:first-child { color: #dc2626; border-color: #fecaca; }
+.central-pending-bulk-actions button:last-child { color: #1d4ed8; }
+
 .central-pending-table-shell {
   overflow: hidden;
   border: 1px solid #e3ebf7;
