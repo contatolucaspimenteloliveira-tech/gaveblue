@@ -3259,6 +3259,7 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
     .finance-entry--expense::before {
       background: transparent;
     }
+    #panel-financeiro > .orders-filter-shell,
     #panel-financeiro .finance-filters-popover { display: none; }
     #panel-financeiro .finance-filters-popover.is-open {
       display: block; position: absolute; left: 0; top: calc(100% + 6px); z-index: 30;
@@ -3266,7 +3267,11 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       border-radius: 16px; background: rgba(255,255,255,.96); backdrop-filter: blur(14px); box-shadow: 0 18px 38px rgba(15,23,42,.14);
     }
     #panel-financeiro .finance-filters-popover.is-open .orders-filter-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+    #panel-financeiro .finance-filters-popover .orders-filter-actions { display: none; }
+    #panel-financeiro { margin-top: -18px; padding-top: 0 !important; }
+    .finance-filter-controls { display: inline-flex; align-items: center; gap: 6px; }
     .finance-filter-trigger { height: 34px; padding: 0 11px; border: 1px solid #dbe5f3; border-radius: 10px; background:#fff; color:#475569; font:inherit; font-size:11px; font-weight:700; }
+    .finance-filter-clear { width: 34px !important; height: 34px !important; padding: 0 !important; }
     .mini-badge--status-pendente,
     .mini-badge--status-pendente_os {
       color: #9a6700;
