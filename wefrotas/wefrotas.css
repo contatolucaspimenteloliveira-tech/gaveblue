@@ -4341,6 +4341,238 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
   overflow: visible;
 }
 
+.central-pending-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.central-pending-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid #e3ebf7;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #ffffff 0%, #f6f9ff 100%);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+}
+
+.central-pending-header span {
+  display: block;
+  color: #5f6ef5;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.central-pending-header h2 {
+  margin: 6px 0 6px;
+  color: #06152f;
+  font-size: clamp(24px, 2.3vw, 34px);
+  font-weight: 900;
+}
+
+.central-pending-header p {
+  margin: 0;
+  max-width: 720px;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.central-pending-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid #dbe5f3;
+  border-radius: 16px;
+  background: #fff;
+  color: #3055e7;
+  font-weight: 900;
+  box-shadow: 0 12px 30px rgba(48, 85, 231, 0.10);
+}
+
+.central-pending-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.central-pending-summary > div {
+  padding: 16px 18px;
+  border: 1px solid #e3ebf7;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(15, 23, 42, 0.05);
+}
+
+.central-pending-summary span {
+  display: block;
+  color: #7b88a1;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+
+.central-pending-summary strong {
+  display: block;
+  margin-top: 4px;
+  color: #071632;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.central-pending-table-shell {
+  overflow: hidden;
+  border: 1px solid #e3ebf7;
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 18px 54px rgba(15, 23, 42, 0.06);
+}
+
+.central-pending-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.central-pending-table {
+  width: 100%;
+  min-width: 1120px;
+  border-collapse: collapse;
+}
+
+.central-pending-table th,
+.central-pending-table td {
+  padding: 16px 14px;
+  border-bottom: 1px solid #edf2f8;
+  color: #17233c;
+  font-size: 14px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.central-pending-table th {
+  color: #8a97ad;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #fbfdff;
+}
+
+.central-pending-table tbody tr:hover {
+  background: #f8fbff;
+}
+
+.central-pending-table small {
+  display: block;
+  margin-top: 2px;
+  color: #8a97ad;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.central-pending-type,
+.central-pending-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.central-pending-type {
+  background: #eef4ff;
+  color: #3055e7;
+}
+
+.central-pending-status.pending {
+  background: #fff7dc;
+  color: #a36200;
+  border: 1px solid #ffd36b;
+}
+
+.central-pending-status.approved,
+.central-pending-status.imported {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.central-pending-status.error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.central-pending-value {
+  font-weight: 900;
+}
+
+.central-pending-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.central-pending-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #dbe5f3;
+  border-radius: 14px;
+  background: #fff;
+  color: #3055e7;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.central-pending-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(48, 85, 231, 0.14);
+}
+
+.central-pending-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.central-pending-empty {
+  padding: 40px 20px !important;
+  color: #64748b !important;
+  font-weight: 800;
+  text-align: center !important;
+}
+
+.central-pending-error {
+  color: #b91c1c !important;
+}
+
+@media (max-width: 720px) {
+  .central-pending-header {
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .central-pending-refresh {
+    width: 100%;
+  }
+
+  .central-pending-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
 .documents-sheet-header {
   display: flex;
   align-items: center;

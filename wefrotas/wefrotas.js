@@ -5,6 +5,10 @@
     let allFinanceEntries = [];
     let allAdministrations = [];
     let deletedOrders = [];
+    let centralPendingRecords = [];
+    let centralPendingLoading = false;
+    let centralPendingError = '';
+    let centralPendingLoaded = false;
     const globalSearchInputEl = document.getElementById('global-search-input');
     const globalSearchResultsEl = document.getElementById('global-search-results');
     const mobileGlobalSearchInputEl = document.getElementById('mobile-global-search-input');
@@ -3008,7 +3012,7 @@
       },
       documentos: {
         title: 'Documentos',
-        subtitle: 'Consulte os comprovantes vinculados aos abastecimentos da frota.'
+        subtitle: 'Acompanhe os registros recebidos da Central antes de aprovar os lançamentos.'
       },
       relatorios: {
         title: 'Relatórios',
@@ -7426,19 +7430,199 @@
       `;
     }
 
+    function getCentralPendingRecordId(record) {
+      return String(record?.$id || record?.id || record?.protocolo || '');
+    }
+
+    function getCentralPendingRecordType(record) {
+      const type = normalizeComparableText(record?.tipo || record?.type || '');
+      if (type.includes('servico')) return 'Serviço';
+      if (type.includes('rapido')) return 'Abastecimento rápido';
+      return 'Abastecimento';
+    }
+
+    function getCentralPendingSupplier(record) {
+      return record?.posto || record?.fornecedor || record?.supplier || '-';
+    }
+
+    function getCentralPendingValue(record) {
+      const numericValue = Number(record?.valorNumero ?? record?.valor ?? 0);
+      if (Number.isFinite(numericValue) && numericValue > 0) return formatCurrency(numericValue);
+      return record?.valor ? escapeHtml(record.valor) : '-';
+    }
+
+    function getCentralPendingDate(record) {
+      const dateValue = record?.data || record?.dataBr || String(record?.criadoEm || '').slice(0, 10);
+      const timeValue = record?.hora || '';
+      return `${formatDate(dateValue)}${timeValue ? `<small>${escapeHtml(timeValue)}</small>` : ''}`;
+    }
+
+    function getCentralPendingStatus(record) {
+      const status = normalizeComparableText(record?.status || 'pendente');
+      if (status.includes('import')) return { label: 'Importado', className: 'imported' };
+      if (status.includes('erro')) return { label: 'Erro', className: 'error' };
+      if (status.includes('aprov')) return { label: 'Aprovado', className: 'approved' };
+      return { label: 'Pendente', className: 'pending' };
+    }
+
+    function buildCentralPendingMessage(record) {
+      if (record?.mensagemWhatsapp) return String(record.mensagemWhatsapp);
+      const type = normalizeComparableText(record?.tipo || '');
+      if (type.includes('servico')) {
+        return [
+          'REGISTRO DE SERVIÇOS',
+          `Motorista: ${record?.motorista || ''}`,
+          `Fornecedor: ${record?.fornecedor || record?.posto || ''}`,
+          `Tipo do serviço: ${record?.tipoServico || ''}`,
+          `Valor: ${record?.valor || getCentralPendingValue(record)}`,
+          `Data/Hora: ${record?.data || ''}${record?.hora ? ` ${record.hora}` : ''}`,
+          `KM: ${record?.km || ''}`,
+          `Comprovante: ${record?.comprovanteUrl || ''}`
+        ].join('\n');
+      }
+      return [
+        'COMPROVANTE DE ABASTECIMENTO',
+        `Motorista: ${record?.motorista || ''}`,
+        `Cidade: ${record?.cidade || ''}`,
+        `Posto: ${record?.posto || record?.fornecedor || ''}`,
+        `Data/Hora: ${record?.data || ''}${record?.hora ? ` ${record.hora}` : ''}`,
+        `KM: ${record?.km || ''}`,
+        `Litros: ${record?.litros || ''}`,
+        `Valor: ${record?.valor || ''}`,
+        `Combustível: ${record?.tipoCombustivel || ''}`,
+        `Comprovante: ${record?.comprovanteUrl || ''}`
+      ].join('\n');
+    }
+
+    function getCentralPendingSortedRows() {
+      return [...centralPendingRecords]
+        .filter(record => normalizeComparableText(record?.workspaceId || '') === normalizeComparableText(window.WeFrotasBackend?.config?.companyId || 'covre-e-cia'))
+        .sort((a, b) => String(b?.criadoEm || b?.data || '').localeCompare(String(a?.criadoEm || a?.data || '')));
+    }
+
+    function renderCentralPendingSummary(rows) {
+      const pendingRows = rows.filter(row => getCentralPendingStatus(row).className === 'pending');
+      const fuelRows = rows.filter(row => !normalizeComparableText(row?.tipo || '').includes('servico'));
+      const serviceRows = rows.filter(row => normalizeComparableText(row?.tipo || '').includes('servico'));
+      const countNode = document.getElementById('central-pending-count');
+      const fuelNode = document.getElementById('central-pending-fuel-count');
+      const serviceNode = document.getElementById('central-pending-service-count');
+      if (countNode) countNode.textContent = pendingRows.length.toLocaleString('pt-BR');
+      if (fuelNode) fuelNode.textContent = fuelRows.length.toLocaleString('pt-BR');
+      if (serviceNode) serviceNode.textContent = serviceRows.length.toLocaleString('pt-BR');
+    }
+
+    function renderCentralPendingRecords() {
+      const list = document.getElementById('central-pending-list');
+      if (!list) return;
+      const rows = getCentralPendingSortedRows();
+      renderCentralPendingSummary(rows);
+
+      if (centralPendingLoading) {
+        list.innerHTML = '<tr><td colspan="9" class="central-pending-empty">Buscando registros enviados pela Central...</td></tr>';
+        return;
+      }
+      if (centralPendingError) {
+        list.innerHTML = `<tr><td colspan="9" class="central-pending-empty central-pending-error">${escapeHtml(centralPendingError)}</td></tr>`;
+        return;
+      }
+      if (!centralPendingLoaded) {
+        list.innerHTML = '<tr><td colspan="9" class="central-pending-empty">Clique em Atualizar para buscar registros enviados pela Central.</td></tr>';
+        return;
+      }
+      if (!rows.length) {
+        list.innerHTML = '<tr><td colspan="9" class="central-pending-empty">Nenhum registro recebido da Central até agora.</td></tr>';
+        return;
+      }
+
+      list.innerHTML = rows.map((record) => {
+        const status = getCentralPendingStatus(record);
+        const rowId = escapeHtml(getCentralPendingRecordId(record));
+        const receiptUrl = String(record?.comprovanteUrl || '').trim();
+        return `
+          <tr>
+            <td>${getCentralPendingDate(record)}</td>
+            <td><span class="central-pending-type">${escapeHtml(getCentralPendingRecordType(record))}</span></td>
+            <td>${escapeHtml(record?.motorista || '-')}</td>
+            <td>${escapeHtml(getCentralPendingSupplier(record))}</td>
+            <td>${escapeHtml(record?.veiculo || record?.placa || '-')}</td>
+            <td>${escapeHtml(record?.km || '-')}</td>
+            <td class="central-pending-value">${getCentralPendingValue(record)}</td>
+            <td><span class="central-pending-status ${status.className}">${status.label}</span></td>
+            <td>
+              <div class="central-pending-actions">
+                <button type="button" title="Preparar lançamento" onclick="prepareCentralPendingRecord('${rowId}')">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 5v14M5 12h14"/></svg>
+                </button>
+                <button type="button" title="Ver comprovante" ${receiptUrl ? `onclick="viewFinanceReceipt('${escapeHtml(receiptUrl)}')"` : 'disabled'}>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3" stroke-width="1.9"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function refreshCentralPendingRecords() {
+      if (!window.WeFrotasBackend?.getUser?.()) {
+        centralPendingError = 'Entre no WeFrotas Online para consultar os registros da Central.';
+        centralPendingLoaded = true;
+        renderCentralPendingRecords();
+        return;
+      }
+      if (!window.WeFrotasBackend?.listCentralPendingRecords) {
+        centralPendingError = 'Leitura da Central ainda não está disponível neste navegador.';
+        centralPendingLoaded = true;
+        renderCentralPendingRecords();
+        return;
+      }
+
+      centralPendingLoading = true;
+      centralPendingError = '';
+      renderCentralPendingRecords();
+      try {
+        const result = await window.WeFrotasBackend.listCentralPendingRecords(150);
+        centralPendingRecords = Array.isArray(result?.rows) ? result.rows : [];
+        centralPendingLoaded = true;
+      } catch (error) {
+        centralPendingError = `Não foi possível carregar a Central: ${error?.message || 'erro desconhecido'}`;
+      } finally {
+        centralPendingLoading = false;
+        renderCentralPendingRecords();
+      }
+    }
+
+    function prepareCentralPendingRecord(rowId) {
+      const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
+      if (!record) {
+        showToast('Registro da Central não encontrado. Atualize a lista e tente novamente.');
+        return;
+      }
+      const importedData = parseImportedCentralMessage(buildCentralPendingMessage(record));
+      if (!importedData) {
+        showToast('Não consegui interpretar esse registro da Central. Confira os campos recebidos.');
+        return;
+      }
+      if (importedData.type === 'loose_note' || importedData.type === 'service') {
+        openImportedLooseNoteLaunch(importedData);
+      } else {
+        openImportedFuelLaunch(importedData);
+      }
+    }
+
     function renderDocuments() {
       const panel = document.getElementById('panel-documentos');
       if (!panel) return;
-      if (!document.getElementById('fuel-sheet-head')) return;
-      const rows = getFilteredFuelSheetRows();
-      const visibleColumns = getVisibleFuelSheetColumns();
-      renderFuelColumnsPanel();
-      renderFuelSheetTotals(rows);
-      renderFuelSheetHead(visibleColumns);
-      renderFuelSheetBody(rows, visibleColumns);
-      renderFuelSheetPagination(rows);
-      saveFuelSheetPreferences();
+      if (!centralPendingLoaded && !centralPendingLoading && !centralPendingError) {
+        refreshCentralPendingRecords();
+        return;
+      }
+      renderCentralPendingRecords();
     }
+
+    window.refreshCentralPendingRecords = refreshCentralPendingRecords;
+    window.prepareCentralPendingRecord = prepareCentralPendingRecord;
 
     function setFuelSheetPage(page) {
       fuelSheetPreferences.page = page;

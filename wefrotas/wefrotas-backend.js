@@ -382,6 +382,28 @@
     return String(storage.getFileView({ bucketId: config.bucketId, fileId: uploaded.$id }));
   }
 
+  async function listCentralPendingRecords(limit = 100) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para consultar a Central de Registros.');
+    if (!tablesDB) throw new Error('Banco de dados do Appwrite não está conectado.');
+    if (!config.centralTableId) throw new Error('Tabela da Central de Registros não configurada.');
+
+    const queries = [];
+    if (global.Appwrite?.Query?.limit) {
+      queries.push(global.Appwrite.Query.limit(Number(limit) || 100));
+    }
+
+    const result = await tablesDB.listRows({
+      databaseId: config.databaseId,
+      tableId: config.centralTableId,
+      queries
+    });
+
+    return {
+      total: Number(result?.total || result?.rows?.length || 0),
+      rows: Array.isArray(result?.rows) ? result.rows : []
+    };
+  }
+
   async function initialize(options = {}) {
     currentSnapshotGetter = options.getSnapshot;
     currentSnapshotUpdatedAtGetter = options.getSnapshotUpdatedAt;
@@ -425,6 +447,6 @@
     getUser: () => currentUser,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
     syncNow: snapshot => { const nextSnapshot = snapshot || currentSnapshotGetter?.(); setPendingSync(true); return persistSnapshot(nextSnapshot); },
-    uploadReceipt
+    uploadReceipt, listCentralPendingRecords
   });
 })(window);

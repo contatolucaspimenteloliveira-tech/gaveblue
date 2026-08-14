@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260813-sidebar-white-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260814-central-pending-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -695,18 +695,60 @@
           </div>
         </section>
 
-        <section id="panel-documentos" class="module-panel content-card orders-page-shell p-8 sm:p-10">
-          <div class="calendar-placeholder">
-            <div class="calendar-placeholder-card">
-              <div class="calendar-placeholder-icon">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 7h10M7 11h10M7 15h6M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/>
+        <section id="panel-documentos" class="module-panel content-card orders-page-shell p-4 sm:p-6">
+          <div class="central-pending-workspace">
+            <div class="central-pending-header">
+              <div>
+                <span>Central de Registros</span>
+                <h2>Registros pendentes</h2>
+                <p>Receba aqui os abastecimentos e serviços enviados pelos motoristas antes de transformar em lançamento financeiro.</p>
+              </div>
+              <button class="central-pending-refresh" type="button" onclick="refreshCentralPendingRecords()">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 4v6h6M20 20v-6h-6"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M20 10A8 8 0 006 6L4 10M4 14a8 8 0 0014 4l2-4"/>
                 </svg>
+                Atualizar
+              </button>
+            </div>
+
+            <div class="central-pending-summary">
+              <div>
+                <span>Pendentes</span>
+                <strong id="central-pending-count">0</strong>
               </div>
               <div>
-                <p class="calendar-placeholder-kicker">Documentos</p>
-                <h3>Área preparada para anexos</h3>
-                <p>Este espaço ficará reservado para documentos da frota. O Registro de Abastecimentos agora está disponível na aba Relatórios.</p>
+                <span>Abastecimentos</span>
+                <strong id="central-pending-fuel-count">0</strong>
+              </div>
+              <div>
+                <span>Serviços</span>
+                <strong id="central-pending-service-count">0</strong>
+              </div>
+            </div>
+
+            <div class="central-pending-table-shell">
+              <div class="central-pending-table-scroll">
+                <table class="central-pending-table">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Tipo</th>
+                      <th>Motorista</th>
+                      <th>Fornecedor/Posto</th>
+                      <th>Veículo</th>
+                      <th>KM</th>
+                      <th>Valor</th>
+                      <th>Status</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="central-pending-list">
+                    <tr>
+                      <td colspan="9" class="central-pending-empty">Clique em Atualizar para buscar registros enviados pela Central.</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -1334,10 +1376,10 @@
     </div>
   </div>
 
-  <script src="./appwrite-config.js?v=1"></script>
+  <script src="./appwrite-config.js?v=20260814-central-pending-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
-  <script src="./wefrotas-backend.js?v=20260803-storage-optimization-1"></script>
-  <script src="./wefrotas.js?v=20260813-report-ui-3"></script>
+  <script src="./wefrotas-backend.js?v=20260814-central-pending-1"></script>
+  <script src="./wefrotas.js?v=20260814-central-pending-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
