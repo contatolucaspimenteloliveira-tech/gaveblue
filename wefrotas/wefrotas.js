@@ -34,6 +34,8 @@
     let vehicleSortState = { key: 'fleet', direction: 'asc' };
     let driverSortState = { key: 'name', direction: 'asc' };
     let supplierSortState = { key: 'name', direction: 'asc' };
+    const reportPreferencesStorageKey = 'wefrotas_report_preferences_v1';
+    let reportPreferences = loadReportPreferences();
     let currentModalType = null;
     let currentEditingId = null;
     let currentFinanceEntryType = null;
@@ -4987,6 +4989,7 @@
     function getReportTitleByType(type) {
       switch (type) {
         case 'cost': return 'Custo por KM';
+        case 'fuel_liters_per_km': return 'Litro por KM';
         case 'monthly_vehicle_cost': return 'Custo mensal por veículo';
         case 'fuel_register': return 'Registro de abastecimentos';
         case 'orders': return 'OS por veículo';
@@ -5023,6 +5026,33 @@
       return vehicle ? `${vehicle.placa || '-'} ${vehicle.modelo || 'Veículo'} Frota ${vehicle.numeroFrota || '-'}` : 'Veículo filtrado';
     }
 
+    function getReportDateContextLabel(type) {
+      if (['fuel_register', 'fuel_liters_per_km', 'cost'].includes(type)) {
+        return 'Data usada: abastecimento dos lançamentos de combustível.';
+      }
+      if (type === 'monthly_vehicle_cost') {
+        return 'Data usada: competência de abertura da OS vinculada ao veículo.';
+      }
+      if (String(type || '').startsWith('orders')) {
+        return type === 'orders_deleted'
+          ? 'Data usada: exclusão da OS.'
+          : 'Data usada: abertura da OS.';
+      }
+      if (['finance_status', 'supplier_ranking'].includes(type)) {
+        return 'Data usada: vencimento ou data principal do lançamento financeiro.';
+      }
+      if (type === 'maintenance_due') {
+        return 'Filtro de data não interfere nas revisões por KM.';
+      }
+      if (type === 'cnh_expiring') {
+        return 'Data usada: validade da CNH.';
+      }
+      if (type === 'insurance_expiring') {
+        return 'Data usada: vencimento do seguro.';
+      }
+      return 'A data usada depende do relatório selecionado.';
+    }
+
     function getReportFinanceEntries(filters) {
       return allFinanceEntries
         .filter(entry => !entry.groupedIntoId)
@@ -5052,6 +5082,198 @@
 
     function createReportStatusPill(label, tone = 'neutral') {
       return `<span class="report-status-pill status-${tone}">${escapeHtml(label)}</span>`;
+    }
+
+    function createReportReceiptCell(url) {
+      const normalizedUrl = String(url || '').trim();
+      if (!normalizedUrl) return { text: '-' };
+      return {
+        text: 'Ver comprovante',
+        html: `
+          <button type="button" class="report-link-btn" title="Ver comprovante" onclick="event.stopPropagation(); viewFinanceReceipt(decodeURIComponent('${encodeURIComponent(normalizedUrl)}'))">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 13a5 5 0 007.07 0l2.12-2.12a5 5 0 00-7.07-7.07L11 4.93"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 11a5 5 0 00-7.07 0L4.81 13.12a5 5 0 007.07 7.07L13 19.07"/>
+            </svg>
+          </button>
+        `
+      };
+    }
+
+    function getReportColumnId(column, index) {
+      const base = normalizeComparableText(column?.label || `coluna ${index + 1}`)
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      return `${base || 'coluna'}-${index}`;
+    }
+
+    function loadReportPreferences() {
+      try {
+        return JSON.parse(localStorage.getItem(reportPreferencesStorageKey) || '{}') || {};
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function saveReportPreferences() {
+      try {
+        localStorage.setItem(reportPreferencesStorageKey, JSON.stringify(reportPreferences || {}));
+      } catch (error) {
+        console.warn('Não foi possível salvar a configuração dos relatórios.', error);
+      }
+    }
+
+    function getReportPreference(type = getReportFilters().type) {
+      if (!reportPreferences[type]) {
+        reportPreferences[type] = { order: [], hidden: [] };
+      }
+      return reportPreferences[type];
+    }
+
+    function getNormalizedReportColumns(reportData) {
+      return (reportData.columns || []).map((column, index) => ({
+        ...column,
+        id: column.id || getReportColumnId(column, index),
+        originalIndex: index
+      }));
+    }
+
+    function getReportColumnsInPreferredOrder(reportData, type = getReportFilters().type) {
+      const columns = getNormalizedReportColumns(reportData);
+      const ids = columns.map(column => column.id);
+      const preference = getReportPreference(type);
+      const orderedIds = Array.isArray(preference.order)
+        ? preference.order.filter(id => ids.includes(id))
+        : [];
+      const missingIds = ids.filter(id => !orderedIds.includes(id));
+      return [...orderedIds, ...missingIds]
+        .map(id => columns.find(column => column.id === id))
+        .filter(Boolean);
+    }
+
+    function getReportDisplayData(reportData, type = getReportFilters().type) {
+      const orderedColumns = getReportColumnsInPreferredOrder(reportData, type);
+      const preference = getReportPreference(type);
+      const hiddenIds = new Set(Array.isArray(preference.hidden) ? preference.hidden : []);
+      const visibleColumns = orderedColumns.filter(column => !hiddenIds.has(column.id));
+      const safeColumns = visibleColumns.length ? visibleColumns : orderedColumns;
+      return {
+        ...reportData,
+        columns: safeColumns,
+        rows: (reportData.rows || []).map(row => ({
+          ...row,
+          cells: safeColumns.map(column => row.cells?.[column.originalIndex] || { text: '-' })
+        }))
+      };
+    }
+
+    function renderReportColumnsPanel(reportData) {
+      const panel = document.getElementById('report-columns-panel');
+      if (!panel) return;
+      const type = getReportFilters().type;
+      const preference = getReportPreference(type);
+      const hiddenIds = new Set(Array.isArray(preference.hidden) ? preference.hidden : []);
+      const columns = getReportColumnsInPreferredOrder(reportData, type);
+      if (!columns.length) {
+        panel.innerHTML = '';
+        return;
+      }
+
+      panel.innerHTML = `
+        <div class="report-columns-head">
+          <div>
+            <strong>Colunas do relatório</strong>
+            <span>Escolha, oculte e reorganize a visualização atual.</span>
+          </div>
+          <button type="button" class="soft-btn !h-9 !px-3" onclick="resetReportColumns()">Restaurar padrão</button>
+        </div>
+        <div class="report-columns-grid">
+          ${columns.map((column, index) => `
+            <label class="report-column-option">
+              <input type="checkbox" ${hiddenIds.has(column.id) ? '' : 'checked'} onchange="setReportColumnVisibility('${column.id}', this.checked)">
+              <span>${escapeHtml(column.label)}</span>
+              <div class="report-column-move">
+                <button type="button" title="Mover para esquerda" ${index === 0 ? 'disabled' : ''} onclick="event.preventDefault(); moveReportColumn('${column.id}', -1)">←</button>
+                <button type="button" title="Mover para direita" ${index === columns.length - 1 ? 'disabled' : ''} onclick="event.preventDefault(); moveReportColumn('${column.id}', 1)">→</button>
+              </div>
+            </label>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function toggleReportColumnsPanel(force) {
+      const panel = document.getElementById('report-columns-panel');
+      if (!panel) return;
+      const shouldShow = typeof force === 'boolean' ? force : panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !shouldShow);
+    }
+
+    function setReportColumnVisibility(columnId, visible) {
+      const preference = getReportPreference();
+      const hidden = new Set(Array.isArray(preference.hidden) ? preference.hidden : []);
+      if (visible) hidden.delete(columnId);
+      else hidden.add(columnId);
+      preference.hidden = Array.from(hidden);
+      saveReportPreferences();
+      renderReports();
+      toggleReportColumnsPanel(true);
+    }
+
+    function moveReportColumn(columnId, direction) {
+      const reportData = buildReportData(getReportFilters());
+      const type = getReportFilters().type;
+      const columns = getReportColumnsInPreferredOrder(reportData, type);
+      const order = columns.map(column => column.id);
+      const currentIndex = order.indexOf(columnId);
+      const nextIndex = currentIndex + Number(direction || 0);
+      if (currentIndex < 0 || nextIndex < 0 || nextIndex >= order.length) return;
+      [order[currentIndex], order[nextIndex]] = [order[nextIndex], order[currentIndex]];
+      getReportPreference(type).order = order;
+      saveReportPreferences();
+      renderReports();
+      toggleReportColumnsPanel(true);
+    }
+
+    function resetReportColumns() {
+      const type = getReportFilters().type;
+      delete reportPreferences[type];
+      saveReportPreferences();
+      renderReports();
+      toggleReportColumnsPanel(true);
+      showToast('Visual do relatório restaurado.');
+    }
+
+    function getReportExportRows(reportData) {
+      const displayData = getReportDisplayData(reportData);
+      return displayData.rows.map(row => displayData.columns.reduce((acc, column, index) => {
+        const cell = row.cells[index] || {};
+        acc[column.label] = cell.text || '-';
+        return acc;
+      }, {}));
+    }
+
+    function exportReport(type = 'xlsx') {
+      const reportData = buildReportData(getReportFilters());
+      const rows = getReportExportRows(reportData);
+      if (!rows.length) {
+        showToast('Não há dados para exportar.');
+        return;
+      }
+      if (type === 'pdf') {
+        printReport();
+        return;
+      }
+      if (!window.XLSX) {
+        showToast('Biblioteca de exportação ainda não carregada.');
+        return;
+      }
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(workbook, sheet, 'Relatório');
+      const extension = type === 'xls' ? 'xls' : 'xlsx';
+      const slug = normalizeComparableText(reportData.title).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'relatorio';
+      XLSX.writeFile(workbook, `${slug}.${extension}`, { bookType: extension });
     }
 
     function buildReportData(filters) {
@@ -5164,7 +5386,8 @@
             { label: 'Litros', numeric: true },
             { label: 'Valor', numeric: true },
             { label: 'Motorista' },
-            { label: 'Posto' }
+            { label: 'Posto' },
+            { label: 'Comprovante' }
           ],
           rows: rows.map(row => ({
             cells: [
@@ -5175,10 +5398,115 @@
               { text: formatLitersValue(row.entry.litros), numeric: true },
               { text: formatCurrency(getFinanceTotal(row.entry)), numeric: true },
               { text: row.driver?.nome || row.entry.motorista || row.entry.driverName || '-' },
-              { text: row.entry.fornecedor || row.supplier?.nome || '-' }
+              { text: row.entry.fornecedor || row.supplier?.nome || '-' },
+              createReportReceiptCell(row.entry.comprovanteUrl)
             ]
           })),
           emptyMessage: 'Nenhum abastecimento encontrado para os filtros aplicados.'
+        };
+      }
+
+      if (filters.type === 'fuel_liters_per_km') {
+        const sourceRows = getFuelSheetRows()
+          .filter(row => !filters.vehicleId || getEntryLinkedVehicleId(row.entry) === filters.vehicleId || row.vehicle?.id === filters.vehicleId)
+          .map(row => ({
+            ...row,
+            vehicleId: getEntryLinkedVehicleId(row.entry) || row.vehicle?.id || '',
+            entryDate: getFinanceEntryDate(row.entry),
+            km: Number(row.entry.km || 0),
+            liters: parseDecimalInputValue(row.entry.litros),
+            total: getFinanceTotal(row.entry)
+          }))
+          .filter(row => row.vehicleId && row.entryDate && row.km > 0)
+          .sort((a, b) => {
+            const vehicleCompare = String(a.vehicleId).localeCompare(String(b.vehicleId));
+            if (vehicleCompare) return vehicleCompare;
+            const dateCompare = String(a.entryDate).localeCompare(String(b.entryDate));
+            if (dateCompare) return dateCompare;
+            return a.km - b.km;
+          });
+
+        const previousKmByVehicle = new Map();
+        const reportRows = sourceRows
+          .map(row => {
+            const initialKm = previousKmByVehicle.get(row.vehicleId) || null;
+            previousKmByVehicle.set(row.vehicleId, row.km);
+            const kmDriven = initialKm && row.km > initialKm ? row.km - initialKm : 0;
+            const litersPerKm = kmDriven > 0 ? row.liters / kmDriven : 0;
+            const kmPerLiter = row.liters > 0 && kmDriven > 0 ? kmDriven / row.liters : 0;
+            const costPerKm = kmDriven > 0 ? row.total / kmDriven : 0;
+            return {
+              ...row,
+              initialKm,
+              finalKm: row.km,
+              kmDriven,
+              litersPerKm,
+              kmPerLiter,
+              costPerKm
+            };
+          })
+          .filter(row => isDateWithinRange(row.entryDate, filters.start, filters.end))
+          .sort((a, b) => String(b.entryDate).localeCompare(String(a.entryDate)) || b.finalKm - a.finalKm);
+
+        const totalLiters = reportRows.reduce((sum, row) => sum + row.liters, 0);
+        const totalKm = reportRows.reduce((sum, row) => sum + row.kmDriven, 0);
+        const totalValue = reportRows.reduce((sum, row) => sum + row.total, 0);
+        const averageLitersPerKm = totalKm ? totalLiters / totalKm : 0;
+        const averageKmPerLiter = totalLiters ? totalKm / totalLiters : 0;
+        const missingIntervals = reportRows.filter(row => !row.kmDriven).length;
+
+        return {
+          title,
+          meta,
+          summary: [
+            { label: 'Abastecimentos', value: String(reportRows.length), help: 'Registros de abastecimento encontrados no período.' },
+            { label: 'Litros por KM', value: averageLitersPerKm ? `${averageLitersPerKm.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })} L/km` : '-', help: 'Litros totais divididos pelo KM rodado calculado.' },
+            { label: 'KM por litro', value: averageKmPerLiter ? `${averageKmPerLiter.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km/L` : '-', help: 'Indicador complementar de consumo médio.' },
+            { label: 'Custo por KM', value: totalKm ? formatCurrency(totalValue / totalKm) : '-', help: 'Valor total dividido pelo KM rodado calculado.' }
+          ],
+          columns: [
+            { label: 'Data abastecimento' },
+            { label: 'Motorista' },
+            { label: 'Frota' },
+            { label: 'Veículo' },
+            { label: 'Placa' },
+            { label: 'KM inicial', numeric: true },
+            { label: 'KM final', numeric: true },
+            { label: 'KM rodado', numeric: true },
+            { label: 'Litros', numeric: true },
+            { label: 'L/KM', numeric: true },
+            { label: 'KM/L', numeric: true },
+            { label: 'Custo', numeric: true },
+            { label: 'Custo/KM', numeric: true },
+            { label: 'Posto' },
+            { label: 'Comprovante' }
+          ],
+          rows: reportRows.map(row => ({
+            cells: [
+              { text: formatDate(row.entryDate) },
+              { text: row.driver?.nome || row.entry.motorista || row.entry.driverName || '-' },
+              { text: row.vehicle?.numeroFrota || '-' },
+              { text: row.vehicle?.modelo || row.vehicleLabel || '-' },
+              { text: row.vehicle?.placa || row.entry.placa || '-' },
+              { text: row.initialKm ? row.initialKm.toLocaleString('pt-BR') : '-', numeric: true },
+              { text: row.finalKm ? row.finalKm.toLocaleString('pt-BR') : '-', numeric: true },
+              { text: row.kmDriven ? row.kmDriven.toLocaleString('pt-BR') : '-', numeric: true },
+              { text: formatLitersValue(row.liters), numeric: true },
+              { text: row.litersPerKm ? `${row.litersPerKm.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })} L/km` : '-', numeric: true },
+              { text: row.kmPerLiter ? `${row.kmPerLiter.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km/L` : '-', numeric: true },
+              { text: formatCurrency(row.total), numeric: true },
+              { text: row.costPerKm ? formatCurrency(row.costPerKm) : '-', numeric: true },
+              { text: row.entry.fornecedor || row.supplier?.nome || '-' },
+              createReportReceiptCell(row.entry.comprovanteUrl)
+            ],
+            tone: row.kmDriven ? '' : 'warning'
+          })),
+          emptyMessage: filters.vehicleId
+            ? 'Nenhum abastecimento com KM encontrado para este veículo no período.'
+            : 'Selecione um veículo ou ajuste o período para visualizar o consumo por KM.',
+          footerNote: missingIntervals
+            ? `${missingIntervals} registro(s) sem KM inicial anterior suficiente ficaram sem consumo calculado.`
+            : ''
         };
       }
 
@@ -5500,19 +5828,29 @@
     function renderReportResultsTable(reportData) {
       const node = document.getElementById('report-results-table');
       if (!node) return;
-      if (!reportData.rows.length) {
+      const displayData = getReportDisplayData(reportData);
+      if (!displayData.rows.length) {
         node.innerHTML = `<div class="report-results-empty">${escapeHtml(reportData.emptyMessage)}</div>`;
         return;
       }
 
-      const headHtml = reportData.columns.map(column => `
-        <th class="${column.numeric ? 'report-cell--numeric' : ''}">${escapeHtml(column.label)}</th>
+      const headHtml = displayData.columns.map(column => `
+        <th class="${column.numeric ? 'report-cell--numeric' : ''}">
+          <div class="report-head-wrap">
+            <span>${escapeHtml(column.label)}</span>
+            <span class="report-head-actions">
+              <button type="button" title="Mover para esquerda" onclick="event.stopPropagation(); moveReportColumn('${column.id}', -1)">←</button>
+              <button type="button" title="Mover para direita" onclick="event.stopPropagation(); moveReportColumn('${column.id}', 1)">→</button>
+              <button type="button" title="Ocultar coluna" onclick="event.stopPropagation(); setReportColumnVisibility('${column.id}', false)">×</button>
+            </span>
+          </div>
+        </th>
       `).join('');
 
-      const rowsHtml = reportData.rows.map(row => `
+      const rowsHtml = displayData.rows.map(row => `
         <tr>
           ${row.cells.map((cell, index) => `
-            <td class="${reportData.columns[index]?.numeric || cell.numeric ? 'report-cell--numeric' : ''}">
+            <td class="${displayData.columns[index]?.numeric || cell.numeric ? 'report-cell--numeric' : ''}">
               ${cell.html || escapeHtml(cell.text || '-')}
               ${cell.note ? `<div class="report-results-note">${escapeHtml(cell.note)}</div>` : ''}
             </td>
@@ -5529,6 +5867,7 @@
             <tbody>${rowsHtml}</tbody>
           </table>
         </div>
+        ${reportData.footerNote ? `<div class="report-results-note">${escapeHtml(reportData.footerNote)}</div>` : ''}
       `;
     }
 
@@ -6489,6 +6828,7 @@
       const typeSelect = document.getElementById('report-filter-type');
       const titleNode = document.getElementById('report-results-title');
       const metaNode = document.getElementById('report-results-meta');
+      const dateContextNode = document.getElementById('report-filter-date-context');
       if (!select || !typeSelect || !titleNode || !metaNode) return;
 
       const currentValue = select.value;
@@ -6503,7 +6843,11 @@
       const reportData = buildReportData(filters);
       titleNode.textContent = reportData.title;
       metaNode.textContent = reportData.meta;
+      if (dateContextNode) {
+        dateContextNode.textContent = getReportDateContextLabel(filters.type);
+      }
       renderReportSummary(reportData.summary);
+      renderReportColumnsPanel(reportData);
       renderReportResultsTable(reportData);
     }
 
@@ -7466,6 +7810,11 @@
     window.resetFuelSheetView = resetFuelSheetView;
     window.exportFuelSheet = exportFuelSheet;
     window.printFuelSheet = printFuelSheet;
+    window.toggleReportColumnsPanel = toggleReportColumnsPanel;
+    window.setReportColumnVisibility = setReportColumnVisibility;
+    window.moveReportColumn = moveReportColumn;
+    window.resetReportColumns = resetReportColumns;
+    window.exportReport = exportReport;
     window.triggerFuelSheetImport = triggerFuelSheetImport;
     window.handleFuelSheetImport = handleFuelSheetImport;
     window.setFuelSheetPage = setFuelSheetPage;
@@ -7657,7 +8006,8 @@
 
     function printReport() {
       const filters = getReportFilters();
-      const reportData = buildReportData(filters);
+      const rawReportData = buildReportData(filters);
+      const reportData = getReportDisplayData(rawReportData, filters.type);
       const printWindow = window.open('', '_blank', 'width=1080,height=1200');
       if (!printWindow) {
         showToast('Não foi possível abrir a impressão do relatório.');

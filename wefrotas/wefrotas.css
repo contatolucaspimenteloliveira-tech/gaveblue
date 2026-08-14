@@ -2336,6 +2336,121 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
       font-size: 12px;
       color: #64748b;
     }
+    .report-filter-card .soft-input {
+      min-height: 44px;
+      border-radius: 14px;
+      font-size: 13px;
+    }
+    .report-filter-context {
+      margin: 12px 0 0;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .report-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .report-toolbar .icon-action {
+      min-width: 52px;
+      padding: 0 12px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #3151d3;
+    }
+    .report-toolbar-btn {
+      min-height: 44px;
+      padding-inline: 16px;
+    }
+    .report-columns-panel {
+      border: 1px solid #dfe8f5;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.06);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .report-columns-panel.hidden {
+      display: none;
+    }
+    .report-columns-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .report-columns-head strong {
+      display: block;
+      font-size: 14px;
+      color: #0f172a;
+    }
+    .report-columns-head span {
+      display: block;
+      margin-top: 3px;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .report-columns-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px;
+    }
+    .report-column-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+      padding: 8px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: #ffffff;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .report-column-option input {
+      width: 18px;
+      height: 18px;
+      accent-color: #3151d3;
+    }
+    .report-column-option > span {
+      flex: 1;
+      min-width: 0;
+    }
+    .report-column-move,
+    .report-head-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .report-column-move button,
+    .report-head-actions button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 8px;
+      border: 1px solid #dbe4f0;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 800;
+      transition: 0.18s ease;
+    }
+    .report-column-move button:hover:not(:disabled),
+    .report-head-actions button:hover {
+      color: #3151d3;
+      border-color: #b8c7ff;
+      background: #eef2ff;
+    }
+    .report-column-move button:disabled {
+      cursor: not-allowed;
+      opacity: 0.35;
+    }
     .report-results-shell {
       border-radius: 18px;
       border: 1px solid #e7edf5;
@@ -2367,6 +2482,39 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
+    .report-head-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 130px;
+    }
+    .report-head-actions {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.16s ease;
+    }
+    .report-results-table th:hover .report-head-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .report-link-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 1px solid #c9d6ff;
+      background: #f5f7ff;
+      color: #3151d3;
+      transition: 0.18s ease;
+    }
+    .report-link-btn:hover {
+      transform: translateY(-1px);
+      border-color: #3151d3;
+      box-shadow: 0 10px 20px rgba(49, 81, 211, 0.16);
+    }
     .report-results-table td.report-cell--numeric,
     .report-results-table th.report-cell--numeric {
       text-align: right;
@@ -2381,6 +2529,12 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
       font-size: 11px;
       margin-top: 4px;
       line-height: 1.5;
+    }
+    .report-results-shell > .report-results-note {
+      margin: 0;
+      padding: 12px 14px;
+      border-top: 1px solid #eef2f7;
+      background: #fbfdff;
     }
     .report-status-pill {
       display: inline-flex;

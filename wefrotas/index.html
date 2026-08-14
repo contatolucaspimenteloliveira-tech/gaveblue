@@ -711,13 +711,14 @@
           </div>
         </section>
 
-        <section id="panel-relatorios" class="module-panel content-card orders-page-shell p-8 sm:p-10">
-          <div class="filter-card p-6 sm:p-7 mb-8">
-            <div class="grid xl:grid-cols-[1.15fr_1fr_1fr_1fr_auto] gap-4 items-end">
+        <section id="panel-relatorios" class="module-panel content-card orders-page-shell p-6 sm:p-8">
+          <div class="filter-card report-filter-card p-4 sm:p-5 mb-6">
+            <div class="grid xl:grid-cols-[1.2fr_1fr_0.8fr_0.8fr] gap-3 items-end">
               <div>
-                <label class="block text-[13px] font-bold uppercase tracking-wide text-slate-600 mb-3">Tipo de relatório</label>
+                <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Relatório</label>
                 <select id="report-filter-type" class="soft-input w-full">
                   <option value="cost">Custo por KM</option>
+                  <option value="fuel_liters_per_km">Litro por KM</option>
                   <option value="monthly_vehicle_cost">Custo mensal por veículo</option>
                   <option value="fuel_register">Registro de abastecimentos</option>
                   <option value="orders">OS por veículo</option>
@@ -733,25 +734,21 @@
                 </select>
               </div>
               <div>
-                <label class="block text-[13px] font-bold uppercase tracking-wide text-slate-600 mb-3">Veículo</label>
+                <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Veículo</label>
                 <select id="report-filter-vehicle" class="soft-input w-full">
                   <option value="">Todos os veículos</option>
                 </select>
               </div>
               <div>
-                <label class="block text-[13px] font-bold uppercase tracking-wide text-slate-600 mb-3">Período inicial</label>
+                <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Data inicial</label>
                 <input id="report-filter-start" type="date" class="soft-input w-full">
               </div>
               <div>
-                <label class="block text-[13px] font-bold uppercase tracking-wide text-slate-600 mb-3">Período final</label>
+                <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Data final</label>
                 <input id="report-filter-end" type="date" class="soft-input w-full">
               </div>
-              <button class="icon-action text-[#bd8dff]" title="Imprimir relatório" onclick="printReport()">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 8V4h10v4M7 16H5a2 2 0 01-2-2v-3a2 2 0 012-2h14a2 2 0 012 2v3a2 2 0 01-2 2h-2M7 12h10v8H7z"/>
-                </svg>
-              </button>
             </div>
+            <p id="report-filter-date-context" class="report-filter-context">A data usada depende do relatório selecionado.</p>
           </div>
           <div id="report-summary-grid" class="report-summary-grid mb-6"></div>
           <div class="filter-card p-6 sm:p-7">
@@ -760,7 +757,27 @@
                 <h3 id="report-results-title" class="text-lg font-extrabold text-slate-900">Resultado do relatório</h3>
                 <p id="report-results-meta" class="text-sm text-slate-500 mt-2">Use os filtros acima para segmentar os dados.</p>
               </div>
+              <div class="report-toolbar">
+                <button type="button" class="soft-btn report-toolbar-btn" onclick="toggleReportColumnsPanel()">
+                  Colunas
+                </button>
+                <button type="button" class="icon-action" title="Exportar XLSX" onclick="exportReport('xlsx')">
+                  XLSX
+                </button>
+                <button type="button" class="icon-action" title="Exportar XLS" onclick="exportReport('xls')">
+                  XLS
+                </button>
+                <button type="button" class="icon-action" title="Exportar PDF" onclick="exportReport('pdf')">
+                  PDF
+                </button>
+                <button type="button" class="icon-action text-[#3151d3]" title="Imprimir relatório" onclick="printReport()">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 8V4h10v4M7 16H5a2 2 0 01-2-2v-3a2 2 0 012-2h14a2 2 0 012 2v3a2 2 0 01-2 2h-2M7 12h10v8H7z"/>
+                  </svg>
+                </button>
+              </div>
             </div>
+            <div id="report-columns-panel" class="report-columns-panel hidden"></div>
             <div id="report-results-table" class="report-results-shell"></div>
           </div>
         </section>
@@ -1298,7 +1315,7 @@
   <script src="./appwrite-config.js?v=1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260803-storage-optimization-1"></script>
-  <script src="./wefrotas.js?v=20260813-import-2"></script>
+  <script src="./wefrotas.js?v=20260813-report-tools-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
