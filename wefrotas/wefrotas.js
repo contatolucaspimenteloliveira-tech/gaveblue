@@ -7689,6 +7689,7 @@
       }
 
       centralPendingLoading = true;
+      let shouldRenderAfterLoad = !silent;
       centralPendingError = '';
       setCentralPendingLoadingIndicator(true);
       if (!silent && !centralPendingLoaded) renderCentralPendingRecords();
@@ -7700,13 +7701,13 @@
         const changed = currentSignature !== nextSignature || !centralPendingLoaded;
         centralPendingRecords = nextRecords;
         centralPendingLoaded = true;
-        if (silent && changed) renderCentralPendingRecords();
+        shouldRenderAfterLoad = changed;
       } catch (error) {
         centralPendingError = `Não foi possível carregar a Central: ${error?.message || 'erro desconhecido'}`;
       } finally {
         centralPendingLoading = false;
         setCentralPendingLoadingIndicator(false);
-        if (!silent || centralPendingError) renderCentralPendingRecords();
+        if (shouldRenderAfterLoad || centralPendingError) renderCentralPendingRecords();
       }
     }
 
@@ -11770,12 +11771,11 @@
       document.querySelectorAll('.orders-table-shell').forEach((shell) => {
         const toolbar = shell.querySelector(':scope > .orders-toolbar');
         const scroll = shell.querySelector(':scope > .orders-table-scroll');
-        const tableHead = scroll?.querySelector(':scope > .orders-table-head');
-        if (!toolbar || !scroll || !tableHead || shell.querySelector(':scope > .orders-sticky-table-header')) return;
+        if (!toolbar || !scroll || shell.querySelector(':scope > .orders-sticky-table-header')) return;
         const stickyHeader = document.createElement('div');
         stickyHeader.className = 'orders-sticky-table-header';
         shell.insertBefore(stickyHeader, scroll);
-        stickyHeader.append(toolbar, tableHead);
+        stickyHeader.append(toolbar);
       });
     }
 

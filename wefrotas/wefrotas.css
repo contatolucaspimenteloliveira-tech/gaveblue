@@ -1986,8 +1986,8 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
       box-shadow: none;
     }
     .orders-sticky-table-header .orders-filter-shell {
-      order: 2;
-      margin: 0 0 4px auto;
+      order: 1;
+      margin: 0 0 4px;
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -2023,8 +2023,8 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
       display: none;
     }
     .orders-toolbar {
-      order: 1;
-      flex: 0 1 auto;
+      order: 2;
+      flex: 1 1 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -2051,8 +2051,6 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
       height: 16px;
     }
     .orders-table-scroll {
-      flex-basis: 100%;
-      order: 3;
       border-radius: 0;
       overflow: visible;
     }
@@ -2064,7 +2062,7 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
       align-items: center;
     }
     .orders-table-head {
-      padding: 6px 8px;
+      padding: 12px 8px;
       font-size: 10px;
       font-weight: 700;
       letter-spacing: 0.04em;
