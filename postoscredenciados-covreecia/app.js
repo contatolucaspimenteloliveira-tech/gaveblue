@@ -706,10 +706,13 @@ async function compressFuelReceiptIfNeeded(file) {
 
   canvas.width = width;
   canvas.height = height;
-  context.fillStyle = '#ffffff';
-  context.fillRect(0, 0, width, height);
-  context.drawImage(source.drawable, 0, 0, width, height);
-  source.release();
+  try {
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, width, height);
+    context.drawImage(source.drawable, 0, 0, width, height);
+  } finally {
+    source.release();
+  }
 
   try {
     const compressedBlob = await new Promise((resolve, reject) => {
@@ -2203,11 +2206,17 @@ async function prepareReceiptFile(target, file) {
 
 function updatePhotoPreview(fileInput) {
   const file = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+  if (fileInput) {
+    fileInput.value = '';
+  }
   prepareReceiptFile('fuel', file);
 }
 
 function updateLoosePhotoPreview(fileInput) {
   const file = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+  if (fileInput) {
+    fileInput.value = '';
+  }
   prepareReceiptFile('loose', file);
 }
 
@@ -2371,23 +2380,31 @@ async function captureReceiptCamera() {
   const height = Math.max(1, Math.round(video.videoHeight * scale));
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d', { alpha: false });
+  if (!context) {
+    showErrorMessage('Este celular est\u00e1 com pouca mem\u00f3ria. Feche outros aplicativos e tente novamente.');
+    return;
+  }
+
   canvas.width = width;
   canvas.height = height;
-  context.fillStyle = '#ffffff';
-  context.fillRect(0, 0, width, height);
-  context.drawImage(video, 0, 0, width, height);
+  let blob;
 
-  const blob = await new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (result) => (result ? resolve(result) : reject(new Error('Falha ao capturar a foto.'))),
-      'image/jpeg',
-      COMPRESSED_RECEIPT_QUALITY
-    );
-  });
-
-  context.clearRect(0, 0, width, height);
-  canvas.width = 1;
-  canvas.height = 1;
+  try {
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, width, height);
+    context.drawImage(video, 0, 0, width, height);
+    blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (result) => (result ? resolve(result) : reject(new Error('Falha ao capturar a foto.'))),
+        'image/jpeg',
+        COMPRESSED_RECEIPT_QUALITY
+      );
+    });
+  } finally {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width = 1;
+    canvas.height = 1;
+  }
 
   const file = new File([blob], `comprovante-${Date.now()}.jpg`, {
     type: 'image/jpeg',
