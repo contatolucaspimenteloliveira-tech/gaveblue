@@ -11692,6 +11692,7 @@
     async function initializeWeFrotas() {
       await loadFromStorage();
       if (syncAllocatedOrderStatuses()) saveToLocalStorage();
+      updateStickyTableOffset();
       setupStickyTableHeaders();
       renderAll();
       updateModuleHeader('home');
@@ -11711,6 +11712,12 @@
           message: 'Não foi possível validar o acesso online.'
         });
       }
+    }
+
+    function updateStickyTableOffset() {
+      const topbar = document.querySelector('.app-topbar');
+      if (!topbar) return;
+      document.documentElement.style.setProperty('--wefrotas-topbar-height', `${Math.ceil(topbar.getBoundingClientRect().height)}px`);
     }
 
     function setupStickyTableHeaders() {
@@ -11790,5 +11797,8 @@
         if (window.innerWidth <= 1120) toggleSidebar(false);
       }
     });
-    window.addEventListener('resize', applySidebarState);
+    window.addEventListener('resize', () => {
+      applySidebarState();
+      updateStickyTableOffset();
+    });
     document.addEventListener('click', blockDisabledActionClicks, true);
