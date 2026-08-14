@@ -1615,6 +1615,11 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
 
 .receipt-camera-icon-button svg { width: 1.55rem; height: 1.55rem; }
 
+.receipt-camera-icon-button .fa-camera-rotate {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
 .receipt-camera-capture {
   display: grid;
   place-items: center;
