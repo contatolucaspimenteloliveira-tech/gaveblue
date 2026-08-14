@@ -2495,9 +2495,30 @@ async function captureReceiptCamera() {
     return;
   }
 
-  const scale = Math.min(1, COMPRESSED_RECEIPT_MAX_SIZE / Math.max(video.videoWidth, video.videoHeight));
-  const width = Math.max(1, Math.round(video.videoWidth * scale));
-  const height = Math.max(1, Math.round(video.videoHeight * scale));
+  const viewport = document.querySelector('.receipt-camera-viewport');
+  const viewportWidth = Math.max(1, viewport?.clientWidth || video.clientWidth || video.videoWidth);
+  const viewportHeight = Math.max(1, viewport?.clientHeight || video.clientHeight || video.videoHeight);
+  const viewportRatio = viewportWidth / viewportHeight;
+  const videoRatio = video.videoWidth / video.videoHeight;
+
+  let sourceX = 0;
+  let sourceY = 0;
+  let sourceWidth = video.videoWidth;
+  let sourceHeight = video.videoHeight;
+
+  // The live video uses object-fit: cover. Crop the saved frame to the same
+  // visible area so processing never reveals extra ultra-wide-like framing.
+  if (videoRatio > viewportRatio) {
+    sourceWidth = video.videoHeight * viewportRatio;
+    sourceX = (video.videoWidth - sourceWidth) / 2;
+  } else if (videoRatio < viewportRatio) {
+    sourceHeight = video.videoWidth / viewportRatio;
+    sourceY = (video.videoHeight - sourceHeight) / 2;
+  }
+
+  const scale = Math.min(1, COMPRESSED_RECEIPT_MAX_SIZE / Math.max(sourceWidth, sourceHeight));
+  const width = Math.max(1, Math.round(sourceWidth * scale));
+  const height = Math.max(1, Math.round(sourceHeight * scale));
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d', { alpha: false });
   if (!context) {
@@ -2512,7 +2533,17 @@ async function captureReceiptCamera() {
   try {
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, width, height);
-    context.drawImage(video, 0, 0, width, height);
+    context.drawImage(
+      video,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      0,
+      0,
+      width,
+      height
+    );
     blob = await new Promise((resolve, reject) => {
       canvas.toBlob(
         (result) => (result ? resolve(result) : reject(new Error('Falha ao capturar a foto.'))),
