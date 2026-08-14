@@ -54,6 +54,8 @@ let activeReceiptCameraStream = null;
 let activeReceiptCameraTarget = 'fuel';
 let receiptCameraDevices = [];
 let receiptCameraDeviceIndex = 0;
+let pendingReceiptCameraFile = null;
+let pendingReceiptCameraPreviewUrl = '';
 const optimizedReceiptFiles = new WeakSet();
 const DEFAULT_DRIVER_NAMES = [
   'AMANDA P. BONATTO',
@@ -2206,16 +2208,26 @@ async function prepareReceiptFile(target, file) {
 
 function updatePhotoPreview(fileInput) {
   const file = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+  const cameFromCamera = fileInput?.id === 'fuel-photo-camera';
   if (fileInput) {
     fileInput.value = '';
+  }
+  if (cameFromCamera) {
+    reviewNativeReceiptFile('fuel', file);
+    return;
   }
   prepareReceiptFile('fuel', file);
 }
 
 function updateLoosePhotoPreview(fileInput) {
   const file = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+  const cameFromCamera = fileInput?.id === 'loose-photo-camera';
   if (fileInput) {
     fileInput.value = '';
+  }
+  if (cameFromCamera) {
+    reviewNativeReceiptFile('loose', file);
+    return;
   }
   prepareReceiptFile('loose', file);
 }
@@ -2309,6 +2321,108 @@ function openNativeReceiptCameraFallback(target) {
   input.click();
 }
 
+function clearReceiptCameraReview() {
+  const reviewImage = document.getElementById('receipt-camera-review-image');
+  if (reviewImage) {
+    reviewImage.src = '';
+    reviewImage.classList.add('hidden');
+  }
+
+  if (pendingReceiptCameraPreviewUrl) {
+    URL.revokeObjectURL(pendingReceiptCameraPreviewUrl);
+    pendingReceiptCameraPreviewUrl = '';
+  }
+
+  pendingReceiptCameraFile = null;
+  document.getElementById('receipt-camera-video')?.classList.remove('hidden');
+  document.getElementById('receipt-camera-guide')?.classList.remove('hidden');
+  document.getElementById('receipt-camera-live-actions')?.classList.remove('hidden');
+  document.getElementById('receipt-camera-review-actions')?.classList.add('hidden');
+}
+
+function enterReceiptCameraFullscreen() {
+  document.body.classList.add('receipt-camera-open');
+  document.body.style.overflow = 'hidden';
+
+  if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+    const fullscreenRequest = document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    fullscreenRequest?.catch?.(() => {});
+  }
+}
+
+function exitReceiptCameraFullscreen() {
+  document.body.classList.remove('receipt-camera-open');
+  document.body.style.overflow = '';
+
+  if (document.fullscreenElement && document.exitFullscreen) {
+    const fullscreenExit = document.exitFullscreen();
+    fullscreenExit?.catch?.(() => {});
+  }
+}
+
+function showReceiptCameraLiveMode() {
+  clearReceiptCameraReview();
+  document.getElementById('receipt-camera-video')?.classList.remove('hidden');
+  document.getElementById('receipt-camera-guide')?.classList.remove('hidden');
+  document.getElementById('receipt-camera-live-actions')?.classList.remove('hidden');
+  document.getElementById('receipt-camera-review-actions')?.classList.add('hidden');
+}
+
+function showReceiptCameraReviewMode(file, target) {
+  if (!file) {
+    return;
+  }
+
+  clearReceiptCameraReview();
+  activeReceiptCameraTarget = target === 'loose' ? 'loose' : 'fuel';
+  pendingReceiptCameraFile = file;
+  pendingReceiptCameraPreviewUrl = URL.createObjectURL(file);
+
+  const modal = document.getElementById('receipt-camera-modal');
+  const reviewImage = document.getElementById('receipt-camera-review-image');
+  const status = document.getElementById('receipt-camera-status');
+  modal?.classList.remove('hidden');
+  enterReceiptCameraFullscreen();
+  stopReceiptCameraStream();
+
+  const video = document.getElementById('receipt-camera-video');
+  video?.classList.add('hidden');
+  document.getElementById('receipt-camera-guide')?.classList.add('hidden');
+  document.getElementById('receipt-camera-live-actions')?.classList.add('hidden');
+  document.getElementById('receipt-camera-review-actions')?.classList.remove('hidden');
+
+  if (reviewImage) {
+    reviewImage.src = pendingReceiptCameraPreviewUrl;
+    reviewImage.classList.remove('hidden');
+  }
+  if (status) {
+    status.textContent = 'Confira a foto antes de continuar';
+  }
+}
+
+async function reviewNativeReceiptFile(target, file) {
+  if (!file) {
+    return;
+  }
+
+  activeReceiptCameraTarget = target === 'loose' ? 'loose' : 'fuel';
+  const modal = document.getElementById('receipt-camera-modal');
+  const status = document.getElementById('receipt-camera-status');
+  modal?.classList.remove('hidden');
+  enterReceiptCameraFullscreen();
+  if (status) {
+    status.textContent = 'Otimizando a foto para revis\u00e3o...';
+  }
+
+  try {
+    const optimizedFile = await compressFuelReceiptIfNeeded(file);
+    showReceiptCameraReviewMode(optimizedFile, activeReceiptCameraTarget);
+  } catch (error) {
+    closeReceiptCamera();
+    showErrorMessage(error?.message || 'N\u00e3o foi poss\u00edvel preparar a foto.');
+  }
+}
+
 async function openReceiptCamera(target = 'fuel') {
   activeReceiptCameraTarget = target === 'loose' ? 'loose' : 'fuel';
 
@@ -2319,8 +2433,9 @@ async function openReceiptCamera(target = 'fuel') {
 
   const modal = document.getElementById('receipt-camera-modal');
   const status = document.getElementById('receipt-camera-status');
+  showReceiptCameraLiveMode();
   modal?.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
+  enterReceiptCameraFullscreen();
   if (status) {
     status.textContent = 'Abrindo a c\u00e2mera traseira...';
   }
@@ -2341,8 +2456,9 @@ async function openReceiptCamera(target = 'fuel') {
 
 function closeReceiptCamera() {
   stopReceiptCameraStream();
+  clearReceiptCameraReview();
   document.getElementById('receipt-camera-modal')?.classList.add('hidden');
-  document.body.style.overflow = '';
+  exitReceiptCameraFullscreen();
 }
 
 async function switchReceiptCamera() {
@@ -2411,7 +2527,38 @@ async function captureReceiptCamera() {
     lastModified: Date.now()
   });
   optimizedReceiptFiles.add(file);
+  showReceiptCameraReviewMode(file, activeReceiptCameraTarget);
+}
+
+async function retakeReceiptCamera() {
+  const status = document.getElementById('receipt-camera-status');
+  showReceiptCameraLiveMode();
+  if (status) {
+    status.textContent = 'Reabrindo a c\u00e2mera traseira...';
+  }
+
+  try {
+    const selectedDevice = receiptCameraDevices[receiptCameraDeviceIndex];
+    const stream = await requestReceiptCameraStream(selectedDevice?.deviceId || '');
+    await attachReceiptCameraStream(stream);
+    if (status) {
+      status.textContent = 'C\u00e2mera pronta';
+    }
+  } catch (error) {
+    console.error('N\u00e3o foi poss\u00edvel reabrir a c\u00e2mera:', error);
+    closeReceiptCamera();
+    openNativeReceiptCameraFallback(activeReceiptCameraTarget);
+  }
+}
+
+async function confirmReceiptCamera() {
+  if (!pendingReceiptCameraFile) {
+    return;
+  }
+
+  const file = pendingReceiptCameraFile;
   const target = activeReceiptCameraTarget;
+  pendingReceiptCameraFile = null;
   closeReceiptCamera();
   await prepareReceiptFile(target, file);
 }
