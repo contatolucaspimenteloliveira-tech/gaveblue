@@ -5,6 +5,11 @@
     let allFinanceEntries = [];
     let allAdministrations = [];
     let deletedOrders = [];
+    let centralPendingRecords = [];
+    let centralPendingLoading = false;
+    let centralPendingError = '';
+    let centralPendingLoaded = false;
+    let centralPendingAutoRefreshTimer = null;
     const globalSearchInputEl = document.getElementById('global-search-input');
     const globalSearchResultsEl = document.getElementById('global-search-results');
     const mobileGlobalSearchInputEl = document.getElementById('mobile-global-search-input');
@@ -1631,7 +1636,14 @@
       statusNode.classList.remove('is-local', 'is-online', 'is-syncing', 'is-error', 'is-signed-out');
       statusNode.classList.add(`is-${state}`);
       textNode.textContent = message || 'WeFrotas Online';
-      if (syncButton) syncButton.hidden = !user;
+      if (syncButton) {
+        syncButton.hidden = !user;
+        syncButton.disabled = state === 'syncing';
+        syncButton.classList.toggle('is-syncing', state === 'syncing');
+        syncButton.classList.toggle('is-error', state === 'error');
+        syncButton.title = message || 'Sincronizar dados';
+        syncButton.setAttribute('aria-label', message || 'Sincronizar dados');
+      }
       if (logoutButton) logoutButton.hidden = !user;
       if (user) updateManagerIdentityUi();
     }
@@ -1866,6 +1878,7 @@
         await finishOnlineAuthChecking();
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
+        startCentralPendingAutoRefresh();
         return result;
       } catch (error) {
         window.clearTimeout(preparingTimer);
@@ -1925,6 +1938,7 @@
         await finishOnlineAuthChecking();
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
+        startCentralPendingAutoRefresh();
         showToast('WeFrotas Online conectado.');
       } catch (error) {
         if (signedIn) await backend.signOut().catch(() => {});
@@ -1961,13 +1975,22 @@
       }
     }
 
-    async function syncWeFrotasOnline() {
+    async function syncWeFrotasOnline({ quiet = false } = {}) {
       try {
         await window.WeFrotasBackend?.syncNow(buildStorageSnapshot());
-        showToast('Sincronização concluída.');
+        await refreshCentralPendingRecords();
+        if (!quiet) showToast('Dados e registros da Central atualizados.');
       } catch (error) {
-        showToast(error?.message || 'Não foi possível sincronizar agora.');
+        if (!quiet) showToast(error?.message || 'Não foi possível sincronizar agora.');
       }
+    }
+
+    function startCentralPendingAutoRefresh() {
+      if (centralPendingAutoRefreshTimer) return;
+      centralPendingAutoRefreshTimer = window.setInterval(() => {
+        if (document.hidden || !window.WeFrotasBackend?.getUser?.()) return;
+        refreshCentralPendingRecords();
+      }, 60000);
     }
 
     window.logoutWeFrotasOnline = logoutWeFrotasOnline;
@@ -3008,7 +3031,7 @@
       },
       documentos: {
         title: 'Documentos',
-        subtitle: 'Consulte os comprovantes vinculados aos abastecimentos da frota.'
+        subtitle: 'Acompanhe os registros recebidos da Central antes de aprovar os lançamentos.'
       },
       relatorios: {
         title: 'Relatórios',
@@ -7426,19 +7449,282 @@
       `;
     }
 
+    function getCentralPendingRecordId(record) {
+      return String(record?.$id || record?.id || record?.protocolo || '');
+    }
+
+    function getCentralPendingRecordType(record) {
+      const type = normalizeComparableText(record?.tipo || record?.type || '');
+      if (type.includes('servico')) return 'Serviço';
+      if (type.includes('rapido')) return 'Abastecimento rápido';
+      return 'Abastecimento';
+    }
+
+    function getCentralPendingSupplier(record) {
+      return record?.posto || record?.fornecedor || record?.supplier || '-';
+    }
+
+    function getCentralPendingValue(record) {
+      const numericValue = Number(record?.valorNumero ?? record?.valor ?? 0);
+      if (Number.isFinite(numericValue) && numericValue > 0) return formatCurrency(numericValue);
+      return record?.valor ? escapeHtml(record.valor) : '-';
+    }
+
+    function getCentralPendingDate(record) {
+      const dateValue = record?.data || record?.dataBr || String(record?.criadoEm || '').slice(0, 10);
+      const timeValue = record?.hora || '';
+      return `${formatDate(dateValue)}${timeValue ? `<small>${escapeHtml(timeValue)}</small>` : ''}`;
+    }
+
+    function getCentralPendingStatus(record) {
+      const status = normalizeComparableText(record?.status || 'pendente');
+      if (status.includes('import')) return { label: 'Importado', className: 'imported' };
+      if (status.includes('rejeit')) return { label: 'Rejeitado', className: 'error' };
+      if (status.includes('erro')) return { label: 'Erro', className: 'error' };
+      if (status.includes('aprov')) return { label: 'Aprovado', className: 'approved' };
+      return { label: 'Pendente', className: 'pending' };
+    }
+
+    function buildCentralPendingMessage(record) {
+      if (record?.mensagemWhatsapp) return String(record.mensagemWhatsapp);
+      const type = normalizeComparableText(record?.tipo || '');
+      if (type.includes('servico')) {
+        return [
+          'REGISTRO DE SERVIÇOS',
+          `Motorista: ${record?.motorista || ''}`,
+          `Fornecedor: ${record?.fornecedor || record?.posto || ''}`,
+          `Tipo do serviço: ${record?.tipoServico || ''}`,
+          `Valor: ${record?.valor || getCentralPendingValue(record)}`,
+          `Data/Hora: ${record?.data || ''}${record?.hora ? ` ${record.hora}` : ''}`,
+          `KM: ${record?.km || ''}`,
+          `Comprovante: ${record?.comprovanteUrl || ''}`
+        ].join('\n');
+      }
+      return [
+        'COMPROVANTE DE ABASTECIMENTO',
+        `Motorista: ${record?.motorista || ''}`,
+        `Cidade: ${record?.cidade || ''}`,
+        `Posto: ${record?.posto || record?.fornecedor || ''}`,
+        `Data/Hora: ${record?.data || ''}${record?.hora ? ` ${record.hora}` : ''}`,
+        `KM: ${record?.km || ''}`,
+        `Litros: ${record?.litros || ''}`,
+        `Valor: ${record?.valor || ''}`,
+        `Combustível: ${record?.tipoCombustivel || ''}`,
+        `Comprovante: ${record?.comprovanteUrl || ''}`
+      ].join('\n');
+    }
+
+    function getCentralPendingSortedRows() {
+      return [...centralPendingRecords]
+        .filter(record => normalizeComparableText(record?.workspaceId || '') === normalizeComparableText(window.WeFrotasBackend?.config?.companyId || 'covre-e-cia'))
+        .sort((a, b) => String(b?.criadoEm || b?.data || '').localeCompare(String(a?.criadoEm || a?.data || '')));
+    }
+
+    function renderCentralPendingSummary(rows) {
+      const pendingRows = rows.filter(row => getCentralPendingStatus(row).className === 'pending');
+      const fuelRows = rows.filter(row => !normalizeComparableText(row?.tipo || '').includes('servico'));
+      const serviceRows = rows.filter(row => normalizeComparableText(row?.tipo || '').includes('servico'));
+      const countNode = document.getElementById('central-pending-count');
+      const fuelNode = document.getElementById('central-pending-fuel-count');
+      const serviceNode = document.getElementById('central-pending-service-count');
+      if (countNode) countNode.textContent = pendingRows.length.toLocaleString('pt-BR');
+      if (fuelNode) fuelNode.textContent = fuelRows.length.toLocaleString('pt-BR');
+      if (serviceNode) serviceNode.textContent = serviceRows.length.toLocaleString('pt-BR');
+    }
+
+    function renderCentralPendingRecords() {
+      const list = document.getElementById('central-pending-list');
+      if (!list) return;
+      const rows = getCentralPendingSortedRows();
+      renderCentralPendingSummary(rows);
+
+      if (centralPendingLoading) {
+        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Buscando registros enviados pela Central...</td></tr>';
+        return;
+      }
+      if (centralPendingError) {
+        list.innerHTML = `<tr><td colspan="8" class="central-pending-empty central-pending-error">${escapeHtml(centralPendingError)}</td></tr>`;
+        return;
+      }
+      if (!centralPendingLoaded) {
+        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Aguardando a primeira atualização automática.</td></tr>';
+        return;
+      }
+      if (!rows.length) {
+        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Nenhum registro recebido da Central até agora.</td></tr>';
+        return;
+      }
+
+      list.innerHTML = rows.map((record) => {
+        const status = getCentralPendingStatus(record);
+        const rowId = escapeHtml(getCentralPendingRecordId(record));
+        const receiptUrl = String(record?.comprovanteUrl || '').trim();
+        return `
+          <tr>
+            <td>${getCentralPendingDate(record)}</td>
+            <td><span class="central-pending-type">${escapeHtml(getCentralPendingRecordType(record))}</span></td>
+            <td>${escapeHtml(record?.motorista || '-')}</td>
+            <td>${escapeHtml(getCentralPendingSupplier(record))}</td>
+            <td>${escapeHtml(record?.km || '-')}</td>
+            <td class="central-pending-value">${getCentralPendingValue(record)}</td>
+            <td><span class="central-pending-status ${status.className}">${status.label}</span></td>
+            <td>
+              <div class="central-pending-actions">
+                <button class="is-approve" type="button" title="Aprovar e lançar" onclick="approveCentralPendingRecord('${rowId}')" ${status.className !== 'pending' ? 'disabled' : ''}>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 12l4 4L19 6"/></svg>
+                </button>
+                <button class="is-reject" type="button" title="Rejeitar" onclick="rejectCentralPendingRecord('${rowId}')" ${status.className !== 'pending' ? 'disabled' : ''}>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+                <button type="button" title="Revisar lançamento" onclick="prepareCentralPendingRecord('${rowId}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 5v14M5 12h14"/></svg></button>
+                <button type="button" title="Ver comprovante" ${receiptUrl ? `onclick="viewFinanceReceipt('${escapeHtml(receiptUrl)}')"` : 'disabled'}>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3" stroke-width="1.9"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function refreshCentralPendingRecords() {
+      if (!window.WeFrotasBackend?.getUser?.()) {
+        centralPendingError = 'Entre no WeFrotas Online para consultar os registros da Central.';
+        centralPendingLoaded = true;
+        renderCentralPendingRecords();
+        return;
+      }
+      if (!window.WeFrotasBackend?.listCentralPendingRecords) {
+        centralPendingError = 'Leitura da Central ainda não está disponível neste navegador.';
+        centralPendingLoaded = true;
+        renderCentralPendingRecords();
+        return;
+      }
+
+      centralPendingLoading = true;
+      centralPendingError = '';
+      renderCentralPendingRecords();
+      try {
+        const result = await window.WeFrotasBackend.listCentralPendingRecords(150);
+        centralPendingRecords = Array.isArray(result?.rows) ? result.rows : [];
+        centralPendingLoaded = true;
+      } catch (error) {
+        centralPendingError = `Não foi possível carregar a Central: ${error?.message || 'erro desconhecido'}`;
+      } finally {
+        centralPendingLoading = false;
+        renderCentralPendingRecords();
+      }
+    }
+
+    function prepareCentralPendingRecord(rowId) {
+      const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
+      if (!record) {
+        showToast('Registro da Central não encontrado. Atualize a lista e tente novamente.');
+        return;
+      }
+      const importedData = parseImportedCentralMessage(buildCentralPendingMessage(record));
+      if (!importedData) {
+        showToast('Não consegui interpretar esse registro da Central. Confira os campos recebidos.');
+        return;
+      }
+      if (importedData.type === 'loose_note' || importedData.type === 'service') {
+        openImportedLooseNoteLaunch(importedData);
+      } else {
+        openImportedFuelLaunch(importedData);
+      }
+    }
+
+    async function setCentralPendingRecordStatus(record, data) {
+      const rowId = getCentralPendingRecordId(record);
+      if (!rowId || !window.WeFrotasBackend?.updateCentralPendingRecord) throw new Error('Não foi possível atualizar o status do registro na Central.');
+      const updated = await window.WeFrotasBackend.updateCentralPendingRecord(rowId, {
+        ...data,
+        atualizadoEm: new Date().toISOString()
+      });
+      centralPendingRecords = centralPendingRecords.map(item => getCentralPendingRecordId(item) === rowId ? { ...item, ...updated, ...data } : item);
+      renderCentralPendingRecords();
+    }
+
+    function getCentralRecordTotal(record) {
+      const value = Number(record?.valorNumero ?? parseCurrencyInputValue(record?.valor || ''));
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
+    async function approveCentralPendingRecord(rowId) {
+      const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
+      if (!record) return showToast('Registro da Central não encontrado.');
+      const imported = parseImportedCentralMessage(buildCentralPendingMessage(record));
+      if (!imported) return prepareCentralPendingRecord(rowId);
+
+      const isService = imported.type === 'service' || imported.type === 'loose_note';
+      const supplier = isService
+        ? resolveSupplierByRelevantTerms(imported.fornecedor, allSuppliers.filter(item => item.tipo !== 'posto'))
+        : resolveFuelSupplierByImportedName(imported.posto);
+      const vehicle = isService ? null : resolveVehicleByImportedDriver(imported.motorista, resolveDriverByImportedName(imported.motorista));
+      const total = getCentralRecordTotal(record) || parseCurrencyInputValue(imported.valor || '');
+      const isReady = isService
+        ? !!(supplier && imported.dataIso && total)
+        : !!(supplier && vehicle && imported.dataIso && imported.tipoCombustivel && imported.litros && total);
+
+      if (!isReady) {
+        prepareCentralPendingRecord(rowId);
+        showToast('Revise os campos pendentes para concluir este lançamento.');
+        return;
+      }
+
+      const financeId = generateId();
+      const entry = isService ? {
+        id: financeId, createdAt: new Date().toISOString(), entryType: 'despesa', orderId: '', vehicleId: '', kind: 'despesa', kindLabel: 'Despesa',
+        supplierId: supplier.id, supplierType: supplier.tipo, fornecedor: supplier.nome, nf: 'REGISTRO DE SERVIÇOS', km: imported.km || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '',
+        dataVencimento: imported.dataIso, total, observacoes: [imported.tipoServico, imported.observacoes].filter(Boolean).join(' | ')
+      } : {
+        id: financeId, createdAt: new Date().toISOString(), entryType: 'combustivel', vehicleId: vehicle.id, orderId: '', kind: 'despesa', kindLabel: 'Despesa',
+        supplierId: supplier.id, supplierType: supplier.tipo, fornecedor: supplier.nome, fuelType: imported.tipoCombustivel, km: imported.km || '', litros: String(imported.litros),
+        driverId: resolveDriverByImportedName(imported.motorista)?.id || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '', dataAbastecimento: imported.dataIso,
+        dataVencimento: '', nf: '', total, observacoes: imported.cidade ? `Cidade informada na Central: ${imported.cidade}` : '', groupedIntoId: '', workflowStatus: 'pendente', closedExpense: false, discount: 0
+      };
+
+      allFinanceEntries.unshift(entry);
+      saveToLocalStorage();
+      renderAll();
+      try {
+        await setCentralPendingRecordStatus(record, { status: 'importado', importadoEm: new Date().toISOString(), lancamentoFinanceiroId: financeId, resolucao: 'Aprovado e lançado no financeiro.' });
+        showToast('Registro aprovado e lançado no financeiro.');
+      } catch (error) {
+        showToast(`Lançamento criado, mas a Central não foi atualizada: ${error?.message || 'erro desconhecido'}`);
+      }
+    }
+
+    function rejectCentralPendingRecord(rowId) {
+      const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
+      if (!record) return showToast('Registro da Central não encontrado.');
+      openPromptModal({
+        title: 'Rejeitar registro', text: 'Informe o motivo da rejeição. Ele ficará registrado na Central.', placeholder: 'Ex.: comprovante ilegível ou valor divergente', confirmLabel: 'Rejeitar registro', cancelLabel: 'Cancelar',
+        onConfirm: async (reason) => {
+          try {
+            await setCentralPendingRecordStatus(record, { status: 'rejeitado', resolucao: reason });
+            showToast('Registro rejeitado com justificativa.');
+          } catch (error) {
+            showToast(error?.message || 'Não foi possível rejeitar o registro.');
+          }
+        }
+      });
+    }
+
     function renderDocuments() {
       const panel = document.getElementById('panel-documentos');
       if (!panel) return;
-      if (!document.getElementById('fuel-sheet-head')) return;
-      const rows = getFilteredFuelSheetRows();
-      const visibleColumns = getVisibleFuelSheetColumns();
-      renderFuelColumnsPanel();
-      renderFuelSheetTotals(rows);
-      renderFuelSheetHead(visibleColumns);
-      renderFuelSheetBody(rows, visibleColumns);
-      renderFuelSheetPagination(rows);
-      saveFuelSheetPreferences();
+      if (!centralPendingLoaded && !centralPendingLoading && !centralPendingError) {
+        refreshCentralPendingRecords();
+        return;
+      }
+      renderCentralPendingRecords();
     }
+
+    window.refreshCentralPendingRecords = refreshCentralPendingRecords;
+    window.prepareCentralPendingRecord = prepareCentralPendingRecord;
+    window.approveCentralPendingRecord = approveCentralPendingRecord;
+    window.rejectCentralPendingRecord = rejectCentralPendingRecord;
 
     function setFuelSheetPage(page) {
       fuelSheetPreferences.page = page;
