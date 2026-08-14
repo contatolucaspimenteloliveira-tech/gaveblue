@@ -3272,6 +3272,26 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
     .finance-filter-controls { display: inline-flex; align-items: center; gap: 6px; }
     .finance-filter-trigger { height: 34px; padding: 0 11px; border: 1px solid #dbe5f3; border-radius: 10px; background:#fff; color:#475569; font:inherit; font-size:11px; font-weight:700; }
     .finance-filter-clear { width: 34px !important; height: 34px !important; padding: 0 !important; }
+    .module-filter-controls { order: 1; display: inline-flex; align-items: center; gap: 6px; margin: 0 0 4px; }
+    .module-filter-icon,
+    .module-filter-controls .filter-action-btn { width: 34px; height: 34px; display: inline-flex; align-items:center; justify-content:center; padding:0; border:1px solid #dbe5f3; border-radius:10px; background:#fff; color:#475569; cursor:pointer; }
+    .module-filters-modal { display: none !important; }
+    .module-filters-modal.is-open {
+      position: fixed !important; inset: 0 !important; z-index: 9998 !important; display: grid !important;
+      place-items: center; margin: 0 !important; padding: 24px !important; border: 0 !important;
+      background: rgba(15,23,42,.22) !important; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    .module-filters-modal.is-open .orders-filter-grid {
+      width: min(820px, calc(100vw - 40px)); max-height: calc(100vh - 48px); overflow-y:auto;
+      display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:14px !important;
+      padding:22px; border:1px solid rgba(255,255,255,.8); border-radius:22px;
+      background:rgba(255,255,255,.94); box-shadow:0 28px 70px rgba(15,23,42,.24);
+    }
+    .module-filters-modal .orders-filter-actions { display:none !important; }
+    .module-filter-apply-row { grid-column:1/-1; display:flex; justify-content:flex-end; padding-top:4px; }
+    .module-filter-apply-row button { height:38px; padding:0 20px; border:0; border-radius:11px; background:#6657e8; color:#fff; font-weight:800; cursor:pointer; }
+    body.module-filters-open { overflow:hidden; }
+    @media (max-width:720px) { .module-filters-modal.is-open .orders-filter-grid { grid-template-columns:1fr !important; } }
     .mini-badge--status-pendente,
     .mini-badge--status-pendente_os {
       color: #9a6700;

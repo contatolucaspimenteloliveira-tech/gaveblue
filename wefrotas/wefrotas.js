@@ -9785,8 +9785,33 @@
       renderFinance();
     }
 
-    function toggleFinanceFiltersPopover() { document.querySelector('#panel-financeiro .finance-filters-popover')?.classList.toggle('is-open'); }
-    window.toggleFinanceFiltersPopover = toggleFinanceFiltersPopover;
+    const moduleFilterClearActions = {
+      orders: clearOrderFilters,
+      financeiro: clearFinanceFilters,
+      veiculos: clearVehicleFilters,
+      motoristas: clearDriverFilters,
+      fornecedores: clearSupplierFilters
+    };
+    const moduleFilterRenderActions = {
+      orders: renderOrders,
+      financeiro: renderFinance,
+      veiculos: renderVehicles,
+      motoristas: renderDrivers,
+      fornecedores: renderSuppliers
+    };
+    function openModuleFilters(module) {
+      document.querySelector(`#panel-${module} .module-filters-modal`)?.classList.add('is-open');
+      document.body.classList.add('module-filters-open');
+    }
+    function applyModuleFilters(module) {
+      document.querySelector(`#panel-${module} .module-filters-modal`)?.classList.remove('is-open');
+      document.body.classList.remove('module-filters-open');
+      moduleFilterRenderActions[module]?.();
+    }
+    function clearModuleFilters(module) { moduleFilterClearActions[module]?.(); }
+    window.openModuleFilters = openModuleFilters;
+    window.applyModuleFilters = applyModuleFilters;
+    window.clearModuleFilters = clearModuleFilters;
 
     function clearVehicleFilters() {
       document.getElementById('vehicle-filter-search').value = '';
@@ -11846,7 +11871,18 @@
         const searchField = document.getElementById(searchFieldId);
         if (!filterShell || !stickyHeader) return;
         if (!stickyHeader.contains(filterShell)) stickyHeader.prepend(filterShell);
-        if (module === 'financeiro') filterShell.classList.add('finance-filters-popover');
+        filterShell.classList.add('module-filters-modal');
+        const filterGrid = filterShell.querySelector('.orders-filter-grid');
+        if (filterGrid && !filterGrid.querySelector('.module-filter-apply-row')) {
+          filterGrid.insertAdjacentHTML('beforeend', `<div class="module-filter-apply-row"><button type="button" onclick="applyModuleFilters('${module}')">Aplicar</button></div>`);
+        }
+        if (!stickyHeader.querySelector(`.module-filter-controls[data-module="${module}"]`)) {
+          const controls = document.createElement('div');
+          controls.className = 'module-filter-controls';
+          controls.dataset.module = module;
+          controls.innerHTML = `<button class="module-filter-icon" type="button" title="Filtros" aria-label="Filtros" onclick="openModuleFilters('${module}')"><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5"/></svg></button><button class="filter-action-btn" type="button" title="Limpar filtros" aria-label="Limpar filtros" onclick="clearModuleFilters('${module}')">⌫</button>`;
+          stickyHeader.insertBefore(controls, toolbar);
+        }
         if (selection && selection.parentElement !== stickyHeader) {
           selection.classList.add('module-selection-sticky');
           stickyHeader.insertBefore(selection, stickyHeader.firstChild);
