@@ -10,6 +10,11 @@
     let centralPendingError = '';
     let centralPendingLoaded = false;
     let centralPendingAutoRefreshTimer = null;
+    const CENTRAL_PENDING_FILTERS_KEY = 'wefrotas:central-pending-filters';
+    let centralPendingStatusFilter = 'pendente';
+    let centralPendingDateStart = '';
+    let centralPendingDateEnd = '';
+    let centralPendingFiltersLoaded = false;
     const globalSearchInputEl = document.getElementById('global-search-input');
     const globalSearchResultsEl = document.getElementById('global-search-results');
     const mobileGlobalSearchInputEl = document.getElementById('mobile-global-search-input');
@@ -1879,6 +1884,7 @@
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
         startCentralPendingAutoRefresh();
+        refreshCentralPendingRecords();
         return result;
       } catch (error) {
         window.clearTimeout(preparingTimer);
@@ -1939,6 +1945,7 @@
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
         startCentralPendingAutoRefresh();
+        refreshCentralPendingRecords();
         showToast('WeFrotas Online conectado.');
       } catch (error) {
         if (signedIn) await backend.signOut().catch(() => {});
@@ -6495,7 +6502,7 @@
         ? 'Comprovantes do agrupamento'
         : existingGroup ? `Editar agrupamento de ${groupNoun}` : groupTitle;
       const historyBlockHtml = `
-        <div class="field-wrap full">
+        <div class="field-wrap full finance-group-history">
           <label>Histórico ${isExpenseGrouping ? 'das despesas' : 'dos abastecimentos'}</label>
           <div class="space-y-3 max-h-[220px] overflow-y-auto pr-1">
             ${selectedEntries.map(entry => `
@@ -6525,7 +6532,7 @@
       `;
       fields.innerHTML = documentsOnly ? historyBlockHtml : `
         <input id="finance-group-entry-ids" type="hidden" value="${selectedEntries.map(entry => entry.id).join(',')}">
-        <div class="field-wrap full">
+        <div class="field-wrap full finance-group-summary-card">
           <label>${isExpenseGrouping ? 'Fornecedor do agrupamento' : 'Veículo do agrupamento'}</label>
           <div class="soft-input w-full flex items-center">${escapeHtml(isExpenseGrouping
             ? (supplier?.nome || selectedEntries[0]?.fornecedor || '-')
@@ -6696,6 +6703,7 @@
         document.getElementById('finance-total').value = formatCurrencyInputValue(entry.total ?? 0);
       }
       document.getElementById('finance-observacoes').value = entry.observacoes || '';
+      syncFinanceImportSelects();
     }
 
     function getFinanceEntryReceiptUrl(entry) {
@@ -7478,7 +7486,7 @@
 
     function getCentralPendingStatus(record) {
       const status = normalizeComparableText(record?.status || 'pendente');
-      if (status.includes('import')) return { label: 'Importado', className: 'imported' };
+      if (status.includes('import') || status.includes('aprov')) return { label: 'Aprovado', className: 'approved' };
       if (status.includes('rejeit')) return { label: 'Rejeitado', className: 'error' };
       if (status.includes('erro')) return { label: 'Erro', className: 'error' };
       if (status.includes('aprov')) return { label: 'Aprovado', className: 'approved' };
@@ -7515,9 +7523,36 @@
     }
 
     function getCentralPendingSortedRows() {
+      loadCentralPendingFilters();
       return [...centralPendingRecords]
         .filter(record => normalizeComparableText(record?.workspaceId || '') === normalizeComparableText(window.WeFrotasBackend?.config?.companyId || 'covre-e-cia'))
+        .filter(record => centralPendingStatusFilter === 'todos' || getCentralPendingStatus(record).className === centralPendingStatusFilter || (centralPendingStatusFilter === 'aprovado' && getCentralPendingStatus(record).className === 'approved') || (centralPendingStatusFilter === 'rejeitado' && getCentralPendingStatus(record).className === 'error'))
+        .filter(record => {
+          const date = String(record?.data || record?.criadoEm || '').slice(0, 10);
+          return (!centralPendingDateStart || date >= centralPendingDateStart) && (!centralPendingDateEnd || date <= centralPendingDateEnd);
+        })
         .sort((a, b) => String(b?.criadoEm || b?.data || '').localeCompare(String(a?.criadoEm || a?.data || '')));
+    }
+
+    function loadCentralPendingFilters() {
+      if (centralPendingFiltersLoaded) return;
+      centralPendingFiltersLoaded = true;
+      try {
+        const saved = JSON.parse(localStorage.getItem(CENTRAL_PENDING_FILTERS_KEY) || '{}');
+        centralPendingStatusFilter = saved.status || 'pendente';
+        centralPendingDateStart = saved.start || '';
+        centralPendingDateEnd = saved.end || '';
+      } catch (error) {}
+      const statusNode = document.getElementById('central-pending-status-filter');
+      const startNode = document.getElementById('central-pending-date-start');
+      const endNode = document.getElementById('central-pending-date-end');
+      if (statusNode) statusNode.value = centralPendingStatusFilter;
+      if (startNode) startNode.value = centralPendingDateStart;
+      if (endNode) endNode.value = centralPendingDateEnd;
+    }
+
+    function saveCentralPendingFilters() {
+      try { localStorage.setItem(CENTRAL_PENDING_FILTERS_KEY, JSON.stringify({ status: centralPendingStatusFilter, start: centralPendingDateStart, end: centralPendingDateEnd })); } catch (error) {}
     }
 
     function renderCentralPendingSummary(rows) {
@@ -7576,7 +7611,7 @@
                 <button class="is-reject" type="button" title="Rejeitar" onclick="rejectCentralPendingRecord('${rowId}')" ${status.className !== 'pending' ? 'disabled' : ''}>
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 6l12 12M18 6L6 18"/></svg>
                 </button>
-                <button type="button" title="Revisar lançamento" onclick="prepareCentralPendingRecord('${rowId}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 5v14M5 12h14"/></svg></button>
+                <button type="button" title="Revisar lançamento" onclick="prepareCentralPendingRecord('${rowId}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L8 18l-4 1 1-4L16.5 3.5z"/></svg></button>
                 <button type="button" title="Ver comprovante" ${receiptUrl ? `onclick="viewFinanceReceipt('${escapeHtml(receiptUrl)}')"` : 'disabled'}>
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3" stroke-width="1.9"/></svg>
                 </button>
@@ -7645,6 +7680,29 @@
       renderCentralPendingRecords();
     }
 
+    async function returnDeletedEntriesToCentral(entries = []) {
+      if (!entries.length || !window.WeFrotasBackend?.updateCentralPendingRecord) return;
+      if (!centralPendingLoaded) await refreshCentralPendingRecords();
+      const updates = entries.map((entry) => {
+        const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === entry.centralRecordId || item.lancamentoFinanceiroId === entry.id);
+        if (!record) return null;
+        return setCentralPendingRecordStatus(record, {
+          status: 'pendente',
+          resolucao: 'Lançamento financeiro excluído. Registro devolvido para nova análise.',
+          importadoEm: '',
+          lancamentoFinanceiroId: ''
+        });
+      }).filter(Boolean);
+      if (!updates.length) return;
+      try {
+        await Promise.all(updates);
+        showToast('Registro(s) de origem devolvido(s) para pendente na Central.');
+      } catch (error) {
+        console.warn('Não foi possível devolver todos os registros à Central.', error);
+        showToast('O financeiro foi excluído, mas um registro não pôde ser devolvido à Central.');
+      }
+    }
+
     function getCentralRecordTotal(record) {
       const value = Number(record?.valorNumero ?? parseCurrencyInputValue(record?.valor || ''));
       return Number.isFinite(value) && value > 0 ? value : 0;
@@ -7674,11 +7732,11 @@
 
       const financeId = generateId();
       const entry = isService ? {
-        id: financeId, createdAt: new Date().toISOString(), entryType: 'despesa', orderId: '', vehicleId: '', kind: 'despesa', kindLabel: 'Despesa',
+        id: financeId, centralRecordId: getCentralPendingRecordId(record), createdAt: new Date().toISOString(), entryType: 'despesa', orderId: '', vehicleId: '', kind: 'despesa', kindLabel: 'Despesa',
         supplierId: supplier.id, supplierType: supplier.tipo, fornecedor: supplier.nome, nf: 'REGISTRO DE SERVIÇOS', km: imported.km || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '',
         dataVencimento: imported.dataIso, total, observacoes: [imported.tipoServico, imported.observacoes].filter(Boolean).join(' | ')
       } : {
-        id: financeId, createdAt: new Date().toISOString(), entryType: 'combustivel', vehicleId: vehicle.id, orderId: '', kind: 'despesa', kindLabel: 'Despesa',
+        id: financeId, centralRecordId: getCentralPendingRecordId(record), createdAt: new Date().toISOString(), entryType: 'combustivel', vehicleId: vehicle.id, orderId: '', kind: 'despesa', kindLabel: 'Despesa',
         supplierId: supplier.id, supplierType: supplier.tipo, fornecedor: supplier.nome, fuelType: imported.tipoCombustivel, km: imported.km || '', litros: String(imported.litros),
         driverId: resolveDriverByImportedName(imported.motorista)?.id || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '', dataAbastecimento: imported.dataIso,
         dataVencimento: '', nf: '', total, observacoes: imported.cidade ? `Cidade informada na Central: ${imported.cidade}` : '', groupedIntoId: '', workflowStatus: 'pendente', closedExpense: false, discount: 0
@@ -7688,7 +7746,7 @@
       saveToLocalStorage();
       renderAll();
       try {
-        await setCentralPendingRecordStatus(record, { status: 'importado', importadoEm: new Date().toISOString(), lancamentoFinanceiroId: financeId, resolucao: 'Aprovado e lançado no financeiro.' });
+        await setCentralPendingRecordStatus(record, { status: 'aprovado', importadoEm: new Date().toISOString(), lancamentoFinanceiroId: financeId, resolucao: 'Aprovado e lançado no financeiro.' });
         showToast('Registro aprovado e lançado no financeiro.');
       } catch (error) {
         showToast(`Lançamento criado, mas a Central não foi atualizada: ${error?.message || 'erro desconhecido'}`);
@@ -7722,6 +7780,13 @@
     }
 
     window.refreshCentralPendingRecords = refreshCentralPendingRecords;
+    window.setCentralPendingStatusFilter = (value) => { centralPendingStatusFilter = value || 'pendente'; saveCentralPendingFilters(); renderCentralPendingRecords(); };
+    window.setCentralPendingDateFilter = () => {
+      centralPendingDateStart = document.getElementById('central-pending-date-start')?.value || '';
+      centralPendingDateEnd = document.getElementById('central-pending-date-end')?.value || '';
+      saveCentralPendingFilters();
+      renderCentralPendingRecords();
+    };
     window.prepareCentralPendingRecord = prepareCentralPendingRecord;
     window.approveCentralPendingRecord = approveCentralPendingRecord;
     window.rejectCentralPendingRecord = rejectCentralPendingRecord;
@@ -9888,7 +9953,7 @@
         placeholder: 'Ex.: lançamento duplicado, nota errada, correção de OS...',
         confirmLabel: 'Excluir',
         cancelLabel: 'Cancelar',
-        onConfirm: (justification) => {
+        onConfirm: async (justification) => {
           const impactedOrderIds = selectedEntries.map(entry => entry.orderId).filter(Boolean);
           if (hasAllocatedEntry && impactedOrderIds.length) {
             const impactedOrderSet = new Set(impactedOrderIds);
@@ -9900,9 +9965,11 @@
           }
           allFinanceEntries = allFinanceEntries.filter(entry => !selectedFinance.has(entry.id));
           syncOrderStatusesAfterFinancialReversal(impactedOrderIds);
+          const centralEntries = selectedEntries.filter(entry => entry.centralRecordId || entry.id);
           selectedFinance.clear();
           saveToLocalStorage();
           renderAll();
+          await returnDeletedEntriesToCentral(centralEntries);
           showToast(hasAllocatedEntry
             ? 'Estorno da OS realizado e lançamento(s) excluído(s) com sucesso.'
             : 'Lançamento(s) excluído(s) com sucesso.');

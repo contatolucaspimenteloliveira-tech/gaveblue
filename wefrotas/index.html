@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260814-central-workflow-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260814-central-filters-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -715,6 +715,23 @@
                 <span>Serviços</span>
                 <strong id="central-pending-service-count">0</strong>
               </div>
+              <label class="central-pending-filter">
+                <span>Status</span>
+                <select id="central-pending-status-filter" onchange="setCentralPendingStatusFilter(this.value)">
+                  <option value="todos">Todos</option>
+                  <option value="pendente" selected>Pendentes</option>
+                  <option value="aprovado">Aprovados</option>
+                  <option value="rejeitado">Rejeitados</option>
+                </select>
+              </label>
+              <label class="central-pending-filter">
+                <span>De</span>
+                <input id="central-pending-date-start" type="date" onchange="setCentralPendingDateFilter()">
+              </label>
+              <label class="central-pending-filter">
+                <span>Até</span>
+                <input id="central-pending-date-end" type="date" onchange="setCentralPendingDateFilter()">
+              </label>
             </div>
 
             <div class="central-pending-table-shell">
@@ -1365,8 +1382,8 @@
 
   <script src="./appwrite-config.js?v=20260814-central-pending-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
-  <script src="./wefrotas-backend.js?v=20260814-central-workflow-1"></script>
-  <script src="./wefrotas.js?v=20260814-central-workflow-1"></script>
+  <script src="./wefrotas-backend.js?v=20260814-central-return-1"></script>
+  <script src="./wefrotas.js?v=20260814-central-filters-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

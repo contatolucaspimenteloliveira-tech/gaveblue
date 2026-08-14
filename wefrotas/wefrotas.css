@@ -4342,6 +4342,33 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
   font-weight: 900;
 }
 
+.central-pending-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 4px;
+  color: #7b88a1;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.central-pending-filter select,
+.central-pending-filter input {
+  min-height: 32px;
+  padding: 0 24px 0 10px;
+  border: 1px solid #dbe5f3;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.central-pending-filter input { padding-right: 8px; }
+
 .central-pending-table-shell {
   overflow: hidden;
   border: 1px solid #e3ebf7;
@@ -4462,6 +4489,31 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
 
 .central-pending-actions button.is-approve { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
 .central-pending-actions button.is-reject { color: #dc2626; border-color: #fecaca; background: #fff7f7; }
+
+/* Agrupamentos: resumo financeiro à esquerda e comprovantes/notinhas à direita. */
+#modal-fields:has(.finance-group-history) {
+  grid-template-columns: minmax(0, .9fr) minmax(300px, 1.1fr);
+  align-items: start;
+}
+
+#modal-fields:has(.finance-group-history) .finance-group-summary-card,
+#modal-fields:has(.finance-group-history) .finance-group-history {
+  grid-column: auto;
+}
+
+#modal-fields:has(.finance-group-history) .finance-group-history {
+  grid-column: 2;
+  grid-row: 1 / span 5;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+@media (max-width: 760px) {
+  #modal-fields:has(.finance-group-history) { grid-template-columns: 1fr; }
+  #modal-fields:has(.finance-group-history) .finance-group-history { grid-column: 1; grid-row: auto; }
+}
 
 .central-pending-empty {
   padding: 40px 20px !important;
