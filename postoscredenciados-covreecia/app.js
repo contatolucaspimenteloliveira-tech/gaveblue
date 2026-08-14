@@ -2343,21 +2343,11 @@ function clearReceiptCameraReview() {
 function enterReceiptCameraFullscreen() {
   document.body.classList.add('receipt-camera-open');
   document.body.style.overflow = 'hidden';
-
-  if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-    const fullscreenRequest = document.documentElement.requestFullscreen({ navigationUI: 'hide' });
-    fullscreenRequest?.catch?.(() => {});
-  }
 }
 
 function exitReceiptCameraFullscreen() {
   document.body.classList.remove('receipt-camera-open');
   document.body.style.overflow = '';
-
-  if (document.fullscreenElement && document.exitFullscreen) {
-    const fullscreenExit = document.exitFullscreen();
-    fullscreenExit?.catch?.(() => {});
-  }
 }
 
 function showReceiptCameraLiveMode() {
