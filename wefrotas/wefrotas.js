@@ -1885,7 +1885,7 @@
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
         startCentralPendingAutoRefresh();
-        refreshCentralPendingRecords();
+        refreshCentralPendingRecords({ silent: true });
         return result;
       } catch (error) {
         window.clearTimeout(preparingTimer);
@@ -2000,7 +2000,7 @@
         refreshCentralPendingRecords();
       }, 10000);
       window.addEventListener('focus', () => {
-        if (window.WeFrotasBackend?.getUser?.()) refreshCentralPendingRecords();
+        if (window.WeFrotasBackend?.getUser?.()) refreshCentralPendingRecords({ silent: true });
       });
     }
 
@@ -7582,19 +7582,19 @@
       renderCentralPendingSummary(rows);
 
       if (centralPendingLoading) {
-        list.innerHTML = '<tr><td colspan="9" class="central-pending-empty">Buscando registros enviados pela Central...</td></tr>';
+        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Buscando registros enviados pela Central...</td></tr>';
         return;
       }
       if (centralPendingError) {
-        list.innerHTML = `<tr><td colspan="9" class="central-pending-empty central-pending-error">${escapeHtml(centralPendingError)}</td></tr>`;
+        list.innerHTML = `<tr><td colspan="8" class="central-pending-empty central-pending-error">${escapeHtml(centralPendingError)}</td></tr>`;
         return;
       }
       if (!centralPendingLoaded) {
-        list.innerHTML = '<tr><td colspan="9" class="central-pending-empty">Aguardando a primeira atualização automática.</td></tr>';
+        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Aguardando a primeira atualização automática.</td></tr>';
         return;
       }
       if (!rows.length) {
-        list.innerHTML = '<tr><td colspan="9" class="central-pending-empty">Nenhum registro recebido da Central até agora.</td></tr>';
+        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Nenhum registro recebido da Central até agora.</td></tr>';
         return;
       }
 
@@ -7603,8 +7603,7 @@
         const rowId = escapeHtml(getCentralPendingRecordId(record));
         const receiptUrl = String(record?.comprovanteUrl || '').trim();
         return `
-          <tr>
-            <td><input type="checkbox" aria-label="Selecionar registro" ${selectedCentralPending.has(getCentralPendingRecordId(record)) ? 'checked' : ''} onchange="toggleCentralPendingRecord('${rowId}', this.checked)"></td>
+          <tr class="${selectedCentralPending.has(getCentralPendingRecordId(record)) ? 'is-selected' : ''}" onclick="toggleCentralPendingRecord('${rowId}')">
             <td>${getCentralPendingDate(record)}</td>
             <td><span class="central-pending-type">${escapeHtml(getCentralPendingRecordType(record))}</span></td>
             <td>${escapeHtml(record?.motorista || '-')}</td>
@@ -7614,14 +7613,14 @@
             <td><span class="central-pending-status ${status.className}">${status.label}</span></td>
             <td>
               <div class="central-pending-actions">
-                <button class="is-approve" type="button" title="Aprovar e lançar" onclick="approveCentralPendingRecord('${rowId}')" ${status.className !== 'pending' ? 'disabled' : ''}>
+                <button class="is-approve" type="button" title="Aprovar e lançar" onclick="event.stopPropagation(); approveCentralPendingRecord('${rowId}')" ${status.className !== 'pending' ? 'disabled' : ''}>
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 12l4 4L19 6"/></svg>
                 </button>
-                <button class="is-reject" type="button" title="Rejeitar" onclick="rejectCentralPendingRecord('${rowId}')" ${status.className !== 'pending' ? 'disabled' : ''}>
+                <button class="is-reject" type="button" title="Rejeitar" onclick="event.stopPropagation(); rejectCentralPendingRecord('${rowId}')" ${status.className !== 'pending' ? 'disabled' : ''}>
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 6l12 12M18 6L6 18"/></svg>
                 </button>
-                <button type="button" title="Revisar lançamento" onclick="prepareCentralPendingRecord('${rowId}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L8 18l-4 1 1-4L16.5 3.5z"/></svg></button>
-                <button type="button" title="Ver comprovante" ${receiptUrl ? `onclick="viewFinanceReceipt('${escapeHtml(receiptUrl)}')"` : 'disabled'}>
+                <button type="button" title="Revisar lançamento" onclick="event.stopPropagation(); prepareCentralPendingRecord('${rowId}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L8 18l-4 1 1-4L16.5 3.5z"/></svg></button>
+                <button type="button" title="Ver comprovante" ${receiptUrl ? `onclick="event.stopPropagation(); viewFinanceReceipt('${escapeHtml(receiptUrl)}')"` : 'disabled'}>
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3" stroke-width="1.9"/></svg>
                 </button>
               </div>
@@ -7631,7 +7630,8 @@
       }).join('');
     }
 
-    async function refreshCentralPendingRecords() {
+    async function refreshCentralPendingRecords({ silent = false } = {}) {
+      if (centralPendingLoading) return;
       if (!window.WeFrotasBackend?.getUser?.()) {
         centralPendingError = 'Entre no WeFrotas Online para consultar os registros da Central.';
         centralPendingLoaded = true;
@@ -7647,16 +7647,21 @@
 
       centralPendingLoading = true;
       centralPendingError = '';
-      renderCentralPendingRecords();
+      if (!silent) renderCentralPendingRecords();
       try {
         const result = await window.WeFrotasBackend.listCentralPendingRecords(150);
-        centralPendingRecords = Array.isArray(result?.rows) ? result.rows : [];
+        const nextRecords = Array.isArray(result?.rows) ? result.rows : [];
+        const currentSignature = JSON.stringify(centralPendingRecords.map(item => [item.$id || item.id, item.$updatedAt || item.atualizadoEm || '', item.status || '', item.resolucao || '']));
+        const nextSignature = JSON.stringify(nextRecords.map(item => [item.$id || item.id, item.$updatedAt || item.atualizadoEm || '', item.status || '', item.resolucao || '']));
+        const changed = currentSignature !== nextSignature || !centralPendingLoaded;
+        centralPendingRecords = nextRecords;
         centralPendingLoaded = true;
+        if (silent && changed) renderCentralPendingRecords();
       } catch (error) {
         centralPendingError = `Não foi possível carregar a Central: ${error?.message || 'erro desconhecido'}`;
       } finally {
         centralPendingLoading = false;
-        renderCentralPendingRecords();
+        if (!silent || centralPendingError) renderCentralPendingRecords();
       }
     }
 
@@ -7778,9 +7783,10 @@
       });
     }
 
-    function toggleCentralPendingRecord(rowId, checked) {
-      if (checked) selectedCentralPending.add(rowId);
-      else selectedCentralPending.delete(rowId);
+    function toggleCentralPendingRecord(rowId) {
+      if (selectedCentralPending.has(rowId)) selectedCentralPending.delete(rowId);
+      else selectedCentralPending.add(rowId);
+      renderCentralPendingRecords();
     }
 
     function toggleAllCentralPendingRecords(checked) {

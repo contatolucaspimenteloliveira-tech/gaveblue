@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260814-central-audit-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260814-central-silent-refresh-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -733,10 +733,10 @@
                 <input id="central-pending-date-end" type="date" onchange="setCentralPendingDateFilter()">
               </label>
               <div class="central-pending-bulk-actions" aria-label="Ações dos registros selecionados">
-                <button type="button" title="Excluir registros selecionados" aria-label="Excluir registros selecionados" onclick="deleteSelectedCentralPendingRecords()">
+                <button type="button" title="Excluir" aria-label="Excluir" onclick="deleteSelectedCentralPendingRecords()">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16m-10 4v6m4-6v6M9 7l1-2h4l1 2m-8 0 1 13h8l1-13"/></svg>
                 </button>
-                <button type="button" title="Auditar: devolver selecionados para pendente" aria-label="Auditar: devolver selecionados para pendente" onclick="auditSelectedCentralPendingRecords()">
+                <button type="button" title="Auditar" aria-label="Auditar" onclick="auditSelectedCentralPendingRecords()">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7l7-4zM9 12l2 2 4-4"/></svg>
                 </button>
               </div>
@@ -747,7 +747,6 @@
                 <table class="central-pending-table">
                   <thead>
                     <tr>
-                      <th><input type="checkbox" aria-label="Selecionar todos os registros visíveis" onchange="toggleAllCentralPendingRecords(this.checked)"></th>
                       <th>Data</th>
                       <th>Tipo</th>
                       <th>Motorista</th>
@@ -760,7 +759,7 @@
                   </thead>
                   <tbody id="central-pending-list">
                     <tr>
-                      <td colspan="9" class="central-pending-empty">Os registros da Central aparecem aqui automaticamente.</td>
+                      <td colspan="8" class="central-pending-empty">Os registros da Central aparecem aqui automaticamente.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1392,7 +1391,7 @@
   <script src="./appwrite-config.js?v=20260814-central-pending-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260814-central-audit-1"></script>
-  <script src="./wefrotas.js?v=20260814-central-audit-1"></script>
+  <script src="./wefrotas.js?v=20260814-central-silent-refresh-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

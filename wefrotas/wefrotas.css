@@ -4370,6 +4370,7 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
 .central-pending-filter input { padding-right: 8px; }
 
 .central-pending-bulk-actions { display: inline-flex; gap: 6px; }
+.central-pending-bulk-actions { margin-left: auto; }
 .central-pending-bulk-actions button {
   width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid #dbe5f3; border-radius: 10px; background: #fff; color: #475569; cursor: pointer;
@@ -4418,6 +4419,9 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
 .central-pending-table tbody tr:hover {
   background: #f8fbff;
 }
+
+.central-pending-table tbody tr { cursor: pointer; }
+.central-pending-table tbody tr.is-selected { background: #eef4ff; box-shadow: inset 3px 0 0 #3055e7; }
 
 .central-pending-table small {
   display: block;
