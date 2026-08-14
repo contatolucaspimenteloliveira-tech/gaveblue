@@ -199,8 +199,8 @@
               <div class="orders-filter-field">
                 <label>Status</label>
                 <select id="order-filter-status" class="soft-input w-full">
+                  <option value="todos" selected>Todos os Status</option>
                   <option value="">Abertas e em andamento</option>
-                  <option value="todos">Todos os Status</option>
                   <option value="aberta">Aberta</option>
                   <option value="andamento">Em andamento</option>
                   <option value="fechada">Fechada</option>
@@ -666,6 +666,7 @@
                 <button type="button" class="finance-sort-head" onclick="toggleFinanceSort('vehicle')">Veículo <span data-finance-sort-indicator="vehicle"></span></button>
                 <button type="button" class="finance-sort-head" onclick="toggleFinanceSort('order')">OS <span data-finance-sort-indicator="order"></span></button>
                 <button type="button" class="finance-sort-head" onclick="toggleFinanceSort('date')">Data <span data-finance-sort-indicator="date"></span></button>
+                <button type="button" class="finance-sort-head" onclick="toggleFinanceSort('dueDate')">Vencimento <span data-finance-sort-indicator="dueDate"></span></button>
                 <button type="button" class="finance-sort-head" onclick="toggleFinanceSort('value')">Valor <span data-finance-sort-indicator="value"></span></button>
                 <div>Detalhes</div>
               </div>
@@ -771,16 +772,22 @@
                   </button>
                   <div id="report-export-menu" class="report-export-menu hidden">
                     <button type="button" onclick="exportReport('xlsx')">
-                      <span>XLSX</span>
-                      <small>Planilha moderna</small>
+                      <span class="report-export-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg>
+                      </span>
+                      <span class="report-export-copy"><strong>XLSX</strong><small>Planilha moderna</small></span>
                     </button>
                     <button type="button" onclick="exportReport('xls')">
-                      <span>XLS</span>
-                      <small>Planilha compatível</small>
+                      <span class="report-export-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h18v18H3z"/><path d="M7 8h10M7 12h10M7 16h10"/></svg>
+                      </span>
+                      <span class="report-export-copy"><strong>XLS</strong><small>Planilha compatível</small></span>
                     </button>
                     <button type="button" onclick="exportReport('pdf')">
-                      <span>PDF</span>
-                      <small>Salvar como PDF</small>
+                      <span class="report-export-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/><path d="M8 15h1.5a1.5 1.5 0 0 0 0-3H8v5M13 12v5M13 12h1a2 2 0 0 1 0 4h-1"/></svg>
+                      </span>
+                      <span class="report-export-copy"><strong>PDF</strong><small>Salvar como PDF</small></span>
                     </button>
                   </div>
                 </div>
@@ -1330,7 +1337,7 @@
   <script src="./appwrite-config.js?v=1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260803-storage-optimization-1"></script>
-  <script src="./wefrotas.js?v=20260813-report-ui-2"></script>
+  <script src="./wefrotas.js?v=20260813-report-ui-3"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

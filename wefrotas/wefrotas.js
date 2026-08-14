@@ -37,6 +37,7 @@
     const reportPreferencesStorageKey = 'wefrotas_report_preferences_v1';
     let reportPreferences = loadReportPreferences();
     let reportDraggedColumnId = '';
+    let reportSortState = { type: '', columnId: '', direction: '' };
     let currentModalType = null;
     let currentEditingId = null;
     let currentFinanceEntryType = null;
@@ -3118,7 +3119,7 @@
       setFilterValue('order-filter-search', vehicle ? `${vehicle.numeroFrota || ''} ${vehicle.placa || ''} ${vehicle.modelo || ''}`.trim() : '');
       setFilterValue('order-filter-start', '');
       setFilterValue('order-filter-end', '');
-      setFilterValue('order-filter-status', '');
+      setFilterValue('order-filter-status', 'todos');
       setFilterValue('order-filter-sort', 'recentes');
       orderSortState = { key: 'default', direction: 'desc' };
       selectedOrders.clear();
@@ -3132,7 +3133,7 @@
       setFilterValue('order-filter-search', order ? `OS ${getOrderNumberLabel(order)}` : '');
       setFilterValue('order-filter-start', '');
       setFilterValue('order-filter-end', '');
-      setFilterValue('order-filter-status', '');
+      setFilterValue('order-filter-status', 'todos');
       setFilterValue('order-filter-sort', 'recentes');
       selectedOrders.clear();
       renderOrders();
@@ -4351,6 +4352,20 @@
       return Number(entries[0].km || 0);
     }
 
+    function getVehicleFuelKmRange(vehicleId, start = '', end = '') {
+      const kms = getFuelSheetRows()
+        .filter(row => getEntryLinkedVehicleId(row.entry) === vehicleId || getEntryImmediateVehicleId(row.entry) === vehicleId || row.vehicle?.id === vehicleId)
+        .filter(row => isDateWithinRange(getFinanceEntryDate(row.entry), start, end))
+        .map(row => Number(row.entry?.km || 0))
+        .filter(km => Number.isFinite(km) && km > 0)
+        .sort((a, b) => a - b);
+
+      return {
+        initialKm: kms.length ? kms[0] : null,
+        finalKm: kms.length ? kms[kms.length - 1] : null
+      };
+    }
+
     function getMonthYearReference(dateString) {
       if (!dateString) return 'MÊS/AAAA';
       const date = new Date(`${dateString}T00:00:00`);
@@ -5158,14 +5173,64 @@
       const hiddenIds = new Set(Array.isArray(preference.hidden) ? preference.hidden : []);
       const visibleColumns = orderedColumns.filter(column => !hiddenIds.has(column.id));
       const safeColumns = visibleColumns.length ? visibleColumns : orderedColumns;
+      const normalizedRows = (reportData.rows || []).map((row, originalIndex) => ({
+        ...row,
+        originalIndex,
+        cells: safeColumns.map(column => row.cells?.[column.originalIndex] || { text: '-' })
+      }));
+      const shouldSort = reportSortState.type === type && reportSortState.columnId && reportSortState.direction;
+      if (shouldSort) {
+        const sortColumnIndex = safeColumns.findIndex(column => column.id === reportSortState.columnId);
+        if (sortColumnIndex >= 0) {
+          const direction = reportSortState.direction === 'asc' ? 1 : -1;
+          normalizedRows.sort((a, b) => {
+            const column = safeColumns[sortColumnIndex];
+            const aValue = getReportCellSortValue(a.cells[sortColumnIndex], column);
+            const bValue = getReportCellSortValue(b.cells[sortColumnIndex], column);
+            let compare = 0;
+            if (typeof aValue === 'number' || typeof bValue === 'number') {
+              compare = Number(aValue || 0) - Number(bValue || 0);
+            } else {
+              compare = String(aValue || '').localeCompare(String(bValue || ''), 'pt-BR', { numeric: true, sensitivity: 'base' });
+            }
+            return compare ? compare * direction : a.originalIndex - b.originalIndex;
+          });
+        }
+      }
       return {
         ...reportData,
         columns: safeColumns,
-        rows: (reportData.rows || []).map(row => ({
-          ...row,
-          cells: safeColumns.map(column => row.cells?.[column.originalIndex] || { text: '-' })
-        }))
+        rows: normalizedRows
       };
+    }
+
+    function getReportCellSortValue(cell, column) {
+      const rawValue = cell?.sortValue ?? cell?.value ?? cell?.text ?? '';
+      if (column?.numeric || cell?.numeric) {
+        if (typeof rawValue === 'number') return rawValue;
+        const normalized = String(rawValue)
+          .replace(/[^\d,.-]/g, '')
+          .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+          .replace(',', '.');
+        const numberValue = Number(normalized);
+        return Number.isFinite(numberValue) ? numberValue : 0;
+      }
+      const dateMatch = String(rawValue).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (dateMatch) return `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
+      return normalizeComparableText(rawValue);
+    }
+
+    function handleReportColumnHeaderClick(event, columnId) {
+      if (event?.target?.closest?.('button')) return;
+      const type = getReportFilters().type;
+      if (reportSortState.type !== type || reportSortState.columnId !== columnId) {
+        reportSortState = { type, columnId, direction: 'asc' };
+      } else if (reportSortState.direction === 'asc') {
+        reportSortState = { type, columnId, direction: 'desc' };
+      } else {
+        reportSortState = { type: '', columnId: '', direction: '' };
+      }
+      renderReports();
     }
 
     function renderReportColumnsPanel(reportData) {
@@ -5288,6 +5353,9 @@
     function resetReportColumns() {
       const type = getReportFilters().type;
       delete reportPreferences[type];
+      if (reportSortState.type === type) {
+        reportSortState = { type: '', columnId: '', direction: '' };
+      }
       saveReportPreferences();
       renderReports();
       toggleReportColumnsPanel(true);
@@ -5373,9 +5441,10 @@
       if (filters.type === 'monthly_vehicle_cost') {
         const rows = getSortedVehicles()
           .filter(vehicle => !filters.vehicleId || vehicle.id === filters.vehicleId)
-          .map(vehicle => ({
+        .map(vehicle => ({
             vehicle,
             currentKm: getVehicleCurrentKm(vehicle.id),
+            kmRange: getVehicleFuelKmRange(vehicle.id, filters.start, filters.end),
             total: getVehicleDistributedCostTotal(vehicle.id, filters.start, filters.end)
           }));
         const vehiclesWithCost = rows.filter(item => item.total > 0).length;
@@ -5393,6 +5462,8 @@
             { label: 'Frota' },
             { label: 'Placa' },
             { label: 'Veículo' },
+            { label: 'KM inicial', numeric: true },
+            { label: 'KM final', numeric: true },
             { label: 'KM atual', numeric: true },
             { label: 'Custo total', numeric: true }
           ],
@@ -5401,6 +5472,8 @@
               { text: item.vehicle.numeroFrota || '-' },
               { text: item.vehicle.placa || '-' },
               { text: item.vehicle.modelo || '-' },
+              { text: item.kmRange.initialKm === null ? '-' : `${item.kmRange.initialKm.toLocaleString('pt-BR')} km`, numeric: true },
+              { text: item.kmRange.finalKm === null ? '-' : `${item.kmRange.finalKm.toLocaleString('pt-BR')} km`, numeric: true },
               { text: item.currentKm === null ? '-' : `${item.currentKm.toLocaleString('pt-BR')} km`, numeric: true },
               { text: formatCurrency(item.total), numeric: true }
             ]
@@ -5664,20 +5737,31 @@
       if (filters.type === 'supplier_ranking') {
         const supplierMap = new Map();
         visibleFinanceEntries.forEach((entry) => {
-          const key = String(entry.fornecedor || 'Fornecedor não informado');
+          const isGroup = isFinanceGroupEntry(entry);
+          const children = isGroup ? getFinanceGroupChildren(entry) : [];
+          const childSuppliers = children
+            .map(child => child.fornecedor || 'Fornecedor não informado')
+            .filter(Boolean);
+          const key = isGroup
+            ? `Agrupamento: ${childSuppliers.length ? Array.from(new Set(childSuppliers)).join(', ') : 'sem fornecedores detalhados'}`
+            : String(entry.fornecedor || 'Fornecedor não informado');
           const current = supplierMap.get(key) || {
             name: key,
             total: 0,
             count: 0,
             type: '',
-            latestDate: ''
+            latestDate: '',
+            details: []
           };
           current.total += getFinanceNetTotal(entry);
           current.count += 1;
           current.latestDate = [current.latestDate, getFinanceEntryDate(entry)].filter(Boolean).sort().pop() || current.latestDate;
           if (!current.type) {
             const supplier = allSuppliers.find(item => item.nome === entry.fornecedor);
-            current.type = supplier?.tipoLabel || entry.kindLabel || '-';
+            current.type = isGroup ? 'Agrupamento' : (supplier?.tipoLabel || entry.kindLabel || '-');
+          }
+          if (isGroup) {
+            current.details.push(...children.map(child => `${child.fornecedor || 'Fornecedor não informado'} ${formatCurrency(getFinanceTotal(child))}`));
           }
           supplierMap.set(key, current);
         });
@@ -5701,7 +5785,7 @@
           ],
           rows: rows.map(item => ({
             cells: [
-              { text: item.name },
+              { text: item.name, note: item.details.length ? item.details.join(' | ') : '' },
               { text: item.type || '-' },
               { text: String(item.count), numeric: true },
               { text: item.latestDate ? formatDate(item.latestDate) : '-' },
@@ -5887,12 +5971,10 @@
       }
 
       const headHtml = displayData.columns.map(column => `
-        <th class="${column.numeric ? 'report-cell--numeric' : ''}" draggable="true" ondragstart="handleReportColumnDragStart(event, '${column.id}')" ondragend="handleReportColumnDragEnd(event)" ondragover="handleReportColumnDragOver(event)" ondragleave="handleReportColumnDragLeave(event)" ondrop="handleReportColumnDrop(event, '${column.id}')">
+        <th class="${column.numeric ? 'report-cell--numeric' : ''}" draggable="true" onclick="handleReportColumnHeaderClick(event, '${column.id}')" ondragstart="handleReportColumnDragStart(event, '${column.id}')" ondragend="handleReportColumnDragEnd(event)" ondragover="handleReportColumnDragOver(event)" ondragleave="handleReportColumnDragLeave(event)" ondrop="handleReportColumnDrop(event, '${column.id}')">
           <div class="report-head-wrap">
             <span>${escapeHtml(column.label)}</span>
-            <span class="report-head-actions">
-              <button type="button" title="Ocultar coluna" onclick="event.stopPropagation(); setReportColumnVisibility('${column.id}', false)">×</button>
-            </span>
+            <span class="report-sort-indicator">${reportSortState.type === getReportFilters().type && reportSortState.columnId === column.id ? (reportSortState.direction === 'asc' ? '↑' : '↓') : ''}</span>
           </div>
         </th>
       `).join('');
@@ -5952,6 +6034,8 @@
           return order ? getNumericOrderValue(order.numero) : Number.MAX_SAFE_INTEGER;
         case 'date':
           return String(getFinanceEntryDate(entry) || '');
+        case 'dueDate':
+          return String(entry.dataVencimento || '');
         case 'value':
           return getFinanceTotal(entry);
         default:
@@ -7877,6 +7961,7 @@
     window.handleReportColumnDragOver = handleReportColumnDragOver;
     window.handleReportColumnDragLeave = handleReportColumnDragLeave;
     window.handleReportColumnDrop = handleReportColumnDrop;
+    window.handleReportColumnHeaderClick = handleReportColumnHeaderClick;
     window.resetReportColumns = resetReportColumns;
     window.exportReport = exportReport;
     window.triggerFuelSheetImport = triggerFuelSheetImport;
@@ -8873,8 +8958,6 @@
       if (end) items = items.filter(order => !order.dataInicio || order.dataInicio <= end);
       if (status && status !== 'todos') {
         items = items.filter(order => order.status === status);
-      } else if (!status) {
-        items = items.filter(order => ['aberta', 'andamento'].includes(order.status || 'aberta'));
       }
       if (quickSearch) {
         items = items.filter(order => {
@@ -9115,6 +9198,7 @@
             </button>
           </div>
         `;
+        const dueDate = entry.dataVencimento || '';
         return `
           <div class="orders-table-row finance-table-row finance-entry finance-entry--${getFinanceEntryFamily(entry)} ${selectedFinance.has(entry.id) ? 'selected' : ''}" role="button" tabindex="0" onclick="toggleFinanceSelection(event, '${entry.id}')" onkeydown="handleFinanceRowSelectionKey(event, '${entry.id}')">
             <div class="orders-table-cell orders-table-cell--check">
@@ -9141,6 +9225,10 @@
               <div class="orders-main-text">${escapeHtml(formatDate(getFinanceEntryDate(entry)))}</div>
               <div class="orders-sub-text">${escapeHtml(getFinanceEntryDateLabel(entry))}</div>
             </div>
+            <div class="orders-table-cell">
+              <div class="orders-main-text">${dueDate ? escapeHtml(formatDate(dueDate)) : ''}</div>
+              <div class="orders-sub-text">${dueDate ? 'Vencimento' : ''}</div>
+            </div>
             <div class="orders-table-cell orders-table-cell--value finance-value-cell">
               <span class="orders-value-text">${formatCurrency(getFinanceTotal(entry))}</span>
             </div>
@@ -9160,7 +9248,7 @@
       document.getElementById('order-filter-search').value = '';
       document.getElementById('order-filter-start').value = '';
       document.getElementById('order-filter-end').value = '';
-      document.getElementById('order-filter-status').value = '';
+      document.getElementById('order-filter-status').value = 'todos';
       document.getElementById('order-filter-sort').value = 'recentes';
       orderSortState = { key: 'default', direction: 'desc' };
       renderOrders();
