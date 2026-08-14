@@ -1994,14 +1994,7 @@
     }
 
     function startCentralPendingAutoRefresh() {
-      if (centralPendingAutoRefreshTimer) return;
-      centralPendingAutoRefreshTimer = window.setInterval(() => {
-        if (document.hidden || !window.WeFrotasBackend?.getUser?.()) return;
-        refreshCentralPendingRecords({ silent: true });
-      }, 10000);
-      window.addEventListener('focus', () => {
-        if (window.WeFrotasBackend?.getUser?.()) refreshCentralPendingRecords({ silent: true });
-      });
+      return;
     }
 
     window.logoutWeFrotasOnline = logoutWeFrotasOnline;
@@ -3091,6 +3084,7 @@
         toggleSidebar(false);
       }
       if (module === 'documentos') {
+        refreshCentralPendingRecords({ silent: true });
         renderDocuments();
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -7575,6 +7569,10 @@
       if (serviceNode) serviceNode.textContent = serviceRows.length.toLocaleString('pt-BR');
     }
 
+    function setCentralPendingLoadingIndicator(visible) {
+      document.getElementById('central-pending-loading-indicator')?.classList.toggle('hidden', !visible);
+    }
+
     function renderCentralPendingRecords() {
       const list = document.getElementById('central-pending-list');
       if (!list) return;
@@ -7647,7 +7645,8 @@
 
       centralPendingLoading = true;
       centralPendingError = '';
-      if (!silent) renderCentralPendingRecords();
+      setCentralPendingLoadingIndicator(true);
+      if (!silent && !centralPendingLoaded) renderCentralPendingRecords();
       try {
         const result = await window.WeFrotasBackend.listCentralPendingRecords(150);
         const nextRecords = Array.isArray(result?.rows) ? result.rows : [];
@@ -7661,6 +7660,7 @@
         centralPendingError = `Não foi possível carregar a Central: ${error?.message || 'erro desconhecido'}`;
       } finally {
         centralPendingLoading = false;
+        setCentralPendingLoadingIndicator(false);
         if (!silent || centralPendingError) renderCentralPendingRecords();
       }
     }
@@ -7833,8 +7833,9 @@
     function renderDocuments() {
       const panel = document.getElementById('panel-documentos');
       if (!panel) return;
+      if (centralPendingLoading) return;
       if (!centralPendingLoaded && !centralPendingLoading && !centralPendingError) {
-        refreshCentralPendingRecords();
+        refreshCentralPendingRecords({ silent: true });
         return;
       }
       renderCentralPendingRecords();
