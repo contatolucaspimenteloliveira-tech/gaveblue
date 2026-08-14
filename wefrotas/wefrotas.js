@@ -7633,8 +7633,9 @@
     async function refreshCentralPendingRecords({ silent = false } = {}) {
       if (centralPendingLoading) return;
       if (!window.WeFrotasBackend?.getUser?.()) {
-        centralPendingError = 'Entre no WeFrotas Online para consultar os registros da Central.';
+        centralPendingError = '';
         centralPendingLoaded = true;
+        centralPendingRecords = [];
         renderCentralPendingRecords();
         return;
       }

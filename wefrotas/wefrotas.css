@@ -1877,6 +1877,15 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
       background: #ffffff;
       padding: 18px !important;
     }
+    #panel-orders,
+    #panel-veiculos,
+    #panel-motoristas,
+    #panel-fornecedores,
+    #panel-financeiro {
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
     .panel-heading-row {
       display: flex;
       align-items: center;
@@ -1966,8 +1975,8 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
       position: sticky;
       top: var(--table-sticky-top);
       z-index: 24;
-      margin: 0 -32px;
-      padding: 0 32px;
+      margin: 0 -50px;
+      padding: 8px 50px 0;
       background: #ffffff;
       border-bottom: 1px solid #e7edf5;
       box-shadow: 0 12px 18px -18px rgba(15, 23, 42, 0.55);
@@ -1977,7 +1986,7 @@ html, body { height: 100%; margin: 0; box-sizing: border-box; }
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
     .orders-selection-wrap {
       display: flex;
