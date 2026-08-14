@@ -52,6 +52,7 @@
     let currentModalType = null;
     let currentEditingId = null;
     let currentFinanceEntryType = null;
+    let activeModule = 'home';
     let orderViewerZoom = 1;
     let systemNotifications = [];
     let pendingBatchImportEntity = null;
@@ -3072,6 +3073,7 @@
     window.toggleSidebar = toggleSidebar;
 
     function showModule(module, button) {
+      activeModule = module;
       document.querySelectorAll('.module-panel').forEach(panel => panel.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(btn => {
         if (btn.id !== 'theme-toggle-btn') btn.classList.remove('active');
@@ -3080,6 +3082,7 @@
       if (panel) panel.classList.add('active');
       if (button) button.classList.add('active');
       updateModuleHeader(module);
+      updateContextualSearchUi();
       if (window.innerWidth <= 1120 && sidebarCollapsed) {
         toggleSidebar(false);
       }
@@ -3241,16 +3244,19 @@
       if (!inputEl || !resultsEl) return;
 
       inputEl.addEventListener('input', (event) => {
+        if (syncContextualModuleSearch(event.target.value)) return;
         setActiveSearchContext(inputEl, resultsEl);
         updateGlobalSearch(event.target.value, resultsEl);
       });
 
       inputEl.addEventListener('focus', (event) => {
+        if (isContextualSearchModule()) return;
         setActiveSearchContext(inputEl, resultsEl);
         updateGlobalSearch(event.target.value, resultsEl);
       });
 
       inputEl.addEventListener('keydown', (event) => {
+        if (isContextualSearchModule()) return;
         setActiveSearchContext(inputEl, resultsEl);
         if (resultsEl.classList.contains('hidden')) {
           if (event.key === 'Enter' && inputEl.value.trim()) {
@@ -3290,6 +3296,42 @@
           }
         }
       });
+    }
+
+    const contextualModuleSearchFields = {
+      orders: 'order-filter-search',
+      financeiro: 'finance-filter-search',
+      veiculos: 'vehicle-filter-search',
+      motoristas: 'driver-filter-search',
+      fornecedores: 'supplier-filter-search'
+    };
+
+    function isContextualSearchModule() {
+      return Boolean(contextualModuleSearchFields[activeModule]);
+    }
+
+    function syncContextualModuleSearch(value) {
+      const targetId = contextualModuleSearchFields[activeModule];
+      if (!targetId) return false;
+      const target = document.getElementById(targetId);
+      if (!target) return false;
+      target.value = value;
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+      hideGlobalSearchResults();
+      return true;
+    }
+
+    function updateContextualSearchUi() {
+      const targetId = contextualModuleSearchFields[activeModule];
+      const target = targetId ? document.getElementById(targetId) : null;
+      const placeholder = target ? `Pesquisar em ${document.getElementById('module-header-title')?.textContent || 'este módulo'}...` : 'Pesquisar módulo, atalho ou recurso...';
+      [globalSearchInputEl, mobileGlobalSearchInputEl].forEach((input) => {
+        if (!input) return;
+        input.value = target?.value || '';
+        input.placeholder = placeholder;
+        input.setAttribute('aria-label', placeholder);
+      });
+      hideGlobalSearchResults();
     }
 
     setupGlobalSearchInput(globalSearchInputEl, globalSearchResultsEl);
@@ -11695,8 +11737,10 @@
       if (syncAllocatedOrderStatuses()) saveToLocalStorage();
       updateStickyTableOffset();
       setupStickyTableHeaders();
+      setupUnifiedModuleHeaders();
       renderAll();
       updateModuleHeader('home');
+      updateContextualSearchUi();
       applySidebarState();
       applyThemeState(localStorage.getItem('wefrotas_theme') === 'dark');
       renderNotifications();
@@ -11732,6 +11776,18 @@
         stickyHeader.className = 'orders-sticky-table-header';
         shell.insertBefore(stickyHeader, scroll);
         stickyHeader.append(toolbar, tableHead);
+      });
+    }
+
+    function setupUnifiedModuleHeaders() {
+      Object.entries(contextualModuleSearchFields).forEach(([module, searchFieldId]) => {
+        const panel = document.getElementById(`panel-${module}`);
+        const filterShell = panel?.querySelector(':scope > .orders-filter-shell');
+        const stickyHeader = panel?.querySelector('.orders-sticky-table-header');
+        const searchField = document.getElementById(searchFieldId);
+        if (!filterShell || !stickyHeader) return;
+        if (!stickyHeader.contains(filterShell)) stickyHeader.prepend(filterShell);
+        searchField?.closest('.orders-filter-field')?.classList.add('is-contextual-search-source');
       });
     }
 
