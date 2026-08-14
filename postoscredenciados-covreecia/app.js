@@ -2473,7 +2473,7 @@ function initHomeHeroCarousel() {
 
   const restartAutoplay = () => {
     window.clearInterval(autoplayId);
-    autoplayId = window.setInterval(() => showSlide(currentSlide + 1), 5500);
+    autoplayId = window.setInterval(() => showSlide(currentSlide + 1), 10000);
   };
 
   const goToSlide = (direction) => {
