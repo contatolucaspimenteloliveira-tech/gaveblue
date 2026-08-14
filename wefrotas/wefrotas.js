@@ -9,6 +9,7 @@
     let centralPendingLoading = false;
     let centralPendingError = '';
     let centralPendingLoaded = false;
+    let centralPendingAutoRefreshTimer = null;
     const globalSearchInputEl = document.getElementById('global-search-input');
     const globalSearchResultsEl = document.getElementById('global-search-results');
     const mobileGlobalSearchInputEl = document.getElementById('mobile-global-search-input');
@@ -1635,7 +1636,14 @@
       statusNode.classList.remove('is-local', 'is-online', 'is-syncing', 'is-error', 'is-signed-out');
       statusNode.classList.add(`is-${state}`);
       textNode.textContent = message || 'WeFrotas Online';
-      if (syncButton) syncButton.hidden = !user;
+      if (syncButton) {
+        syncButton.hidden = !user;
+        syncButton.disabled = state === 'syncing';
+        syncButton.classList.toggle('is-syncing', state === 'syncing');
+        syncButton.classList.toggle('is-error', state === 'error');
+        syncButton.title = message || 'Sincronizar dados';
+        syncButton.setAttribute('aria-label', message || 'Sincronizar dados');
+      }
       if (logoutButton) logoutButton.hidden = !user;
       if (user) updateManagerIdentityUi();
     }
@@ -1870,6 +1878,7 @@
         await finishOnlineAuthChecking();
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
+        startCentralPendingAutoRefresh();
         return result;
       } catch (error) {
         window.clearTimeout(preparingTimer);
@@ -1929,6 +1938,7 @@
         await finishOnlineAuthChecking();
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
+        startCentralPendingAutoRefresh();
         showToast('WeFrotas Online conectado.');
       } catch (error) {
         if (signedIn) await backend.signOut().catch(() => {});
@@ -1965,13 +1975,22 @@
       }
     }
 
-    async function syncWeFrotasOnline() {
+    async function syncWeFrotasOnline({ quiet = false } = {}) {
       try {
         await window.WeFrotasBackend?.syncNow(buildStorageSnapshot());
-        showToast('Sincronização concluída.');
+        await refreshCentralPendingRecords();
+        if (!quiet) showToast('Dados e registros da Central atualizados.');
       } catch (error) {
-        showToast(error?.message || 'Não foi possível sincronizar agora.');
+        if (!quiet) showToast(error?.message || 'Não foi possível sincronizar agora.');
       }
+    }
+
+    function startCentralPendingAutoRefresh() {
+      if (centralPendingAutoRefreshTimer) return;
+      centralPendingAutoRefreshTimer = window.setInterval(() => {
+        if (document.hidden || !window.WeFrotasBackend?.getUser?.()) return;
+        refreshCentralPendingRecords();
+      }, 60000);
     }
 
     window.logoutWeFrotasOnline = logoutWeFrotasOnline;

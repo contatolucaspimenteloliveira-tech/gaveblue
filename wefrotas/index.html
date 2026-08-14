@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260814-central-pending-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260814-sync-central-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -174,6 +174,16 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="3" stroke-width="2"></circle>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 .99-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 .99 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51.99H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
+            <button id="online-sync-btn" class="top-action header-utility-btn online-sync-action" type="button" onclick="syncWeFrotasOnline()" aria-label="Sincronizar dados" title="Sincronizar dados" hidden>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M20 10A8 8 0 006.1 6.1L4 10M4 14a8 8 0 0013.9 3.9L20 14"/>
+              </svg>
+            </button>
+            <button id="online-logout-btn" class="top-action header-utility-btn" type="button" onclick="logoutWeFrotasOnline()" aria-label="Sair" title="Sair" hidden>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 17l5-5-5-5M15 12H3m10 7h4a2 2 0 002-2V7a2 2 0 00-2-2h-4"/>
               </svg>
             </button>
             <div id="topbar-avatar" class="topbar-avatar">GB</div>
@@ -703,13 +713,6 @@
                 <h2>Registros pendentes</h2>
                 <p>Receba aqui os abastecimentos e serviços enviados pelos motoristas antes de transformar em lançamento financeiro.</p>
               </div>
-              <button class="central-pending-refresh" type="button" onclick="refreshCentralPendingRecords()">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 4v6h6M20 20v-6h-6"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M20 10A8 8 0 006 6L4 10M4 14a8 8 0 0014 4l2-4"/>
-                </svg>
-                Atualizar
-              </button>
             </div>
 
             <div class="central-pending-summary">
@@ -1302,8 +1305,6 @@
   <div id="online-status" class="online-status is-local" role="status" aria-live="polite">
     <span class="online-status-dot"></span>
     <span id="online-status-text">Preparando WeFrotas Online...</span>
-    <button id="online-sync-btn" type="button" onclick="syncWeFrotasOnline()" hidden>Sincronizar</button>
-    <button id="online-logout-btn" type="button" onclick="logoutWeFrotasOnline()" hidden>Sair</button>
   </div>
 
   <div id="online-platform-loading" class="online-platform-loading hidden" role="status" aria-live="polite">
@@ -1379,7 +1380,7 @@
   <script src="./appwrite-config.js?v=20260814-central-pending-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260814-central-pending-1"></script>
-  <script src="./wefrotas.js?v=20260814-central-pending-1"></script>
+  <script src="./wefrotas.js?v=20260814-sync-central-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
