@@ -1997,7 +1997,7 @@
       if (centralPendingAutoRefreshTimer) return;
       centralPendingAutoRefreshTimer = window.setInterval(() => {
         if (document.hidden || !window.WeFrotasBackend?.getUser?.()) return;
-        refreshCentralPendingRecords();
+        refreshCentralPendingRecords({ silent: true });
       }, 10000);
       window.addEventListener('focus', () => {
         if (window.WeFrotasBackend?.getUser?.()) refreshCentralPendingRecords({ silent: true });
