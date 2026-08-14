@@ -711,9 +711,9 @@
           </div>
         </section>
 
-        <section id="panel-relatorios" class="module-panel content-card orders-page-shell p-6 sm:p-8">
-          <div class="filter-card report-filter-card p-4 sm:p-5 mb-6">
-            <div class="grid xl:grid-cols-[1.2fr_1fr_0.8fr_0.8fr] gap-3 items-end">
+        <section id="panel-relatorios" class="module-panel content-card orders-page-shell p-4 sm:p-6">
+          <div class="filter-card report-filter-card p-3 sm:p-4 mb-4">
+            <div class="grid xl:grid-cols-[1.25fr_1fr_0.72fr_0.72fr] gap-2.5 items-end">
               <div>
                 <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Relatório</label>
                 <select id="report-filter-type" class="soft-input w-full">
@@ -750,26 +750,40 @@
             </div>
             <p id="report-filter-date-context" class="report-filter-context">A data usada depende do relatório selecionado.</p>
           </div>
-          <div id="report-summary-grid" class="report-summary-grid mb-6"></div>
-          <div class="filter-card p-6 sm:p-7">
-            <div class="flex items-start justify-between gap-4 flex-wrap mb-5">
+          <div class="filter-card report-results-card p-4 sm:p-5">
+            <div class="flex items-start justify-between gap-4 flex-wrap mb-4">
               <div>
                 <h3 id="report-results-title" class="text-lg font-extrabold text-slate-900">Resultado do relatório</h3>
                 <p id="report-results-meta" class="text-sm text-slate-500 mt-2">Use os filtros acima para segmentar os dados.</p>
               </div>
               <div class="report-toolbar">
-                <button type="button" class="soft-btn report-toolbar-btn" onclick="toggleReportColumnsPanel()">
-                  Colunas
+                <button type="button" class="icon-action report-toolbar-icon" title="Colunas" onclick="toggleReportColumnsPanel()">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 6h16M4 12h16M4 18h16M8 6v12M16 6v12"/>
+                  </svg>
                 </button>
-                <button type="button" class="icon-action" title="Exportar XLSX" onclick="exportReport('xlsx')">
-                  XLSX
-                </button>
-                <button type="button" class="icon-action" title="Exportar XLS" onclick="exportReport('xls')">
-                  XLS
-                </button>
-                <button type="button" class="icon-action" title="Exportar PDF" onclick="exportReport('pdf')">
-                  PDF
-                </button>
+                <div class="report-export-wrapper">
+                  <button type="button" class="icon-action report-toolbar-icon" title="Salvar relatório" onclick="toggleReportExportMenu()">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M17 21v-8H7v8M7 3v5h8"/>
+                    </svg>
+                  </button>
+                  <div id="report-export-menu" class="report-export-menu hidden">
+                    <button type="button" onclick="exportReport('xlsx')">
+                      <span>XLSX</span>
+                      <small>Planilha moderna</small>
+                    </button>
+                    <button type="button" onclick="exportReport('xls')">
+                      <span>XLS</span>
+                      <small>Planilha compatível</small>
+                    </button>
+                    <button type="button" onclick="exportReport('pdf')">
+                      <span>PDF</span>
+                      <small>Salvar como PDF</small>
+                    </button>
+                  </div>
+                </div>
                 <button type="button" class="icon-action text-[#3151d3]" title="Imprimir relatório" onclick="printReport()">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 8V4h10v4M7 16H5a2 2 0 01-2-2v-3a2 2 0 012-2h14a2 2 0 012 2v3a2 2 0 01-2 2h-2M7 12h10v8H7z"/>
@@ -779,6 +793,7 @@
             </div>
             <div id="report-columns-panel" class="report-columns-panel hidden"></div>
             <div id="report-results-table" class="report-results-shell"></div>
+            <div id="report-summary-grid" class="report-summary-grid report-summary-footer mt-4"></div>
           </div>
         </section>
         </main>
@@ -1315,7 +1330,7 @@
   <script src="./appwrite-config.js?v=1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260803-storage-optimization-1"></script>
-  <script src="./wefrotas.js?v=20260813-report-tools-1"></script>
+  <script src="./wefrotas.js?v=20260813-report-ui-2"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

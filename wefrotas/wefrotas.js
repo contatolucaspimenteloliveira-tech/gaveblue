@@ -36,6 +36,7 @@
     let supplierSortState = { key: 'name', direction: 'asc' };
     const reportPreferencesStorageKey = 'wefrotas_report_preferences_v1';
     let reportPreferences = loadReportPreferences();
+    let reportDraggedColumnId = '';
     let currentModalType = null;
     let currentEditingId = null;
     let currentFinanceEntryType = null;
@@ -5188,14 +5189,10 @@
           <button type="button" class="soft-btn !h-9 !px-3" onclick="resetReportColumns()">Restaurar padrão</button>
         </div>
         <div class="report-columns-grid">
-          ${columns.map((column, index) => `
+          ${columns.map(column => `
             <label class="report-column-option">
               <input type="checkbox" ${hiddenIds.has(column.id) ? '' : 'checked'} onchange="setReportColumnVisibility('${column.id}', this.checked)">
               <span>${escapeHtml(column.label)}</span>
-              <div class="report-column-move">
-                <button type="button" title="Mover para esquerda" ${index === 0 ? 'disabled' : ''} onclick="event.preventDefault(); moveReportColumn('${column.id}', -1)">←</button>
-                <button type="button" title="Mover para direita" ${index === columns.length - 1 ? 'disabled' : ''} onclick="event.preventDefault(); moveReportColumn('${column.id}', 1)">→</button>
-              </div>
             </label>
           `).join('')}
         </div>
@@ -5207,6 +5204,13 @@
       if (!panel) return;
       const shouldShow = typeof force === 'boolean' ? force : panel.classList.contains('hidden');
       panel.classList.toggle('hidden', !shouldShow);
+    }
+
+    function toggleReportExportMenu(force) {
+      const menu = document.getElementById('report-export-menu');
+      if (!menu) return;
+      const shouldShow = typeof force === 'boolean' ? force : menu.classList.contains('hidden');
+      menu.classList.toggle('hidden', !shouldShow);
     }
 
     function setReportColumnVisibility(columnId, visible) {
@@ -5235,6 +5239,52 @@
       toggleReportColumnsPanel(true);
     }
 
+    function moveReportColumnTo(columnId, targetColumnId) {
+      if (!columnId || !targetColumnId || columnId === targetColumnId) return;
+      const reportData = buildReportData(getReportFilters());
+      const type = getReportFilters().type;
+      const columns = getReportColumnsInPreferredOrder(reportData, type);
+      const order = columns.map(column => column.id);
+      const fromIndex = order.indexOf(columnId);
+      const toIndex = order.indexOf(targetColumnId);
+      if (fromIndex < 0 || toIndex < 0) return;
+      order.splice(fromIndex, 1);
+      order.splice(toIndex, 0, columnId);
+      getReportPreference(type).order = order;
+      saveReportPreferences();
+      renderReports();
+    }
+
+    function handleReportColumnDragStart(event, columnId) {
+      reportDraggedColumnId = columnId;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', columnId);
+      event.currentTarget.classList.add('report-column-dragging');
+    }
+
+    function handleReportColumnDragEnd(event) {
+      reportDraggedColumnId = '';
+      event.currentTarget.classList.remove('report-column-dragging');
+    }
+
+    function handleReportColumnDragOver(event) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      event.currentTarget.classList.add('report-column-drop-target');
+    }
+
+    function handleReportColumnDragLeave(event) {
+      event.currentTarget.classList.remove('report-column-drop-target');
+    }
+
+    function handleReportColumnDrop(event, targetColumnId) {
+      event.preventDefault();
+      event.currentTarget.classList.remove('report-column-drop-target');
+      const sourceColumnId = event.dataTransfer.getData('text/plain') || reportDraggedColumnId;
+      moveReportColumnTo(sourceColumnId, targetColumnId);
+      reportDraggedColumnId = '';
+    }
+
     function resetReportColumns() {
       const type = getReportFilters().type;
       delete reportPreferences[type];
@@ -5261,6 +5311,7 @@
         return;
       }
       if (type === 'pdf') {
+        toggleReportExportMenu(false);
         printReport();
         return;
       }
@@ -5274,6 +5325,7 @@
       const extension = type === 'xls' ? 'xls' : 'xlsx';
       const slug = normalizeComparableText(reportData.title).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'relatorio';
       XLSX.writeFile(workbook, `${slug}.${extension}`, { bookType: extension });
+      toggleReportExportMenu(false);
     }
 
     function buildReportData(filters) {
@@ -5835,12 +5887,10 @@
       }
 
       const headHtml = displayData.columns.map(column => `
-        <th class="${column.numeric ? 'report-cell--numeric' : ''}">
+        <th class="${column.numeric ? 'report-cell--numeric' : ''}" draggable="true" ondragstart="handleReportColumnDragStart(event, '${column.id}')" ondragend="handleReportColumnDragEnd(event)" ondragover="handleReportColumnDragOver(event)" ondragleave="handleReportColumnDragLeave(event)" ondrop="handleReportColumnDrop(event, '${column.id}')">
           <div class="report-head-wrap">
             <span>${escapeHtml(column.label)}</span>
             <span class="report-head-actions">
-              <button type="button" title="Mover para esquerda" onclick="event.stopPropagation(); moveReportColumn('${column.id}', -1)">←</button>
-              <button type="button" title="Mover para direita" onclick="event.stopPropagation(); moveReportColumn('${column.id}', 1)">→</button>
               <button type="button" title="Ocultar coluna" onclick="event.stopPropagation(); setReportColumnVisibility('${column.id}', false)">×</button>
             </span>
           </div>
@@ -7800,6 +7850,14 @@
       if (columnsPanel && !columnsPanel.classList.contains('hidden') && !columnsPanel.contains(event.target) && !event.target.closest('[title="Colunas"]')) {
         closeFuelColumnsPanel();
       }
+      const reportExportMenu = document.getElementById('report-export-menu');
+      if (reportExportMenu && !reportExportMenu.classList.contains('hidden') && !reportExportMenu.contains(event.target) && !event.target.closest('.report-export-wrapper')) {
+        toggleReportExportMenu(false);
+      }
+      const reportColumnsPanel = document.getElementById('report-columns-panel');
+      if (reportColumnsPanel && !reportColumnsPanel.classList.contains('hidden') && !reportColumnsPanel.contains(event.target) && !event.target.closest('.report-toolbar')) {
+        toggleReportColumnsPanel(false);
+      }
     });
 
     window.openFinanceEntryFromDocuments = openFinanceEntryFromDocuments;
@@ -7811,8 +7869,14 @@
     window.exportFuelSheet = exportFuelSheet;
     window.printFuelSheet = printFuelSheet;
     window.toggleReportColumnsPanel = toggleReportColumnsPanel;
+    window.toggleReportExportMenu = toggleReportExportMenu;
     window.setReportColumnVisibility = setReportColumnVisibility;
     window.moveReportColumn = moveReportColumn;
+    window.handleReportColumnDragStart = handleReportColumnDragStart;
+    window.handleReportColumnDragEnd = handleReportColumnDragEnd;
+    window.handleReportColumnDragOver = handleReportColumnDragOver;
+    window.handleReportColumnDragLeave = handleReportColumnDragLeave;
+    window.handleReportColumnDrop = handleReportColumnDrop;
     window.resetReportColumns = resetReportColumns;
     window.exportReport = exportReport;
     window.triggerFuelSheetImport = triggerFuelSheetImport;
