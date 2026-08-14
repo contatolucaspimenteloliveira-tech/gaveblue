@@ -1,4 +1,4 @@
-const defaultConfig = {
+﻿const defaultConfig = {
   page_title: 'Postos Credenciados',
   background_color: '#f9fafb',
   card_color: '#ffffff',
@@ -15,6 +15,13 @@ const CLOUDINARY_CLOUD_NAME = 'anh49kkl';
 const CLOUDINARY_UPLOAD_PRESET = 'comprovantes_frota';
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 const FUEL_WHATSAPP_NUMBER = '5527999884208';
+const CENTRAL_APPWRITE_ENABLED = true;
+const CENTRAL_APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
+const CENTRAL_APPWRITE_PROJECT_ID = '6a68cb3e00312ec0a3fd';
+const CENTRAL_APPWRITE_DATABASE_ID = '6a68ce8c000a36a44d98';
+const CENTRAL_APPWRITE_TABLE_ID = 'central_registros_pendentes';
+const CENTRAL_APPWRITE_WORKSPACE_ID = 'covre-e-cia';
+const CENTRAL_APPWRITE_ORIGIN = 'postoscredenciados-covreecia';
 const MAX_RECEIPT_IMAGE_BYTES = 1200 * 1024;
 const COMPRESSED_RECEIPT_MAX_SIZE = 1600;
 const COMPRESSED_RECEIPT_QUALITY = 0.72;
@@ -24,7 +31,7 @@ const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
 const PWA_INSTALL_DONE_KEY = 'pwa-install-installed';
 const PWA_DISMISS_DAYS = 7;
-const REMOVED_DRIVER_NAMES = ['ELOI DOS SANTOS', 'ELOIS DOS SANTOS'];
+const REMOVED_DRIVER_NAMES = ['ELOIS DOS SANTOS'];
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
 let fuelReceiptUploadPromise = null;
@@ -40,6 +47,7 @@ const DEFAULT_DRIVER_NAMES = [
   'AMANDA P. BONATTO',
   'ALAN CHRISTIE',
   'ITALO P. BONATTO',
+  'ELOI DOS SANTOS',
   'JO\u00c3O SILVA',
   'ELICARLOS ZANOTTI',
   'GLEIDSON LAURENTINO',
@@ -53,15 +61,15 @@ const postosPorCidade = {
     { nome: 'Auto Posto 4 Rodas', endereco: 'Boa Esperan\u00e7a, ES', link: 'https://www.google.com/maps/place/Auto+Posto+4+Rodas/@-18.5404958,-40.2937824,826m/data=!3m2!1e3!4b1!4m6!3m5!1s0xb5956c7feac48d:0xc15be322b9fed420!8m2!3d-18.5404958!4d-40.2912075!16s%2Fg%2F1tfp3pxm' }
   ],
   Pinheiros: [
-    { nome: 'Posto Rede Nater (Shell)', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Rede+Nater+(Shell)+em+Pinheiros/@-18.4168459,-40.2107607,153m/data=!3m1!1e3!4m6!3m5!1s0xb59b33d7ff34b9:0x82053208dc2a16f8!8m2!3d-18.4163054!4d-40.2110065!16s%2Fg%2F11qpbrwj22' },
-    { nome: 'Posto Pinheiros', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Pinheiros/@-18.413462,-40.2128249,156m/data=!3m1!1e3!4m6!3m5!1s0xb59a1481427d61:0xeba41bb1a2b24a1e!8m2!3d-18.4135384!4d-40.2127649!16s%2Fg%2F1tj7xmm_' },
-    { nome: 'Posto Nort\u00e3o', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Nort%C3%A3o/@-18.4045169,-40.2319949,1969m/data=!3m1!1e3!4m6!3m5!1s0xb59a201628e4ab:0xcd6c4ad08d8fb206!8m2!3d-18.4045175!4d-40.2258587!16s%2Fg%2F11b6yqny3l?entry=ttu&g_ep=EgoyMDI2MDEyNi4wIKXMDSoKLDEwMDc5MjA2OUgBUAM%3D' }
+    { nome: 'Posto Nater Coop - Shell', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Rede+Nater+(Shell)+em+Pinheiros/@-18.4168459,-40.2107607,153m/data=!3m1!1e3!4m6!3m5!1s0xb59b33d7ff34b9:0x82053208dc2a16f8!8m2!3d-18.4163054!4d-40.2110065!16s%2Fg%2F11qpbrwj22' },
+    { nome: 'Posto Pinheiros - Ipiranga', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Pinheiros/@-18.413462,-40.2128249,156m/data=!3m1!1e3!4m6!3m5!1s0xb59a1481427d61:0xeba41bb1a2b24a1e!8m2!3d-18.4135384!4d-40.2127649!16s%2Fg%2F1tj7xmm_' },
+    { nome: 'Posto Nort\u00e3o - Ale', endereco: 'Pinheiros, ES', link: 'https://www.google.com/maps/place/Posto+Nort%C3%A3o/@-18.4045169,-40.2319949,1969m/data=!3m1!1e3!4m6!3m5!1s0xb59a201628e4ab:0xcd6c4ad08d8fb206!8m2!3d-18.4045175!4d-40.2258587!16s%2Fg%2F11b6yqny3l?entry=ttu&g_ep=EgoyMDI2MDEyNi4wIKXMDSoKLDEwMDc5MjA2OUgBUAM%3D' }
   ],
   'Nova Ven\u00e9cia': [
     { nome: 'Posto Cidade Alta', endereco: 'Nova Ven\u00e9cia, ES', link: 'https://www.google.com/maps/place/Posto+Cidade+Alta/@-18.693836,-40.4136076,2405m/data=!3m1!1e3!4m10!1m2!2m1!1sposto!3m6!1s0xb5db2293e5e22b:0xeb619e2ab30e53b2!8m2!3d-18.693836!4d-40.3997215!15sCgVwb3N0b1oHIgVwb3N0b5IBC2dhc19zdGF0aW9u4AEA!16s%2Fg%2F11k62_1v8g' }
   ],
   Montanha: [
-    { nome: 'Posto Atl\u00e2ntico Servicentro', endereco: 'Montanha, ES', link: 'https://www.google.com/maps/place/Posto+Atlantico+Servicentro/@-18.1277285,-40.3620985,1655m/data=!3m1!1e3!4m10!1m2!2m1!1sauto+posto+servicentro+motanha!3m6!1s0xb50c56fe1af699:0xdce102eb786d422d!8m2!3d-18.1277285!4d-40.3525713!15sCh9hdXRvIHBvc3RvIHNlcnZpY2VudHJvIG1vbnRhbmhhkgELZ2FzX3N0YXRpb27gAQA!16s%2Fg%2F11hblk2rbr' }
+    { nome: 'Auto Posto Servicentro Oliveira Rios - Atl\u00e2ntico', endereco: 'Montanha, ES', link: 'https://www.google.com/maps/place/Posto+Atlantico+Servicentro/@-18.1277285,-40.3620985,1655m/data=!3m1!1e3!4m10!1m2!2m1!1sauto+posto+servicentro+motanha!3m6!1s0xb50c56fe1af699:0xdce102eb786d422d!8m2!3d-18.1277285!4d-40.3525713!15sCh9hdXRvIHBvc3RvIHNlcnZpY2VudHJvIG1vbnRhbmhhkgELZ2FzX3N0YXRpb27gAQA!16s%2Fg%2F11hblk2rbr' }
   ],
   'Pedro Can\u00e1rio': [
     { nome: 'Posto Can\u00e1rio', endereco: 'ES-209, 10 - Centro, Pedro Can\u00e1rio - ES', link: 'https://www.google.com/maps/place/ES-209,+10+-+Centro,+Pedro+Can%C3%A1rio+-+ES,+29970-000/@-18.2990761,-39.9587556,19z/data=!4m6!3m5!1s0xca804b02de6b95:0x50166aeec8735e0f!8m2!3d-18.2991215!4d-39.9579864!16s%2Fg%2F11f613rqzg?hl=pt-BR&entry=ttu&g_ep=EgoyMDI2MDIwMS4wIKXMDSoASAFQAw%3D%3D' }
@@ -269,6 +277,31 @@ function updatePwaInstallStatus(text, percent) {
   }
 }
 
+function setPwaManualInstallFallback() {
+  const steps = document.getElementById('pwa-install-steps');
+  const primary = document.getElementById('pwa-install-primary');
+  const footnote = document.getElementById('pwa-install-footnote');
+
+  updatePwaInstallStatus('Instala\u00e7\u00e3o manual pelo navegador', 100);
+
+  if (steps) {
+    steps.innerHTML = `
+      <li>Toque no menu do navegador, geralmente os tr\u00eas pontinhos.</li>
+      <li>Escolha Instalar app ou Adicionar \u00e0 tela inicial.</li>
+      <li>Confirme e abra pelo novo \u00edcone do celular.</li>
+    `;
+  }
+
+  if (primary) {
+    primary.querySelector('span').textContent = 'Use o menu do navegador';
+    primary.setAttribute('aria-disabled', 'true');
+  }
+
+  if (footnote) {
+    footnote.textContent = 'O navegador n\u00e3o liberou o bot\u00e3o autom\u00e1tico agora. Isso pode acontecer ap\u00f3s instalar e remover o app. Use o menu do Chrome para instalar novamente.';
+  }
+}
+
 function setPwaInstallModalContent(mode) {
   pwaInstallModalMode = mode === 'ios' ? 'ios' : 'android';
   const platform = document.getElementById('pwa-install-platform');
@@ -283,23 +316,24 @@ function setPwaInstallModalContent(mode) {
   if (pwaInstallModalMode === 'ios') {
     platform.textContent = 'iPhone / iPad';
     steps.innerHTML = `
-      <li>Toque no botão Compartilhar do Safari.</li>
-      <li>Escolha Adicionar à Tela de Início.</li>
-      <li>Abra pelo novo ícone criado no celular.</li>
+      <li>Toque no bot\u00e3o Compartilhar do Safari.</li>
+      <li>Escolha Adicionar \u00e0 Tela de In\u00edcio.</li>
+      <li>Abra pelo novo \u00edcone criado no celular.</li>
     `;
     primary.querySelector('span').textContent = 'Entendi';
-    footnote.textContent = 'No iPhone, a instalação é feita pelo menu Compartilhar do Safari.';
+    footnote.textContent = 'No iPhone, a instala\u00e7\u00e3o \u00e9 feita pelo menu Compartilhar do Safari.';
     return;
   }
 
   platform.textContent = 'Android';
   steps.innerHTML = `
     <li>Toque em Instalar aplicativo.</li>
-    <li>Confirme a instalação quando o navegador solicitar.</li>
-    <li>Abra pelo novo ícone na tela inicial.</li>
+    <li>Confirme a instala\u00e7\u00e3o quando o navegador solicitar.</li>
+    <li>Abra pelo novo \u00edcone na tela inicial.</li>
   `;
   primary.querySelector('span').textContent = 'Instalar aplicativo';
-  footnote.textContent = 'Se o prompt não aparecer, abra o menu do navegador e toque em Instalar app ou Adicionar à tela inicial.';
+  primary.removeAttribute('aria-disabled');
+  footnote.textContent = 'Se o prompt n\u00e3o aparecer, abra o menu do navegador e toque em Instalar app ou Adicionar \u00e0 tela inicial.';
 }
 
 function showPwaInstallModal(mode = 'android', force = false) {
@@ -308,7 +342,7 @@ function showPwaInstallModal(mode = 'android', force = false) {
   }
 
   setPwaInstallModalContent(mode);
-  updatePwaInstallStatus(mode === 'ios' ? 'Instalação manual pelo Safari' : 'Pronto para instalar', mode === 'ios' ? 20 : 15);
+  updatePwaInstallStatus(mode === 'ios' ? 'Instala\u00e7\u00e3o manual pelo Safari' : 'Pronto para instalar', mode === 'ios' ? 20 : 15);
   const modal = document.getElementById('pwa-install-modal');
   if (modal) {
     modal.classList.remove('hidden');
@@ -318,14 +352,17 @@ function showPwaInstallModal(mode = 'android', force = false) {
 
 function openPwaInstallFromMenu() {
   if (isRunningStandalone()) {
-    showSuccessMessage('A Central de Registros já está instalada neste aparelho.');
+    showSuccessMessage('A Central de Registros j\u00e1 est\u00e1 instalada neste aparelho.');
     return;
   }
 
   if (!isMobileViewport()) {
-    showErrorMessage('A instalação do app deve ser feita pelo navegador do celular.');
+    showErrorMessage('A instala\u00e7\u00e3o do app deve ser feita pelo navegador do celular.');
     return;
   }
+
+  localStorage.removeItem(PWA_INSTALL_DONE_KEY);
+  localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
 
   if (isIosDevice()) {
     showPwaInstallModal('ios', true);
@@ -333,6 +370,9 @@ function openPwaInstallFromMenu() {
   }
 
   showPwaInstallModal('android', true);
+  if (!deferredPwaPrompt) {
+    setPwaManualInstallFallback();
+  }
 }
 
 function hidePwaInstallModal() {
@@ -350,30 +390,26 @@ function dismissPwaInstallModal() {
 
 async function handlePwaInstallClick() {
   if (pwaInstallModalMode === 'ios') {
-    updatePwaInstallStatus('Siga as instruções no Safari', 40);
+    updatePwaInstallStatus('Siga as instru\u00e7\u00f5es no Safari', 40);
     dismissPwaInstallModal();
     return;
   }
 
   if (!deferredPwaPrompt) {
-    updatePwaInstallStatus('Use o menu do navegador para instalar', 35);
-    const footnote = document.getElementById('pwa-install-footnote');
-    if (footnote) {
-      footnote.textContent = 'Se o botão nativo não aparecer, toque no menu do Chrome e escolha Instalar app ou Adicionar à tela inicial.';
-    }
+    setPwaManualInstallFallback();
     return;
   }
 
-  updatePwaInstallStatus('Aguardando confirmação do navegador', 55);
+  updatePwaInstallStatus('Aguardando confirma\u00e7\u00e3o do navegador', 55);
   deferredPwaPrompt.prompt();
   const result = await deferredPwaPrompt.userChoice;
   deferredPwaPrompt = null;
 
   if (result?.outcome !== 'accepted') {
     localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, String(Date.now()));
-    updatePwaInstallStatus('Instalação cancelada', 0);
+    updatePwaInstallStatus('Instala\u00e7\u00e3o cancelada', 0);
   } else {
-    updatePwaInstallStatus('Concluindo instalação', 85);
+    updatePwaInstallStatus('Concluindo instala\u00e7\u00e3o', 85);
   }
 
   hidePwaInstallModal();
@@ -386,7 +422,7 @@ function setupPwaInstallExperience() {
 
   primaryButton?.addEventListener('click', handlePwaInstallClick);
   if (dismissButton) {
-    dismissButton.textContent = 'Agora não';
+    dismissButton.textContent = 'Agora n\u00e3o';
   }
   dismissButton?.addEventListener('click', dismissPwaInstallModal);
   dismissAreas.forEach((element) => element.addEventListener('click', dismissPwaInstallModal));
@@ -402,9 +438,15 @@ function registerServiceWorker() {
   }
 
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {
-      return null;
-    });
+    navigator.serviceWorker.register('./sw.js')
+      .then((registration) => {
+        registration.update();
+
+        if (registration.waiting) {
+          registration.waiting.postMessage('SKIP_WAITING');
+        }
+      })
+      .catch(() => null);
   });
 }
 
@@ -418,7 +460,8 @@ window.addEventListener('appinstalled', () => {
   deferredPwaPrompt = null;
   localStorage.setItem(PWA_INSTALL_DONE_KEY, 'true');
   localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
-  updatePwaInstallStatus('Instalação concluída', 100);
+  updatePwaInstallStatus('Instala\u00e7\u00e3o conclu\u00edda', 100);
+  showSuccessMessage('Central de Registros instalada com sucesso.');
   hidePwaInstallModal();
 });
 
@@ -563,7 +606,7 @@ function buildLooseNoteReceiptFileName(supplierName, originalFileName) {
   const today = getTodayLocalDateString().split('-').reverse().join('.');
   const extensionMatch = String(originalFileName || '').match(/\.[^.]+$/);
   const extension = extensionMatch ? extensionMatch[0].toLowerCase() : '.jpg';
-  return `${normalizedSupplierName || 'notinha-avulsa'}+${today}${extension}`;
+  return `${normalizedSupplierName || 'registro-servicos'}+${today}${extension}`;
 }
 
 function createRenamedLooseNoteReceiptFile(file, supplierName) {
@@ -749,6 +792,7 @@ function applyFuelFormMode(mode = 'rapido') {
   const isComplete = currentFuelFormMode === 'completo';
   const header = document.getElementById('fuel-form-header');
   const title = document.getElementById('fuel-form-title');
+  const subtitle = document.getElementById('fuel-form-subtitle');
   const completeFields = document.getElementById('fuel-complete-fields');
   const valueInput = document.getElementById('fuel-value');
   const litersInput = document.getElementById('fuel-liters');
@@ -758,8 +802,14 @@ function applyFuelFormMode(mode = 'rapido') {
   header?.classList.toggle('to-red-600', !isComplete);
   header?.classList.toggle('from-amber-500', isComplete);
   header?.classList.toggle('to-orange-600', isComplete);
+  header?.classList.toggle('is-complete', isComplete);
   if (title) {
-    title.textContent = isComplete ? 'REGISTRO COMPLETO' : 'REGISTRO R\u00c1PIDO';
+    title.textContent = isComplete ? 'Registro Completo' : 'Registro R\u00e1pido';
+  }
+  if (subtitle) {
+    subtitle.textContent = isComplete
+      ? 'Preencha todos os dados do abastecimento.'
+      : 'Preenchimento resumido para mais agilidade no seu dia a dia.';
   }
 
   completeFields?.classList.toggle('hidden', !isComplete);
@@ -813,6 +863,8 @@ function prepareFuelForm(options = {}) {
 }
 
 function openFuelFormMenu(mode = 'rapido') {
+  closeOpenFormsSilently();
+  setMobileNavActive(mode === 'completo' ? 'complete' : 'fast');
   document.getElementById('fuel-form-modal').classList.remove('hidden');
   prepareFuelForm({ useLastEntry: true, mode });
 }
@@ -825,6 +877,7 @@ function closeFuelForm() {
   setFuelDateToToday();
   applyFuelFormMode('rapido');
   populateDriverOptions();
+  restoreMobileNavForCurrentView();
 }
 
 function setLooseDateToToday() {
@@ -846,8 +899,56 @@ function prepareLooseNoteForm() {
 }
 
 function openLooseNoteForm() {
+  closeOpenFormsSilently();
+  setMobileNavActive('services');
   document.getElementById('loose-note-modal')?.classList.remove('hidden');
   prepareLooseNoteForm();
+}
+
+async function copyCentralLink() {
+  const link = 'https://gaveblue.com.br/postoscredenciados-covreecia/';
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(link);
+    } else {
+      const input = document.createElement('input');
+      input.value = link;
+      input.setAttribute('readonly', '');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      input.remove();
+    }
+    showSuccessMessage('Link copiado com sucesso.');
+  } catch (error) {
+    console.error('Erro ao copiar link:', error);
+    showSuccessMessage('N\u00e3o foi poss\u00edvel copiar o link. Tente novamente.');
+  }
+}
+
+async function shareCentralLink() {
+  const shareData = {
+    title: 'Central de Registros',
+    text: 'Acesse a Central de Registros:',
+    url: 'https://gaveblue.com.br/postoscredenciados-covreecia/'
+  };
+
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+      return;
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        return;
+      }
+      console.error('Erro ao compartilhar link:', error);
+    }
+  }
+
+  await copyCentralLink();
 }
 
 function closeLooseNoteForm() {
@@ -856,6 +957,7 @@ function closeLooseNoteForm() {
   resetLoosePhotoState();
   setLooseDateToToday();
   populateDriverOptions();
+  restoreMobileNavForCurrentView();
 }
 
 function openWhatsAppDirect(numero, mensagem) {
@@ -887,8 +989,8 @@ function showWhatsAppFallbackLink(url) {
   toast.id = 'whatsapp-fallback-toast';
   toast.className = 'fixed inset-x-4 bottom-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 bg-white border border-emerald-200 text-gray-900 px-4 py-4 rounded-2xl shadow-2xl z-[80] animate-fade-in max-w-md mx-auto';
   toast.innerHTML = `
-    <p class="text-sm font-bold text-gray-900">O navegador bloqueou a abertura automática.</p>
-    <p class="text-xs text-gray-600 mt-1">Clique no botão abaixo para abrir o WhatsApp em nova aba e validar o comprovante.</p>
+    <p class="text-sm font-bold text-gray-900">O navegador bloqueou a abertura autom\u00e1tica.</p>
+    <p class="text-xs text-gray-600 mt-1">Clique no bot\u00e3o abaixo para abrir o WhatsApp em nova aba e validar o comprovante.</p>
     <div class="mt-3 flex gap-2">
       <button type="button" class="flex-1 px-3 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold text-sm" data-close-whatsapp-fallback>Fechar</button>
       <a href="${url}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm text-center">Abrir WhatsApp</a>
@@ -1010,6 +1112,148 @@ function getLooseNoteReceiptUploadKey(formData) {
     formData.km,
     formData.observacoes
   ].join('|');
+}
+
+function createCentralProtocol() {
+  const now = new Date();
+  const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const timePart = now.toTimeString().slice(0, 8).replace(/:/g, '');
+  const randomPart = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `CR-${datePart}-${timePart}-${randomPart}`;
+}
+
+function createCentralRowId(protocol) {
+  return String(protocol || createCentralProtocol())
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_')
+    .slice(0, 36);
+}
+
+function parseCentralMoney(value) {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) return null;
+
+  const normalized = rawValue
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : null;
+}
+
+function parseCentralDecimal(value) {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) return null;
+
+  const sanitized = rawValue.replace(/[^\d,.-]/g, '');
+  if (!sanitized) return null;
+
+  const hasComma = sanitized.includes(',');
+  const hasDot = sanitized.includes('.');
+
+  let normalized = sanitized;
+  if (hasComma && hasDot) {
+    const lastComma = sanitized.lastIndexOf(',');
+    const lastDot = sanitized.lastIndexOf('.');
+    const decimalSeparator = lastComma > lastDot ? ',' : '.';
+    const thousandsSeparator = decimalSeparator === ',' ? '.' : ',';
+    normalized = sanitized
+      .replace(new RegExp(`\\${thousandsSeparator}`, 'g'), '')
+      .replace(decimalSeparator, '.');
+  } else {
+    normalized = sanitized.replace(',', '.');
+  }
+
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : null;
+}
+
+function cleanCentralPayload(payload) {
+  return Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => value !== undefined && value !== null && value !== '')
+  );
+}
+
+function buildCentralRegistroPayload({ type, formData, receiptUrl, mensagem }) {
+  const protocol = createCentralProtocol();
+  const now = new Date();
+  const basePayload = {
+    workspaceId: CENTRAL_APPWRITE_WORKSPACE_ID,
+    tipo: type,
+    status: 'pendente',
+    protocolo: protocol,
+    motorista: formData.motorista,
+    data: formData.data,
+    hora: formData.horaFormatada,
+    km: parseKmValue(formData.km) || undefined,
+    comprovanteUrl: receiptUrl,
+    mensagemWhatsapp: mensagem,
+    origem: CENTRAL_APPWRITE_ORIGIN,
+    criadoEm: now.toISOString()
+  };
+
+  if (type === 'servico') {
+    return {
+      rowId: createCentralRowId(protocol),
+      data: cleanCentralPayload({
+        ...basePayload,
+        fornecedor: formData.fornecedor,
+        tipoServico: formData.tipoServico,
+        valor: formData.valor,
+        valorNumero: parseCentralMoney(formData.valor) ?? undefined,
+        observacoes: formData.observacoes
+      })
+    };
+  }
+
+  const isCompleteFuel = type === 'abastecimento';
+  return {
+    rowId: createCentralRowId(protocol),
+    data: cleanCentralPayload({
+      ...basePayload,
+      cidade: formData.cidade,
+      posto: formData.posto,
+      valor: isCompleteFuel ? formData.valor : undefined,
+      valorNumero: isCompleteFuel ? (parseCentralMoney(formData.valor) ?? undefined) : undefined,
+      litros: isCompleteFuel ? formData.litros : undefined,
+      litrosNumero: isCompleteFuel ? (parseCentralDecimal(formData.litros) ?? undefined) : undefined,
+      tipoCombustivel: isCompleteFuel ? formData.tipoCombustivel : undefined
+    })
+  };
+}
+
+async function saveCentralRegistroToAppwrite(payload) {
+  if (!CENTRAL_APPWRITE_ENABLED) {
+    return { ok: false, skipped: true };
+  }
+
+  const url = `${CENTRAL_APPWRITE_ENDPOINT}/tablesdb/${encodeURIComponent(CENTRAL_APPWRITE_DATABASE_ID)}/tables/${encodeURIComponent(CENTRAL_APPWRITE_TABLE_ID)}/rows`;
+  const response = await fetch(url, {
+    method: 'POST',
+    keepalive: true,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Appwrite-Project': CENTRAL_APPWRITE_PROJECT_ID,
+      'X-Appwrite-Response-Format': '1.8.0'
+    },
+    body: JSON.stringify({
+      rowId: payload.rowId,
+      data: payload.data
+    })
+  });
+
+  if (!response.ok) {
+    let message = `Erro ${response.status}`;
+    try {
+      const errorPayload = await response.json();
+      message = errorPayload?.message || message;
+    } catch (error) {
+      message = await response.text().catch(() => message);
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
 }
 
 function updateReceiptUploadStatus(message, tone = 'neutral') {
@@ -1434,11 +1678,11 @@ async function submitFuelForm(e) {
     `> *Motorista:* ${formData.motorista}`,
     `> *Cidade:* ${formData.cidade}`,
     `> *Posto:* ${formData.posto}`,
-    `> *Data/Hora:* ${formData.dataFormatada} às ${formData.horaFormatada}`,
+    `> *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
     isComplete ? `> *Valor:* ${formData.valor}` : '',
     isComplete ? `> *Litros:* ${formData.litros}` : '',
-    isComplete ? `> *Combustível:* ${formData.tipoCombustivel}` : '',
-    `> *KM:* ${formData.km || 'Não informado'}`
+    isComplete ? `> *Combust\u00edvel:* ${formData.tipoCombustivel}` : '',
+    `> *KM:* ${formData.km || 'N\u00e3o informado'}`
   ].filter(Boolean);
 
   const mensagemLines = [
@@ -1455,7 +1699,22 @@ async function submitFuelForm(e) {
   mensagemLines.push(`\ud83e\uddfe *Comprovante:* ${uploadedFuelReceipt.result.secure_url}`);
   const mensagem = mensagemLines.join('\n');
 
+  const appwritePayload = buildCentralRegistroPayload({
+    type: isComplete ? 'abastecimento' : 'abastecimento_rapido',
+    formData,
+    receiptUrl: uploadedFuelReceipt.result.secure_url,
+    mensagem
+  });
+
   openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
+
+  try {
+    await saveCentralRegistroToAppwrite(appwritePayload);
+  } catch (error) {
+    console.error('Erro ao registrar abastecimento no Appwrite:', error);
+    showErrorMessage('Comprovante salvo, mas o registro online n\u00e3o foi confirmado. O WhatsApp ser\u00e1 aberto como garantia.');
+  }
+
   saveDriverNameSuggestion(formData.motorista);
   saveLastFuelEntry({ motorista: formData.motorista, cidade: formData.cidade, posto: formData.posto });
   document.getElementById('fuel-form').reset();
@@ -1467,7 +1726,7 @@ async function submitFuelForm(e) {
   showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar o abastecimento.');
 }
 
-function submitLooseNoteForm(e) {
+async function submitLooseNoteForm(e) {
   e.preventDefault();
 
   const formData = getLooseNoteFormData();
@@ -1491,25 +1750,40 @@ function submitLooseNoteForm(e) {
   const looseNoteMessageDetails = [
     `> *Motorista:* ${formData.motorista}`,
     `> *Fornecedor:* ${formData.fornecedor}`,
-    `> *Tipo do serviço:* ${formData.tipoServico}`,
+    `> *Tipo do servi\u00e7o:* ${formData.tipoServico}`,
     `> *Valor:* ${formData.valor}`,
-    `> *Data/Hora:* ${formData.dataFormatada} às ${formData.horaFormatada}`,
+    `> *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
     formData.km ? `> *KM:* ${formData.km}` : '',
-    formData.observacoes ? `> *Observações:* ${formData.observacoes}` : ''
+    formData.observacoes ? `> *Observa\u00e7\u00f5es:* ${formData.observacoes}` : ''
   ].filter(Boolean);
 
   const mensagem = [
-    '\ud83e\uddfe *REGISTRO DE NOTINHA AVULSA*',
+    '\ud83d\udd27 *REGISTRO DE SERVI\u00c7OS*',
     '',
     ...looseNoteMessageDetails,
     '',
     `\ud83e\uddfe *Comprovante:* ${uploadedLooseNoteReceipt.result.secure_url}`
   ].join('\n');
 
+  const appwritePayload = buildCentralRegistroPayload({
+    type: 'servico',
+    formData,
+    receiptUrl: uploadedLooseNoteReceipt.result.secure_url,
+    mensagem
+  });
+
   openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
+
+  try {
+    await saveCentralRegistroToAppwrite(appwritePayload);
+  } catch (error) {
+    console.error('Erro ao registrar servi\u00e7o no Appwrite:', error);
+    showErrorMessage('Comprovante salvo, mas o registro online n\u00e3o foi confirmado. O WhatsApp ser\u00e1 aberto como garantia.');
+  }
+
   saveDriverNameSuggestion(formData.motorista);
   closeLooseNoteForm();
-  showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar a notinha avulsa.');
+  showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar o registro de servi\u00e7os.');
 }
 
 function showSuccessMessage(message) {
@@ -1553,18 +1827,24 @@ function showComingSoon() {
 }
 
 function goToWelcome() {
+  closeOpenFormsSilently();
   document.getElementById('welcome-screen').classList.remove('hidden');
   document.getElementById('postos-display').classList.add('hidden');
   document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('about-section')?.classList.add('hidden');
   currentView = 'welcome';
+  setMobileNavActive('home');
   updateBackButtonVisibility();
 }
 
 function showDashboard() {
+  closeOpenFormsSilently();
   document.getElementById('welcome-screen').classList.add('hidden');
   document.getElementById('postos-display').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('about-section')?.classList.add('hidden');
   currentView = 'dashboard';
+  setMobileNavActive('postos');
   updateBackButtonVisibility();
 }
 
@@ -1644,16 +1924,69 @@ function selectCity(cityName) {
 
   welcomeScreen.classList.add('hidden');
   dashboard.classList.add('hidden');
+  document.getElementById('about-section')?.classList.add('hidden');
   postosDisplay.classList.remove('hidden');
   currentView = 'postos';
+  setMobileNavActive('postos');
   updateBackButtonVisibility();
 }
 
 function backToSearch() {
   document.getElementById('postos-display').classList.add('hidden');
+  document.getElementById('about-section')?.classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   currentView = 'dashboard';
+  setMobileNavActive('postos');
   updateBackButtonVisibility();
+}
+
+function setMobileNavActive(target) {
+  document.body.dataset.mobileNav = target;
+  document.querySelectorAll('[data-mobile-nav]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.mobileNav === target);
+  });
+}
+
+function restoreMobileNavForCurrentView() {
+  if (currentView === 'about') {
+    setMobileNavActive('about');
+    return;
+  }
+  setMobileNavActive(currentView === 'welcome' ? 'home' : 'postos');
+}
+
+function showAboutSection() {
+  closeOpenFormsSilently();
+  document.getElementById('welcome-screen').classList.add('hidden');
+  document.getElementById('postos-display').classList.add('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('about-section')?.classList.remove('hidden');
+  currentView = 'about';
+  setMobileNavActive('about');
+  updateBackButtonVisibility();
+}
+
+function closeOpenFormsSilently() {
+  const fuelModal = document.getElementById('fuel-form-modal');
+  const looseModal = document.getElementById('loose-note-modal');
+
+  if (fuelModal && !fuelModal.classList.contains('hidden')) {
+    fuelModal.classList.add('hidden');
+    closeReceiptValidationModal();
+    document.getElementById('fuel-form')?.reset();
+    resetFuelPhotoState();
+    setFuelDateToToday();
+    applyFuelFormMode('rapido');
+    populateDriverOptions();
+  }
+
+  if (looseModal && !looseModal.classList.contains('hidden')) {
+    looseModal.classList.add('hidden');
+    document.getElementById('loose-note-form')?.reset();
+    resetLoosePhotoState();
+    setLooseDateToToday();
+    populateDriverOptions();
+  }
 }
 
 function updateBackButtonVisibility() {
@@ -1719,6 +2052,35 @@ function deletePhoto() {
 
 function deleteLoosePhoto() {
   resetLoosePhotoState();
+}
+
+function openReceiptPreview(imageId) {
+  const sourceImage = document.getElementById(imageId);
+  const modal = document.getElementById('receipt-preview-modal');
+  const fullscreenImage = document.getElementById('receipt-preview-fullscreen-image');
+
+  if (!sourceImage || !modal || !fullscreenImage || !sourceImage.src) {
+    return;
+  }
+
+  fullscreenImage.src = sourceImage.src;
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeReceiptPreview() {
+  const modal = document.getElementById('receipt-preview-modal');
+  const fullscreenImage = document.getElementById('receipt-preview-fullscreen-image');
+
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+
+  if (fullscreenImage) {
+    fullscreenImage.src = '';
+  }
+
+  document.body.style.overflow = '';
 }
 
 function formatCurrency(input) {
@@ -1827,6 +2189,7 @@ window.addEventListener('DOMContentLoaded', function() {
   if (header) {
     header.style.zIndex = '20';
   }
+  setMobileNavActive('home');
   populateDriverOptions();
 });
 
@@ -2005,3 +2368,113 @@ function renderCityImageCards() {
 }
 
 window.addEventListener('DOMContentLoaded', renderCityImageCards);
+
+function initHomeHeroCarousel() {
+  const carousel = document.getElementById('home-hero-carousel');
+  const allSlides = Array.from(carousel?.querySelectorAll('.home-hero-slide') || []);
+  const dotsContainer = carousel?.querySelector('.home-hero-dots');
+  const mobileQuery = window.matchMedia('(max-width: 767px)');
+  let slides = [];
+  let dots = [];
+
+  if (!carousel || allSlides.length < 2 || !dotsContainer) {
+    return;
+  }
+
+  let currentSlide = 0;
+  let autoplayId = null;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let isDragging = false;
+
+  const getActiveSlides = () => allSlides.filter((slide) => mobileQuery.matches || !slide.classList.contains('hero-mobile-only'));
+
+  const rebuildDots = () => {
+    dotsContainer.innerHTML = slides.map(() => '<span></span>').join('');
+    dots = Array.from(dotsContainer.querySelectorAll('span'));
+  };
+
+  const refreshSlides = () => {
+    slides = getActiveSlides();
+    allSlides.forEach((slide) => slide.classList.remove('is-active'));
+    rebuildDots();
+    currentSlide = 0;
+    showSlide(0);
+  };
+
+  const showSlide = (nextIndex) => {
+    if (!slides.length) {
+      return;
+    }
+
+    currentSlide = (nextIndex + slides.length) % slides.length;
+    allSlides.forEach((slide) => slide.classList.remove('is-active'));
+    slides[currentSlide]?.classList.add('is-active');
+    dots.forEach((dot, index) => dot.classList.toggle('is-active', index === currentSlide));
+    carousel.classList.toggle('is-message-slide', !slides[currentSlide]?.classList.contains('hero-main'));
+  };
+
+  const restartAutoplay = () => {
+    window.clearInterval(autoplayId);
+    autoplayId = window.setInterval(() => showSlide(currentSlide + 1), 5500);
+  };
+
+  const goToSlide = (direction) => {
+    showSlide(currentSlide + direction);
+    restartAutoplay();
+  };
+
+  const startDrag = (clientX, clientY) => {
+    dragStartX = clientX;
+    dragStartY = clientY;
+    isDragging = true;
+  };
+
+  const finishDrag = (clientX, clientY) => {
+    if (!isDragging) {
+      return;
+    }
+
+    const deltaX = clientX - dragStartX;
+    const deltaY = clientY - dragStartY;
+    isDragging = false;
+
+    if (Math.abs(deltaX) < 45 || Math.abs(deltaX) < Math.abs(deltaY)) {
+      return;
+    }
+
+    goToSlide(deltaX < 0 ? 1 : -1);
+  };
+
+  carousel.addEventListener('pointerdown', (event) => {
+    startDrag(event.clientX, event.clientY);
+  });
+
+  carousel.addEventListener('pointerup', (event) => {
+    finishDrag(event.clientX, event.clientY);
+  });
+
+  carousel.addEventListener('pointercancel', () => {
+    isDragging = false;
+  });
+
+  carousel.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft') {
+      goToSlide(-1);
+    }
+
+    if (event.key === 'ArrowRight') {
+      goToSlide(1);
+    }
+  });
+
+  carousel.setAttribute('tabindex', '0');
+  refreshSlides();
+  mobileQuery.addEventListener('change', () => {
+    refreshSlides();
+    restartAutoplay();
+  });
+  restartAutoplay();
+}
+
+window.addEventListener('DOMContentLoaded', initHomeHeroCarousel);
