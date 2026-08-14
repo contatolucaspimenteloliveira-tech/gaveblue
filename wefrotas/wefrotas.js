@@ -7577,6 +7577,8 @@
       const list = document.getElementById('central-pending-list');
       if (!list) return;
       const rows = getCentralPendingSortedRows();
+      const visibleIds = new Set(rows.map(record => getCentralPendingRecordId(record)));
+      selectedCentralPending = new Set(Array.from(selectedCentralPending).filter(id => visibleIds.has(id)));
       renderCentralPendingSummary(rows);
 
       if (centralPendingLoading) {
@@ -8713,8 +8715,10 @@
 
     function updateVehicleSelectionUI() {
       pruneSelections();
-      const count = selectedVehicles.size;
       const visibleVehicles = getVisibleVehicles();
+      const visibleIds = new Set(visibleVehicles.map(vehicle => vehicle.id));
+      selectedVehicles = new Set(Array.from(selectedVehicles).filter(id => visibleIds.has(id)));
+      const count = selectedVehicles.size;
       document.getElementById('vehicles-selected-text').textContent = `${count} selecionado${count === 1 ? '' : 's'}`;
       document.getElementById('select-all-vehicles').classList.toggle('checked', visibleVehicles.length > 0 && visibleVehicles.every(vehicle => selectedVehicles.has(vehicle.id)));
       updateButtonState('edit-vehicle-btn', 'delete-vehicle-btn', count, {
@@ -8726,8 +8730,10 @@
 
     function updateDriverSelectionUI() {
       pruneSelections();
-      const count = selectedDrivers.size;
       const visibleDrivers = getVisibleDrivers();
+      const visibleIds = new Set(visibleDrivers.map(driver => driver.id));
+      selectedDrivers = new Set(Array.from(selectedDrivers).filter(id => visibleIds.has(id)));
+      const count = selectedDrivers.size;
       document.getElementById('drivers-selected-text').textContent = `${count} selecionado${count === 1 ? '' : 's'}`;
       document.getElementById('select-all-drivers').classList.toggle('checked', visibleDrivers.length > 0 && visibleDrivers.every(driver => selectedDrivers.has(driver.id)));
       updateButtonState('edit-driver-btn', 'delete-driver-btn', count, {
@@ -8739,8 +8745,10 @@
 
     function updateSupplierSelectionUI() {
       pruneSelections();
-      const count = selectedSuppliers.size;
       const visibleSuppliers = getVisibleSuppliers();
+      const visibleIds = new Set(visibleSuppliers.map(supplier => supplier.id));
+      selectedSuppliers = new Set(Array.from(selectedSuppliers).filter(id => visibleIds.has(id)));
+      const count = selectedSuppliers.size;
       document.getElementById('suppliers-selected-text').textContent = `${count} selecionado${count === 1 ? '' : 's'}`;
       document.getElementById('select-all-suppliers').classList.toggle('checked', visibleSuppliers.length > 0 && visibleSuppliers.every(supplier => selectedSuppliers.has(supplier.id)));
       updateButtonState('edit-supplier-btn', 'delete-supplier-btn', count, {
@@ -8752,8 +8760,10 @@
 
     function updateOrderSelectionUI() {
       pruneSelections();
-      const count = selectedOrders.size;
       const visibleOrders = getFilteredOrders();
+      const visibleIds = new Set(visibleOrders.map(order => order.id));
+      selectedOrders = new Set(Array.from(selectedOrders).filter(id => visibleIds.has(id)));
+      const count = selectedOrders.size;
       const selectedOrderRecords = Array.from(selectedOrders)
         .map(id => allOrders.find(order => order.id === id))
         .filter(Boolean);
