@@ -11692,6 +11692,7 @@
     async function initializeWeFrotas() {
       await loadFromStorage();
       if (syncAllocatedOrderStatuses()) saveToLocalStorage();
+      setupStickyTableHeaders();
       renderAll();
       updateModuleHeader('home');
       applySidebarState();
@@ -11710,6 +11711,20 @@
           message: 'Não foi possível validar o acesso online.'
         });
       }
+    }
+
+    function setupStickyTableHeaders() {
+      if (window.innerWidth <= 1120) return;
+      document.querySelectorAll('.orders-table-shell').forEach((shell) => {
+        const toolbar = shell.querySelector(':scope > .orders-toolbar');
+        const scroll = shell.querySelector(':scope > .orders-table-scroll');
+        const tableHead = scroll?.querySelector(':scope > .orders-table-head');
+        if (!toolbar || !scroll || !tableHead || shell.querySelector(':scope > .orders-sticky-table-header')) return;
+        const stickyHeader = document.createElement('div');
+        stickyHeader.className = 'orders-sticky-table-header';
+        shell.insertBefore(stickyHeader, scroll);
+        stickyHeader.append(toolbar, tableHead);
+      });
     }
 
     registerOnlineIdleListeners();
