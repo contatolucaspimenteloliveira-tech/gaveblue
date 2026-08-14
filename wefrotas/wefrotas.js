@@ -16,6 +16,7 @@
     let centralPendingDateEnd = '';
     let centralPendingFiltersLoaded = false;
     let selectedCentralPending = new Set();
+    const centralApprovalInProgress = new Set();
     const globalSearchInputEl = document.getElementById('global-search-input');
     const globalSearchResultsEl = document.getElementById('global-search-results');
     const mobileGlobalSearchInputEl = document.getElementById('mobile-global-search-input');
@@ -798,10 +799,22 @@
         });
     }
 
+    function isEntityActive(entity) {
+      return !!entity && entity?.ativo !== false && entity?.active !== false;
+    }
+
+    function getActiveSortedVehicles() {
+      return getSortedVehicles().filter(isEntityActive);
+    }
+
     function getSortedDrivers() {
       return allDrivers
         .slice()
         .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' }));
+    }
+
+    function getActiveSortedDrivers() {
+      return getSortedDrivers().filter(isEntityActive);
     }
 
     function getAdministrationOptions() {
@@ -831,6 +844,10 @@
       return suppliers
         .slice()
         .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' }));
+    }
+
+    function getActiveSortedSuppliers(suppliers = allSuppliers) {
+      return getSortedSuppliers(suppliers).filter(isEntityActive);
     }
 
     function getVehicleAutocompleteLabel(vehicle) {
@@ -1473,7 +1490,7 @@
     function applyStorageSnapshot(snapshot = {}) {
       allVehicles = Array.isArray(snapshot.vehicles) ? snapshot.vehicles.map(normalizeVehicleRecord) : [];
       allDrivers = Array.isArray(snapshot.drivers) ? snapshot.drivers.map(normalizeDriverRecord) : [];
-      allSuppliers = Array.isArray(snapshot.suppliers) ? snapshot.suppliers : [];
+      allSuppliers = Array.isArray(snapshot.suppliers) ? snapshot.suppliers.map(normalizeSupplierRecord) : [];
       allOrders = Array.isArray(snapshot.orders) ? snapshot.orders : [];
       allFinanceEntries = Array.isArray(snapshot.finance) ? snapshot.finance : [];
       allAdministrations = normalizeAdministrationList(snapshot.administrations || snapshot.administracoes || []);
@@ -2410,7 +2427,8 @@
     function normalizeVehicleRecord(vehicle) {
       return {
         ...vehicle,
-        motoristaId: vehicle?.motoristaId || vehicle?.driverId || ''
+        motoristaId: vehicle?.motoristaId || vehicle?.driverId || '',
+        ativo: isEntityActive(vehicle)
       };
     }
 
@@ -2423,7 +2441,16 @@
 
       return {
         ...driver,
+        ativo: isEntityActive(driver),
         vehicleIds: Array.from(new Set(vehicleIds.filter(Boolean).map(String)))
+      };
+    }
+
+    function normalizeSupplierRecord(supplier) {
+      return {
+        ...supplier,
+        ativo: isEntityActive(supplier),
+        tipoLabel: supplier?.tipoLabel || getSupplierTypeLabel(supplier?.tipo)
       };
     }
 
@@ -3538,12 +3565,19 @@
             <label>Motorista vinculado</label>
             <select class="soft-input w-full" id="vehicle-motorista">
               <option value="">Selecione um motorista</option>
-              ${getSortedDrivers().map(driver => `<option value="${driver.id}">${escapeHtml(driver.nome)}</option>`).join('')}
+              ${getSortedDrivers().map(driver => `<option value="${driver.id}" ${isEntityActive(driver) ? '' : 'disabled'}>${escapeHtml(driver.nome)}${isEntityActive(driver) ? '' : ' (inativo)'}</option>`).join('')}
             </select>
           </div>
           <div class="field-wrap full">
             <label>Chassi</label>
             <input class="soft-input w-full" id="vehicle-chassi" placeholder="9BWZZZ377VT004251">
+          </div>
+          <div class="field-wrap full entity-active-field">
+            <div><strong>Veículo ativo</strong><small>Disponível para novos vínculos e lançamentos.</small></div>
+            <label class="entity-active-switch" aria-label="Ativar ou desativar veículo">
+              <input id="vehicle-active" type="checkbox" checked>
+              <span aria-hidden="true"></span>
+            </label>
           </div>
         `;
       } else if (type === 'driver') {
@@ -3593,7 +3627,7 @@
               ${getSortedVehicles().length
                 ? getSortedVehicles().map(vehicle => `
                   <label class="driver-vehicle-option">
-                    <input type="checkbox" value="${vehicle.id}">
+                    <input type="checkbox" value="${vehicle.id}" ${isEntityActive(vehicle) ? '' : 'disabled'}>
                     <span class="driver-vehicle-check" aria-hidden="true">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 12l4 4 10-10"/>
@@ -3601,12 +3635,19 @@
                     </span>
                     <span class="driver-vehicle-text">
                       <strong>${escapeHtml([vehicle.numeroFrota, vehicle.placa].filter(Boolean).join(' - ') || 'Veículo sem identificação')}</strong>
-                      <small>${escapeHtml(vehicle.modelo || 'Modelo não informado')}</small>
+                      <small>${escapeHtml(vehicle.modelo || 'Modelo não informado')}${isEntityActive(vehicle) ? '' : ' · Inativo'}</small>
                     </span>
                   </label>
                 `).join('')
                 : '<div class="driver-vehicle-empty">Cadastre veículos para criar vínculos com este motorista.</div>'}
             </div>
+          </div>
+          <div class="field-wrap full entity-active-field">
+            <div><strong>Motorista ativo</strong><small>Disponível para novos vínculos e lançamentos.</small></div>
+            <label class="entity-active-switch" aria-label="Ativar ou desativar motorista">
+              <input id="driver-active" type="checkbox" checked>
+              <span aria-hidden="true"></span>
+            </label>
           </div>
         `;
       } else if (type === 'supplier') {
@@ -3654,6 +3695,13 @@
           <div class="field-wrap full">
             <label>Observações</label>
             <textarea class="soft-input textarea w-full" id="supplier-notes" placeholder="Observações do parceiro"></textarea>
+          </div>
+          <div class="field-wrap full entity-active-field">
+            <div><strong>Fornecedor ativo</strong><small>Disponível para novos lançamentos financeiros.</small></div>
+            <label class="entity-active-switch" aria-label="Ativar ou desativar fornecedor">
+              <input id="supplier-active" type="checkbox" checked>
+              <span aria-hidden="true"></span>
+            </label>
           </div>
         `;
       } else if (type === 'order') {
@@ -3717,7 +3765,7 @@
               ${fieldIcon('vehicle')}
               <select class="soft-input w-full" id="order-veiculo" onchange="handleOrderVehicleChange()" required>
                 <option value="">Selecione um veículo</option>
-                ${getSortedVehicles().map(vehicle => `<option value="${vehicle.id}">${escapeHtml(vehicle.numeroFrota)}  ${escapeHtml(vehicle.placa)}  ${escapeHtml(vehicle.modelo)}</option>`).join('')}
+                ${getSortedVehicles().map(vehicle => `<option value="${vehicle.id}" ${isEntityActive(vehicle) ? '' : 'disabled'}>${escapeHtml(vehicle.numeroFrota)}  ${escapeHtml(vehicle.placa)}  ${escapeHtml(vehicle.modelo)}${isEntityActive(vehicle) ? '' : ' (inativo)'}</option>`).join('')}
               </select>
             </div>
           </div>
@@ -3727,7 +3775,7 @@
               ${fieldIcon('user')}
               <select class="soft-input w-full" id="order-driver">
                 <option value="">Selecione um motorista</option>
-                ${getSortedDrivers().map(driver => `<option value="${driver.id}">${escapeHtml(driver.nome)}</option>`).join('')}
+                ${getSortedDrivers().map(driver => `<option value="${driver.id}" ${isEntityActive(driver) ? '' : 'disabled'}>${escapeHtml(driver.nome)}${isEntityActive(driver) ? '' : ' (inativo)'}</option>`).join('')}
               </select>
             </div>
           </div>
@@ -3877,10 +3925,7 @@
           }
           allVehicles = parsed.vehicles.map(normalizeVehicleRecord);
           allDrivers = parsed.drivers.map(normalizeDriverRecord);
-          allSuppliers = parsed.suppliers.map((supplier) => ({
-            ...supplier,
-            tipoLabel: getSupplierTypeLabel(supplier.tipo)
-          }));
+          allSuppliers = parsed.suppliers.map(normalizeSupplierRecord);
           allOrders = parsed.orders;
           allFinanceEntries = parsed.finance;
           allAdministrations = normalizeAdministrationList(parsed.administrations || parsed.administracoes || []);
@@ -6280,9 +6325,9 @@
       const title = document.getElementById('modal-title');
       const supplierOptions = getSortedSuppliers(allSuppliers)
         .filter(supplier => entryType === 'combustivel' ? supplier.tipo === 'posto' : supplier.tipo !== 'posto')
-        .map(supplier => `<option value="${supplier.id}">${escapeHtml(supplier.nome)}</option>`)
+        .map(supplier => `<option value="${supplier.id}" ${isEntityActive(supplier) ? '' : 'disabled'}>${escapeHtml(supplier.nome)}${isEntityActive(supplier) ? '' : ' (inativo)'}</option>`)
         .join('');
-      const supplierSearchItems = getSortedSuppliers(allSuppliers
+      const supplierSearchItems = getActiveSortedSuppliers(allSuppliers
         .filter(supplier => entryType === 'combustivel' ? supplier.tipo === 'posto' : supplier.tipo !== 'posto'));
       const supplierSearchOptions = supplierSearchItems
         .map(supplier => `<option value="${escapeHtml(supplier.nome)}" label="${escapeHtml([supplier.tipoLabel, supplier.documento].filter(Boolean).join(' - '))}"></option>`)
@@ -6291,7 +6336,7 @@
       const orderOptions = openOrders
         .map(order => `<option value="${escapeHtml(getOrderAutocompleteLabel(order))}"></option>`)
         .join('');
-      const sortedVehicles = getSortedVehicles();
+      const sortedVehicles = getActiveSortedVehicles();
       const vehicleOptions = sortedVehicles
         .map(vehicle => `<option value="${escapeHtml(getVehicleAutocompleteLabel(vehicle))}"></option>`)
         .join('');
@@ -6379,7 +6424,7 @@
               ${fieldIcon('user')}
               <select class="soft-input w-full" id="finance-driver-id" onchange="suggestFinanceVehicleFromDriver()">
                 <option value="">Selecione um motorista</option>
-                ${getSortedDrivers().map(driver => `<option value="${driver.id}">${escapeHtml(driver.nome)}</option>`).join('')}
+                ${getSortedDrivers().map(driver => `<option value="${driver.id}" ${isEntityActive(driver) ? '' : 'disabled'}>${escapeHtml(driver.nome)}${isEntityActive(driver) ? '' : ' (inativo)'}</option>`).join('')}
               </select>
             </div>
           </div>
@@ -7714,7 +7759,18 @@
       if (!silent && !centralPendingLoaded) renderCentralPendingRecords();
       try {
         const result = await window.WeFrotasBackend.listCentralPendingRecords(150);
-        const nextRecords = Array.isArray(result?.rows) ? result.rows : [];
+        const nextRecords = (Array.isArray(result?.rows) ? result.rows : []).map((record) => {
+          const rowId = getCentralPendingRecordId(record);
+          const linkedEntry = allFinanceEntries.find(entry => String(entry?.centralRecordId || '') === rowId);
+          if (!linkedEntry || getCentralPendingStatus(record).className !== 'pending') return record;
+          return {
+            ...record,
+            status: 'aprovado',
+            importadoEm: record.importadoEm || linkedEntry.createdAt || '',
+            lancamentoFinanceiroId: linkedEntry.id,
+            resolucao: record.resolucao || 'Aprovado e lançado no financeiro.'
+          };
+        });
         const currentSignature = JSON.stringify(centralPendingRecords.map(item => [item.$id || item.id, item.$updatedAt || item.atualizadoEm || '', item.status || '', item.resolucao || '']));
         const nextSignature = JSON.stringify(nextRecords.map(item => [item.$id || item.id, item.$updatedAt || item.atualizadoEm || '', item.status || '', item.resolucao || '']));
         const changed = currentSignature !== nextSignature || !centralPendingLoaded;
@@ -7759,6 +7815,13 @@
       renderCentralPendingRecords();
     }
 
+    function setCentralPendingRecordStatusLocally(record, data) {
+      const rowId = getCentralPendingRecordId(record);
+      centralPendingRecords = centralPendingRecords.map(item => getCentralPendingRecordId(item) === rowId ? { ...item, ...data } : item);
+      selectedCentralPending.delete(rowId);
+      renderCentralPendingRecords();
+    }
+
     async function returnDeletedEntriesToCentral(entries = []) {
       if (!entries.length || !window.WeFrotasBackend?.updateCentralPendingRecord) return;
       if (!centralPendingLoaded) await refreshCentralPendingRecords();
@@ -7790,18 +7853,44 @@
     async function approveCentralPendingRecord(rowId) {
       const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
       if (!record) return showToast('Registro da Central não encontrado.');
+      if (centralApprovalInProgress.has(rowId)) return showToast('Este registro já está sendo aprovado. Aguarde a conclusão.');
+
+      const existingEntry = allFinanceEntries.find(entry => String(entry?.centralRecordId || '') === String(rowId));
+      if (existingEntry) {
+        const approvalData = {
+          status: 'aprovado',
+          importadoEm: record.importadoEm || existingEntry.createdAt || new Date().toISOString(),
+          lancamentoFinanceiroId: existingEntry.id,
+          resolucao: 'Aprovado e lançado no financeiro.'
+        };
+        setCentralPendingRecordStatusLocally(record, approvalData);
+        try {
+          await setCentralPendingRecordStatus(record, approvalData);
+          showToast('Este registro já estava lançado. O status da Central foi corrigido.');
+        } catch (error) {
+          showToast('Este registro já está no financeiro e não será duplicado. A sincronização do status será tentada novamente.');
+        }
+        return;
+      }
+      if (getCentralPendingStatus(record).className === 'approved') return showToast('Este registro já foi aprovado.');
+
       const imported = parseImportedCentralMessage(buildCentralPendingMessage(record));
       if (!imported) return prepareCentralPendingRecord(rowId);
 
       const isService = imported.type === 'service' || imported.type === 'loose_note';
       const supplier = isService
-        ? resolveSupplierByRelevantTerms(imported.fornecedor, allSuppliers.filter(item => item.tipo !== 'posto'))
-        : resolveFuelSupplierByImportedName(imported.posto);
-      const vehicle = isService ? null : resolveVehicleByImportedDriver(imported.motorista, resolveDriverByImportedName(imported.motorista));
+        ? resolveSupplierByRelevantTerms(imported.fornecedor, allSuppliers.filter(item => item.tipo !== 'posto' && isEntityActive(item)))
+        : (() => {
+            const matchedSupplier = resolveFuelSupplierByImportedName(imported.posto);
+            return isEntityActive(matchedSupplier) ? matchedSupplier : null;
+          })();
+      const importedDriver = isService ? null : resolveDriverByImportedName(imported.motorista);
+      const vehicle = isService || !isEntityActive(importedDriver) ? null : resolveVehicleByImportedDriver(imported.motorista, importedDriver);
+      const activeVehicle = vehicle && isEntityActive(vehicle) ? vehicle : null;
       const total = getCentralRecordTotal(record) || parseCurrencyInputValue(imported.valor || '');
       const isReady = isService
         ? !!(supplier && imported.dataIso && total)
-        : !!(supplier && vehicle && imported.dataIso && imported.tipoCombustivel && imported.litros && total);
+        : !!(supplier && activeVehicle && imported.dataIso && imported.tipoCombustivel && imported.litros && total);
 
       if (!isReady) {
         prepareCentralPendingRecord(rowId);
@@ -7815,20 +7904,25 @@
         supplierId: supplier.id, supplierType: supplier.tipo, fornecedor: supplier.nome, nf: 'REGISTRO DE SERVIÇOS', km: imported.km || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '',
         dataVencimento: imported.dataIso, total, observacoes: [imported.tipoServico, imported.observacoes].filter(Boolean).join(' | ')
       } : {
-        id: financeId, centralRecordId: getCentralPendingRecordId(record), createdAt: new Date().toISOString(), entryType: 'combustivel', vehicleId: vehicle.id, orderId: '', kind: 'despesa', kindLabel: 'Despesa',
+        id: financeId, centralRecordId: getCentralPendingRecordId(record), createdAt: new Date().toISOString(), entryType: 'combustivel', vehicleId: activeVehicle.id, orderId: '', kind: 'despesa', kindLabel: 'Despesa',
         supplierId: supplier.id, supplierType: supplier.tipo, fornecedor: supplier.nome, fuelType: imported.tipoCombustivel, km: imported.km || '', litros: String(imported.litros),
-        driverId: resolveDriverByImportedName(imported.motorista)?.id || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '', dataAbastecimento: imported.dataIso,
+        driverId: importedDriver?.id || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '', dataAbastecimento: imported.dataIso,
         dataVencimento: '', nf: '', total, observacoes: imported.cidade ? `Cidade informada na Central: ${imported.cidade}` : '', groupedIntoId: '', workflowStatus: 'pendente', closedExpense: false, discount: 0
       };
 
-      allFinanceEntries.unshift(entry);
-      saveToLocalStorage();
-      renderAll();
+      const approvalData = { status: 'aprovado', importadoEm: new Date().toISOString(), lancamentoFinanceiroId: financeId, resolucao: 'Aprovado e lançado no financeiro.' };
+      centralApprovalInProgress.add(rowId);
       try {
-        await setCentralPendingRecordStatus(record, { status: 'aprovado', importadoEm: new Date().toISOString(), lancamentoFinanceiroId: financeId, resolucao: 'Aprovado e lançado no financeiro.' });
+        allFinanceEntries.unshift(entry);
+        setCentralPendingRecordStatusLocally(record, approvalData);
+        saveToLocalStorage();
+        renderAll();
+        await setCentralPendingRecordStatus(record, approvalData);
         showToast('Registro aprovado e lançado no financeiro.');
       } catch (error) {
-        showToast(`Lançamento criado, mas a Central não foi atualizada: ${error?.message || 'erro desconhecido'}`);
+        showToast(`Lançamento criado sem duplicidade. A sincronização do status será tentada novamente: ${error?.message || 'erro desconhecido'}`);
+      } finally {
+        centralApprovalInProgress.delete(rowId);
       }
     }
 
@@ -9160,7 +9254,7 @@
         case 'model': return normalizeComparableText(vehicle.modelo || '');
         case 'fleet': return getNumericOrderValue(vehicle.numeroFrota);
         case 'details': return normalizeComparableText([vehicle.seguroVencimento, vehicle.chassi, vehicle.cor].join(' '));
-        case 'status': return 'ativo';
+        case 'status': return isEntityActive(vehicle) ? 'ativo' : 'inativo';
         case 'km': return getVehicleCurrentKm(vehicle.id) ?? -1;
         case 'cost': return getVehicleDistributedCostTotal(vehicle.id);
         default: return normalizeComparableText(vehicle.placa || '');
@@ -9174,7 +9268,7 @@
         case 'cpf': return normalizeComparableText(driver.cpf || '');
         case 'cnh': return normalizeComparableText(driver.cnh || '');
         case 'contact': return normalizeComparableText([driver.telefone, driver.validade].join(' '));
-        case 'status': return 'ativo';
+        case 'status': return isEntityActive(driver) ? 'ativo' : 'inativo';
         default: return normalizeComparableText(driver.nome || '');
       }
     }
@@ -9186,7 +9280,7 @@
         case 'document': return normalizeComparableText(supplier.documento || '');
         case 'contact': return normalizeComparableText([supplier.telefone, supplier.email].join(' '));
         case 'notes': return normalizeComparableText(supplier.observacoes || '');
-        case 'status': return 'ativo';
+        case 'status': return isEntityActive(supplier) ? 'ativo' : 'inativo';
         default: return normalizeComparableText(supplier.nome || '');
       }
     }
@@ -9317,7 +9411,7 @@
         const currentKm = getVehicleCurrentKm(vehicle.id);
         const totalCost = getVehicleDistributedCostTotal(vehicle.id);
         return `
-        <div class="orders-table-row entity-table-row--vehicles ${selectedVehicles.has(vehicle.id) ? 'selected' : ''}" role="button" tabindex="0" onclick="toggleVehicleSelection(event, '${vehicle.id}')" onkeydown="handleVehicleRowSelectionKey(event, '${vehicle.id}')">
+        <div class="orders-table-row entity-table-row--vehicles ${selectedVehicles.has(vehicle.id) ? 'selected' : ''} ${isEntityActive(vehicle) ? '' : 'entity-is-inactive'}" role="button" tabindex="0" onclick="toggleVehicleSelection(event, '${vehicle.id}')" onkeydown="handleVehicleRowSelectionKey(event, '${vehicle.id}')">
             <div class="orders-table-cell orders-table-cell--check">
               <button class="selection-check ${selectedVehicles.has(vehicle.id) ? 'checked' : ''}" onclick="toggleVehicleSelection(event, '${vehicle.id}')">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -9342,7 +9436,7 @@
               <div class="orders-sub-text orders-sub-text--wrap">${escapeHtml(vehicle.chassi || '-')}</div>
             </div>
             <div class="orders-table-cell">
-              <span class="mini-badge">Veículo ativo</span>
+              <span class="mini-badge ${isEntityActive(vehicle) ? '' : 'mini-badge--inactive'}">Veículo ${isEntityActive(vehicle) ? 'ativo' : 'inativo'}</span>
             </div>
             <div class="orders-table-cell vehicle-km-cell">
               <div class="orders-main-text">${currentKm === null ? '-' : `${currentKm.toLocaleString('pt-BR')} km`}</div>
@@ -9379,7 +9473,7 @@
           ? `Veículos: ${linkedVehicles.slice(0, 2).join(', ')}${linkedVehicles.length > 2 ? ` +${linkedVehicles.length - 2}` : ''}`
           : 'Sem veículo vinculado';
         return `
-        <div class="orders-table-row entity-table-row--drivers ${selectedDrivers.has(driver.id) ? 'selected' : ''}" role="button" tabindex="0" onclick="toggleDriverSelection(event, '${driver.id}')" onkeydown="handleDriverRowSelectionKey(event, '${driver.id}')">
+        <div class="orders-table-row entity-table-row--drivers ${selectedDrivers.has(driver.id) ? 'selected' : ''} ${isEntityActive(driver) ? '' : 'entity-is-inactive'}" role="button" tabindex="0" onclick="toggleDriverSelection(event, '${driver.id}')" onkeydown="handleDriverRowSelectionKey(event, '${driver.id}')">
             <div class="orders-table-cell orders-table-cell--check">
               <button class="selection-check ${selectedDrivers.has(driver.id) ? 'checked' : ''}" onclick="toggleDriverSelection(event, '${driver.id}')">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -9406,7 +9500,7 @@
               <div class="orders-sub-text orders-sub-text--wrap">${driver.validade ? escapeHtml(formatDate(driver.validade)) : 'Validade não informada'}</div>
             </div>
             <div class="orders-table-cell">
-              <span class="mini-badge">Motorista ativo</span>
+              <span class="mini-badge ${isEntityActive(driver) ? '' : 'mini-badge--inactive'}">Motorista ${isEntityActive(driver) ? 'ativo' : 'inativo'}</span>
               <div class="orders-sub-text orders-sub-text--wrap mt-1">${escapeHtml(vehicleSummary)}</div>
             </div>
         </div>
@@ -9430,7 +9524,7 @@
         return;
       }
       list.innerHTML = visibleSuppliers.map(supplier => `
-        <div class="orders-table-row entity-table-row--suppliers ${selectedSuppliers.has(supplier.id) ? 'selected' : ''}" role="button" tabindex="0" onclick="toggleSupplierSelection(event, '${supplier.id}')" onkeydown="handleSupplierRowSelectionKey(event, '${supplier.id}')">
+        <div class="orders-table-row entity-table-row--suppliers ${selectedSuppliers.has(supplier.id) ? 'selected' : ''} ${isEntityActive(supplier) ? '' : 'entity-is-inactive'}" role="button" tabindex="0" onclick="toggleSupplierSelection(event, '${supplier.id}')" onkeydown="handleSupplierRowSelectionKey(event, '${supplier.id}')">
             <div class="orders-table-cell orders-table-cell--check">
               <button class="selection-check ${selectedSuppliers.has(supplier.id) ? 'checked' : ''}" onclick="toggleSupplierSelection(event, '${supplier.id}')">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -9456,7 +9550,7 @@
               <div class="orders-main-text orders-main-text--wrap">${supplier.observacoes ? escapeHtml(supplier.observacoes) : '-'}</div>
             </div>
             <div class="orders-table-cell">
-              <span class="mini-badge">Parceiro ativo</span>
+              <span class="mini-badge ${isEntityActive(supplier) ? '' : 'mini-badge--inactive'}">Parceiro ${isEntityActive(supplier) ? 'ativo' : 'inativo'}</span>
             </div>
         </div>
       `).join('');
@@ -9799,17 +9893,27 @@
       motoristas: renderDrivers,
       fornecedores: renderSuppliers
     };
+    function getModuleFiltersModal(module) {
+      return document.querySelector(`.module-filters-modal[data-filter-module="${module}"]`) || document.querySelector(`#panel-${module} .module-filters-modal`);
+    }
     function openModuleFilters(module) {
-      document.querySelector(`#panel-${module} .module-filters-modal`)?.classList.add('is-open');
+      const modal = getModuleFiltersModal(module);
+      if (!modal) return;
+      if (modal.parentElement !== document.body) document.body.append(modal);
+      modal.classList.add('is-open');
       document.body.classList.add('module-filters-open');
     }
-    function applyModuleFilters(module) {
-      document.querySelector(`#panel-${module} .module-filters-modal`)?.classList.remove('is-open');
+    function closeModuleFilters(module) {
+      getModuleFiltersModal(module)?.classList.remove('is-open');
       document.body.classList.remove('module-filters-open');
+    }
+    function applyModuleFilters(module) {
+      closeModuleFilters(module);
       moduleFilterRenderActions[module]?.();
     }
     function clearModuleFilters(module) { moduleFilterClearActions[module]?.(); }
     window.openModuleFilters = openModuleFilters;
+    window.closeModuleFilters = closeModuleFilters;
     window.applyModuleFilters = applyModuleFilters;
     window.clearModuleFilters = clearModuleFilters;
 
@@ -9852,6 +9956,7 @@
       document.getElementById('vehicle-motorista').value = vehicle.motoristaId || '';
       syncCustomSelectById('vehicle-motorista');
       document.getElementById('vehicle-chassi').value = vehicle.chassi || '';
+      document.getElementById('vehicle-active').checked = isEntityActive(vehicle);
       document.getElementById('modal-title').textContent = 'Editar veículo';
     }
 
@@ -9873,6 +9978,7 @@
       document.getElementById('driver-telefone').value = driver.telefone || '';
       document.getElementById('driver-validade').value = driver.validade || '';
       setSelectedDriverVehicleIds(getDriverVehicleIds(driver));
+      document.getElementById('driver-active').checked = isEntityActive(driver);
       document.getElementById('modal-title').textContent = 'Editar motorista';
     }
 
@@ -9893,6 +9999,7 @@
       document.getElementById('supplier-phone').value = supplier.telefone || '';
       document.getElementById('supplier-email').value = supplier.email || '';
       document.getElementById('supplier-notes').value = supplier.observacoes || '';
+      document.getElementById('supplier-active').checked = isEntityActive(supplier);
       document.getElementById('modal-title').textContent = 'Editar fornecedor';
     }
 
@@ -11264,7 +11371,7 @@
     }
 
     window.wefrotasBatchOrdersApi = {
-      getVehicles: () => getSortedVehicles().map(vehicle => ({
+      getVehicles: () => getActiveSortedVehicles().map(vehicle => ({
         id: vehicle.id,
         numeroFrota: vehicle.numeroFrota || '',
         placa: vehicle.placa || '',
@@ -11293,6 +11400,7 @@
         const seguroVencimento = document.getElementById('vehicle-seguro').value.trim();
         const motoristaId = document.getElementById('vehicle-motorista').value.trim();
         const chassi = document.getElementById('vehicle-chassi').value.trim();
+        const ativo = document.getElementById('vehicle-active')?.checked !== false;
         if (!numeroFrota || !placa || !modelo || !ano) {
           showToast('Preencha número de frota, placa, modelo e ano.');
           return;
@@ -11303,11 +11411,11 @@
         }
         if (currentEditingId) {
           allVehicles = allVehicles.map(vehicle => vehicle.id === currentEditingId
-            ? { ...vehicle, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi }
+            ? { ...vehicle, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo }
             : vehicle);
           showToast('Veículo atualizado com sucesso.');
         } else {
-          allVehicles.unshift({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi });
+          allVehicles.unshift({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo });
           showToast('Veículo cadastrado com sucesso.');
         }
         saveToLocalStorage();
@@ -11323,6 +11431,7 @@
         const telefone = document.getElementById('driver-telefone').value.trim();
         const validade = document.getElementById('driver-validade').value.trim();
         const vehicleIds = getSelectedDriverVehicleIds();
+        const ativo = document.getElementById('driver-active')?.checked !== false;
         if (!nome || !cpf || !cnh || !categoria) {
           showToast('Preencha nome, CPF, CNH e categoria do motorista.');
           return;
@@ -11337,13 +11446,13 @@
         }
         if (currentEditingId) {
           allDrivers = allDrivers.map(driver => driver.id === currentEditingId
-            ? { ...driver, nome, cpf, cnh, categoria, telefone, validade, vehicleIds }
+            ? { ...driver, nome, cpf, cnh, categoria, telefone, validade, vehicleIds, ativo }
             : driver);
           syncVehiclesWithDriver(currentEditingId, vehicleIds);
           showToast('Motorista atualizado com sucesso.');
         } else {
           const newDriverId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-          allDrivers.unshift({ id: newDriverId, nome, cpf, cnh, categoria, telefone, validade, vehicleIds });
+          allDrivers.unshift({ id: newDriverId, nome, cpf, cnh, categoria, telefone, validade, vehicleIds, ativo });
           syncVehiclesWithDriver(newDriverId, vehicleIds);
           showToast('Motorista cadastrado com sucesso.');
         }
@@ -11359,6 +11468,7 @@
         const telefone = document.getElementById('supplier-phone').value.trim();
         const email = document.getElementById('supplier-email').value.trim();
         const observacoes = document.getElementById('supplier-notes').value.trim();
+        const ativo = document.getElementById('supplier-active')?.checked !== false;
         if (!nome || !tipo) {
           showToast('Preencha o nome do parceiro e o tipo de fornecedor.');
           return;
@@ -11378,11 +11488,11 @@
         const tipoLabel = getSupplierTypeLabel(tipo);
         if (currentEditingId) {
           allSuppliers = allSuppliers.map(supplier => supplier.id === currentEditingId
-            ? { ...supplier, nome, tipo, tipoLabel, documento, telefone, email, observacoes }
+            ? { ...supplier, nome, tipo, tipoLabel, documento, telefone, email, observacoes, ativo }
             : supplier);
           showToast('Fornecedor atualizado com sucesso.');
         } else {
-          allSuppliers.unshift({ id: generateId(), nome, tipo, tipoLabel, documento, telefone, email, observacoes });
+          allSuppliers.unshift({ id: generateId(), nome, tipo, tipoLabel, documento, telefone, email, observacoes, ativo });
           showToast('Fornecedor cadastrado com sucesso.');
         }
         saveToLocalStorage();
@@ -11872,7 +11982,11 @@
         if (!filterShell || !stickyHeader) return;
         if (!stickyHeader.contains(filterShell)) stickyHeader.prepend(filterShell);
         filterShell.classList.add('module-filters-modal');
+        filterShell.dataset.filterModule = module;
         const filterGrid = filterShell.querySelector('.orders-filter-grid');
+        if (filterGrid && !filterGrid.querySelector('.module-filter-close')) {
+          filterGrid.insertAdjacentHTML('afterbegin', `<button class="module-filter-close" type="button" title="Fechar" aria-label="Fechar filtros" onclick="closeModuleFilters('${module}')"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6 6 18"/></svg></button>`);
+        }
         if (filterGrid && !filterGrid.querySelector('.module-filter-apply-row')) {
           filterGrid.insertAdjacentHTML('beforeend', `<div class="module-filter-apply-row"><button type="button" onclick="applyModuleFilters('${module}')">Aplicar</button></div>`);
         }
@@ -11888,8 +12002,20 @@
           stickyHeader.insertBefore(selection, stickyHeader.firstChild);
         }
         searchField?.closest('.orders-filter-field')?.classList.add('is-contextual-search-source');
+        if (!filterShell.dataset.closeHandlersReady) {
+          filterShell.dataset.closeHandlersReady = 'true';
+          filterShell.addEventListener('click', (event) => {
+            if (event.target === filterShell) closeModuleFilters(module);
+          });
+        }
       });
     }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      const openModal = document.querySelector('.module-filters-modal.is-open');
+      if (openModal?.dataset.filterModule) closeModuleFilters(openModal.dataset.filterModule);
+    });
 
     registerOnlineIdleListeners();
     initializeWeFrotas().catch((error) => {
