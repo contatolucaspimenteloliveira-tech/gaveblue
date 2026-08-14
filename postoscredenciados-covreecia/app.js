@@ -22,6 +22,7 @@ const CENTRAL_APPWRITE_DATABASE_ID = '6a68ce8c000a36a44d98';
 const CENTRAL_APPWRITE_TABLE_ID = 'central_registros_pendentes';
 const CENTRAL_APPWRITE_WORKSPACE_ID = 'covre-e-cia';
 const CENTRAL_APPWRITE_ORIGIN = 'postoscredenciados-covreecia';
+const CENTRAL_APPWRITE_RETRY_KEY = 'postoscredenciados-covreecia:appwrite-pending-record';
 const MAX_RECEIPT_IMAGE_BYTES = 1200 * 1024;
 const COMPRESSED_RECEIPT_MAX_SIZE = 1600;
 const COMPRESSED_RECEIPT_QUALITY = 0.72;
@@ -1230,7 +1231,6 @@ async function saveCentralRegistroToAppwrite(payload) {
   const url = `${CENTRAL_APPWRITE_ENDPOINT}/tablesdb/${encodeURIComponent(CENTRAL_APPWRITE_DATABASE_ID)}/tables/${encodeURIComponent(CENTRAL_APPWRITE_TABLE_ID)}/rows`;
   const response = await fetch(url, {
     method: 'POST',
-    keepalive: true,
     headers: {
       'Content-Type': 'application/json',
       'X-Appwrite-Project': CENTRAL_APPWRITE_PROJECT_ID,
@@ -1241,6 +1241,10 @@ async function saveCentralRegistroToAppwrite(payload) {
       data: payload.data
     })
   });
+
+  if (response.status === 409) {
+    return { alreadyExists: true };
+  }
 
   if (!response.ok) {
     let message = `Erro ${response.status}`;
@@ -1254,6 +1258,52 @@ async function saveCentralRegistroToAppwrite(payload) {
   }
 
   return response.json();
+}
+
+function saveCentralRetryPayload(payload) {
+  try {
+    localStorage.setItem(CENTRAL_APPWRITE_RETRY_KEY, JSON.stringify(payload));
+  } catch (error) {
+    console.warn('NÃ£o foi possÃ­vel guardar o registro pendente para nova tentativa.', error);
+  }
+}
+
+function clearCentralRetryPayload() {
+  try {
+    localStorage.removeItem(CENTRAL_APPWRITE_RETRY_KEY);
+  } catch (error) {
+    console.warn('NÃ£o foi possÃ­vel limpar o registro pendente da Central.', error);
+  }
+}
+
+async function saveCentralRegistroWithRetry(payload) {
+  saveCentralRetryPayload(payload);
+  const result = await saveCentralRegistroToAppwrite(payload);
+  clearCentralRetryPayload();
+  return result;
+}
+
+async function retryPendingCentralRegistro() {
+  let rawPayload = '';
+  try {
+    rawPayload = localStorage.getItem(CENTRAL_APPWRITE_RETRY_KEY) || '';
+  } catch (error) {
+    return;
+  }
+  if (!rawPayload) return;
+
+  try {
+    await saveCentralRegistroToAppwrite(JSON.parse(rawPayload));
+    clearCentralRetryPayload();
+    console.info('Registro pendente da Central foi salvo no Appwrite.');
+  } catch (error) {
+    console.warn('Ainda nÃ£o foi possÃ­vel reenviar o registro pendente da Central.', error);
+  }
+}
+
+function getCentralAppwriteErrorMessage(error) {
+  const message = String(error?.message || 'Erro desconhecido ao gravar no Appwrite.');
+  return `O comprovante foi enviado, mas a Central nÃ£o conseguiu salvar o registro online: ${message}`;
 }
 
 function updateReceiptUploadStatus(message, tone = 'neutral') {
@@ -1706,13 +1756,15 @@ async function submitFuelForm(e) {
     mensagem
   });
 
+  const centralSavePromise = saveCentralRegistroWithRetry(appwritePayload);
   openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
 
   try {
-    await saveCentralRegistroToAppwrite(appwritePayload);
+    await centralSavePromise;
   } catch (error) {
     console.error('Erro ao registrar abastecimento no Appwrite:', error);
-    showErrorMessage('Comprovante salvo, mas o registro online n\u00e3o foi confirmado. O WhatsApp ser\u00e1 aberto como garantia.');
+    showErrorMessage(getCentralAppwriteErrorMessage(error));
+    return;
   }
 
   saveDriverNameSuggestion(formData.motorista);
@@ -1772,13 +1824,15 @@ async function submitLooseNoteForm(e) {
     mensagem
   });
 
+  const centralSavePromise = saveCentralRegistroWithRetry(appwritePayload);
   openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
 
   try {
-    await saveCentralRegistroToAppwrite(appwritePayload);
+    await centralSavePromise;
   } catch (error) {
     console.error('Erro ao registrar servi\u00e7o no Appwrite:', error);
-    showErrorMessage('Comprovante salvo, mas o registro online n\u00e3o foi confirmado. O WhatsApp ser\u00e1 aberto como garantia.');
+    showErrorMessage(getCentralAppwriteErrorMessage(error));
+    return;
   }
 
   saveDriverNameSuggestion(formData.motorista);
@@ -2367,7 +2421,10 @@ function renderCityImageCards() {
   });
 }
 
-window.addEventListener('DOMContentLoaded', renderCityImageCards);
+window.addEventListener('DOMContentLoaded', () => {
+  renderCityImageCards();
+  retryPendingCentralRegistro();
+});
 
 function initHomeHeroCarousel() {
   const carousel = document.getElementById('home-hero-carousel');
