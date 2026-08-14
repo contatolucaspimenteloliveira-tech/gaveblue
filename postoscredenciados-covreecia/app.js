@@ -23,9 +23,11 @@ const CENTRAL_APPWRITE_TABLE_ID = 'central_registros_pendentes';
 const CENTRAL_APPWRITE_WORKSPACE_ID = 'covre-e-cia';
 const CENTRAL_APPWRITE_ORIGIN = 'postoscredenciados-covreecia';
 const CENTRAL_APPWRITE_RETRY_KEY = 'postoscredenciados-covreecia:appwrite-pending-record';
-const MAX_RECEIPT_IMAGE_BYTES = 1200 * 1024;
-const COMPRESSED_RECEIPT_MAX_SIZE = 1600;
+const MAX_RECEIPT_IMAGE_BYTES = 900 * 1024;
+const MAX_RECEIPT_SOURCE_BYTES = 10 * 1024 * 1024;
+const COMPRESSED_RECEIPT_MAX_SIZE = 1280;
 const COMPRESSED_RECEIPT_QUALITY = 0.72;
+const RECEIPT_CAMERA_LABEL_PATTERN = /back|rear|environment|world|traseir|externa|principal/i;
 const DRIVER_NAMES_STORAGE_KEY = 'postoscredenciados-covreecia:driver-names';
 const LAST_FUEL_ENTRY_STORAGE_KEY = 'postoscredenciados-covreecia:last-fuel-entry';
 const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
@@ -44,6 +46,15 @@ let pwaInstallModalMode = 'android';
 let uploadedLooseNoteReceipt = null;
 let looseNoteReceiptUploadPromise = null;
 let selectedLooseNoteReceiptFile = null;
+let fuelPreviewObjectUrl = '';
+let loosePreviewObjectUrl = '';
+let fuelReceiptSelectionId = 0;
+let looseReceiptSelectionId = 0;
+let activeReceiptCameraStream = null;
+let activeReceiptCameraTarget = 'fuel';
+let receiptCameraDevices = [];
+let receiptCameraDeviceIndex = 0;
+const optimizedReceiptFiles = new WeakSet();
 const DEFAULT_DRIVER_NAMES = [
   'AMANDA P. BONATTO',
   'ALAN CHRISTIE',
@@ -630,6 +641,7 @@ function loadImageFromFile(file) {
 
     image.onerror = () => {
       URL.revokeObjectURL(objectUrl);
+      image.src = '';
       reject(new Error('N\u00e3o foi poss\u00edvel ler a imagem selecionada.'));
     };
 
@@ -637,42 +649,122 @@ function loadImageFromFile(file) {
   });
 }
 
-async function compressFuelReceiptIfNeeded(file) {
-  if (!file || !file.type.startsWith('image/') || file.size <= MAX_RECEIPT_IMAGE_BYTES) {
-    return file;
+async function createReceiptDrawable(file) {
+  if ('createImageBitmap' in window) {
+    try {
+      const bitmap = await createImageBitmap(file, {
+        resizeWidth: COMPRESSED_RECEIPT_MAX_SIZE,
+        resizeQuality: 'high',
+        imageOrientation: 'from-image'
+      });
+      return {
+        drawable: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        release: () => bitmap.close()
+      };
+    } catch (error) {
+      console.warn('Redimensionamento eficiente indispon\u00edvel; usando modo compat\u00edvel.', error);
+    }
   }
 
   const image = await loadImageFromFile(file);
-  const scale = Math.min(1, COMPRESSED_RECEIPT_MAX_SIZE / Math.max(image.width, image.height));
-  const width = Math.max(1, Math.round(image.width * scale));
-  const height = Math.max(1, Math.round(image.height * scale));
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
+  return {
+    drawable: image,
+    width: image.naturalWidth || image.width,
+    height: image.naturalHeight || image.height,
+    release: () => {
+      image.src = '';
+    }
+  };
+}
 
-  canvas.width = width;
-  canvas.height = height;
-  context.drawImage(image, 0, 0, width, height);
+async function compressFuelReceiptIfNeeded(file) {
+  if (!file || !String(file.type || '').startsWith('image/')) {
+    throw new Error('Selecione uma imagem v\u00e1lida do comprovante.');
+  }
 
-  const compressedBlob = await new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('N\u00e3o foi poss\u00edvel comprimir a imagem.'))),
-      'image/jpeg',
-      COMPRESSED_RECEIPT_QUALITY
-    );
-  });
-
-  if (compressedBlob.size >= file.size) {
+  if (optimizedReceiptFiles.has(file)) {
     return file;
   }
 
-  const compressedName = (file.name || 'comprovante.jpg').replace(/\.[^.]+$/, '.jpg');
-  return new File([compressedBlob], compressedName, {
-    type: 'image/jpeg',
-    lastModified: Date.now()
-  });
+  if (file.size > MAX_RECEIPT_SOURCE_BYTES) {
+    throw new Error('A foto ultrapassa 10 MB. Tire outra foto ou escolha uma imagem menor.');
+  }
+
+  const source = await createReceiptDrawable(file);
+  const scale = Math.min(1, COMPRESSED_RECEIPT_MAX_SIZE / Math.max(source.width, source.height));
+  const width = Math.max(1, Math.round(source.width * scale));
+  const height = Math.max(1, Math.round(source.height * scale));
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d', { alpha: false });
+
+  if (!context) {
+    source.release();
+    throw new Error('Este celular n\u00e3o conseguiu preparar a foto. Feche outros aplicativos e tente novamente.');
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, width, height);
+  context.drawImage(source.drawable, 0, 0, width, height);
+  source.release();
+
+  try {
+    const compressedBlob = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('N\u00e3o foi poss\u00edvel otimizar a imagem.'))),
+        'image/jpeg',
+        COMPRESSED_RECEIPT_QUALITY
+      );
+    });
+
+    const compressedName = (file.name || 'comprovante.jpg').replace(/\.[^.]+$/, '.jpg');
+    const optimizedFile = new File([compressedBlob], compressedName, {
+      type: 'image/jpeg',
+      lastModified: Date.now()
+    });
+    optimizedReceiptFiles.add(optimizedFile);
+    return optimizedFile;
+  } finally {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width = 1;
+    canvas.height = 1;
+  }
+}
+
+function releaseReceiptPreviewUrl(target) {
+  if (target === 'loose') {
+    if (loosePreviewObjectUrl) {
+      URL.revokeObjectURL(loosePreviewObjectUrl);
+      loosePreviewObjectUrl = '';
+    }
+    return;
+  }
+
+  if (fuelPreviewObjectUrl) {
+    URL.revokeObjectURL(fuelPreviewObjectUrl);
+    fuelPreviewObjectUrl = '';
+  }
+}
+
+function setReceiptPreviewUrl(target, file) {
+  releaseReceiptPreviewUrl(target);
+  const objectUrl = URL.createObjectURL(file);
+
+  if (target === 'loose') {
+    loosePreviewObjectUrl = objectUrl;
+    return objectUrl;
+  }
+
+  fuelPreviewObjectUrl = objectUrl;
+  return objectUrl;
 }
 
 function resetFuelPhotoState() {
+  fuelReceiptSelectionId += 1;
+  releaseReceiptPreviewUrl('fuel');
   const cameraInput = document.getElementById('fuel-photo-camera');
   const uploadInput = document.getElementById('fuel-photo-upload');
   if (cameraInput) cameraInput.value = '';
@@ -689,6 +781,8 @@ function resetFuelPhotoState() {
 }
 
 function resetLoosePhotoState() {
+  looseReceiptSelectionId += 1;
+  releaseReceiptPreviewUrl('loose');
   const cameraInput = document.getElementById('loose-photo-camera');
   const uploadInput = document.getElementById('loose-photo-upload');
   if (cameraInput) cameraInput.value = '';
@@ -2021,6 +2115,7 @@ function showAboutSection() {
 }
 
 function closeOpenFormsSilently() {
+  closeReceiptCamera();
   const fuelModal = document.getElementById('fuel-form-modal');
   const looseModal = document.getElementById('loose-note-modal');
 
@@ -2056,48 +2151,252 @@ function updateBackButtonVisibility() {
   }
 }
 
-function updatePhotoPreview(fileInput) {
-  const previewContainer = document.getElementById('photo-preview-container');
-  const photoButtons = document.getElementById('photo-buttons');
-  const preview = document.getElementById('photo-preview');
-  selectedFuelReceiptFile = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
-  uploadedFuelReceipt = null;
-  fuelReceiptUploadPromise = null;
+async function prepareReceiptFile(target, file) {
+  if (!file) {
+    return;
+  }
 
-  if (selectedFuelReceiptFile) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      preview.src = e.target.result;
-      previewContainer.classList.remove('hidden');
-      photoButtons.classList.add('hidden');
-      updateReceiptUploadStatus('Clique em Salvar comprovante para antecipar o upload.', 'neutral');
-      setSaveReceiptButtonVisible(true);
+  const isLoose = target === 'loose';
+  const selectionId = isLoose ? ++looseReceiptSelectionId : ++fuelReceiptSelectionId;
+  const updateStatus = isLoose ? updateLooseReceiptUploadStatus : updateReceiptUploadStatus;
+  updateStatus('Otimizando a foto para economizar mem\u00f3ria...', 'progress');
+
+  try {
+    const optimizedFile = await compressFuelReceiptIfNeeded(file);
+    const currentSelectionId = isLoose ? looseReceiptSelectionId : fuelReceiptSelectionId;
+    if (selectionId !== currentSelectionId) {
+      return;
+    }
+
+    const preview = document.getElementById(isLoose ? 'loose-photo-preview' : 'photo-preview');
+    const previewContainer = document.getElementById(isLoose ? 'loose-photo-preview-container' : 'photo-preview-container');
+    const photoButtons = document.getElementById(isLoose ? 'loose-photo-buttons' : 'photo-buttons');
+
+    if (isLoose) {
+      selectedLooseNoteReceiptFile = optimizedFile;
+      uploadedLooseNoteReceipt = null;
+      looseNoteReceiptUploadPromise = null;
+      setLooseActionButtonsVisible(false);
+      setSaveLooseReceiptButtonVisible(true);
+    } else {
+      selectedFuelReceiptFile = optimizedFile;
+      uploadedFuelReceipt = null;
+      fuelReceiptUploadPromise = null;
       setFuelActionButtonsVisible(false);
-    };
-    reader.readAsDataURL(selectedFuelReceiptFile);
+      setSaveReceiptButtonVisible(true);
+    }
+
+    preview.src = setReceiptPreviewUrl(target, optimizedFile);
+    previewContainer.classList.remove('hidden');
+    photoButtons.classList.add('hidden');
+    updateStatus('Foto otimizada. Clique em Salvar comprovante.', 'neutral');
+  } catch (error) {
+    console.error('Erro ao preparar comprovante:', error);
+    if (isLoose) {
+      resetLoosePhotoState();
+    } else {
+      resetFuelPhotoState();
+    }
+    showErrorMessage(error?.message || 'N\u00e3o foi poss\u00edvel preparar a foto. Tente novamente.');
   }
 }
 
-function updateLoosePhotoPreview(fileInput) {
-  const previewContainer = document.getElementById('loose-photo-preview-container');
-  const photoButtons = document.getElementById('loose-photo-buttons');
-  const preview = document.getElementById('loose-photo-preview');
-  selectedLooseNoteReceiptFile = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
-  uploadedLooseNoteReceipt = null;
-  looseNoteReceiptUploadPromise = null;
+function updatePhotoPreview(fileInput) {
+  const file = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+  prepareReceiptFile('fuel', file);
+}
 
-  if (selectedLooseNoteReceiptFile) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      preview.src = e.target.result;
-      previewContainer.classList.remove('hidden');
-      photoButtons.classList.add('hidden');
-      updateLooseReceiptUploadStatus('Clique em Salvar comprovante para antecipar o upload.', 'neutral');
-      setSaveLooseReceiptButtonVisible(true);
-      setLooseActionButtonsVisible(false);
-    };
-    reader.readAsDataURL(selectedLooseNoteReceiptFile);
+function updateLoosePhotoPreview(fileInput) {
+  const file = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+  prepareReceiptFile('loose', file);
+}
+
+function stopReceiptCameraStream() {
+  if (activeReceiptCameraStream) {
+    activeReceiptCameraStream.getTracks().forEach((track) => track.stop());
+    activeReceiptCameraStream = null;
   }
+
+  const video = document.getElementById('receipt-camera-video');
+  if (video) {
+    video.pause();
+    video.srcObject = null;
+  }
+}
+
+async function requestReceiptCameraStream(deviceId = '') {
+  stopReceiptCameraStream();
+  const videoConstraints = deviceId
+    ? {
+        deviceId: { exact: deviceId },
+        width: { ideal: 1280, max: 1920 },
+        height: { ideal: 960, max: 1440 }
+      }
+    : {
+        facingMode: { exact: 'environment' },
+        width: { ideal: 1280, max: 1920 },
+        height: { ideal: 960, max: 1440 }
+      };
+
+  try {
+    activeReceiptCameraStream = await navigator.mediaDevices.getUserMedia({
+      video: videoConstraints,
+      audio: false
+    });
+  } catch (error) {
+    if (deviceId) {
+      throw error;
+    }
+
+    activeReceiptCameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280, max: 1920 },
+        height: { ideal: 960, max: 1440 }
+      },
+      audio: false
+    });
+  }
+
+  return activeReceiptCameraStream;
+}
+
+async function attachReceiptCameraStream(stream) {
+  const video = document.getElementById('receipt-camera-video');
+  if (!video) {
+    throw new Error('Visualizador da c\u00e2mera indispon\u00edvel.');
+  }
+
+  video.srcObject = stream;
+  await video.play();
+}
+
+async function preferRearReceiptCamera() {
+  receiptCameraDevices = (await navigator.mediaDevices.enumerateDevices())
+    .filter((device) => device.kind === 'videoinput');
+
+  const currentTrack = activeReceiptCameraStream?.getVideoTracks?.()[0];
+  const currentDeviceId = currentTrack?.getSettings?.().deviceId || '';
+  const rearIndex = receiptCameraDevices.findIndex((device) => RECEIPT_CAMERA_LABEL_PATTERN.test(device.label || ''));
+
+  receiptCameraDeviceIndex = Math.max(0, receiptCameraDevices.findIndex((device) => device.deviceId === currentDeviceId));
+  if (rearIndex >= 0 && receiptCameraDevices[rearIndex].deviceId !== currentDeviceId) {
+    receiptCameraDeviceIndex = rearIndex;
+    const stream = await requestReceiptCameraStream(receiptCameraDevices[rearIndex].deviceId);
+    await attachReceiptCameraStream(stream);
+  }
+
+  document.getElementById('receipt-camera-switch')?.classList.toggle('hidden', receiptCameraDevices.length < 2);
+}
+
+function openNativeReceiptCameraFallback(target) {
+  const input = document.getElementById(target === 'loose' ? 'loose-photo-camera' : 'fuel-photo-camera');
+  if (!input) {
+    return;
+  }
+
+  input.setAttribute('capture', 'environment');
+  input.value = '';
+  input.click();
+}
+
+async function openReceiptCamera(target = 'fuel') {
+  activeReceiptCameraTarget = target === 'loose' ? 'loose' : 'fuel';
+
+  if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
+    openNativeReceiptCameraFallback(activeReceiptCameraTarget);
+    return;
+  }
+
+  const modal = document.getElementById('receipt-camera-modal');
+  const status = document.getElementById('receipt-camera-status');
+  modal?.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  if (status) {
+    status.textContent = 'Abrindo a c\u00e2mera traseira...';
+  }
+
+  try {
+    const stream = await requestReceiptCameraStream();
+    await attachReceiptCameraStream(stream);
+    await preferRearReceiptCamera();
+    if (status) {
+      status.textContent = 'C\u00e2mera traseira pronta';
+    }
+  } catch (error) {
+    console.warn('C\u00e2mera interna indispon\u00edvel; usando c\u00e2mera do aparelho.', error);
+    closeReceiptCamera();
+    openNativeReceiptCameraFallback(activeReceiptCameraTarget);
+  }
+}
+
+function closeReceiptCamera() {
+  stopReceiptCameraStream();
+  document.getElementById('receipt-camera-modal')?.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+async function switchReceiptCamera() {
+  if (receiptCameraDevices.length < 2) {
+    return;
+  }
+
+  receiptCameraDeviceIndex = (receiptCameraDeviceIndex + 1) % receiptCameraDevices.length;
+  const status = document.getElementById('receipt-camera-status');
+  if (status) {
+    status.textContent = 'Alternando c\u00e2mera...';
+  }
+
+  try {
+    const stream = await requestReceiptCameraStream(receiptCameraDevices[receiptCameraDeviceIndex].deviceId);
+    await attachReceiptCameraStream(stream);
+    if (status) {
+      status.textContent = 'C\u00e2mera pronta';
+    }
+  } catch (error) {
+    console.error('N\u00e3o foi poss\u00edvel alternar a c\u00e2mera:', error);
+    showErrorMessage('N\u00e3o foi poss\u00edvel alternar a c\u00e2mera.');
+  }
+}
+
+async function captureReceiptCamera() {
+  const video = document.getElementById('receipt-camera-video');
+  if (!video?.videoWidth || !video?.videoHeight) {
+    showErrorMessage('Aguarde a c\u00e2mera carregar antes de fotografar.');
+    return;
+  }
+
+  const scale = Math.min(1, COMPRESSED_RECEIPT_MAX_SIZE / Math.max(video.videoWidth, video.videoHeight));
+  const width = Math.max(1, Math.round(video.videoWidth * scale));
+  const height = Math.max(1, Math.round(video.videoHeight * scale));
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d', { alpha: false });
+  canvas.width = width;
+  canvas.height = height;
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, width, height);
+  context.drawImage(video, 0, 0, width, height);
+
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (result) => (result ? resolve(result) : reject(new Error('Falha ao capturar a foto.'))),
+      'image/jpeg',
+      COMPRESSED_RECEIPT_QUALITY
+    );
+  });
+
+  context.clearRect(0, 0, width, height);
+  canvas.width = 1;
+  canvas.height = 1;
+
+  const file = new File([blob], `comprovante-${Date.now()}.jpg`, {
+    type: 'image/jpeg',
+    lastModified: Date.now()
+  });
+  optimizedReceiptFiles.add(file);
+  const target = activeReceiptCameraTarget;
+  closeReceiptCamera();
+  await prepareReceiptFile(target, file);
 }
 
 function deletePhoto() {
@@ -2158,10 +2457,14 @@ function formatCurrency(input) {
 }
 
 function capturePhoto() {
-  const fileInput = document.getElementById('fuel-photo-camera');
-  fileInput.setAttribute('capture', 'environment');
-  fileInput.click();
+  openReceiptCamera('fuel');
 }
+
+function captureLoosePhoto() {
+  openReceiptCamera('loose');
+}
+
+window.addEventListener('pagehide', stopReceiptCameraStream);
 
 async function simulateProgress(options = {}) {
   const { receiptAlreadyUploaded = false } = options;

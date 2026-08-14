@@ -1504,3 +1504,127 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.receipt-camera-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(0.75rem, env(safe-area-inset-top)) 0.75rem max(0.75rem, env(safe-area-inset-bottom));
+  background: rgba(2, 6, 23, 0.96);
+  backdrop-filter: blur(14px);
+}
+
+.receipt-camera-modal.hidden { display: none; }
+
+.receipt-camera-card {
+  width: min(100%, 34rem);
+  max-height: 100%;
+  overflow-y: auto;
+  border-radius: 1.4rem;
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.5);
+}
+
+.receipt-camera-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1rem 0.85rem;
+}
+
+.receipt-camera-eyebrow {
+  margin: 0 0 0.2rem;
+  color: #fb7185;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+.receipt-camera-header h2 { margin: 0; font-size: 1rem; font-weight: 800; }
+
+.receipt-camera-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2.6rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.receipt-camera-close svg { width: 1.35rem; height: 1.35rem; }
+
+.receipt-camera-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 66dvh;
+  overflow: hidden;
+  background: #020617;
+}
+
+.receipt-camera-viewport video { width: 100%; height: 100%; object-fit: cover; }
+
+.receipt-camera-guide {
+  position: absolute;
+  inset: 8%;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 1rem;
+  box-shadow: 0 0 0 999px rgba(2, 6, 23, 0.12);
+  pointer-events: none;
+}
+
+.receipt-camera-status {
+  margin: 0;
+  padding: 0.7rem 1rem 0;
+  color: #cbd5e1;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.receipt-camera-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.25rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem 1.1rem;
+}
+
+.receipt-camera-secondary {
+  min-height: 2.7rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.8rem;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.receipt-camera-capture {
+  display: grid;
+  place-items: center;
+  width: 4.25rem;
+  height: 4.25rem;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.receipt-camera-capture span {
+  width: 3.05rem;
+  height: 3.05rem;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 2px rgba(15, 23, 42, 0.1);
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .receipt-camera-card { width: min(100%, 46rem); }
+  .receipt-camera-viewport { aspect-ratio: 16 / 9; max-height: 52dvh; }
+}

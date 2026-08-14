@@ -19,7 +19,7 @@
    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
-  <link rel="stylesheet" href="./styles.css?v=20260810-1500">
+  <link rel="stylesheet" href="./styles.css?v=20260814-1325">
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full flex flex-col">
@@ -248,10 +248,10 @@
          <small>Tire uma foto ou fa&ccedil;a upload do arquivo</small>
         </div>
         <div class="receipt-actions">
-        <label for="fuel-photo-camera" class="receipt-btn receipt-btn-camera">
+        <button type="button" onclick="openReceiptCamera('fuel')" class="receipt-btn receipt-btn-camera">
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
          Tirar Foto
-        </label>
+        </button>
         <label for="fuel-photo-upload" class="receipt-btn receipt-btn-upload">
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 20h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
          Fazer Upload
@@ -405,10 +405,10 @@
          <small>Tire uma foto ou fa&ccedil;a upload da notinha</small>
         </div>
         <div class="receipt-actions">
-        <label for="loose-photo-camera" class="receipt-btn receipt-btn-camera service-receipt-btn-camera">
+        <button type="button" onclick="openReceiptCamera('loose')" class="receipt-btn receipt-btn-camera service-receipt-btn-camera">
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
          Tirar Foto
-        </label>
+        </button>
         <label for="loose-photo-upload" class="receipt-btn receipt-btn-upload">
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 20h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
          Fazer Upload
@@ -455,6 +455,30 @@
      </div>
    </div>
   </div>
+
+   <div id="receipt-camera-modal" class="receipt-camera-modal hidden" role="dialog" aria-modal="true" aria-labelledby="receipt-camera-title">
+    <div class="receipt-camera-card">
+     <div class="receipt-camera-header">
+      <div>
+       <p class="receipt-camera-eyebrow">COMPROVANTE</p>
+       <h2 id="receipt-camera-title">Fotografar com a c&acirc;mera traseira</h2>
+      </div>
+      <button type="button" onclick="closeReceiptCamera()" class="receipt-camera-close" aria-label="Fechar c&acirc;mera">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 18 18 6M6 6l12 12" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+     </div>
+     <div class="receipt-camera-viewport">
+      <video id="receipt-camera-video" autoplay muted playsinline></video>
+      <div class="receipt-camera-guide" aria-hidden="true"></div>
+     </div>
+     <p id="receipt-camera-status" class="receipt-camera-status">Abrindo a c&acirc;mera traseira...</p>
+     <div class="receipt-camera-actions">
+      <button id="receipt-camera-switch" type="button" onclick="switchReceiptCamera()" class="receipt-camera-secondary hidden">Alternar c&acirc;mera</button>
+      <button type="button" onclick="captureReceiptCamera()" class="receipt-camera-capture" aria-label="Capturar foto"><span></span></button>
+      <button type="button" onclick="closeReceiptCamera()" class="receipt-camera-secondary">Cancelar</button>
+     </div>
+    </div>
+   </div>
 
    <div id="receipt-preview-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[70] hidden p-4" role="dialog" aria-modal="true" aria-label="Comprovante em tela cheia">
     <button type="button" onclick="closeReceiptPreview()" class="receipt-fullscreen-close" aria-label="Fechar comprovante">
@@ -856,6 +880,6 @@
     <span>Sobre</span>
    </button>
   </nav>
-  <script src="./app.js?v=20260814-1255"></script>
+  <script src="./app.js?v=20260814-1325"></script>
  </body>
 </html>
