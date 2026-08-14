@@ -694,92 +694,20 @@
           </div>
         </section>
 
-        <section id="panel-documentos" class="module-panel content-card documents-workspace orders-page-shell p-8 sm:p-10">
-          <div class="documents-sheet-header">
-            <div>
-              <h2>Registro de Abastecimentos</h2>
-              <span>Planilha interna moldável usando os abastecimentos já cadastrados no financeiro.</span>
-            </div>
-            <div class="module-action-toolbar module-action-toolbar--table documents-sheet-actions">
-              <button type="button" class="icon-action text-[#8b3dff]" title="Colunas" onclick="toggleFuelColumnsPanel(event)" aria-label="Colunas">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <rect x="4" y="5" width="4" height="14" rx="1.5" stroke-width="1.9"></rect>
-                  <rect x="10" y="5" width="4" height="14" rx="1.5" stroke-width="1.9"></rect>
-                  <rect x="16" y="5" width="4" height="14" rx="1.5" stroke-width="1.9"></rect>
+        <section id="panel-documentos" class="module-panel content-card orders-page-shell p-8 sm:p-10">
+          <div class="calendar-placeholder">
+            <div class="calendar-placeholder-card">
+              <div class="calendar-placeholder-icon">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 7h10M7 11h10M7 15h6M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/>
                 </svg>
-              </button>
-              <button type="button" class="icon-action" title="Limpar filtros" onclick="clearFuelSheetFilters()" aria-label="Limpar filtros">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 5h16l-6 7v4l-4 2v-6L4 5z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="m16 16 4 4m0-4-4 4"></path>
-                </svg>
-              </button>
-              <button type="button" class="icon-action" title="Restaurar visual" onclick="resetFuelSheetView()" aria-label="Restaurar visual">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 4v6h6"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M20 11a8 8 0 1 0-2.34 5.66"></path>
-                </svg>
-              </button>
-              <button type="button" class="icon-action" title="Importar planilha" onclick="triggerFuelSheetImport()" aria-label="Importar planilha">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 16V4"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="m7 9 5-5 5 5"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M5 20h14"></path>
-                </svg>
-              </button>
-              <div class="documents-export-wrap">
-                <button type="button" class="icon-action" title="Exportar" onclick="toggleFuelExportMenu(event)" aria-label="Exportar">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 4v12"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="m7 11 5 5 5-5"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M5 20h14"></path>
-                  </svg>
-                </button>
-                <div id="fuel-export-menu" class="documents-export-menu hidden">
-                  <strong>Exportar como</strong>
-                  <button type="button" onclick="exportFuelSheet('xlsx')">Excel (.xlsx)</button>
-                  <button type="button" onclick="exportFuelSheet('xls')">Excel 97-2003 (.xls)</button>
-                  <button type="button" onclick="exportFuelSheet('pdf')">PDF</button>
-                </div>
               </div>
-              <button type="button" class="icon-action" title="Imprimir" onclick="printFuelSheet()" aria-label="Imprimir">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 8V4h10v4"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 14h10v6H7z"></path>
-                </svg>
-              </button>
+              <div>
+                <p class="calendar-placeholder-kicker">Documentos</p>
+                <h3>Área preparada para anexos</h3>
+                <p>Este espaço ficará reservado para documentos da frota. O Registro de Abastecimentos agora está disponível na aba Relatórios.</p>
+              </div>
             </div>
-          </div>
-
-          <input id="fuel-sheet-import-input" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleFuelSheetImport(event)">
-
-          <div class="documents-sheet-summary">
-            <div>
-              <span>Registros</span>
-              <strong id="fuel-sheet-total-records">0</strong>
-            </div>
-            <div>
-              <span>Litros</span>
-              <strong id="fuel-sheet-total-liters">0,000 L</strong>
-            </div>
-            <div>
-              <span>Valor</span>
-              <strong id="fuel-sheet-total-value">R$ 0,00</strong>
-            </div>
-          </div>
-
-          <div id="fuel-columns-panel" class="documents-columns-panel hidden"></div>
-          <div id="fuel-filter-menu" class="documents-filter-menu hidden"></div>
-
-          <div class="documents-sheet-shell">
-            <div id="fuel-sheet-table-wrap" class="documents-sheet-scroll">
-              <table class="documents-sheet-table">
-                <thead id="fuel-sheet-head"></thead>
-                <tbody id="fuel-sheet-body"></tbody>
-              </table>
-            </div>
-            <div id="fuel-sheet-pagination" class="documents-pagination"></div>
           </div>
         </section>
 
@@ -791,6 +719,7 @@
                 <select id="report-filter-type" class="soft-input w-full">
                   <option value="cost">Custo por KM</option>
                   <option value="monthly_vehicle_cost">Custo mensal por veículo</option>
+                  <option value="fuel_register">Registro de abastecimentos</option>
                   <option value="orders">OS por veículo</option>
                   <option value="orders_open">OS abertas</option>
                   <option value="orders_progress">OS em andamento</option>
@@ -1369,7 +1298,7 @@
   <script src="./appwrite-config.js?v=1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260803-storage-optimization-1"></script>
-  <script src="./wefrotas.js?v=20260813-auth-1"></script>
+  <script src="./wefrotas.js?v=20260813-import-2"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

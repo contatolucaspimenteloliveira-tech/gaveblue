@@ -16,12 +16,12 @@
     const sidebarToggleBtnEl = document.getElementById('sidebar-toggle-btn');
     const appLayoutEl = document.querySelector('.app-layout');
     const ecosystemModules = [
-      { name: 'WeTime', description: 'Relógio online e painel de horário', url: 'https://gaveblue.com.br/wetime' },
-      { name: 'WeRecibos', description: 'Gerador de recibos', url: 'https://gaveblue.com.br/recibos' },
-      { name: 'WeConsultas', description: 'Consultas empresariais', url: 'https://gaveblue.com.br/weconsultas' },
-      { name: 'WeFrotas', description: 'Gestão de frotas', url: 'https://gaveblue.com.br/wefrotas' },
-      { name: 'WeDevs', description: 'Ferramentas e utilidades dev', url: 'https://gaveblue.com.br/wedevs' },
-      { name: 'WeTasks', description: 'Tarefas e organização', url: 'https://gaveblue.com.br/wetasks' }
+      { name: 'WeTime', description: 'Relógio online e painel de horário', url: 'https://gaveblue.com.br/wetime/' },
+      { name: 'WeRecibos', description: 'Gerador de recibos', url: 'https://gaveblue.com.br/recibos/' },
+      { name: 'WeConsultas', description: 'Consultas empresariais', url: 'https://gaveblue.com.br/weconsultas/' },
+      { name: 'WeFrotas', description: 'Gestão de frotas', url: 'https://gaveblue.com.br/wefrotas/' },
+      { name: 'WeDevs', description: 'Ferramentas e utilidades dev', url: 'https://gaveblue.com.br/wedevs/' },
+      { name: 'WeTasks', description: 'Tarefas e organização', url: 'https://gaveblue.com.br/wetasks/' }
     ];
     let selectedVehicles = new Set();
     let selectedDrivers = new Set();
@@ -429,6 +429,35 @@
       return Number(digits || 0) / 100;
     }
 
+    function parseDecimalInputValue(value) {
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+      const match = String(value || '').trim().match(/-?[\d.,]+/);
+      if (!match) return 0;
+      let text = match[0].replace(/\s/g, '');
+      const commaCount = (text.match(/,/g) || []).length;
+      const dotCount = (text.match(/\./g) || []).length;
+      if (commaCount && dotCount) {
+        const lastComma = text.lastIndexOf(',');
+        const lastDot = text.lastIndexOf('.');
+        const decimalSeparator = lastComma > lastDot ? ',' : '.';
+        const thousandsSeparator = decimalSeparator === ',' ? '.' : ',';
+        text = text.replace(new RegExp(`\\${thousandsSeparator}`, 'g'), '');
+        text = text.replace(decimalSeparator, '.');
+      } else if (commaCount > 1 || dotCount > 1) {
+        const separator = commaCount > 1 ? ',' : '.';
+        const lastIndex = text.lastIndexOf(separator);
+        text = text.slice(0, lastIndex).replace(new RegExp(`\\${separator}`, 'g'), '') + '.' + text.slice(lastIndex + 1);
+      } else {
+        text = text.replace(',', '.');
+      }
+      return Number(text.replace(/[^\d.-]/g, '')) || 0;
+    }
+
+    function formatLitersValue(value) {
+      const liters = parseDecimalInputValue(value);
+      return liters ? `${liters.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} L` : '-';
+    }
+
     function toCurrencyCents(value) {
       return Math.round(Number(value || 0) * 100);
     }
@@ -829,12 +858,41 @@
         'posto',
         'rede',
         'servicos',
+        'servicentro',
         'shell'
       ]);
       return normalizeComparableText(value)
         .replace(/[^\p{L}\p{N}]+/gu, ' ')
         .split(/\s+/)
         .filter(token => token.length > 2 && !ignoredTokens.has(token));
+    }
+
+    function getSupplierAliasTokens(value) {
+      const normalized = normalizeComparableText(value);
+      const aliases = [];
+      if (!normalized) return aliases;
+
+      const aliasMap = [
+        ['atlantico', ['atlantico', 'servicentro', 'oliveira', 'rios']],
+        ['nater', ['nater', 'coop', 'shell']],
+        ['nater coop', ['nater', 'coop', 'shell']],
+        ['rede nater', ['nater', 'coop', 'shell']],
+        ['nortao', ['nortao', 'ale']],
+        ['pinheiros', ['pinheiros', 'ipiranga']]
+      ];
+
+      aliasMap.forEach(([needle, tokens]) => {
+        if (normalized.includes(needle)) aliases.push(...tokens);
+      });
+
+      return aliases;
+    }
+
+    function getSupplierMatchTokens(value) {
+      return Array.from(new Set([
+        ...getMeaningfulSupplierTokens(value),
+        ...getSupplierAliasTokens(value)
+      ].filter(Boolean)));
     }
 
     function getStringDistance(a, b) {
@@ -937,12 +995,12 @@
       const directMatch = resolveSupplierFromSearch(rawValue, suppliers);
       if (directMatch) return directMatch;
 
-      const inputTokens = getMeaningfulSupplierTokens(rawValue);
+      const inputTokens = getSupplierMatchTokens(rawValue);
       if (!inputTokens.length) return null;
 
       const scoredMatches = suppliers
         .map((supplier) => {
-          const supplierTokens = getMeaningfulSupplierTokens(getSupplierSearchText(supplier));
+          const supplierTokens = getSupplierMatchTokens(getSupplierSearchText(supplier));
           const score = inputTokens.reduce((total, inputToken) => {
             const hasExactToken = supplierTokens.includes(inputToken);
             const hasSimilarToken = supplierTokens.some(supplierToken => areSupplierTokensSimilar(inputToken, supplierToken));
@@ -1266,7 +1324,7 @@
           const children = getFuelGroupChildren(entry)
             .slice()
             .sort((a, b) => String(getFinanceEntryDate(a)).localeCompare(String(getFinanceEntryDate(b))));
-          const totalLitros = children.reduce((sum, item) => sum + Number(item.litros || 0), 0);
+          const totalLitros = children.reduce((sum, item) => sum + parseDecimalInputValue(item.litros), 0);
           const latestKm = children.reduce((maxKm, item) => Math.max(maxKm, Number(item.km || 0)), 0);
           return {
             id: entry.id,
@@ -2280,7 +2338,7 @@
     function normalizeImportedLiters(value) {
       const rawValue = String(value || '').trim();
       const match = rawValue.match(/[\d.,]+/);
-      return match ? match[0].replace(',', '.') : '';
+      return match ? String(parseDecimalInputValue(match[0])) : '';
     }
 
     function normalizeImportedFuelType(value) {
@@ -2420,23 +2478,46 @@
 
     window.suggestFinanceVehicleFromDriver = suggestFinanceVehicleFromDriver;
 
+    function getDriverComparableTokens(value) {
+      const ignoredTokens = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
+      return normalizeComparableText(value)
+        .split(/\s+/)
+        .map(token => token.trim())
+        .filter(token => token && !ignoredTokens.has(token));
+    }
+
+    function getDriverMatchScore(importedTokens, driverTokens) {
+      if (!importedTokens.length || !driverTokens.length) return 0;
+      const importedText = importedTokens.join(' ');
+      const driverText = driverTokens.join(' ');
+      if (driverText === importedText) return 100;
+      if (driverText.includes(importedText) || importedText.includes(driverText)) return 82;
+      const commonTokens = importedTokens.filter(token => driverTokens.includes(token));
+      let score = commonTokens.length * 22;
+      if (importedTokens[0] && driverTokens[0] === importedTokens[0]) score += 24;
+      if (importedTokens[1] && driverTokens[1] === importedTokens[1]) score += 18;
+      if (importedTokens.at(-1) && driverTokens.includes(importedTokens.at(-1))) score += 12;
+      if (importedTokens.length === 1 && driverTokens[0] === importedTokens[0]) score += 18;
+      return score;
+    }
+
     function resolveDriverByImportedName(name) {
       const normalized = normalizeComparableText(name);
       if (!normalized) return null;
       const exactMatch = allDrivers.find((driver) => normalizeComparableText(driver.nome) === normalized);
       if (exactMatch) return exactMatch;
-      const importedTokens = normalized.split(/\s+/).filter(Boolean);
-      const importedFirstTwo = importedTokens.slice(0, 2).join(' ');
-      const partialMatches = allDrivers.filter((driver) => {
-        const driverName = normalizeComparableText(driver.nome);
-        const driverTokens = driverName.split(/\s+/).filter(Boolean);
-        const driverFirstTwo = driverTokens.slice(0, 2).join(' ');
-        return driverName.includes(normalized)
-          || normalized.includes(driverName)
-          || (!!importedFirstTwo && importedFirstTwo === driverFirstTwo)
-          || (importedTokens.length === 1 && driverTokens[0] === importedTokens[0]);
-      });
-      return partialMatches.length === 1 ? partialMatches[0] : null;
+      const importedTokens = getDriverComparableTokens(name);
+      const rankedMatches = allDrivers
+        .map((driver) => ({
+          driver,
+          score: getDriverMatchScore(importedTokens, getDriverComparableTokens(driver.nome))
+        }))
+        .filter(item => item.score >= 40)
+        .sort((a, b) => b.score - a.score);
+      if (!rankedMatches.length) return null;
+      const [best, second] = rankedMatches;
+      if (second && best.score === second.score) return null;
+      return best.driver;
     }
 
     function resolveFuelSupplierByImportedName(name) {
@@ -2483,10 +2564,15 @@
       const readField = getImportedMessageReader(sourceText);
       const dateValue = readField('Data') || readField('Data/Hora');
       const comprovanteUrlMatch = sourceText.match(/https?:\/\/\S+/i);
+      const normalizedSource = normalizeComparableText(sourceText);
+      const isServiceRecord = normalizedSource.includes('registro de servico')
+        || normalizedSource.includes('registro de servicos')
+        || normalizedSource.includes('comprovante de servico')
+        || normalizedSource.includes('comprovante de servicos');
       const importedData = {
-        type: 'loose_note',
+        type: isServiceRecord ? 'service' : 'loose_note',
         motorista: readField('Motorista'),
-        fornecedor: readField('Fornecedor') || readField('Posto'),
+        fornecedor: readField('Fornecedor') || readField('Nome do fornecedor') || readField('Posto'),
         tipoServico: readField('Tipo do serviço') || readField('Tipo de serviço') || readField('Serviço') || readField('Servico'),
         valor: readField('Valor'),
         dataBr: dateValue,
@@ -2503,11 +2589,35 @@
       return importedData;
     }
 
+    function showImportResolutionFeedback(missingItems = [], successMessage = 'Dados importados. Revise e finalize o lançamento.') {
+      const missing = missingItems.filter(Boolean);
+      if (!missing.length) {
+        showToast(successMessage);
+        return;
+      }
+      showToast(`Importação concluída com atenção: ${missing.join(', ')} não encontrado(s) no cadastro.`);
+    }
+
+    function syncFinanceImportSelects() {
+      [
+        'finance-supplier-id',
+        'finance-driver-id',
+        'finance-fuel-type'
+      ].forEach(syncCustomSelectById);
+      toggleFinanceSpecificFields();
+    }
+
     function parseImportedCentralMessage(rawText) {
       const sourceText = String(rawText || '').trim();
       const normalized = normalizeComparableText(sourceText);
       if (!sourceText) return null;
-      if (normalized.includes('registro de notinha avulsa')) {
+      if (
+        normalized.includes('registro de notinha avulsa') ||
+        normalized.includes('registro de servico') ||
+        normalized.includes('registro de servicos') ||
+        normalized.includes('comprovante de servico') ||
+        normalized.includes('comprovante de servicos')
+      ) {
         return parseImportedLooseNoteMessage(sourceText);
       }
       return parseImportedFuelMessage(sourceText);
@@ -2743,7 +2853,7 @@
         notes.push(`Motorista informado no WhatsApp: ${importedData.motorista}`);
       }
       if (!supplier && importedData.posto) {
-        notes.push(`Posto informado no WhatsApp: ${importedData.posto}`);
+        notes.push(`Posto não encontrado no cadastro: ${importedData.posto}`);
       }
       if (!vehicle && importedData.motorista) {
         notes.push(`Veículo não localizado automaticamente para o motorista ${importedData.motorista}`);
@@ -2755,16 +2865,16 @@
       }
 
       updateFinanceReceiptPreview(importedData.comprovanteUrl || '');
-      toggleFinanceSpecificFields();
+      syncFinanceImportSelects();
 
       const pendingFields = [];
       if (!vehicle) pendingFields.push('veículo');
+      if (!supplier) pendingFields.push('posto');
+      if (!driver && importedData.motorista) pendingFields.push('motorista');
       if (!importedData.tipoCombustivel) pendingFields.push('tipo de combustível');
       if (!importedData.litros) pendingFields.push('quantidade em litros');
       if (!importedData.valor || !parseCurrencyInputValue(importedData.valor)) pendingFields.push('valor');
-      showToast(pendingFields.length
-        ? `Dados importados. Revise ${pendingFields.join(', ')} e finalize o lançamento.`
-        : 'Abastecimento importado. Revise os dados e finalize o lançamento.');
+      showImportResolutionFeedback(pendingFields, 'Abastecimento importado. Revise os dados e finalize o lançamento.');
     }
 
     function openImportedLooseNoteLaunch(importedData) {
@@ -2793,7 +2903,7 @@
           : importedData.fornecedor || '';
       }
       if (document.getElementById('finance-nf')) {
-        document.getElementById('finance-nf').value = 'NOTINHA AVULSA';
+        document.getElementById('finance-nf').value = importedData.type === 'service' ? 'REGISTRO DE SERVIÇOS' : 'NOTINHA AVULSA';
       }
       if (document.getElementById('finance-km') && importedData.km) {
         document.getElementById('finance-km').value = importedData.km;
@@ -2810,7 +2920,7 @@
         notes.push(importedData.observacoes);
       }
       if (!supplier && importedData.fornecedor) {
-        notes.push(`Fornecedor informado na Central: ${importedData.fornecedor}`);
+        notes.push(`Fornecedor não encontrado no cadastro: ${importedData.fornecedor}`);
       }
 
       const observationsField = document.getElementById('finance-observacoes');
@@ -2819,9 +2929,14 @@
       }
 
       toggleFinanceSpecificFields();
-      showToast(supplier
-        ? 'Notinha avulsa importada. Revise os dados e finalize o lançamento.'
-        : 'Notinha avulsa importada. Confira o fornecedor antes de finalizar.');
+      const missingItems = [];
+      if (!supplier && importedData.fornecedor) missingItems.push('fornecedor');
+      showImportResolutionFeedback(
+        missingItems,
+        importedData.type === 'service'
+          ? 'Registro de serviços importado. Revise os dados e finalize o lançamento.'
+          : 'Notinha avulsa importada. Revise os dados e finalize o lançamento.'
+      );
     }
 
     function findVehicleDuplicate(payload, ignoreId = null) {
@@ -4432,7 +4547,8 @@
       'order-veiculo',
       'order-driver',
       'finance-supplier-id',
-      'finance-driver-id'
+      'finance-driver-id',
+      'finance-fuel-type'
     ]);
 
     function getCustomSelectLabel(select) {
@@ -4872,6 +4988,7 @@
       switch (type) {
         case 'cost': return 'Custo por KM';
         case 'monthly_vehicle_cost': return 'Custo mensal por veículo';
+        case 'fuel_register': return 'Registro de abastecimentos';
         case 'orders': return 'OS por veículo';
         case 'orders_open': return 'OS abertas';
         case 'orders_progress': return 'OS em andamento';
@@ -5015,6 +5132,53 @@
             ]
           })),
           emptyMessage: 'Nenhum veículo encontrado para os filtros aplicados.'
+        };
+      }
+
+      if (filters.type === 'fuel_register') {
+        const rows = getFuelSheetRows()
+          .filter(row => !filters.vehicleId || getEntryLinkedVehicleId(row.entry) === filters.vehicleId || row.vehicle?.id === filters.vehicleId)
+          .filter(row => {
+            const entryDate = getFinanceEntryDate(row.entry);
+            if (!filters.start && !filters.end) return true;
+            return isDateWithinRange(entryDate, filters.start, filters.end);
+          })
+          .sort((a, b) => String(getFinanceEntryDate(b.entry)).localeCompare(String(getFinanceEntryDate(a.entry))) || String(b.entry.createdAt || '').localeCompare(String(a.entry.createdAt || '')));
+        const totalLiters = rows.reduce((sum, row) => sum + parseDecimalInputValue(row.entry.litros), 0);
+        const totalValue = rows.reduce((sum, row) => sum + getFinanceTotal(row.entry), 0);
+        const averageUnitValue = totalLiters ? totalValue / totalLiters : 0;
+        return {
+          title,
+          meta,
+          summary: [
+            { label: 'Registros', value: String(rows.length), help: 'Abastecimentos encontrados para o período selecionado.' },
+            { label: 'Litros', value: `${totalLiters.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} L`, help: 'Soma da litragem dos registros filtrados.' },
+            { label: 'Valor total', value: formatCurrency(totalValue), help: 'Total financeiro dos abastecimentos exibidos.' },
+            { label: 'Valor por litro', value: formatCurrency(averageUnitValue), help: 'Média geral calculada por valor dividido por litros.' }
+          ],
+          columns: [
+            { label: 'Data abastecimento' },
+            { label: 'Veículo' },
+            { label: 'Placa' },
+            { label: 'KM', numeric: true },
+            { label: 'Litros', numeric: true },
+            { label: 'Valor', numeric: true },
+            { label: 'Motorista' },
+            { label: 'Posto' }
+          ],
+          rows: rows.map(row => ({
+            cells: [
+              { text: formatDate(getFinanceEntryDate(row.entry)) },
+              { text: [row.vehicle?.numeroFrota, row.vehicle?.modelo].filter(Boolean).join(' ') || row.vehicleLabel || '-' },
+              { text: row.vehicle?.placa || row.entry.placa || '-' },
+              { text: row.entry.km ? Number(row.entry.km).toLocaleString('pt-BR') : '-', numeric: true },
+              { text: formatLitersValue(row.entry.litros), numeric: true },
+              { text: formatCurrency(getFinanceTotal(row.entry)), numeric: true },
+              { text: row.driver?.nome || row.entry.motorista || row.entry.driverName || '-' },
+              { text: row.entry.fornecedor || row.supplier?.nome || '-' }
+            ]
+          })),
+          emptyMessage: 'Nenhum abastecimento encontrado para os filtros aplicados.'
         };
       }
 
@@ -5612,7 +5776,7 @@
             <label>QTD em litros</label>
             <div class="form-input-shell">
               ${fieldIcon('droplet')}
-              <input class="soft-input w-full" id="finance-litros" type="number" min="0" step="0.001" placeholder="Ex: 120.500">
+              <input class="soft-input w-full" id="finance-litros" type="text" inputmode="decimal" placeholder="Ex: 120,500">
             </div>
           </div>
           <div class="field-wrap" id="finance-fuel-wrap">
@@ -6411,8 +6575,8 @@
           label: 'Litros',
           type: 'number',
           width: 125,
-          value: row => Number(String(row.entry.litros || '').replace(',', '.')) || 0,
-          display: value => value ? `${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} L` : '-'
+          value: row => parseDecimalInputValue(row.entry.litros),
+          display: value => formatLitersValue(value)
         },
         value: {
           label: 'Valor',
@@ -6487,7 +6651,7 @@
           type: 'currency',
           width: 155,
           value: row => {
-            const liters = Number(String(row.entry.litros || '').replace(',', '.')) || 0;
+            const liters = parseDecimalInputValue(row.entry.litros);
             return liters ? getFinanceTotal(row.entry) / liters : 0;
           },
           display: value => value ? formatCurrency(value) : '-'
@@ -6682,7 +6846,7 @@
       const totalRecordsNode = document.getElementById('fuel-sheet-total-records');
       const totalLitersNode = document.getElementById('fuel-sheet-total-liters');
       const totalValueNode = document.getElementById('fuel-sheet-total-value');
-      const litersTotal = rows.reduce((sum, row) => sum + Number(String(row.entry.litros || '').replace(',', '.') || 0), 0);
+      const litersTotal = rows.reduce((sum, row) => sum + parseDecimalInputValue(row.entry.litros), 0);
       const valueTotal = rows.reduce((sum, row) => sum + getFinanceTotal(row.entry), 0);
       if (totalRecordsNode) totalRecordsNode.textContent = rows.length.toLocaleString('pt-BR');
       if (totalLitersNode) totalLitersNode.textContent = `${litersTotal.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} L`;
@@ -6787,6 +6951,7 @@
     function renderDocuments() {
       const panel = document.getElementById('panel-documentos');
       if (!panel) return;
+      if (!document.getElementById('fuel-sheet-head')) return;
       const rows = getFilteredFuelSheetRows();
       const visibleColumns = getVisibleFuelSheetColumns();
       renderFuelColumnsPanel();
@@ -7248,7 +7413,7 @@
               fornecedor: supplier?.nome || String(supplierText || '').trim(),
               fuelType: String(readFuelImportCell(row, ['Tipo de combustível', 'Combustível', 'Combustivel']) || '').trim(),
               km: String(readFuelImportCell(row, ['KM']) || '').replace(/[^\d]/g, ''),
-              litros: String(readFuelImportCell(row, ['Litros', 'QTD em litros']) || '').replace(',', '.'),
+              litros: String(parseDecimalInputValue(readFuelImportCell(row, ['Litros', 'QTD em litros'])) || ''),
               driverId: driver?.id || '',
               comprovanteUrl: String(readFuelImportCell(row, ['Comprovante']) || '').trim(),
               dataAbastecimento,
@@ -10266,7 +10431,7 @@
           const dataAbastecimento = document.getElementById('finance-data-abastecimento').value;
           const fuelType = document.getElementById('finance-fuel-type')?.value || '';
           const km = document.getElementById('finance-km')?.value || '';
-          const litros = document.getElementById('finance-litros')?.value || '';
+          const litros = String(parseDecimalInputValue(document.getElementById('finance-litros')?.value || '') || '');
           const driverId = document.getElementById('finance-driver-id')?.value || '';
           const comprovanteUrl = document.getElementById('finance-comprovante-url')?.value.trim() || '';
           if (!vehicleId || !dataAbastecimento || !supplierId) {
