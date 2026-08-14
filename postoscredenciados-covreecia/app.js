@@ -15,6 +15,13 @@ const CLOUDINARY_CLOUD_NAME = 'anh49kkl';
 const CLOUDINARY_UPLOAD_PRESET = 'comprovantes_frota';
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 const FUEL_WHATSAPP_NUMBER = '5527999884208';
+const CENTRAL_APPWRITE_ENABLED = true;
+const CENTRAL_APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
+const CENTRAL_APPWRITE_PROJECT_ID = '6a68cb3e00312ec0a3fd';
+const CENTRAL_APPWRITE_DATABASE_ID = '6a68ce8c000a36a44d98';
+const CENTRAL_APPWRITE_TABLE_ID = 'central_registros_pendentes';
+const CENTRAL_APPWRITE_WORKSPACE_ID = 'covre-e-cia';
+const CENTRAL_APPWRITE_ORIGIN = 'postoscredenciados-covreecia';
 const MAX_RECEIPT_IMAGE_BYTES = 1200 * 1024;
 const COMPRESSED_RECEIPT_MAX_SIZE = 1600;
 const COMPRESSED_RECEIPT_QUALITY = 0.72;
@@ -1107,6 +1114,148 @@ function getLooseNoteReceiptUploadKey(formData) {
   ].join('|');
 }
 
+function createCentralProtocol() {
+  const now = new Date();
+  const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const timePart = now.toTimeString().slice(0, 8).replace(/:/g, '');
+  const randomPart = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `CR-${datePart}-${timePart}-${randomPart}`;
+}
+
+function createCentralRowId(protocol) {
+  return String(protocol || createCentralProtocol())
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_')
+    .slice(0, 36);
+}
+
+function parseCentralMoney(value) {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) return null;
+
+  const normalized = rawValue
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : null;
+}
+
+function parseCentralDecimal(value) {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) return null;
+
+  const sanitized = rawValue.replace(/[^\d,.-]/g, '');
+  if (!sanitized) return null;
+
+  const hasComma = sanitized.includes(',');
+  const hasDot = sanitized.includes('.');
+
+  let normalized = sanitized;
+  if (hasComma && hasDot) {
+    const lastComma = sanitized.lastIndexOf(',');
+    const lastDot = sanitized.lastIndexOf('.');
+    const decimalSeparator = lastComma > lastDot ? ',' : '.';
+    const thousandsSeparator = decimalSeparator === ',' ? '.' : ',';
+    normalized = sanitized
+      .replace(new RegExp(`\\${thousandsSeparator}`, 'g'), '')
+      .replace(decimalSeparator, '.');
+  } else {
+    normalized = sanitized.replace(',', '.');
+  }
+
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : null;
+}
+
+function cleanCentralPayload(payload) {
+  return Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => value !== undefined && value !== null && value !== '')
+  );
+}
+
+function buildCentralRegistroPayload({ type, formData, receiptUrl, mensagem }) {
+  const protocol = createCentralProtocol();
+  const now = new Date();
+  const basePayload = {
+    workspaceId: CENTRAL_APPWRITE_WORKSPACE_ID,
+    tipo: type,
+    status: 'pendente',
+    protocolo: protocol,
+    motorista: formData.motorista,
+    data: formData.data,
+    hora: formData.horaFormatada,
+    km: parseKmValue(formData.km) || undefined,
+    comprovanteUrl: receiptUrl,
+    mensagemWhatsapp: mensagem,
+    origem: CENTRAL_APPWRITE_ORIGIN,
+    criadoEm: now.toISOString()
+  };
+
+  if (type === 'servico') {
+    return {
+      rowId: createCentralRowId(protocol),
+      data: cleanCentralPayload({
+        ...basePayload,
+        fornecedor: formData.fornecedor,
+        tipoServico: formData.tipoServico,
+        valor: formData.valor,
+        valorNumero: parseCentralMoney(formData.valor) ?? undefined,
+        observacoes: formData.observacoes
+      })
+    };
+  }
+
+  const isCompleteFuel = type === 'abastecimento';
+  return {
+    rowId: createCentralRowId(protocol),
+    data: cleanCentralPayload({
+      ...basePayload,
+      cidade: formData.cidade,
+      posto: formData.posto,
+      valor: isCompleteFuel ? formData.valor : undefined,
+      valorNumero: isCompleteFuel ? (parseCentralMoney(formData.valor) ?? undefined) : undefined,
+      litros: isCompleteFuel ? formData.litros : undefined,
+      litrosNumero: isCompleteFuel ? (parseCentralDecimal(formData.litros) ?? undefined) : undefined,
+      tipoCombustivel: isCompleteFuel ? formData.tipoCombustivel : undefined
+    })
+  };
+}
+
+async function saveCentralRegistroToAppwrite(payload) {
+  if (!CENTRAL_APPWRITE_ENABLED) {
+    return { ok: false, skipped: true };
+  }
+
+  const url = `${CENTRAL_APPWRITE_ENDPOINT}/tablesdb/${encodeURIComponent(CENTRAL_APPWRITE_DATABASE_ID)}/tables/${encodeURIComponent(CENTRAL_APPWRITE_TABLE_ID)}/rows`;
+  const response = await fetch(url, {
+    method: 'POST',
+    keepalive: true,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Appwrite-Project': CENTRAL_APPWRITE_PROJECT_ID,
+      'X-Appwrite-Response-Format': '1.8.0'
+    },
+    body: JSON.stringify({
+      rowId: payload.rowId,
+      data: payload.data
+    })
+  });
+
+  if (!response.ok) {
+    let message = `Erro ${response.status}`;
+    try {
+      const errorPayload = await response.json();
+      message = errorPayload?.message || message;
+    } catch (error) {
+      message = await response.text().catch(() => message);
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
 function updateReceiptUploadStatus(message, tone = 'neutral') {
   const statusEl = document.getElementById('receipt-upload-status');
   if (!statusEl) {
@@ -1550,7 +1699,22 @@ async function submitFuelForm(e) {
   mensagemLines.push(`\ud83e\uddfe *Comprovante:* ${uploadedFuelReceipt.result.secure_url}`);
   const mensagem = mensagemLines.join('\n');
 
+  const appwritePayload = buildCentralRegistroPayload({
+    type: isComplete ? 'abastecimento' : 'abastecimento_rapido',
+    formData,
+    receiptUrl: uploadedFuelReceipt.result.secure_url,
+    mensagem
+  });
+
   openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
+
+  try {
+    await saveCentralRegistroToAppwrite(appwritePayload);
+  } catch (error) {
+    console.error('Erro ao registrar abastecimento no Appwrite:', error);
+    showErrorMessage('Comprovante salvo, mas o registro online n\u00e3o foi confirmado. O WhatsApp ser\u00e1 aberto como garantia.');
+  }
+
   saveDriverNameSuggestion(formData.motorista);
   saveLastFuelEntry({ motorista: formData.motorista, cidade: formData.cidade, posto: formData.posto });
   document.getElementById('fuel-form').reset();
@@ -1562,7 +1726,7 @@ async function submitFuelForm(e) {
   showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar o abastecimento.');
 }
 
-function submitLooseNoteForm(e) {
+async function submitLooseNoteForm(e) {
   e.preventDefault();
 
   const formData = getLooseNoteFormData();
@@ -1601,7 +1765,22 @@ function submitLooseNoteForm(e) {
     `\ud83e\uddfe *Comprovante:* ${uploadedLooseNoteReceipt.result.secure_url}`
   ].join('\n');
 
+  const appwritePayload = buildCentralRegistroPayload({
+    type: 'servico',
+    formData,
+    receiptUrl: uploadedLooseNoteReceipt.result.secure_url,
+    mensagem
+  });
+
   openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
+
+  try {
+    await saveCentralRegistroToAppwrite(appwritePayload);
+  } catch (error) {
+    console.error('Erro ao registrar servi\u00e7o no Appwrite:', error);
+    showErrorMessage('Comprovante salvo, mas o registro online n\u00e3o foi confirmado. O WhatsApp ser\u00e1 aberto como garantia.');
+  }
+
   saveDriverNameSuggestion(formData.motorista);
   closeLooseNoteForm();
   showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar o registro de servi\u00e7os.');
