@@ -1996,6 +1996,11 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       box-shadow: none;
       background: transparent;
     }
+    .orders-sticky-table-header .module-selection-sticky {
+      order: 0;
+      flex: 0 0 auto;
+      margin-bottom: 4px;
+    }
     .orders-sticky-table-header .orders-filter-grid {
       display: flex;
       align-items: end;
@@ -2029,7 +2034,7 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       flex: 1 1 auto;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       gap: 16px;
       margin-bottom: 4px;
     }

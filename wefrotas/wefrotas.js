@@ -1120,7 +1120,8 @@
     }
 
     function isFinanceEntryLinkedToClosedOrder(entry) {
-      return getLinkedFinanceOrder(entry)?.status === 'fechada';
+      const status = normalizeComparableText(getLinkedFinanceOrder(entry)?.status || '');
+      return ['fechada', 'finalizada', 'concluida'].includes(status);
     }
 
     function canReverseFinanceEntry(entry) {
@@ -8916,6 +8917,9 @@
         if (entries.some(entry => isFinanceEntryLinkedToClosedOrder(entry))) {
           return 'Excluir lançamento: reabra a OS antes de alterar essa despesa.';
         }
+        if (entries.some(entry => entry?.orderId)) {
+          return 'Excluir lançamento: despesas alocadas em OS não podem ser excluídas.';
+        }
       }
 
       if (action === 'reverse') {
@@ -8965,6 +8969,7 @@
       const canDelete = count > 0 && selectedEntries.every(entry =>
         !entry.groupedIntoId
         && !isFinanceGroupEntry(entry)
+        && !entry.orderId
         && !isFinanceEntryLinkedToClosedOrder(entry)
       );
       const canReverse = selectedEntries.length >= 1 && selectedEntries.every(entry => canReverseFinanceEntry(entry));
@@ -10052,6 +10057,10 @@
 
       if (selectedEntries.some(entry => isFinanceEntryLinkedToClosedOrder(entry))) {
         showToast('Despesa vinculada a OS fechada não pode ser excluída. Reabra a OS antes.');
+        return;
+      }
+      if (selectedEntries.some(entry => entry.orderId)) {
+        showToast('Despesa alocada em OS não pode ser excluída. Remova o vínculo pela OS antes.');
         return;
       }
 
@@ -11784,9 +11793,15 @@
         const panel = document.getElementById(`panel-${module}`);
         const filterShell = panel?.querySelector(':scope > .orders-filter-shell');
         const stickyHeader = panel?.querySelector('.orders-sticky-table-header');
+        const toolbar = stickyHeader?.querySelector(':scope > .orders-toolbar');
+        const selection = toolbar?.querySelector('.orders-selection-wrap');
         const searchField = document.getElementById(searchFieldId);
         if (!filterShell || !stickyHeader) return;
         if (!stickyHeader.contains(filterShell)) stickyHeader.prepend(filterShell);
+        if (selection && selection.parentElement !== stickyHeader) {
+          selection.classList.add('module-selection-sticky');
+          stickyHeader.insertBefore(selection, stickyHeader.firstChild);
+        }
         searchField?.closest('.orders-filter-field')?.classList.add('is-contextual-search-source');
       });
     }
