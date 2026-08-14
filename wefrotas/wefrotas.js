@@ -1400,6 +1400,7 @@
     }
 
     function migrateFinanceEntries() {
+      let changed = false;
       allFinanceEntries = (Array.isArray(allFinanceEntries) ? allFinanceEntries : []).map((entry) => {
         if (!entry || typeof entry !== 'object') return entry;
 
@@ -1419,6 +1420,15 @@
           if (nextEntry.km === undefined || nextEntry.km === null || nextEntry.km === '') {
             nextEntry.km = nextEntry.kmFinal || nextEntry.kmInicial || '';
           }
+          const legacyLiters = String(nextEntry.litros ?? '').trim();
+          const legacyLitersNumber = Number(legacyLiters);
+          if (!isFuelGroupEntry(nextEntry)
+            && /^\d{5,}$/.test(legacyLiters)
+            && Number.isFinite(legacyLitersNumber)
+            && legacyLitersNumber >= 10000) {
+            nextEntry.litros = String(legacyLitersNumber / 1000);
+            changed = true;
+          }
         }
 
         if (isFuelGroupEntry(nextEntry) && !Array.isArray(nextEntry.groupedEntryIds)) {
@@ -1427,6 +1437,7 @@
 
         return nextEntry;
       });
+      return changed;
     }
 
     function buildStorageSnapshot() {
@@ -1475,8 +1486,9 @@
       managerDisplayName = snapshot.managerDisplayName || snapshot.defaultAdministratorName || 'Gestor';
       allowManualOrderNumberEditing = snapshot.allowManualOrderNumberEditing === true || snapshot.allowManualOrderNumberEditing === 'true';
       if (!allAdministrations.length) allAdministrations = collectLegacyAdministrationOptions();
-      migrateFinanceEntries();
+      const migratedLegacyLiters = migrateFinanceEntries();
       syncOrderCounterWithOrders();
+      return migratedLegacyLiters;
     }
 
     function getLegacyLocalStorageSnapshot() {
@@ -1837,7 +1849,7 @@
     }
 
     async function applyRemoteStorageSnapshot(snapshot) {
-      applyStorageSnapshot(snapshot);
+      const migratedLegacyLiters = applyStorageSnapshot(snapshot);
       try {
         wefrotasStorageEngine = 'IndexedDB';
         await writeWeFrotasIndexedDbSnapshot(buildStorageSnapshot());
@@ -1852,6 +1864,7 @@
       updateCustomLogoUi();
       updateManagerIdentityUi();
       updateOperationSettingsUi();
+      if (migratedLegacyLiters) await saveToLocalStorage();
     }
 
     async function connectWeFrotasOnline() {
@@ -7656,13 +7669,6 @@
             <td><span class="central-pending-status ${status.className}">${status.label}</span></td>
             <td>
               <div class="central-pending-actions">
-                <button class="is-approve" type="button" title="Aprovar e lançar" onclick="event.stopPropagation(); approveCentralPendingRecord('${rowId}')" ${status.className !== 'pending' ? 'disabled' : ''}>
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 12l4 4L19 6"/></svg>
-                </button>
-                <button class="is-reject" type="button" title="Rejeitar" onclick="event.stopPropagation(); rejectCentralPendingRecord('${rowId}')" ${status.className !== 'pending' ? 'disabled' : ''}>
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 6l12 12M18 6L6 18"/></svg>
-                </button>
-                <button type="button" title="Revisar lançamento" onclick="event.stopPropagation(); prepareCentralPendingRecord('${rowId}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L8 18l-4 1 1-4L16.5 3.5z"/></svg></button>
                 <button type="button" title="Ver comprovante" ${receiptUrl ? `onclick="event.stopPropagation(); viewFinanceReceipt('${escapeHtml(receiptUrl)}')"` : 'disabled'}>
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3" stroke-width="1.9"/></svg>
                 </button>
@@ -7830,6 +7836,29 @@
       });
     }
 
+    function getSelectedCentralPendingRecordId(actionLabel) {
+      if (selectedCentralPending.size !== 1) {
+        showToast(`${actionLabel}: selecione apenas um registro.`);
+        return '';
+      }
+      return Array.from(selectedCentralPending)[0];
+    }
+
+    function approveSelectedCentralPendingRecord() {
+      const rowId = getSelectedCentralPendingRecordId('Aprovar');
+      if (rowId) approveCentralPendingRecord(rowId);
+    }
+
+    function rejectSelectedCentralPendingRecord() {
+      const rowId = getSelectedCentralPendingRecordId('Rejeitar');
+      if (rowId) rejectCentralPendingRecord(rowId);
+    }
+
+    function prepareSelectedCentralPendingRecord() {
+      const rowId = getSelectedCentralPendingRecordId('Revisar lançamento');
+      if (rowId) prepareCentralPendingRecord(rowId);
+    }
+
     function toggleCentralPendingRecord(rowId) {
       if (selectedCentralPending.has(rowId)) selectedCentralPending.delete(rowId);
       else selectedCentralPending.add(rowId);
@@ -7901,6 +7930,9 @@
     window.rejectCentralPendingRecord = rejectCentralPendingRecord;
     window.toggleCentralPendingRecord = toggleCentralPendingRecord;
     window.toggleAllCentralPendingRecords = toggleAllCentralPendingRecords;
+    window.approveSelectedCentralPendingRecord = approveSelectedCentralPendingRecord;
+    window.rejectSelectedCentralPendingRecord = rejectSelectedCentralPendingRecord;
+    window.prepareSelectedCentralPendingRecord = prepareSelectedCentralPendingRecord;
     window.auditSelectedCentralPendingRecords = auditSelectedCentralPendingRecords;
     window.deleteSelectedCentralPendingRecords = deleteSelectedCentralPendingRecords;
 

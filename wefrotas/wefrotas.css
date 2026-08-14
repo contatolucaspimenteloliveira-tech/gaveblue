@@ -1982,6 +1982,7 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       flex-wrap: wrap;
       align-items: end;
       gap: 8px 14px;
+      min-height: 54px;
       padding: 4px 50px 0;
       background: #ffffff;
       border-bottom: 0;
@@ -2042,11 +2043,14 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       display: flex;
       align-items: center;
       gap: 10px;
+      min-width: 230px;
     }
     .orders-selected-text {
       font-size: 13px;
       font-weight: 600;
       color: #64748b;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
     }
     .module-action-toolbar--table .icon-action {
       width: 40px;
@@ -2064,7 +2068,7 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
     .orders-table-head,
     .orders-table-row {
       display: grid;
-      grid-template-columns: 34px 96px 1.45fr 1.15fr 96px 96px 130px 1.2fr 110px;
+      grid-template-columns: 96px 1.45fr 1.15fr 96px 96px 130px 1.2fr 110px;
       gap: 14px;
       align-items: center;
     }
@@ -2104,9 +2108,9 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       color: #334155;
     }
     .orders-table-cell--check {
-      display: flex;
-      justify-content: center;
+      display: none !important;
     }
+    .orders-table-head > :first-child { display: none; }
     .orders-table-cell--value {
       text-align: right;
     }
@@ -2197,7 +2201,7 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
     }
     .finance-table-head,
     .finance-table-row {
-      grid-template-columns: 34px 1.15fr 0.85fr 1.15fr 0.7fr 0.78fr 0.78fr 0.82fr 0.72fr;
+      grid-template-columns: 1.15fr 0.85fr 1.15fr 0.7fr 0.78fr 0.78fr 0.82fr 0.72fr;
     }
     .finance-sort-head,
     .table-sort-head {
@@ -2235,9 +2239,7 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       min-height: 78px;
     }
     .finance-table-row .orders-table-cell--check {
-      align-self: stretch;
-      display: flex;
-      align-items: center;
+      display: none !important;
     }
     .documents-table-row {
       align-items: center;
@@ -2265,15 +2267,15 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
     }
     .entity-table-head--vehicles,
     .entity-table-row--vehicles {
-      grid-template-columns: 34px 0.78fr 1.18fr 0.82fr 1.05fr 0.72fr 0.78fr 0.9fr;
+      grid-template-columns: 0.78fr 1.18fr 0.82fr 1.05fr 0.72fr 0.78fr 0.9fr;
     }
     .entity-table-head--drivers,
     .entity-table-row--drivers {
-      grid-template-columns: 34px 1.25fr 0.7fr 0.95fr 0.95fr 1fr 0.8fr;
+      grid-template-columns: 1.25fr 0.7fr 0.95fr 0.95fr 1fr 0.8fr;
     }
     .entity-table-head--suppliers,
     .entity-table-row--suppliers {
-      grid-template-columns: 34px 1.2fr 0.85fr 0.95fr 1fr 1.25fr 0.78fr;
+      grid-template-columns: 1.2fr 0.85fr 0.95fr 1fr 1.25fr 0.78fr;
     }
     .entity-table-row--vehicles,
     .entity-table-row--drivers,
@@ -4475,6 +4477,14 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
 }
 .central-pending-bulk-actions button:first-child { color: #dc2626; border-color: #fecaca; }
 .central-pending-bulk-actions button:last-child { color: #1d4ed8; }
+.central-pending-bulk-actions button.is-approve { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
+.central-pending-bulk-actions button.is-reject { color: #dc2626; border-color: #fecaca; background: #fff7f7; }
+.filter-action-btn[aria-label="Limpar filtros"] {
+  font-size: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23475569' viewBox='0 0 16 16'%3E%3Cpath d='M8.086 2.207a2 2 0 0 1 2.828 0l3.879 3.879a2 2 0 0 1 0 2.828l-5.5 5.5A2 2 0 0 1 7.879 15H5.12a2 2 0 0 1-1.414-.586l-2.5-2.5a2 2 0 0 1 0-2.828zm2.121.707a1 1 0 0 0-1.414 0L4.16 7.547l5.293 5.293 4.633-4.633a1 1 0 0 0 0-1.414zM8.746 13.547 3.453 8.254 1.914 9.793a1 1 0 0 0 0 1.414l2.5 2.5a1 1 0 0 0 .707.293H7.88a1 1 0 0 0 .707-.293z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
 
 .central-pending-table-shell {
   overflow: hidden;
