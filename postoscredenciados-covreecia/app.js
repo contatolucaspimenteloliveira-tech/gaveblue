@@ -2297,14 +2297,28 @@ async function preferRearReceiptCamera() {
     .filter((device) => device.kind === 'videoinput');
 
   const currentTrack = activeReceiptCameraStream?.getVideoTracks?.()[0];
-  const currentDeviceId = currentTrack?.getSettings?.().deviceId || '';
-  const rearIndex = receiptCameraDevices.findIndex((device) => RECEIPT_CAMERA_LABEL_PATTERN.test(device.label || ''));
+  const currentSettings = currentTrack?.getSettings?.() || {};
+  const currentDeviceId = currentSettings.deviceId || '';
+  const currentIndex = receiptCameraDevices.findIndex((device) => device.deviceId === currentDeviceId);
+  const currentLabel = currentIndex >= 0 ? receiptCameraDevices[currentIndex].label || '' : '';
+  const isFrontCamera = currentSettings.facingMode === 'user' || /front|user|frontal/i.test(currentLabel);
 
-  receiptCameraDeviceIndex = Math.max(0, receiptCameraDevices.findIndex((device) => device.deviceId === currentDeviceId));
-  if (rearIndex >= 0 && receiptCameraDevices[rearIndex].deviceId !== currentDeviceId) {
-    receiptCameraDeviceIndex = rearIndex;
-    const stream = await requestReceiptCameraStream(receiptCameraDevices[rearIndex].deviceId);
-    await attachReceiptCameraStream(stream);
+  receiptCameraDeviceIndex = currentIndex >= 0 ? currentIndex : 0;
+
+  // Preserve the camera selected by facingMode=environment. On multi-lens phones,
+  // replacing it with the first "rear" device often selects the ultra-wide lens.
+  if (isFrontCamera) {
+    const rearIndex = receiptCameraDevices.findIndex((device) => {
+      const label = device.label || '';
+      return RECEIPT_CAMERA_LABEL_PATTERN.test(label)
+        && !/ultra|0[.,]5|0\.5|macro|telephoto|telefoto/i.test(label);
+    });
+
+    if (rearIndex >= 0 && receiptCameraDevices[rearIndex].deviceId !== currentDeviceId) {
+      receiptCameraDeviceIndex = rearIndex;
+      const stream = await requestReceiptCameraStream(receiptCameraDevices[rearIndex].deviceId);
+      await attachReceiptCameraStream(stream);
+    }
   }
 
   document.getElementById('receipt-camera-switch')?.classList.toggle('hidden', receiptCameraDevices.length < 2);
