@@ -17,6 +17,7 @@
     let centralPendingFiltersLoaded = false;
     let selectedCentralPending = new Set();
     const centralApprovalInProgress = new Set();
+    const centralStatusRepairInProgress = new Set();
     const globalSearchInputEl = document.getElementById('global-search-input');
     const globalSearchResultsEl = document.getElementById('global-search-results');
     const mobileGlobalSearchInputEl = document.getElementById('mobile-global-search-input');
@@ -7595,6 +7596,67 @@
       return `${formatDate(dateValue)}${timeValue ? `<small>${escapeHtml(timeValue)}</small>` : ''}`;
     }
 
+    function normalizeCentralReceiptIdentity(value) {
+      return String(value || '').trim().replace(/[?#].*$/, '').toLowerCase();
+    }
+
+    function getCentralRecordIsoDate(record, imported = null) {
+      const rawDate = String(record?.data || imported?.dataIso || imported?.dataBr || '').trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate.slice(0, 10))) return rawDate.slice(0, 10);
+      return parseBrazilianDateToIso(rawDate);
+    }
+
+    function findCentralFinanceDuplicate(record, importedData = null) {
+      const rowId = getCentralPendingRecordId(record);
+      const imported = importedData || parseImportedCentralMessage(buildCentralPendingMessage(record));
+      const receiptIdentity = normalizeCentralReceiptIdentity(record?.comprovanteUrl || imported?.comprovanteUrl);
+      const expectedDate = getCentralRecordIsoDate(record, imported);
+      const expectedTotal = Math.round((getCentralRecordTotal(record) || parseCurrencyInputValue(imported?.valor || '')) * 100);
+      const expectedSupplier = normalizeComparableText(imported?.fornecedor || record?.fornecedor || record?.posto || '');
+
+      return allFinanceEntries.find((entry) => {
+        if (rowId && String(entry?.centralRecordId || '') === rowId) return true;
+        const entryReceipt = normalizeCentralReceiptIdentity(entry?.comprovanteUrl);
+        if (receiptIdentity && entryReceipt && receiptIdentity === entryReceipt) return true;
+        if (!expectedSupplier || !expectedDate || !expectedTotal || isFuelEntry(entry)) return false;
+        const entrySupplier = normalizeComparableText(entry?.fornecedor || '');
+        const supplierMatches = entrySupplier === expectedSupplier
+          || entrySupplier.includes(expectedSupplier)
+          || expectedSupplier.includes(entrySupplier);
+        return supplierMatches
+          && Math.round(getFinanceTotal(entry) * 100) === expectedTotal
+          && getFinanceEntryDate(entry) === expectedDate;
+      }) || null;
+    }
+
+    function linkFinanceEntryToCentralRecord(entry, record) {
+      const rowId = getCentralPendingRecordId(record);
+      if (!entry || !rowId || String(entry.centralRecordId || '') === rowId) return false;
+      entry.centralRecordId = rowId;
+      saveToLocalStorage();
+      return true;
+    }
+
+    function repairCentralApprovedStatus(record, entry) {
+      const rowId = getCentralPendingRecordId(record);
+      if (!rowId || !entry || centralStatusRepairInProgress.has(rowId)) return;
+      centralStatusRepairInProgress.add(rowId);
+      linkFinanceEntryToCentralRecord(entry, record);
+      const approvalData = {
+        status: 'aprovado',
+        importadoEm: record?.importadoEm || entry?.createdAt || new Date().toISOString(),
+        lancamentoFinanceiroId: entry.id,
+        resolucao: 'Aprovado e lançado no financeiro.'
+      };
+      window.WeFrotasBackend?.updateCentralPendingRecord?.(rowId, { ...approvalData, atualizadoEm: new Date().toISOString() })
+        .then(() => {
+          centralPendingRecords = centralPendingRecords.map(item => getCentralPendingRecordId(item) === rowId ? { ...item, ...approvalData } : item);
+          renderCentralPendingRecords();
+        })
+        .catch(error => console.warn('Não foi possível reparar o status aprovado da Central.', error))
+        .finally(() => centralStatusRepairInProgress.delete(rowId));
+    }
+
     function getCentralPendingStatus(record) {
       const status = normalizeComparableText(record?.status || 'pendente');
       if (status.includes('import') || status.includes('aprov')) return { label: 'Aprovado', className: 'approved' };
@@ -7759,10 +7821,12 @@
       if (!silent && !centralPendingLoaded) renderCentralPendingRecords();
       try {
         const result = await window.WeFrotasBackend.listCentralPendingRecords(150);
+        const pendingRepairs = [];
         const nextRecords = (Array.isArray(result?.rows) ? result.rows : []).map((record) => {
-          const rowId = getCentralPendingRecordId(record);
-          const linkedEntry = allFinanceEntries.find(entry => String(entry?.centralRecordId || '') === rowId);
+          const linkedEntry = findCentralFinanceDuplicate(record);
           if (!linkedEntry || getCentralPendingStatus(record).className !== 'pending') return record;
+          linkFinanceEntryToCentralRecord(linkedEntry, record);
+          pendingRepairs.push({ record, entry: linkedEntry });
           return {
             ...record,
             status: 'aprovado',
@@ -7777,6 +7841,7 @@
         centralPendingRecords = nextRecords;
         centralPendingLoaded = true;
         shouldRenderAfterLoad = changed;
+        pendingRepairs.forEach(({ record, entry }) => repairCentralApprovedStatus(record, entry));
       } catch (error) {
         centralPendingError = `Não foi possível carregar a Central: ${error?.message || 'erro desconhecido'}`;
       } finally {
@@ -7812,6 +7877,7 @@
         atualizadoEm: new Date().toISOString()
       });
       centralPendingRecords = centralPendingRecords.map(item => getCentralPendingRecordId(item) === rowId ? { ...item, ...updated, ...data } : item);
+      if (getCentralPendingStatus({ ...record, ...updated, ...data }).className !== 'pending') selectedCentralPending.delete(rowId);
       renderCentralPendingRecords();
     }
 
@@ -7855,20 +7921,21 @@
       if (!record) return showToast('Registro da Central não encontrado.');
       if (centralApprovalInProgress.has(rowId)) return showToast('Este registro já está sendo aprovado. Aguarde a conclusão.');
 
-      const existingEntry = allFinanceEntries.find(entry => String(entry?.centralRecordId || '') === String(rowId));
+      const existingEntry = findCentralFinanceDuplicate(record);
       if (existingEntry) {
+        linkFinanceEntryToCentralRecord(existingEntry, record);
         const approvalData = {
           status: 'aprovado',
           importadoEm: record.importadoEm || existingEntry.createdAt || new Date().toISOString(),
           lancamentoFinanceiroId: existingEntry.id,
           resolucao: 'Aprovado e lançado no financeiro.'
         };
-        setCentralPendingRecordStatusLocally(record, approvalData);
         try {
           await setCentralPendingRecordStatus(record, approvalData);
+          setCentralPendingRecordStatusLocally(record, approvalData);
           showToast('Este registro já estava lançado. O status da Central foi corrigido.');
         } catch (error) {
-          showToast('Este registro já está no financeiro e não será duplicado. A sincronização do status será tentada novamente.');
+          showToast('Duplicidade bloqueada: este comprovante já está no financeiro. Não foi criada uma nova linha.');
         }
         return;
       }
@@ -7888,9 +7955,10 @@
       const vehicle = isService || !isEntityActive(importedDriver) ? null : resolveVehicleByImportedDriver(imported.motorista, importedDriver);
       const activeVehicle = vehicle && isEntityActive(vehicle) ? vehicle : null;
       const total = getCentralRecordTotal(record) || parseCurrencyInputValue(imported.valor || '');
+      const centralEntryDate = getCentralRecordIsoDate(record, imported);
       const isReady = isService
-        ? !!(supplier && imported.dataIso && total)
-        : !!(supplier && activeVehicle && imported.dataIso && imported.tipoCombustivel && imported.litros && total);
+        ? !!(supplier && centralEntryDate && total)
+        : !!(supplier && activeVehicle && centralEntryDate && imported.tipoCombustivel && imported.litros && total);
 
       if (!isReady) {
         prepareCentralPendingRecord(rowId);
@@ -7902,25 +7970,25 @@
       const entry = isService ? {
         id: financeId, centralRecordId: getCentralPendingRecordId(record), createdAt: new Date().toISOString(), entryType: 'despesa', orderId: '', vehicleId: '', kind: 'despesa', kindLabel: 'Despesa',
         supplierId: supplier.id, supplierType: supplier.tipo, fornecedor: supplier.nome, nf: 'REGISTRO DE SERVIÇOS', km: imported.km || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '',
-        dataVencimento: imported.dataIso, total, observacoes: [imported.tipoServico, imported.observacoes].filter(Boolean).join(' | ')
+        dataVencimento: centralEntryDate, total, observacoes: [imported.tipoServico, imported.observacoes].filter(Boolean).join(' | ')
       } : {
         id: financeId, centralRecordId: getCentralPendingRecordId(record), createdAt: new Date().toISOString(), entryType: 'combustivel', vehicleId: activeVehicle.id, orderId: '', kind: 'despesa', kindLabel: 'Despesa',
         supplierId: supplier.id, supplierType: supplier.tipo, fornecedor: supplier.nome, fuelType: imported.tipoCombustivel, km: imported.km || '', litros: String(imported.litros),
-        driverId: importedDriver?.id || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '', dataAbastecimento: imported.dataIso,
+        driverId: importedDriver?.id || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '', dataAbastecimento: centralEntryDate,
         dataVencimento: '', nf: '', total, observacoes: imported.cidade ? `Cidade informada na Central: ${imported.cidade}` : '', groupedIntoId: '', workflowStatus: 'pendente', closedExpense: false, discount: 0
       };
 
       const approvalData = { status: 'aprovado', importadoEm: new Date().toISOString(), lancamentoFinanceiroId: financeId, resolucao: 'Aprovado e lançado no financeiro.' };
       centralApprovalInProgress.add(rowId);
       try {
+        await setCentralPendingRecordStatus(record, approvalData);
         allFinanceEntries.unshift(entry);
         setCentralPendingRecordStatusLocally(record, approvalData);
-        saveToLocalStorage();
+        await saveToLocalStorage();
         renderAll();
-        await setCentralPendingRecordStatus(record, approvalData);
         showToast('Registro aprovado e lançado no financeiro.');
       } catch (error) {
-        showToast(`Lançamento criado sem duplicidade. A sincronização do status será tentada novamente: ${error?.message || 'erro desconhecido'}`);
+        showToast(`O registro não foi lançado porque a Central não confirmou a aprovação: ${error?.message || 'erro desconhecido'}`);
       } finally {
         centralApprovalInProgress.delete(rowId);
       }
