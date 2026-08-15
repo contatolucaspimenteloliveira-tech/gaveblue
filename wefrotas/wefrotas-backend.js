@@ -359,6 +359,22 @@
     await persistSnapshot(snapshot);
   }
 
+  async function syncNow(snapshot) {
+    if (!currentUser) throw new Error('Entre no WeFrotas antes de sincronizar os dados.');
+    const nextSnapshot = snapshot || currentSnapshotGetter?.();
+    if (!nextSnapshot) throw new Error('Não há dados disponíveis para sincronização.');
+
+    // A sincronização imediata substitui qualquer envio agendado do mesmo estado.
+    // Mantê-la na mesma fila impede duas gravações concorrentes do snapshot.
+    clearTimeout(syncTimer);
+    syncTimer = null;
+    setPendingSync(true);
+    syncChain = syncChain
+      .catch(() => undefined)
+      .then(() => persistSnapshot(nextSnapshot));
+    return syncChain;
+  }
+
   async function signOut() {
     const shouldDeleteRemoteSession = Boolean(account && currentUser);
     if (!shouldDeleteRemoteSession) { setPendingLogout(false); currentUser = null; return; }
@@ -464,7 +480,7 @@
     config, isConfigured, initialize, signIn, signOut,
     getUser: () => currentUser,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
-    syncNow: snapshot => { const nextSnapshot = snapshot || currentSnapshotGetter?.(); setPendingSync(true); return persistSnapshot(nextSnapshot); },
+    syncNow,
     uploadReceipt, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord
   });
 })(window);

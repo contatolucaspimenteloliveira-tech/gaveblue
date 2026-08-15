@@ -1665,6 +1665,14 @@
       return Promise.resolve();
     }
 
+    async function persistFinanceImmediately() {
+      await saveToLocalStorage();
+      const backend = window.WeFrotasBackend;
+      if (backend?.getUser?.() && backend?.syncNow) {
+        await backend.syncNow(buildStorageSnapshot());
+      }
+    }
+
     function updateOnlineStatus({ state = 'local', message = '', user = null } = {}) {
       const statusNode = document.getElementById('online-status');
       const textNode = document.getElementById('online-status-text');
@@ -7941,11 +7949,12 @@
           resolucao: 'Aprovado e lançado no financeiro.'
         };
         try {
+          await persistFinanceImmediately();
           await setCentralPendingRecordStatus(record, approvalData);
           setCentralPendingRecordStatusLocally(record, approvalData);
           showToast('Este registro já estava lançado. O status da Central foi corrigido.');
         } catch (error) {
-          showToast('Duplicidade bloqueada: este comprovante já está no financeiro. Não foi criada uma nova linha.');
+          showToast(`O lançamento já existe no Financeiro, mas a confirmação da Central ficou pendente: ${error?.message || 'erro desconhecido'}`);
         }
         return;
       }
@@ -7990,15 +7999,18 @@
 
       const approvalData = { status: 'aprovado', importadoEm: new Date().toISOString(), lancamentoFinanceiroId: financeId, resolucao: 'Aprovado e lançado no financeiro.' };
       centralApprovalInProgress.add(rowId);
+      allFinanceEntries.unshift(entry);
+      renderAll();
       try {
+        // O Financeiro é persistido e confirmado no Appwrite antes de a Central
+        // receber o status aprovado. Assim o lançamento aparece imediatamente e
+        // nunca fica uma aprovação remota sem o respectivo registro financeiro.
+        await persistFinanceImmediately();
         await setCentralPendingRecordStatus(record, approvalData);
-        allFinanceEntries.unshift(entry);
         setCentralPendingRecordStatusLocally(record, approvalData);
-        await saveToLocalStorage();
-        renderAll();
         showToast('Registro aprovado e lançado no financeiro.');
       } catch (error) {
-        showToast(`O registro não foi lançado porque a Central não confirmou a aprovação: ${error?.message || 'erro desconhecido'}`);
+        showToast(`O lançamento já está visível no Financeiro, mas a confirmação da Central ficou pendente: ${error?.message || 'erro desconhecido'}`);
       } finally {
         centralApprovalInProgress.delete(rowId);
       }
