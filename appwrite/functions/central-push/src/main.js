@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { Client, Databases, ID, Query } from 'node-appwrite';
+import { Account, Client, Databases, Query } from 'node-appwrite';
 import webpush from 'web-push';
 
 const DATABASE_ID = process.env.DATABASE_ID || '6a68ce8c000a36a44d98';
@@ -49,13 +49,28 @@ function assertPushConfigured() {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
-function assertAdmin(req) {
+async function assertAdmin(req) {
   const userId = String(req.headers?.['x-appwrite-user-id'] || '').trim();
-  if (!userId || !ADMIN_USER_IDS.has(userId)) {
+  const userJwt = String(req.headers?.['x-appwrite-user-jwt'] || '').trim();
+  if (!userId || !userJwt || !ADMIN_USER_IDS.has(userId)) {
     const error = new Error('Seu usuário não está autorizado a enviar notificações gerais.');
     error.status = 403;
     throw error;
   }
+
+  try {
+    const client = new Client()
+      .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT)
+      .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
+      .setJWT(userJwt);
+    const authenticatedUser = await new Account(client).get();
+    if (authenticatedUser?.$id !== userId) throw new Error('Identidade divergente.');
+  } catch (caught) {
+    const error = new Error('Não foi possível validar sua sessão administrativa.');
+    error.status = 403;
+    throw error;
+  }
+
   return userId;
 }
 
@@ -190,13 +205,13 @@ export default async ({ req, res, log, error }) => {
     }
 
     if (action === 'stats') {
-      assertAdmin(req);
+      await assertAdmin(req);
       const subscriptions = await listSubscriptions(databases);
       return json(res, 200, { ok: true, subscribers: subscriptions.length });
     }
 
     if (action === 'broadcast') {
-      const senderId = assertAdmin(req);
+      const senderId = await assertAdmin(req);
       const result = await broadcast(databases, payload, log);
       log('Notificação geral enviada por ' + senderId + ': ' + JSON.stringify(result));
       return json(res, 200, { ok: true, ...result });
@@ -211,3 +226,4 @@ export default async ({ req, res, log, error }) => {
     });
   }
 };
+
