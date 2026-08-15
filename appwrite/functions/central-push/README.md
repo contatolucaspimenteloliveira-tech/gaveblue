@@ -4,7 +4,7 @@ Backend do canal geral de notificações da Central de Registros.
 
 ## Configuração no Appwrite
 
-Crie uma Function com ID `central-push`, runtime Node.js 22, ponto de entrada `src/main.js` e permissão de execução para `Any`. A própria função bloqueia `stats` e `broadcast` para usuários que não estejam em `ADMIN_USER_IDS`.
+Crie uma Function com ID `central-push`, runtime Node.js 22, ponto de entrada `src/main.js` e permissão de execução para `Any`. A própria função bloqueia `stats` e `broadcast` para usuários que não estejam em `ADMIN_USER_IDS`, validando o ID e o JWT temporário que o Appwrite encaminha para execuções autenticadas.
 
 Variáveis:
 
@@ -31,3 +31,4 @@ Criar no database acima, sem permissões públicas, com Document Security desati
 | updatedAt | datetime | — | sim |
 
 O identificador do documento é um hash do endpoint, evitando inscrições duplicadas. Nenhum nome, motorista, placa ou localização é armazenado.
+
