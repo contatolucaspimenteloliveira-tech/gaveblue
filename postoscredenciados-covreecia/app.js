@@ -54,6 +54,7 @@ let activeReceiptCameraStream = null;
 let activeReceiptCameraTarget = 'fuel';
 let receiptCameraDevices = [];
 let receiptCameraDeviceIndex = 0;
+let receiptCameraFlashEnabled = false;
 let pendingReceiptCameraFile = null;
 let pendingReceiptCameraPreviewUrl = '';
 const optimizedReceiptFiles = new WeakSet();
@@ -2233,6 +2234,9 @@ function updateLoosePhotoPreview(fileInput) {
 }
 
 function stopReceiptCameraStream() {
+  receiptCameraFlashEnabled = false;
+  updateReceiptCameraFlashButton(false);
+
   if (activeReceiptCameraStream) {
     activeReceiptCameraStream.getTracks().forEach((track) => track.stop());
     activeReceiptCameraStream = null;
@@ -2290,6 +2294,57 @@ async function attachReceiptCameraStream(stream) {
 
   video.srcObject = stream;
   await video.play();
+  updateReceiptCameraFlashAvailability();
+}
+
+function updateReceiptCameraFlashButton(supported) {
+  const button = document.getElementById('receipt-camera-flash');
+  if (!button) {
+    return;
+  }
+
+  button.classList.toggle('hidden', !supported);
+  button.classList.toggle('is-active', supported && receiptCameraFlashEnabled);
+  button.disabled = !supported;
+  button.setAttribute('aria-pressed', String(supported && receiptCameraFlashEnabled));
+  button.setAttribute('aria-label', receiptCameraFlashEnabled ? 'Desativar flash' : 'Ativar flash');
+  button.title = receiptCameraFlashEnabled ? 'Desativar flash' : 'Ativar flash';
+}
+
+function updateReceiptCameraFlashAvailability() {
+  const track = activeReceiptCameraStream?.getVideoTracks?.()[0];
+  const capabilities = track?.getCapabilities?.() || {};
+  const supported = capabilities.torch === true;
+  receiptCameraFlashEnabled = supported && track?.getSettings?.().torch === true;
+  updateReceiptCameraFlashButton(supported);
+  return supported;
+}
+
+async function toggleReceiptCameraFlash() {
+  const track = activeReceiptCameraStream?.getVideoTracks?.()[0];
+  const capabilities = track?.getCapabilities?.() || {};
+  const status = document.getElementById('receipt-camera-status');
+
+  if (!track || capabilities.torch !== true) {
+    updateReceiptCameraFlashButton(false);
+    showErrorMessage('O flash n\u00e3o est\u00e1 dispon\u00edvel nesta c\u00e2mera.');
+    return;
+  }
+
+  const shouldEnable = !receiptCameraFlashEnabled;
+  try {
+    await track.applyConstraints({ advanced: [{ torch: shouldEnable }] });
+    receiptCameraFlashEnabled = shouldEnable;
+    updateReceiptCameraFlashButton(true);
+    if (status) {
+      status.textContent = shouldEnable ? 'Flash ligado' : 'Flash desligado';
+    }
+  } catch (error) {
+    console.error('N\u00e3o foi poss\u00edvel alterar o flash:', error);
+    receiptCameraFlashEnabled = false;
+    updateReceiptCameraFlashAvailability();
+    showErrorMessage('N\u00e3o foi poss\u00edvel alterar o flash neste celular.');
+  }
 }
 
 async function preferRearReceiptCamera() {
