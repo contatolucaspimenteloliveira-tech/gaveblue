@@ -31,10 +31,10 @@ function subscriptionDocumentId(endpoint) {
   return crypto.createHash('sha256').update(endpoint).digest('hex').slice(0, 36);
 }
 
-function createDatabaseClient() {
+function createDatabaseClient(req) {
   const endpoint = process.env.APPWRITE_FUNCTION_API_ENDPOINT;
   const project = process.env.APPWRITE_FUNCTION_PROJECT_ID;
-  const key = process.env.APPWRITE_FUNCTION_API_KEY;
+  const key = String(req.headers?.['x-appwrite-key'] || process.env.APPWRITE_FUNCTION_API_KEY || '').trim();
   if (!endpoint || !project || !key) {
     throw new Error('As variáveis automáticas da função Appwrite não estão disponíveis.');
   }
@@ -196,22 +196,23 @@ export default async ({ req, res, log, error }) => {
   try {
     const payload = parseBody(req);
     const action = String(payload.action || '');
-    const databases = createDatabaseClient();
-
     if (action === 'subscribe') {
       assertPushConfigured();
+      const databases = createDatabaseClient(req);
       const subscriptionId = await saveSubscription(databases, payload);
       return json(res, 200, { ok: true, subscriptionId });
     }
 
     if (action === 'stats') {
       await assertAdmin(req);
+      const databases = createDatabaseClient(req);
       const subscriptions = await listSubscriptions(databases);
       return json(res, 200, { ok: true, subscribers: subscriptions.length });
     }
 
     if (action === 'broadcast') {
       const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
       const result = await broadcast(databases, payload, log);
       log('Notificação geral enviada por ' + senderId + ': ' + JSON.stringify(result));
       return json(res, 200, { ok: true, ...result });
