@@ -1599,8 +1599,7 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
   margin: 0 auto;
 }
 
-.receipt-camera-icon-button,
-.receipt-camera-action-spacer {
+.receipt-camera-icon-button {
   width: 3.25rem;
   height: 3.25rem;
 }
@@ -1620,7 +1619,22 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
   line-height: 1;
 }
 
+.receipt-camera-switch { grid-column: 1; }
+
+.receipt-camera-flash {
+  grid-column: 3;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.receipt-camera-flash.is-active {
+  color: #facc15;
+  background: rgba(250, 204, 21, 0.2);
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.42), 0 0 24px rgba(250, 204, 21, 0.2);
+}
+
 .receipt-camera-capture {
+  grid-column: 2;
   display: grid;
   place-items: center;
   width: 4.5rem;

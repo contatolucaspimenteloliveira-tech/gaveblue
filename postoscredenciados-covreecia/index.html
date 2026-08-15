@@ -20,7 +20,7 @@
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css">
-  <link rel="stylesheet" href="./styles.css?v=20260814-1640">
+  <link rel="stylesheet" href="./styles.css?v=20260815-flash-1">
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full flex flex-col">
@@ -470,11 +470,13 @@
      <div class="receipt-camera-controls">
       <p id="receipt-camera-status" class="receipt-camera-status">Abrindo a c&acirc;mera traseira...</p>
       <div id="receipt-camera-live-actions" class="receipt-camera-actions">
-       <button id="receipt-camera-switch" type="button" onclick="switchReceiptCamera()" class="receipt-camera-icon-button hidden" aria-label="Alternar c&acirc;mera" title="Alternar c&acirc;mera">
+       <button id="receipt-camera-switch" type="button" onclick="switchReceiptCamera()" class="receipt-camera-icon-button receipt-camera-switch hidden" aria-label="Alternar c&acirc;mera" title="Alternar c&acirc;mera">
         <i class="fa-solid fa-camera-rotate" aria-hidden="true"></i>
        </button>
        <button type="button" onclick="captureReceiptCamera()" class="receipt-camera-capture" aria-label="Capturar foto"><span></span></button>
-       <span class="receipt-camera-action-spacer" aria-hidden="true"></span>
+       <button id="receipt-camera-flash" type="button" onclick="toggleReceiptCameraFlash()" class="receipt-camera-icon-button receipt-camera-flash hidden" aria-label="Ativar flash" aria-pressed="false" title="Ativar flash">
+        <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+       </button>
       </div>
       <div id="receipt-camera-review-actions" class="receipt-camera-review-actions hidden">
        <button type="button" onclick="retakeReceiptCamera()" class="receipt-camera-retake">Tirar novamente</button>
@@ -884,6 +886,6 @@
     <span>Sobre</span>
    </button>
   </nav>
-  <script src="./app.js?v=20260814-1610"></script>
+  <script src="./app.js?v=20260815-flash-1"></script>
  </body>
 </html>
