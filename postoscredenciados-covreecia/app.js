@@ -2482,35 +2482,10 @@ async function reviewNativeReceiptFile(target, file) {
   }
 }
 
-async function openReceiptCamera(target = 'fuel') {
+function openReceiptCamera(target = 'fuel') {
   activeReceiptCameraTarget = target === 'loose' ? 'loose' : 'fuel';
-
-  if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
-    openNativeReceiptCameraFallback(activeReceiptCameraTarget);
-    return;
-  }
-
-  const modal = document.getElementById('receipt-camera-modal');
-  const status = document.getElementById('receipt-camera-status');
-  showReceiptCameraLiveMode();
-  modal?.classList.remove('hidden');
-  enterReceiptCameraFullscreen();
-  if (status) {
-    status.textContent = 'Abrindo a c\u00e2mera traseira...';
-  }
-
-  try {
-    const stream = await requestReceiptCameraStream();
-    await attachReceiptCameraStream(stream);
-    await preferRearReceiptCamera();
-    if (status) {
-      status.textContent = 'C\u00e2mera traseira pronta';
-    }
-  } catch (error) {
-    console.warn('C\u00e2mera interna indispon\u00edvel; usando c\u00e2mera do aparelho.', error);
-    closeReceiptCamera();
-    openNativeReceiptCameraFallback(activeReceiptCameraTarget);
-  }
+  closeReceiptCamera();
+  openNativeReceiptCameraFallback(activeReceiptCameraTarget);
 }
 
 function closeReceiptCamera() {
