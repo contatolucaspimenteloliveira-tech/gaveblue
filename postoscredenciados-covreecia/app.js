@@ -34,6 +34,9 @@ const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
 const PWA_INSTALL_DONE_KEY = 'pwa-install-installed';
 const PWA_DISMISS_DAYS = 7;
+const CENTRAL_PUSH_FUNCTION_ID = 'central-push';
+const CENTRAL_PUSH_PUBLIC_KEY = 'BK6Dhnrl6Wr4nO4PtE-ZlnW7ttRe0vtA3b7ssZsa7S9bGdR8gcBBu9SNuNBoMntUkcMBkAOAcgvhMJalNysihgw';
+const CENTRAL_PUSH_PROMPT_DISMISSED_KEY = 'central-push-prompt-dismissed';
 const REMOVED_DRIVER_NAMES = ['ELOIS DOS SANTOS'];
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
@@ -445,6 +448,150 @@ function setupPwaInstallExperience() {
   if (isIosDevice() && shouldOfferPwaInstall()) {
     window.setTimeout(() => showPwaInstallModal('ios'), 900);
   }
+}
+
+
+function urlBase64ToUint8Array(value) {
+  const padding = '='.repeat((4 - (value.length % 4)) % 4);
+  const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = window.atob(base64);
+  return Uint8Array.from([...raw].map((character) => character.charCodeAt(0)));
+}
+
+async function executeCentralPushFunction(payload) {
+  const endpoint = CENTRAL_APPWRITE_ENDPOINT + '/functions/' + CENTRAL_PUSH_FUNCTION_ID + '/executions';
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'content-type': 'application/json',
+      'x-appwrite-project': CENTRAL_APPWRITE_PROJECT_ID
+    },
+    body: JSON.stringify({
+      body: JSON.stringify(payload),
+      async: false,
+      method: 'POST',
+      path: '/',
+      headers: { 'content-type': 'application/json' }
+    })
+  });
+
+  const execution = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(execution?.message || 'Não foi possível conectar ao serviço de notificações.');
+  }
+
+  let result = {};
+  try {
+    result = JSON.parse(execution.responseBody || '{}');
+  } catch (error) {
+    result = {};
+  }
+  if (execution.status === 'failed' || result.ok === false) {
+    throw new Error(result.error || execution.errors || 'Não foi possível ativar as notificações.');
+  }
+  return result;
+}
+
+function dismissCentralPushPrompt() {
+  localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
+  document.getElementById('central-push-prompt')?.remove();
+}
+
+function shouldShowCentralPushPrompt() {
+  if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
+    return false;
+  }
+  if (Notification.permission === 'denied') {
+    return false;
+  }
+  return !localStorage.getItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY);
+}
+
+function renderCentralPushPrompt() {
+  if (!shouldShowCentralPushPrompt() || document.getElementById('central-push-prompt')) {
+    return;
+  }
+
+  const prompt = document.createElement('section');
+  prompt.id = 'central-push-prompt';
+  prompt.className = 'central-push-prompt';
+  prompt.setAttribute('role', 'dialog');
+  prompt.setAttribute('aria-label', 'Ativar notificações');
+  prompt.innerHTML = [
+    '<button type="button" class="central-push-prompt-close" onclick="dismissCentralPushPrompt()" aria-label="Agora não">&times;</button>',
+    '<div class="central-push-prompt-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" stroke-width="2" stroke-linecap="round"/><path d="M10 21h4" stroke-width="2" stroke-linecap="round"/></svg></div>',
+    '<div class="central-push-prompt-copy"><strong>Receba avisos da Central</strong><span>Ative para receber comunicados e atualizações importantes no celular.</span></div>',
+    '<button id="central-push-enable" type="button" class="central-push-prompt-action" onclick="enableCentralPushNotifications()">Ativar notificações</button>'
+  ].join('');
+  document.body.appendChild(prompt);
+}
+
+async function enableCentralPushNotifications() {
+  const button = document.getElementById('central-push-enable');
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Ativando...';
+  }
+
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      throw new Error('A permissão de notificações não foi autorizada.');
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(CENTRAL_PUSH_PUBLIC_KEY)
+      });
+    }
+
+    await executeCentralPushFunction({
+      action: 'subscribe',
+      subscription: subscription.toJSON(),
+      userAgent: navigator.userAgent
+    });
+
+    localStorage.removeItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY);
+    document.getElementById('central-push-prompt')?.remove();
+    showSuccessMessage('Notificações ativadas neste celular.');
+  } catch (error) {
+    console.error('Falha ao ativar push:', error);
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Tentar novamente';
+    }
+    showErrorMessage(error?.message || 'Não foi possível ativar as notificações.');
+  }
+}
+
+function setupCentralPushExperience() {
+  if (!shouldShowCentralPushPrompt()) {
+    return;
+  }
+
+  window.setTimeout(async () => {
+    try {
+      if (Notification.permission === 'granted') {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await executeCentralPushFunction({
+            action: 'subscribe',
+            subscription: subscription.toJSON(),
+            userAgent: navigator.userAgent
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.warn('Não foi possível renovar a inscrição de push.', error);
+    }
+    renderCentralPushPrompt();
+  }, 1800);
 }
 
 function registerServiceWorker() {
@@ -2876,6 +3023,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
   setupPwaInstallExperience();
   registerServiceWorker();
+  setupCentralPushExperience();
 });
 
 const cityImageCards = [
