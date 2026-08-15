@@ -7648,11 +7648,7 @@
         lancamentoFinanceiroId: entry.id,
         resolucao: 'Aprovado e lançado no financeiro.'
       };
-      window.WeFrotasBackend?.updateCentralPendingRecord?.(rowId, { ...approvalData, atualizadoEm: new Date().toISOString() })
-        .then(() => {
-          centralPendingRecords = centralPendingRecords.map(item => getCentralPendingRecordId(item) === rowId ? { ...item, ...approvalData } : item);
-          renderCentralPendingRecords();
-        })
+      setCentralPendingRecordStatus(record, approvalData)
         .catch(error => console.warn('Não foi possível reparar o status aprovado da Central.', error))
         .finally(() => centralStatusRepairInProgress.delete(rowId));
     }
@@ -7872,10 +7868,24 @@
     async function setCentralPendingRecordStatus(record, data) {
       const rowId = getCentralPendingRecordId(record);
       if (!rowId || !window.WeFrotasBackend?.updateCentralPendingRecord) throw new Error('Não foi possível atualizar o status do registro na Central.');
-      const updated = await window.WeFrotasBackend.updateCentralPendingRecord(rowId, {
-        ...data,
-        atualizadoEm: new Date().toISOString()
+      const atualizadoEm = new Date().toISOString();
+      const { importadoEm, lancamentoFinanceiroId, ...statusData } = data;
+      let updated = await window.WeFrotasBackend.updateCentralPendingRecord(rowId, {
+        ...statusData,
+        atualizadoEm
       });
+
+      const metadataData = {};
+      if (importadoEm !== undefined) metadataData.importadoEm = importadoEm || null;
+      if (lancamentoFinanceiroId !== undefined) metadataData.lancamentoFinanceiroId = lancamentoFinanceiroId || null;
+      if (Object.keys(metadataData).length) {
+        try {
+          const metadataUpdated = await window.WeFrotasBackend.updateCentralPendingRecord(rowId, metadataData);
+          updated = { ...updated, ...metadataUpdated };
+        } catch (metadataError) {
+          console.warn('Status atualizado, mas os metadados complementares da Central não foram gravados.', metadataError);
+        }
+      }
       centralPendingRecords = centralPendingRecords.map(item => getCentralPendingRecordId(item) === rowId ? { ...item, ...updated, ...data } : item);
       if (getCentralPendingStatus({ ...record, ...updated, ...data }).className !== 'pending') selectedCentralPending.delete(rowId);
       renderCentralPendingRecords();
