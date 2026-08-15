@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260814-central-approval-status-5">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260815-push-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -105,6 +105,14 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M10 13h6M10 17h6"/>
             </svg>
             <span class="nav-label">Documentos</span>
+          </button>
+
+          <button class="nav-btn" type="button" onclick="showModule('notificacoes', this)">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M10 21h4"/>
+            </svg>
+            <span class="nav-label">Notificações</span>
           </button>
 
           <button class="nav-btn" onclick="showModule('relatorios', this)">
@@ -683,6 +691,82 @@
               </div>
               <div id="finance-list" class="orders-table-body finance-table-body">
                 <div class="empty-state">Nenhum lançamento financeiro cadastrado.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="panel-notificacoes" class="module-panel push-broadcast-panel">
+          <div class="push-broadcast-grid">
+            <div class="push-composer-card">
+              <div class="push-card-heading">
+                <span class="push-card-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" stroke-width="2" stroke-linecap="round"/><path d="M10 21h4" stroke-width="2" stroke-linecap="round"/></svg>
+                </span>
+                <div>
+                  <p>CANAL CENTRAL DE REGISTROS</p>
+                  <h2>Nova notificação geral</h2>
+                  <span>Será enviada para todos os celulares que autorizaram notificações.</span>
+                </div>
+              </div>
+
+              <div class="push-composer-form">
+                <label for="push-broadcast-title">
+                  <span>Título</span>
+                  <small><strong id="push-title-count">0</strong>/60</small>
+                </label>
+                <input id="push-broadcast-title" type="text" maxlength="60" placeholder="Ex.: Atenção, motoristas!" oninput="updatePushBroadcastPreview()">
+
+                <label for="push-broadcast-body">
+                  <span>Subtítulo</span>
+                  <small><strong id="push-body-count">0</strong>/160</small>
+                </label>
+                <textarea id="push-broadcast-body" maxlength="160" rows="4" placeholder="Escreva o comunicado que aparecerá no celular." oninput="updatePushBroadcastPreview()"></textarea>
+
+                <label for="push-broadcast-url"><span>Abrir ao tocar</span></label>
+                <select id="push-broadcast-url" onchange="updatePushBroadcastPreview()">
+                  <option value="./">Página inicial da Central</option>
+                  <option value="./#registro-rapido">Registro rápido</option>
+                  <option value="./#registro-completo">Registro completo</option>
+                </select>
+
+                <div id="push-broadcast-feedback" class="push-broadcast-feedback" role="status" aria-live="polite"></div>
+                <button id="push-broadcast-send" type="button" class="push-broadcast-send" onclick="confirmPushBroadcast()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m22 2-7 20-4-9-9-4 20-7Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span>Enviar para todos</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="push-preview-column">
+              <div class="push-audience-card">
+                <span>Dispositivos inscritos</span>
+                <strong id="push-subscriber-count">—</strong>
+                <small id="push-subscriber-status">Consultando o canal...</small>
+                <button type="button" onclick="refreshPushSubscriberStats()" aria-label="Atualizar total" title="Atualizar total">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+
+              <div class="push-phone-preview">
+                <div class="push-phone-status"><span>9:41</span><span>● ● ●</span></div>
+                <div class="push-notification-preview">
+                  <img src="../postoscredenciados-covreecia/assets/pwa/icon-192.png" alt="">
+                  <div>
+                    <p>Central de Registros <time>agora</time></p>
+                    <strong id="push-preview-title">Título da notificação</strong>
+                    <span id="push-preview-body">O subtítulo do comunicado aparecerá aqui.</span>
+                  </div>
+                </div>
+                <div class="push-phone-wallpaper">
+                  <span>Prévia no celular</span>
+                  <small>O visual final pode variar conforme o aparelho.</small>
+                </div>
+              </div>
+
+              <div class="push-safety-note">
+                <strong>Envio geral</strong>
+                <span>Não exige cadastro de motorista. Cada aparelho recebe somente depois que o usuário autorizar.</span>
               </div>
             </div>
           </div>
@@ -1400,10 +1484,10 @@
     </div>
   </div>
 
-  <script src="./appwrite-config.js?v=20260814-central-pending-1"></script>
+  <script src="./appwrite-config.js?v=20260815-push-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260814-central-finance-sync-1"></script>
-  <script src="./wefrotas.js?v=20260814-central-finance-sync-1"></script>
+  <script src="./wefrotas.js?v=20260815-push-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
