@@ -1,0 +1,12 @@
+{
+  "name": "taonde",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "python -m http.server 4173 --bind 127.0.0.1",
+    "generate:vapid": "web-push generate-vapid-keys"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}

@@ -1,6 +1,7 @@
 import { store } from "./state.js";
 import { bottomNav, categoryById, emptyState, qsa, qs, topBar } from "./components.js";
 import { slugify } from "./utils.js";
+import { sendRealPush } from "./push.js";
 
 const login = () => `
   ${topBar("Admin", true)}
@@ -29,8 +30,19 @@ export function adminPage(params = {}) {
         <div><h1>Painel TáOnde</h1><p>Cadastros demonstrativos preparados para dados reais.</p></div>
         <button data-admin-logout>Sair</button>
       </div>
+      <div class="admin-quick-actions">
+        <button class="primary" data-admin-tab="notificacoes">Enviar notificações</button>
+        <button data-admin-tab="eventos">Lançar evento</button>
+      </div>
       <div class="admin-tabs">
-        ${["dashboard", "estabelecimentos", "eventos", "notificacoes", "categorias", "avaliacoes"].map((item) => `<button class="${tab === item ? "selected" : ""}" data-admin-tab="${item}">${item}</button>`).join("")}
+        ${[
+          ["dashboard", "Dashboard"],
+          ["estabelecimentos", "Estabelecimentos"],
+          ["eventos", "Eventos"],
+          ["notificacoes", "Notificações"],
+          ["categorias", "Categorias"],
+          ["avaliacoes", "Avaliações"]
+        ].map(([id, label]) => `<button class="${tab === id ? "selected" : ""}" data-admin-tab="${id}">${label}</button>`).join("")}
       </div>
       ${tab === "dashboard" ? dashboard(data) : ""}
       ${tab === "estabelecimentos" ? establishmentsAdmin(data) : ""}
@@ -107,10 +119,12 @@ function eventsAdmin(data, editId = "") {
 
 function notificationsAdmin(data) {
   const notifications = store.notifications();
+  const savedToken = localStorage.getItem("taonde:admin-push-token") || "";
   return `
     <section class="admin-panel">
-      <h2>Enviar notificação</h2>
+      <h2>Enviar notificação real</h2>
       <form class="admin-form" data-notification-form>
+        <input name="adminToken" type="password" placeholder="Token admin de envio" value="${savedToken}" required />
         <input name="title" placeholder="Título" required />
         <textarea name="body" placeholder="Mensagem" required></textarea>
         <select name="audience">
@@ -124,9 +138,10 @@ function notificationsAdmin(data) {
           <option value="/explorar">Abrir Explorar</option>
           ${data.events.map((event) => `<option value="/evento/${event.slug}">${event.name}</option>`).join("")}
         </select>
-        <button class="primary" type="submit">Enviar agora</button>
+        <button class="primary" type="submit">Enviar push real agora</button>
       </form>
     </section>
+    <section class="state-card"><strong>Web Push real</strong><p>O envio chega aos dispositivos que ativaram notificações em Mais. Requer deploy com VAPID, Supabase e ADMIN_PUSH_TOKEN configurados.</p></section>
     <section class="admin-panel">
       <h2>Histórico</h2>
       <div class="admin-list">${notifications.length ? notifications.map((item) => `<article><span>🔔</span><div><strong>${item.title}</strong><small>${item.body} • ${new Date(item.sentAt).toLocaleString("pt-BR")}</small></div><button data-resend-notification="${item.id}">Reenviar</button></article>`).join("") : emptyState("Nenhuma notificação enviada", "Crie avisos de eventos, promoções e alertas locais por aqui.")}</div>
@@ -241,14 +256,21 @@ export function bindAdminEvents(root) {
   qs("[data-notification-form]", root)?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const values = Object.fromEntries(new FormData(event.currentTarget));
-    const item = store.addNotification(values);
-    if ("Notification" in window) {
-      const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
-      store.saveNotificationPrefs({ enabled: permission === "granted", permission });
-      if (permission === "granted") new Notification(item.title, { body: item.body, icon: "assets/icon.svg" });
+    localStorage.setItem("taonde:admin-push-token", values.adminToken);
+    try {
+      const result = await sendRealPush({
+        title: values.title,
+        body: values.body,
+        audience: values.audience,
+        link: values.link,
+        adminToken: values.adminToken
+      });
+      store.addNotification(values);
+      alert(`Push real enviado. Inscritos: ${result.total}. Enviados: ${result.sent}. Falhas: ${result.failed}.`);
+      location.hash = "#/admin?tab=notificacoes";
+    } catch (error) {
+      alert(`Não foi possível enviar push real: ${error.message}`);
     }
-    alert("Notificação enviada neste PWA. Para push real para todos os aparelhos, será necessário conectar um backend Web Push.");
-    location.hash = "#/admin?tab=notificacoes";
   });
   qs("[data-category-form]", root)?.addEventListener("submit", (event) => {
     event.preventDefault();

@@ -547,6 +547,25 @@ body.offline .offline-banner { display: block; }
   overflow-x: auto;
   margin: 16px 0;
 }
+.admin-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0 4px;
+}
+.admin-quick-actions button {
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 900;
+}
+.admin-quick-actions .primary {
+  border: 0;
+  background: var(--primary);
+  color: #fff;
+}
 .admin-tabs button {
   flex: 0 0 auto;
   border: 1px solid var(--line);

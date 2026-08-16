@@ -2,6 +2,7 @@ import { banners, cityCenter } from "./data.js";
 import { store } from "./state.js";
 import { bindCommon, bottomNav, categoryById, categoryGrid, emptyState, eventCard, miniPlaceCard, placeCard, qs, qsa, ratingText, searchBox, sectionTitle, statusPill, topBar } from "./components.js";
 import { distanceKm, formatDate, mapsUrl, moneyOrFree, openStatus, route, searchIntent, shareItem, slugify } from "./utils.js";
+import { enableRealPush } from "./push.js";
 
 let userLocation = cityCenter;
 
@@ -240,15 +241,13 @@ export function bindPageEvents(root) {
     route("/busca");
   });
   qs("[data-enable-notifications]", root)?.addEventListener("click", async () => {
-    if (!("Notification" in window)) {
-      alert("Este navegador não oferece notificações para PWA.");
-      return;
+    try {
+      await enableRealPush();
+      new Notification("TáOnde", { body: "Notificações reais ativadas neste dispositivo." });
+      route("/mais");
+    } catch (error) {
+      alert(error.message);
     }
-    const permission = await Notification.requestPermission();
-    const enabled = permission === "granted";
-    store.saveNotificationPrefs({ enabled, permission });
-    if (enabled) new Notification("TáOnde", { body: "Notificações ativadas neste dispositivo." });
-    route("/mais");
   });
   qs("[data-mark-notifications-read]", root)?.addEventListener("click", () => {
     store.markNotificationsRead();

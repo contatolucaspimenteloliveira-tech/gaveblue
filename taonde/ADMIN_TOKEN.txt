@@ -1,0 +1,8 @@
+Token admin de envio push:
+
+4Z8E-tOF5klskwaZfT-0MYeuWxO3wtOGHxE46xwTFbM
+
+Use este token no painel:
+#/admin?tab=notificacoes
+
+Nao suba este arquivo para repositorios publicos.
