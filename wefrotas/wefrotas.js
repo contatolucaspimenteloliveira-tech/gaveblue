@@ -20,6 +20,7 @@
     let centralPendingFiltersLoaded = false;
     let selectedCentralPending = new Set();
     const centralApprovalInProgress = new Set();
+    const centralRejectionInProgress = new Set();
     const centralStatusRepairInProgress = new Set();
     const globalSearchInputEl = document.getElementById('global-search-input');
     const globalSearchResultsEl = document.getElementById('global-search-results');
@@ -64,6 +65,7 @@
     let pendingBatchImportEntity = null;
     let pendingPromptConfirm = null;
     let pendingPromptCancel = null;
+    let promptModalBusy = false;
     let filteredModules = [];
     let highlightedModuleIndex = -1;
     let activeSearchInputEl = null;
@@ -2396,13 +2398,17 @@
       input.style.display = shouldHideInput ? 'none' : 'block';
       inputLabel.style.display = shouldHideInput ? 'none' : 'block';
       confirmButton.textContent = confirmLabel;
+      confirmButton.disabled = false;
       cancelButton.textContent = cancelLabel;
+      cancelButton.disabled = false;
+      promptModalBusy = false;
       backdrop.dataset.mode = mode;
       backdrop.classList.remove('hidden');
       if (!shouldHideInput) setTimeout(() => input.focus(), 30);
     }
 
     function closePromptModal(triggerCancel = true) {
+      if (promptModalBusy && triggerCancel) return;
       const backdrop = document.getElementById('prompt-modal-backdrop');
       backdrop?.classList.add('hidden');
       if (backdrop) delete backdrop.dataset.mode;
@@ -2419,7 +2425,8 @@
       if (event.target === event.currentTarget && promptModalConfig.closeOnBackdrop) closePromptModal();
     }
 
-    function confirmPromptModal() {
+    async function confirmPromptModal() {
+      if (promptModalBusy) return;
       const input = document.getElementById('prompt-modal-input');
       const value = input?.value?.trim() || '';
       if (promptModalConfig.mode !== 'confirm' && !promptModalConfig.allowEmpty && !value) {
@@ -2433,8 +2440,39 @@
         return;
       }
       const handler = pendingPromptConfirm;
-      closePromptModal(false);
-      if (handler) handler(value);
+      if (!handler) {
+        closePromptModal(false);
+        return;
+      }
+
+      const confirmButton = document.getElementById('prompt-modal-confirm-btn');
+      const cancelButton = document.getElementById('prompt-modal-cancel-btn');
+      const originalConfirmLabel = confirmButton?.textContent || promptModalConfig.confirmLabel;
+      promptModalBusy = true;
+      if (confirmButton) {
+        confirmButton.disabled = true;
+        confirmButton.textContent = 'Processando...';
+      }
+      if (cancelButton) cancelButton.disabled = true;
+
+      try {
+        const shouldClose = await handler(value);
+        if (shouldClose !== false) {
+          promptModalBusy = false;
+          closePromptModal(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Não foi possível concluir a ação solicitada.', error);
+        showToast(error?.message || 'Não foi possível concluir a ação. Tente novamente.');
+      } finally {
+        promptModalBusy = false;
+        if (confirmButton) {
+          confirmButton.disabled = false;
+          confirmButton.textContent = originalConfirmLabel;
+        }
+        if (cancelButton) cancelButton.disabled = false;
+      }
     }
 
     function openSettingsFeedback(state = 'loading', title = '', text = '') {
@@ -8424,34 +8462,68 @@
       if (!subscriptionId) {
         return { skipped: true, reason: 'missing-subscription' };
       }
-      return executeCentralPushAdmin({
-        action: 'notify',
-        subscriptionId,
-        title: 'Registro recusado',
-        body: `Motivo: ${String(reason || '').trim()}`,
-        url: './#meus-envios'
-      });
+      try {
+        return await executeCentralPushAdmin({
+          action: 'notify',
+          subscriptionId,
+          title: 'Registro recusado',
+          body: `Motivo: ${String(reason || '').trim()}`,
+          url: './#meus-envios'
+        });
+      } catch (error) {
+        const message = normalizeComparableText(error?.message || '');
+        if (message.includes('notificacoes estao desativadas')) {
+          return { skipped: true, reason: 'notifications-disabled' };
+        }
+        if (message.includes('nao esta mais inscrito') || message.includes('nao possui um aparelho de origem valido')) {
+          return { skipped: true, reason: 'subscription-unavailable' };
+        }
+        throw error;
+      }
+    }
+
+    function getCentralRejectionFeedback(notification) {
+      if (!notification?.skipped) return 'Registro rejeitado e motivo enviado ao aparelho de origem.';
+      if (notification.reason === 'notifications-disabled') {
+        return 'Registro rejeitado. Os avisos estão desativados neste aparelho, mas o motivo está disponível em Meus envios.';
+      }
+      if (notification.reason === 'subscription-unavailable') {
+        return 'Registro rejeitado. O vínculo de notificações do aparelho expirou, mas o motivo está disponível em Meus envios.';
+      }
+      return 'Registro rejeitado. Este envio antigo não possui aparelho vinculado; o motivo está disponível em Meus envios.';
     }
 
     function rejectCentralPendingRecord(rowId) {
       const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
       if (!record) return showToast('Registro da Central não encontrado.');
+      if (centralRejectionInProgress.has(rowId)) return showToast('Este registro já está sendo rejeitado. Aguarde a conclusão.');
       openPromptModal({
+        mode: 'prompt',
+        closeOnBackdrop: false,
         title: 'Rejeitar registro', text: 'Informe o motivo da rejeição. Ele ficará registrado na Central.', placeholder: 'Ex.: comprovante ilegível ou valor divergente', confirmLabel: 'Rejeitar registro', cancelLabel: 'Cancelar',
         onConfirm: async (reason) => {
+          centralRejectionInProgress.add(rowId);
           try {
-            await setCentralPendingRecordStatus(record, { status: 'rejeitado', resolucao: reason });
+            const normalizedReason = String(reason || '').trim();
+            await setCentralPendingRecordStatus(record, { status: 'rejeitado', resolucao: normalizedReason });
+            await refreshCentralPendingRecords({ silent: true });
+            const confirmedRecord = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
+            if (!confirmedRecord || getCentralPendingStatus(confirmedRecord).className !== 'error') {
+              throw new Error('O servidor não confirmou a rejeição. Tente novamente.');
+            }
             try {
-              const notification = await notifyCentralRecordRejection(record, reason);
-              showToast(notification?.skipped
-                ? 'Registro rejeitado. Este envio antigo não possui aparelho vinculado para aviso.'
-                : 'Registro rejeitado e motivo enviado ao aparelho de origem.');
+              const notification = await notifyCentralRecordRejection(confirmedRecord, normalizedReason);
+              showToast(getCentralRejectionFeedback(notification));
             } catch (notificationError) {
               console.warn('Registro rejeitado, mas o aparelho não recebeu o aviso.', notificationError);
               showToast('Registro rejeitado, mas não foi possível avisar o aparelho de origem.');
             }
+            return true;
           } catch (error) {
             showToast(error?.message || 'Não foi possível rejeitar o registro.');
+            return false;
+          } finally {
+            centralRejectionInProgress.delete(rowId);
           }
         }
       });
