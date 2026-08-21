@@ -1,4 +1,5 @@
-const CACHE_NAME = 'central-registros-static-v20260821-driver-history-1';
+const CENTRAL_RELEASE = '20260821-forced-pwa-update-1';
+const CACHE_NAME = `central-registros-static-v${CENTRAL_RELEASE}`;
 const APPWRITE_AUTH_CACHE = 'central-registros-appwrite-auth-v1';
 const APPWRITE_ENDPOINT_ORIGIN = 'https://nyc.cloud.appwrite.io';
 const APPWRITE_PROJECT_ID = '6a68cb3e00312ec0a3fd';
@@ -7,8 +8,8 @@ const APPWRITE_FALLBACK_CACHE_KEY = new URL('./__central_appwrite_fallback_cooki
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=20260821-driver-history-1',
-  './app.js?v=20260821-driver-history-1',
+  './styles.css?v=20260821-forced-pwa-update-1',
+  './app.js?v=20260821-forced-pwa-update-1',
   './manifest.webmanifest',
   './assets/home/hero-posto.png',
   './assets/home/hero-revisao-km-desktop.jpeg',
@@ -47,6 +48,18 @@ self.addEventListener('activate', (event) => {
           .map((key) => caches.delete(key))
       ))
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+      .then((clients) => Promise.all(clients.map((client) => {
+        const clientUrl = new URL(client.url);
+        if (!clientUrl.href.startsWith(self.registration.scope)) {
+          return null;
+        }
+
+        // Atualiza também páginas antigas que ainda não possuem o listener de
+        // controllerchange. A navegação acontece uma única vez por release.
+        clientUrl.searchParams.set('central-release', CENTRAL_RELEASE);
+        return client.navigate(clientUrl.href).catch(() => null);
+      })))
   );
 });
 
@@ -233,11 +246,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const isNavigation = request.mode === 'navigate';
+  const networkRequest = isNavigation
+    ? new Request(request, { cache: 'no-store' })
+    : request;
+
   event.respondWith(
-    fetch(request)
+    fetch(networkRequest)
       .then((response) => {
         const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+        caches.open(CACHE_NAME).then((cache) => cache.put(isNavigation ? './index.html' : request, responseClone));
         return response;
       })
       .catch(() => caches.match(request).then((cachedResponse) => cachedResponse || caches.match('./index.html')))
