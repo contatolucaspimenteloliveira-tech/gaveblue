@@ -5520,6 +5520,22 @@ body.dark-mode .central-prepared-grid strong { color: #f8fafc; }
 .central-banner-item-actions button.is-danger { color: #dc2626; border-color: #fecaca; background: #fff1f2; }
 .settings-description.is-error, #central-banner-feedback.is-error { color: #dc2626; }
 
+/*
+ * Fallback local para os tamanhos de ícones usados no HTML.
+ * O layout não pode depender do carregamento do Tailwind CDN para limitar SVGs:
+ * em redes instáveis um SVG sem dimensões ocupa todo o botão e encobre as ações.
+ */
+svg.w-4 { width: 1rem; }
+svg.h-4 { height: 1rem; }
+svg.w-5 { width: 1.25rem; }
+svg.h-5 { height: 1.25rem; }
+svg.w-6 { width: 1.5rem; }
+svg.h-6 { height: 1.5rem; }
+svg.w-7 { width: 1.75rem; }
+svg.h-7 { height: 1.75rem; }
+svg.w-8 { width: 2rem; }
+svg.h-8 { height: 2rem; }
+
 /* Responsividade global do WeFrotas */
 @media (max-width: 1120px) {
   .app-topbar {
@@ -6167,9 +6183,33 @@ body.dark-mode .central-prepared-grid strong { color: #f8fafc; }
     gap: 4px;
   }
 
+  .central-management-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow-x: visible;
+  }
+
   .central-management-tab {
-    gap: 6px;
-    padding-inline: 10px;
+    width: 100%;
+    min-width: 0;
+    gap: 0;
+    padding-inline: 3px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .central-management-tab svg {
+    display: none;
+  }
+
+  .module-action-toolbar--table {
+    gap: 4px;
+  }
+
+  .module-action-toolbar--table .icon-action {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
   }
 
   .central-pending-summary {
@@ -6191,5 +6231,19 @@ body.dark-mode .central-prepared-grid strong { color: #f8fafc; }
   .central-banner-item > img {
     width: 78px;
     height: 58px;
+  }
+}
+
+@media (max-width: 360px) {
+  .orders-sticky-table-header .orders-toolbar,
+  .orders-table-shell > .orders-toolbar {
+    overflow-x: visible;
+  }
+
+  .module-action-toolbar--table {
+    display: grid;
+    grid-template-columns: repeat(4, 36px);
+    justify-content: start;
+    width: 100%;
   }
 }
