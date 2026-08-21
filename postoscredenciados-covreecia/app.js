@@ -268,7 +268,22 @@ function isIosDevice() {
 }
 
 function isRunningStandalone() {
-  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  return window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true
+    || document.referrer.startsWith('android-app://');
+}
+
+function syncPwaInstallEntries() {
+  const installed = isRunningStandalone() || localStorage.getItem(PWA_INSTALL_DONE_KEY) === 'true';
+  document.querySelectorAll('[data-pwa-install-entry]').forEach((entry) => {
+    entry.classList.toggle('hidden', installed);
+    entry.setAttribute('aria-hidden', installed ? 'true' : 'false');
+    entry.toggleAttribute('disabled', installed);
+  });
+
+  if (installed) {
+    hidePwaInstallModal();
+  }
 }
 
 function wasPwaPromptRecentlyDismissed() {
@@ -456,6 +471,14 @@ function setupPwaInstallExperience() {
   }
   dismissButton?.addEventListener('click', dismissPwaInstallModal);
   dismissAreas.forEach((element) => element.addEventListener('click', dismissPwaInstallModal));
+
+  if (isRunningStandalone()) {
+    localStorage.setItem(PWA_INSTALL_DONE_KEY, 'true');
+  }
+  syncPwaInstallEntries();
+
+  const displayMode = window.matchMedia('(display-mode: standalone)');
+  displayMode.addEventListener?.('change', syncPwaInstallEntries);
 
   if (isIosDevice() && shouldOfferPwaInstall()) {
     window.setTimeout(() => showPwaInstallModal('ios'), 900);
@@ -708,13 +731,22 @@ function registerServiceWorker() {
   }
 
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
       .then((registration) => {
         registration.update();
 
         if (registration.waiting) {
           registration.waiting.postMessage('SKIP_WAITING');
         }
+
+        registration.addEventListener('updatefound', () => {
+          const installingWorker = registration.installing;
+          installingWorker?.addEventListener('statechange', () => {
+            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              installingWorker.postMessage('SKIP_WAITING');
+            }
+          });
+        });
       })
       .catch(() => null);
   });
@@ -723,6 +755,8 @@ function registerServiceWorker() {
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
   deferredPwaPrompt = event;
+  localStorage.removeItem(PWA_INSTALL_DONE_KEY);
+  syncPwaInstallEntries();
   showPwaInstallModal('android');
 });
 
@@ -733,6 +767,7 @@ window.addEventListener('appinstalled', () => {
   updatePwaInstallStatus('Instala\u00e7\u00e3o conclu\u00edda', 100);
   showSuccessMessage('Central de Registros instalada com sucesso.');
   hidePwaInstallModal();
+  syncPwaInstallEntries();
 });
 
 function getTodayLocalDateString() {
