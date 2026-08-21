@@ -398,6 +398,67 @@
     return String(storage.getFileView({ bucketId: config.bucketId, fileId: uploaded.$id }));
   }
 
+  function getPublicBannerFilePermissions() {
+    const { Permission, Role } = global.Appwrite;
+    const managerRole = config.teamId ? Role.team(config.teamId) : Role.users();
+    return [
+      Permission.read(Role.any()),
+      Permission.update(managerRole),
+      Permission.delete(managerRole)
+    ];
+  }
+
+  async function uploadCentralBanner(file) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online antes de enviar banners.');
+    if (!file) throw new Error('Selecione uma imagem para o banner.');
+    if (!String(file.type || '').startsWith('image/')) throw new Error('O arquivo selecionado precisa ser uma imagem.');
+    const uploaded = await storage.createFile({
+      bucketId: config.bucketId,
+      fileId: global.Appwrite.ID.unique(),
+      file,
+      permissions: getPublicBannerFilePermissions()
+    });
+    return {
+      fileId: uploaded.$id,
+      imageUrl: String(storage.getFileView({ bucketId: config.bucketId, fileId: uploaded.$id }))
+    };
+  }
+
+  async function deleteCentralBannerFile(fileId) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir banners.');
+    if (!fileId) return;
+    return storage.deleteFile({ bucketId: config.bucketId, fileId });
+  }
+
+  async function listCentralHomeBanners() {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para administrar os banners.');
+    if (!config.centralBannersTableId) throw new Error('Tabela de banners não configurada.');
+    const queries = [];
+    if (global.Appwrite?.Query?.limit) queries.push(global.Appwrite.Query.limit(100));
+    const result = await tablesDB.listRows({ databaseId: config.databaseId, tableId: config.centralBannersTableId, queries });
+    return Array.isArray(result?.rows) ? result.rows : [];
+  }
+
+  async function createCentralHomeBanner(data) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para cadastrar banners.');
+    return tablesDB.createRow({
+      databaseId: config.databaseId,
+      tableId: config.centralBannersTableId,
+      rowId: global.Appwrite.ID.unique(),
+      data
+    });
+  }
+
+  async function updateCentralHomeBanner(rowId, data) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para alterar banners.');
+    return tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data });
+  }
+
+  async function deleteCentralHomeBanner(rowId) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir banners.');
+    return tablesDB.deleteRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId });
+  }
+
   async function listCentralPendingRecords(limit = 100) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para consultar a Central de Registros.');
     if (!tablesDB) throw new Error('Banco de dados do Appwrite não está conectado.');
@@ -481,6 +542,8 @@
     getUser: () => currentUser,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
     syncNow,
-    uploadReceipt, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord
+    uploadReceipt, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord,
+    uploadCentralBanner, deleteCentralBannerFile, listCentralHomeBanners,
+    createCentralHomeBanner, updateCentralHomeBanner, deleteCentralHomeBanner
   });
 })(window);

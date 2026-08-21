@@ -11,6 +11,8 @@
     let centralPendingLoaded = false;
     let centralPendingAutoRefreshTimer = null;
     let centralPushSending = false;
+    let centralHomeBanners = [];
+    let centralBannerSaving = false;
     const CENTRAL_PENDING_FILTERS_KEY = 'wefrotas:central-pending-filters';
     let centralPendingStatusFilter = 'pendente';
     let centralPendingDateStart = '';
@@ -2208,6 +2210,149 @@
       const target = document.getElementById(`settings-screen-${screen}`);
       target?.classList.add('active');
       document.querySelector('#settings-panel .panel-body')?.scrollTo({ top: 0, behavior: 'smooth' });
+      if (screen === 'central-banners') loadCentralBanners();
+    }
+
+    function setCentralBannerFeedback(message, isError = false) {
+      const node = document.getElementById('central-banner-feedback');
+      if (!node) return;
+      node.textContent = message || '';
+      node.classList.toggle('is-error', Boolean(isError));
+    }
+
+    function previewCentralBannerFile() {
+      const file = document.getElementById('central-banner-file')?.files?.[0];
+      const preview = document.getElementById('central-banner-preview');
+      if (!preview) return;
+      if (!file) {
+        preview.removeAttribute('src');
+        preview.classList.add('hidden');
+        return;
+      }
+      preview.src = URL.createObjectURL(file);
+      preview.classList.remove('hidden');
+    }
+
+    function renderCentralBanners() {
+      const list = document.getElementById('central-banner-list');
+      if (!list) return;
+      const rows = [...centralHomeBanners].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+      if (!rows.length) {
+        list.innerHTML = '<p class="settings-description">Nenhum banner personalizado. A Central continua usando os banners padrão do aplicativo.</p>';
+        return;
+      }
+      list.innerHTML = rows.map((banner, index) => `
+        <article class="central-banner-item ${banner.active ? '' : 'is-disabled'}">
+          <img src="${escapeHtml(banner.imageUrl || '')}" alt="${escapeHtml(banner.title || 'Banner da Central')}">
+          <div class="central-banner-item-copy">
+            <strong>${escapeHtml(banner.title || 'Banner sem descrição')}</strong>
+            <span>${banner.active ? 'Visível no aplicativo' : 'Oculto no aplicativo'}</span>
+          </div>
+          <div class="central-banner-item-actions">
+            <button type="button" onclick="moveCentralBanner('${escapeHtml(banner.$id)}', -1)" ${index === 0 ? 'disabled' : ''} aria-label="Mover para cima">↑</button>
+            <button type="button" onclick="moveCentralBanner('${escapeHtml(banner.$id)}', 1)" ${index === rows.length - 1 ? 'disabled' : ''} aria-label="Mover para baixo">↓</button>
+            <button type="button" onclick="toggleCentralBanner('${escapeHtml(banner.$id)}')">${banner.active ? 'Ocultar' : 'Ativar'}</button>
+            <button type="button" class="is-danger" onclick="confirmDeleteCentralBanner('${escapeHtml(banner.$id)}')">Excluir</button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    async function loadCentralBanners() {
+      const list = document.getElementById('central-banner-list');
+      if (list) list.innerHTML = '<p class="settings-description">Carregando banners...</p>';
+      try {
+        centralHomeBanners = await window.WeFrotasBackend.listCentralHomeBanners();
+        renderCentralBanners();
+      } catch (error) {
+        if (list) list.innerHTML = `<p class="settings-description is-error">${escapeHtml(error?.message || 'Não foi possível carregar os banners.')}</p>`;
+      }
+    }
+
+    async function saveCentralBanner() {
+      if (centralBannerSaving) return;
+      const fileInput = document.getElementById('central-banner-file');
+      const titleInput = document.getElementById('central-banner-title');
+      const file = fileInput?.files?.[0];
+      const title = titleInput?.value.trim() || '';
+      if (!file || !title) {
+        setCentralBannerFeedback('Informe uma descrição e escolha uma imagem.', true);
+        return;
+      }
+      centralBannerSaving = true;
+      const button = document.getElementById('central-banner-save');
+      if (button) { button.disabled = true; button.textContent = 'Enviando...'; }
+      setCentralBannerFeedback('Enviando imagem com acesso público somente para leitura...');
+      let upload = null;
+      try {
+        upload = await window.WeFrotasBackend.uploadCentralBanner(file);
+        const nextOrder = centralHomeBanners.reduce((max, item) => Math.max(max, Number(item.sortOrder || 0)), -1) + 1;
+        await window.WeFrotasBackend.createCentralHomeBanner({ title, imageUrl: upload.imageUrl, fileId: upload.fileId, active: true, sortOrder: nextOrder });
+        fileInput.value = '';
+        titleInput.value = '';
+        previewCentralBannerFile();
+        setCentralBannerFeedback('Banner publicado. A Central passa a recebê-lo automaticamente.');
+        await loadCentralBanners();
+      } catch (error) {
+        if (upload?.fileId) window.WeFrotasBackend.deleteCentralBannerFile(upload.fileId).catch(() => undefined);
+        setCentralBannerFeedback(error?.message || 'Não foi possível publicar o banner.', true);
+      } finally {
+        centralBannerSaving = false;
+        if (button) { button.disabled = false; button.textContent = 'Publicar no carrossel'; }
+      }
+    }
+
+    async function toggleCentralBanner(rowId) {
+      const banner = centralHomeBanners.find(item => item.$id === rowId);
+      if (!banner) return;
+      try {
+        await window.WeFrotasBackend.updateCentralHomeBanner(rowId, { active: !banner.active });
+        banner.active = !banner.active;
+        renderCentralBanners();
+      } catch (error) { showToast(error?.message || 'Não foi possível alterar o banner.'); }
+    }
+
+    async function moveCentralBanner(rowId, direction) {
+      const rows = [...centralHomeBanners].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+      const index = rows.findIndex(item => item.$id === rowId);
+      const other = rows[index + direction];
+      if (index < 0 || !other) return;
+      const current = rows[index];
+      const currentOrder = Number(current.sortOrder || index);
+      const otherOrder = Number(other.sortOrder || index + direction);
+      try {
+        await Promise.all([
+          window.WeFrotasBackend.updateCentralHomeBanner(current.$id, { sortOrder: otherOrder }),
+          window.WeFrotasBackend.updateCentralHomeBanner(other.$id, { sortOrder: currentOrder })
+        ]);
+        current.sortOrder = otherOrder;
+        other.sortOrder = currentOrder;
+        renderCentralBanners();
+      } catch (error) { showToast(error?.message || 'Não foi possível reordenar os banners.'); }
+    }
+
+    function confirmDeleteCentralBanner(rowId) {
+      const banner = centralHomeBanners.find(item => item.$id === rowId);
+      if (!banner) return;
+      openPromptModal({
+        title: 'Excluir este banner?',
+        text: 'A imagem deixará de aparecer no aplicativo. Esta ação não altera os banners padrão.',
+        mode: 'confirm',
+        confirmLabel: 'Excluir',
+        onConfirm: () => deleteCentralBanner(rowId)
+      });
+    }
+
+    async function deleteCentralBanner(rowId) {
+      const banner = centralHomeBanners.find(item => item.$id === rowId);
+      if (!banner) return;
+      try {
+        await window.WeFrotasBackend.deleteCentralHomeBanner(rowId);
+        await window.WeFrotasBackend.deleteCentralBannerFile(banner.fileId).catch(() => undefined);
+        centralHomeBanners = centralHomeBanners.filter(item => item.$id !== rowId);
+        renderCentralBanners();
+        showToast('Banner removido.');
+      } catch (error) { showToast(error?.message || 'Não foi possível excluir o banner.'); }
     }
 
     function openPromptModal({
@@ -3091,7 +3236,7 @@
       },
       notificacoes: {
         title: 'Notificações',
-        subtitle: 'Envie comunicados gerais para todos os aparelhos inscritos na Central de Registros.'
+        subtitle: 'Envie comunicados gerais ou mensagens ao aparelho vinculado a um registro da Central.'
       },
       relatorios: {
         title: 'Relatórios',
@@ -3168,6 +3313,45 @@
       node.className = 'push-broadcast-feedback' + (type ? ' is-' + type : '');
     }
 
+    function renderPushIndividualRecipients() {
+      const select = document.getElementById('push-individual-record');
+      if (!select) return;
+      const previous = select.value;
+      const eligible = [...centralPendingRecords]
+        .filter(record => String(record?.pushSubscriptionId || '').trim())
+        .sort((a, b) => String(b?.criadoEm || b?.data || '').localeCompare(String(a?.criadoEm || a?.data || '')));
+      select.innerHTML = '<option value="">Selecione um registro com aparelho vinculado</option>' + eligible.map(record => {
+        const id = getCentralPendingRecordId(record);
+        const driver = record?.motorista || 'Motorista não informado';
+        const type = getCentralPendingRecordType(record);
+        const date = String(record?.data || record?.criadoEm || '').slice(0, 10);
+        const dateLabel = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date.split('-').reverse().join('/') : date;
+        return `<option value="${escapeHtml(id)}">${escapeHtml(driver)} • ${escapeHtml(type)}${dateLabel ? ' • ' + escapeHtml(dateLabel) : ''}</option>`;
+      }).join('');
+      if (eligible.some(record => getCentralPendingRecordId(record) === previous)) select.value = previous;
+    }
+
+    function getSelectedPushRecipient() {
+      if (document.getElementById('push-audience-mode')?.value !== 'individual') return null;
+      const rowId = document.getElementById('push-individual-record')?.value || '';
+      return centralPendingRecords.find(record => getCentralPendingRecordId(record) === rowId) || null;
+    }
+
+    function updatePushAudienceMode() {
+      const individual = document.getElementById('push-audience-mode')?.value === 'individual';
+      const field = document.getElementById('push-individual-recipient-field');
+      const sendLabel = document.querySelector('#push-broadcast-send span');
+      const safetyTitle = document.getElementById('push-safety-title');
+      const safetyDescription = document.getElementById('push-safety-description');
+      field?.classList.toggle('hidden', !individual);
+      if (individual) renderPushIndividualRecipients();
+      if (sendLabel) sendLabel.textContent = individual ? 'Enviar para este aparelho' : 'Enviar para todos';
+      if (safetyTitle) safetyTitle.textContent = individual ? 'Envio individual' : 'Envio geral';
+      if (safetyDescription) safetyDescription.textContent = individual
+        ? 'O destino vem da inscrição técnica anexada ao registro. IP, localização e cadastro do motorista não são usados.'
+        : 'Não exige cadastro de motorista. Cada aparelho recebe somente depois que o usuário autorizar.';
+    }
+
     async function refreshPushSubscriberStats() {
       const countNode = document.getElementById('push-subscriber-count');
       const statusNode = document.getElementById('push-subscriber-status');
@@ -3191,9 +3375,18 @@
         return;
       }
 
+      const individual = document.getElementById('push-audience-mode')?.value === 'individual';
+      const recipient = getSelectedPushRecipient();
+      if (individual && !recipient) {
+        setPushBroadcastFeedback('Selecione um registro que tenha aparelho vinculado.', 'error');
+        return;
+      }
+
       openPromptModal({
-        title: 'Enviar notificação para todos?',
-        text: 'A mensagem será disparada para todos os aparelhos inscritos na Central de Registros.',
+        title: individual ? 'Enviar para este aparelho?' : 'Enviar notificação para todos?',
+        text: individual
+          ? `A mensagem será enviada somente ao aparelho do registro de ${recipient?.motorista || 'motorista não informado'}.`
+          : 'A mensagem será disparada para todos os aparelhos inscritos na Central de Registros.',
         mode: 'confirm',
         confirmLabel: 'Enviar agora',
         cancelLabel: 'Revisar',
@@ -3210,25 +3403,34 @@
       const title = titleInput?.value.trim() || '';
       const body = bodyInput?.value.trim() || '';
       if (!title || !body) return;
+      const individual = document.getElementById('push-audience-mode')?.value === 'individual';
+      const recipient = getSelectedPushRecipient();
+      if (individual && !recipient?.pushSubscriptionId) {
+        setPushBroadcastFeedback('O registro selecionado não possui aparelho vinculado.', 'error');
+        return;
+      }
 
       centralPushSending = true;
       if (button) {
         button.disabled = true;
         button.querySelector('span').textContent = 'Enviando...';
       }
-      setPushBroadcastFeedback('Disparando a notificação geral...', 'loading');
+      setPushBroadcastFeedback(individual ? 'Enviando ao aparelho selecionado...' : 'Disparando a notificação geral...', 'loading');
 
       try {
         const result = await executeCentralPushAdmin({
-          action: 'broadcast',
+          action: individual ? 'notify' : 'broadcast',
+          ...(individual ? { subscriptionId: recipient.pushSubscriptionId } : {}),
           title,
           body,
           url: urlInput?.value || './'
         });
-        const sent = Number(result.sent || 0);
+        const sent = Number(result.sent ?? (result.ok ? 1 : 0));
         const failed = Number(result.failed || 0);
         setPushBroadcastFeedback(
-          sent + ' aparelho(s) receberam o envio' + (failed ? '; ' + failed + ' falharam.' : '.'),
+          individual
+            ? (sent ? 'Notificação enviada ao aparelho selecionado.' : 'O aparelho não confirmou o recebimento.')
+            : sent + ' aparelho(s) receberam o envio' + (failed ? '; ' + failed + ' falharam.' : '.'),
           failed ? 'warning' : 'success'
         );
         titleInput.value = '';
@@ -3241,7 +3443,7 @@
         centralPushSending = false;
         if (button) {
           button.disabled = false;
-          button.querySelector('span').textContent = 'Enviar para todos';
+          updatePushAudienceMode();
         }
       }
     }
@@ -3286,6 +3488,8 @@
       }
       if (module === 'notificacoes') {
         updatePushBroadcastPreview();
+        updatePushAudienceMode();
+        refreshCentralPendingRecords({ silent: true });
         refreshPushSubscriberStats();
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -7992,6 +8196,7 @@
         const changed = currentSignature !== nextSignature || !centralPendingLoaded;
         centralPendingRecords = nextRecords;
         centralPendingLoaded = true;
+        renderPushIndividualRecipients();
         shouldRenderAfterLoad = changed;
         pendingRepairs.forEach(({ record, entry }) => repairCentralApprovedStatus(record, entry));
       } catch (error) {

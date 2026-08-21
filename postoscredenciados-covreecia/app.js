@@ -3377,6 +3377,47 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
+const CENTRAL_BANNERS_CONFIG = Object.freeze({
+  endpoint: 'https://nyc.cloud.appwrite.io/v1',
+  projectId: '6a68cb3e00312ec0a3fd',
+  databaseId: '6a68ce8c000a36a44d98',
+  tableId: 'central_home_banners'
+});
+
+async function loadManagedHomeBanners() {
+  const slidesContainer = document.querySelector('#home-hero-carousel .home-hero-slides');
+  if (!slidesContainer) return false;
+  try {
+    const config = CENTRAL_BANNERS_CONFIG;
+    const response = await fetch(`${config.endpoint}/tablesdb/${config.databaseId}/tables/${config.tableId}/rows`, {
+      headers: { 'x-appwrite-project': config.projectId }
+    });
+    if (!response.ok) throw new Error(`Appwrite respondeu ${response.status}`);
+    const payload = await response.json();
+    const banners = (Array.isArray(payload?.rows) ? payload.rows : [])
+      .filter((banner) => banner?.active && String(banner?.imageUrl || '').trim())
+      .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+    if (!banners.length) return false;
+
+    const fragment = document.createDocumentFragment();
+    banners.forEach((banner, index) => {
+      const slide = document.createElement('div');
+      slide.className = `home-hero-slide hero-managed${index === 0 ? ' is-active' : ''}`;
+      const image = document.createElement('img');
+      image.src = String(banner.imageUrl);
+      image.alt = String(banner.title || 'Aviso da Central de Registros');
+      image.loading = index === 0 ? 'eager' : 'lazy';
+      slide.appendChild(image);
+      fragment.appendChild(slide);
+    });
+    slidesContainer.replaceChildren(fragment);
+    return true;
+  } catch (error) {
+    console.warn('Não foi possível carregar os banners administrados; usando os banners locais.', error);
+    return false;
+  }
+}
+
 function initHomeHeroCarousel() {
   const carousel = document.getElementById('home-hero-carousel');
   const allSlides = Array.from(carousel?.querySelectorAll('.home-hero-slide') || []);
@@ -3385,7 +3426,14 @@ function initHomeHeroCarousel() {
   let slides = [];
   let dots = [];
 
-  if (!carousel || allSlides.length < 2 || !dotsContainer) {
+  if (!carousel || !allSlides.length || !dotsContainer) {
+    return;
+  }
+
+  if (allSlides.length === 1) {
+    allSlides[0].classList.add('is-active');
+    carousel.classList.toggle('is-message-slide', !allSlides[0].classList.contains('hero-main'));
+    dotsContainer.innerHTML = '<span class="is-active"></span>';
     return;
   }
 
@@ -3485,5 +3533,8 @@ function initHomeHeroCarousel() {
   restartAutoplay();
 }
 
-window.addEventListener('DOMContentLoaded', initHomeHeroCarousel);
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadManagedHomeBanners();
+  initHomeHeroCarousel();
+});
 
