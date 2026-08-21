@@ -63,6 +63,7 @@
     let currentFinanceEntryType = null;
     let activeModule = 'home';
     let activeCentralSection = 'registros';
+    let activeCentralConfigSection = 'comunicacao';
     let orderViewerZoom = 1;
     let systemNotifications = [];
     let pendingBatchImportEntity = null;
@@ -2222,7 +2223,12 @@
       const target = document.getElementById(`settings-screen-${screen}`);
       target?.classList.add('active');
       document.querySelector('#settings-panel .panel-body')?.scrollTo({ top: 0, behavior: 'smooth' });
-      if (screen === 'central-banners') loadCentralBanners();
+    }
+
+    function openCentralCommunicationFromSettings() {
+      toggleSettings(false);
+      showCentralSubmodule('configuracoes');
+      showCentralConfigSection('comunicacao');
     }
 
     function setCentralBannerFeedback(message, isError = false) {
@@ -2235,14 +2241,17 @@
     function previewCentralBannerFile() {
       const file = document.getElementById('central-banner-file')?.files?.[0];
       const preview = document.getElementById('central-banner-preview');
+      const placeholder = document.getElementById('central-banner-preview-placeholder');
       if (!preview) return;
       if (!file) {
         preview.removeAttribute('src');
         preview.classList.add('hidden');
+        placeholder?.classList.remove('hidden');
         return;
       }
       preview.src = URL.createObjectURL(file);
       preview.classList.remove('hidden');
+      placeholder?.classList.add('hidden');
     }
 
     function renderCentralBanners() {
@@ -3675,6 +3684,21 @@
       showCentralSection(section, button);
     }
 
+    function showCentralConfigSection(section = 'comunicacao', button = null) {
+      const allowedSections = new Set(['comunicacao', 'fluxos', 'integracoes']);
+      activeCentralConfigSection = allowedSections.has(section) ? section : 'comunicacao';
+      document.querySelectorAll('.central-config-view').forEach((view) => {
+        view.classList.toggle('active', view.id === `central-config-${activeCentralConfigSection}`);
+      });
+      document.querySelectorAll('[data-central-config-section]').forEach((tab) => {
+        const isActive = tab.dataset.centralConfigSection === activeCentralConfigSection;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+      if (button) button.focus({ preventScroll: true });
+      if (activeCentralConfigSection === 'comunicacao') loadCentralBanners();
+    }
+
     function showCentralSection(section = 'registros', button = null) {
       const allowedSections = new Set(['registros', 'notificacoes', 'usuarios', 'configuracoes']);
       activeCentralSection = allowedSections.has(section) ? section : 'registros';
@@ -3699,11 +3723,14 @@
         refreshPushSubscriberStats();
       }
       if (activeCentralSection === 'usuarios') refreshCentralDevices();
+      if (activeCentralSection === 'configuracoes') showCentralConfigSection(activeCentralConfigSection);
     }
 
     window.showCentralSection = showCentralSection;
     window.openCentralModule = openCentralModule;
     window.showCentralSubmodule = showCentralSubmodule;
+    window.showCentralConfigSection = showCentralConfigSection;
+    window.openCentralCommunicationFromSettings = openCentralCommunicationFromSettings;
 
     function showModule(module, button) {
       const legacyCentralSection = module === 'documentos'

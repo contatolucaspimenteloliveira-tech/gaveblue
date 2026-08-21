@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260821-maintenance-link-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260821-central-communication-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -724,15 +724,70 @@
             </div>
           </div>
           <div id="central-view-configuracoes" class="central-management-view" role="tabpanel">
-            <div class="central-prepared-shell">
+            <div class="central-prepared-shell central-config-shell">
               <div class="central-prepared-heading">
                 <span class="central-prepared-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke-width="1.9"/><path d="M5 12a7 7 0 0 1 .12-1.3L3.5 9.45l2-3.46 1.94.78A7 7 0 0 1 9.7 5.45L10 3.4h4l.3 2.05a7 7 0 0 1 2.26 1.32l1.94-.78 2 3.46-1.62 1.25A7 7 0 0 1 19 12c0 .45-.04.88-.12 1.3l1.62 1.25-2 3.46-1.94-.78a7 7 0 0 1-2.26 1.32L14 20.6h-4l-.3-2.05a7 7 0 0 1-2.26-1.32l-1.94.78-2-3.46 1.62-1.25A7 7 0 0 1 5 12Z" stroke-width="1.45" stroke-linejoin="round"/></svg></span>
-                <div><p>ADMINISTRAÇÃO</p><h2>Configurações da Central</h2><span>Área preparada para concentrar regras, comunicação e integrações do aplicativo.</span></div>
+                <div><p>ADMINISTRAÇÃO</p><h2>Configurações da Central</h2><span>Controle como a Central se comunica e aparece para os motoristas.</span></div>
               </div>
-              <div class="central-prepared-grid">
-                <article><strong>Comunicação</strong><span>Banners, mensagens e preferências de notificação da Central.</span><em>Estrutura preparada</em></article>
-                <article><strong>Fluxos de registro</strong><span>Regras futuras de aprovação, recusa, auditoria e retorno ao motorista.</span><em>Estrutura preparada</em></article>
-                <article><strong>Integrações</strong><span>Status e parâmetros das conexões utilizadas pela Central.</span><em>Estrutura preparada</em></article>
+
+              <div class="central-config-tabs" role="tablist" aria-label="Áreas de configuração da Central">
+                <button type="button" role="tab" aria-selected="true" class="central-config-tab active" data-central-config-section="comunicacao" onclick="showCentralConfigSection('comunicacao', this)">Comunicação</button>
+                <button type="button" role="tab" aria-selected="false" class="central-config-tab" data-central-config-section="fluxos" onclick="showCentralConfigSection('fluxos', this)">Fluxos de registro</button>
+                <button type="button" role="tab" aria-selected="false" class="central-config-tab" data-central-config-section="integracoes" onclick="showCentralConfigSection('integracoes', this)">Integrações</button>
+              </div>
+
+              <div id="central-config-comunicacao" class="central-config-view active">
+                <div class="central-communication-intro">
+                  <div><strong>Comunicação com o motorista</strong><span>Publique imagens no carrossel da Home, defina a ordem e escolha o que permanece visível no aplicativo.</span></div>
+                  <span class="central-communication-status"><i></i> Sincronização automática</span>
+                </div>
+                <div class="central-communication-grid">
+                  <section class="central-communication-card">
+                    <div class="central-communication-card-head"><span>NOVO CONTEÚDO</span><h3>Adicionar banner</h3><p>A imagem será exibida em proporção 16:9 e poderá sofrer recorte nas bordas.</p></div>
+                    <div class="central-banner-form">
+                      <div class="settings-field-stack">
+                        <label class="settings-input-label" for="central-banner-title">Descrição da imagem</label>
+                        <input type="text" id="central-banner-title" class="settings-text-input" maxlength="100" placeholder="Ex.: Aviso de revisão de KM">
+                      </div>
+                      <label class="central-banner-upload" for="central-banner-file">
+                        <input id="central-banner-file" type="file" accept="image/png,image/jpeg,image/webp" onchange="previewCentralBannerFile()">
+                        <span>Escolher imagem</span>
+                        <small>PNG, JPG ou WebP. Recomendado: 1600 × 900 px.</small>
+                      </label>
+                      <div class="central-banner-preview-shell">
+                        <div id="central-banner-preview-placeholder" class="central-banner-preview-placeholder"><span>Prévia no aplicativo</span><small>O enquadramento final aparecerá aqui.</small></div>
+                        <img id="central-banner-preview" class="central-banner-preview hidden" alt="Prévia do novo banner">
+                      </div>
+                      <button id="central-banner-save" type="button" class="settings-action-btn full active" onclick="saveCentralBanner()">Publicar no carrossel</button>
+                      <p id="central-banner-feedback" class="settings-description !mb-0" role="status" aria-live="polite"></p>
+                    </div>
+                  </section>
+                  <section class="central-communication-card">
+                    <div class="central-banner-list-head">
+                      <div class="central-communication-card-head"><span>HOME DO APLICATIVO</span><h3>Banners publicados</h3><p>Reordene, oculte ou exclua os conteúdos enviados.</p></div>
+                      <button type="button" class="settings-action-btn" onclick="loadCentralBanners()">Atualizar</button>
+                    </div>
+                    <div id="central-banner-list" class="central-banner-list">
+                      <p class="settings-description">Abra esta tela para carregar os banners.</p>
+                    </div>
+                  </section>
+                </div>
+              </div>
+
+              <div id="central-config-fluxos" class="central-config-view">
+                <div class="central-prepared-grid central-config-prepared-grid">
+                  <article><strong>Aprovação</strong><span>Regras de aceite, campos obrigatórios e proteção contra duplicidade.</span><em>Próxima etapa</em></article>
+                  <article><strong>Recusa e auditoria</strong><span>Motivos, devolução ao motorista e retorno para pendente.</span><em>Próxima etapa</em></article>
+                  <article><strong>Financeiro</strong><span>Destino dos registros aprovados e comportamento ao excluir ou estornar.</span><em>Próxima etapa</em></article>
+                </div>
+              </div>
+
+              <div id="central-config-integracoes" class="central-config-view">
+                <div class="central-prepared-grid central-config-prepared-grid">
+                  <article><strong>Appwrite</strong><span>Registros, aparelhos, banners e funções utilizadas pela Central.</span><em>Conectado</em></article>
+                  <article><strong>Notificações push</strong><span>Estado do serviço responsável por avisos gerais e individuais.</span><em>Monitoramento futuro</em></article>
+                  <article><strong>Armazenamento</strong><span>Arquivos públicos dos banners e comprovantes enviados pelos motoristas.</span><em>Monitoramento futuro</em></article>
+                </div>
               </div>
             </div>
           </div>
@@ -1054,10 +1109,10 @@
             </div>
             <span class="settings-menu-arrow"></span>
           </button>
-          <button type="button" class="settings-menu-item" onclick="openSettingsScreen('central-banners')">
+          <button type="button" class="settings-menu-item" onclick="openCentralCommunicationFromSettings()">
             <div>
-              <p class="settings-menu-title">Banners da Central</p>
-              <p class="settings-menu-subtitle">Imagens exibidas no carrossel do aplicativo</p>
+              <p class="settings-menu-title">Comunicação da Central</p>
+              <p class="settings-menu-subtitle">Banners e aparência exibida para o motorista</p>
             </div>
             <span class="settings-menu-arrow"></span>
           </button>
@@ -1241,39 +1296,6 @@
             <button type="button" class="settings-action-btn full" onclick="downloadBatchTemplate('vehicle')">Baixar modelo de veículos</button>
             <button type="button" class="settings-action-btn full" onclick="downloadBatchTemplate('driver')">Baixar modelo de motoristas</button>
             <button type="button" class="settings-action-btn full" onclick="downloadBatchTemplate('supplier')">Baixar modelo de fornecedores</button>
-          </div>
-        </section>
-      </div>
-
-      <div id="settings-screen-central-banners" class="settings-screen">
-        <div class="settings-subhead">
-          <button type="button" class="settings-back-btn" onclick="openSettingsScreen('home')"> Voltar</button>
-          <h3 class="settings-subtitle-title">Banners da Central</h3>
-        </div>
-        <section class="settings-block">
-          <p class="settings-label">Novo banner</p>
-          <div class="settings-list central-banner-form">
-            <div class="settings-field-stack">
-              <label class="settings-input-label" for="central-banner-title">Descrição da imagem</label>
-              <input type="text" id="central-banner-title" class="settings-text-input" maxlength="100" placeholder="Ex.: Aviso de revisão de KM">
-            </div>
-            <label class="central-banner-upload" for="central-banner-file">
-              <input id="central-banner-file" type="file" accept="image/png,image/jpeg,image/webp" onchange="previewCentralBannerFile()">
-              <span>Escolher imagem</span>
-              <small>PNG, JPG ou WebP. Recomendado: formato horizontal.</small>
-            </label>
-            <img id="central-banner-preview" class="central-banner-preview hidden" alt="Prévia do novo banner">
-            <button id="central-banner-save" type="button" class="settings-action-btn full" onclick="saveCentralBanner()">Publicar no carrossel</button>
-            <p id="central-banner-feedback" class="settings-description !mb-0" role="status" aria-live="polite"></p>
-          </div>
-        </section>
-        <section class="settings-block">
-          <div class="central-banner-list-head">
-            <p class="settings-label">Banners publicados</p>
-            <button type="button" class="settings-action-btn" onclick="loadCentralBanners()">Atualizar</button>
-          </div>
-          <div id="central-banner-list" class="central-banner-list">
-            <p class="settings-description">Abra esta tela para carregar os banners.</p>
           </div>
         </section>
       </div>
@@ -1583,7 +1605,7 @@
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260821-driver-history-1"></script>
-  <script src="./wefrotas.js?v=20260821-maintenance-link-1"></script>
+  <script src="./wefrotas.js?v=20260821-central-communication-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
