@@ -44,7 +44,7 @@ As ações públicas da Function são:
 - `directory`: retorna apenas os vínculos ativos mínimos de motorista e veículo publicados pelo WeFrotas;
 - `history`: retorna os registros vinculados ao `deviceId` ou à inscrição técnica informada.
 
-As ações `stats`, `broadcast` e `notify` continuam administrativas. Ao aprovar ou rejeitar um registro, o WeFrotas usa `notify` para devolver o resultado exclusivamente ao aparelho de origem, quando houver uma inscrição ativa.
+As ações `stats`, `broadcast` e `notify` continuam administrativas. `stats` retorna somente a identificação técnica, o tipo de navegador e a última atualização dos aparelhos ativos; endpoint e chaves Web Push nunca são enviados ao frontend. Ao aprovar ou rejeitar um registro, o WeFrotas usa `notify` para devolver o resultado exclusivamente ao aparelho de origem, quando houver uma inscrição ativa.
 
 ## Diretório da Central
 

@@ -11,6 +11,10 @@
     let centralPendingLoaded = false;
     let centralPendingAutoRefreshTimer = null;
     let centralPushSending = false;
+    let centralPushSubscriberTotal = 0;
+    let centralPushDevices = [];
+    let centralDevicesLoading = false;
+    let centralDeviceLinks = {};
     let centralHomeBanners = [];
     let centralBannerSaving = false;
     const CENTRAL_PENDING_FILTERS_KEY = 'wefrotas:central-pending-filters';
@@ -1473,6 +1477,7 @@
         deletedOrders,
         orderCounter,
         notifications: systemNotifications,
+        centralDeviceLinks,
         customLogoEnabled,
         customLogoUrl,
         customLogoScale,
@@ -1501,6 +1506,9 @@
       allAdministrations = normalizeAdministrationList(snapshot.administrations || snapshot.administracoes || []);
       deletedOrders = Array.isArray(snapshot.deletedOrders) ? snapshot.deletedOrders : [];
       systemNotifications = Array.isArray(snapshot.notifications) ? snapshot.notifications : [];
+      centralDeviceLinks = snapshot.centralDeviceLinks && typeof snapshot.centralDeviceLinks === 'object'
+        ? snapshot.centralDeviceLinks
+        : {};
       orderCounter = Number(snapshot.orderCounter) || 1;
       customLogoEnabled = snapshot.customLogoEnabled === true || snapshot.customLogoEnabled === 'true';
       customLogoUrl = snapshot.customLogoUrl || '';
@@ -1524,6 +1532,7 @@
         deletedOrders: parseLocalStorageJson('wefrotas_deleted_orders', []),
         orderCounter: localStorage.getItem('wefrotas_order_counter') || 1,
         notifications: parseLocalStorageJson('wefrotas_notifications', []),
+        centralDeviceLinks: parseLocalStorageJson('wefrotas_central_device_links', {}),
         customLogoEnabled: localStorage.getItem('wefrotas_custom_logo_enabled') === 'true',
         customLogoUrl: localStorage.getItem('wefrotas_custom_logo_url') || '',
         customLogoScale: localStorage.getItem('wefrotas_custom_logo_scale') || 60,
@@ -1542,6 +1551,7 @@
         localStorage.setItem('wefrotas_manager_display_name', snapshot.managerDisplayName || 'Gestor');
         localStorage.setItem('wefrotas_allow_manual_order_number_editing', snapshot.allowManualOrderNumberEditing ? 'true' : 'false');
         localStorage.setItem('wefrotas_administrations', JSON.stringify(snapshot.administrations || []));
+        localStorage.setItem('wefrotas_central_device_links', JSON.stringify(snapshot.centralDeviceLinks || {}));
       } catch (error) {
         console.warn('Não foi possível salvar preferências pequenas no localStorage.', error);
       }
@@ -1557,6 +1567,7 @@
         localStorage.setItem('wefrotas_administrations', JSON.stringify(snapshot.administrations || []));
         localStorage.setItem('wefrotas_deleted_orders', JSON.stringify(snapshot.deletedOrders || []));
         localStorage.setItem('wefrotas_notifications', JSON.stringify(snapshot.notifications || []));
+        localStorage.setItem('wefrotas_central_device_links', JSON.stringify(snapshot.centralDeviceLinks || {}));
         saveSmallSettingsToLocalStorage(snapshot);
       } catch (error) {
         console.warn('Não foi possível salvar snapshot completo no localStorage.', error);
@@ -3241,10 +3252,31 @@
       }
     };
 
+    const centralSectionHeaderContent = {
+      registros: {
+        title: 'Registros da Central',
+        subtitle: 'Analise, aprove, rejeite e acompanhe os registros enviados pelo aplicativo.'
+      },
+      notificacoes: {
+        title: 'Notificações da Central',
+        subtitle: 'Envie comunicados gerais ou mensagens para um aparelho específico.'
+      },
+      usuarios: {
+        title: 'Usuários da Central',
+        subtitle: 'Relacione os aparelhos inscritos aos motoristas cadastrados no WeFrotas.'
+      },
+      configuracoes: {
+        title: 'Configurações da Central',
+        subtitle: 'Organize comunicação, regras de registro e integrações do aplicativo.'
+      }
+    };
+
     function updateModuleHeader(module) {
       const titleNode = document.getElementById('module-header-title');
       const subtitleNode = document.getElementById('module-header-subtitle');
-      const content = moduleHeaderContent[module] || moduleHeaderContent.home;
+      const content = module === 'central'
+        ? (centralSectionHeaderContent[activeCentralSection] || moduleHeaderContent.central)
+        : (moduleHeaderContent[module] || moduleHeaderContent.home);
       if (titleNode) titleNode.textContent = content.title;
       if (subtitleNode) subtitleNode.textContent = content.subtitle;
     }
@@ -3355,13 +3387,154 @@
       if (statusNode) statusNode.textContent = 'Atualizando...';
       try {
         const result = await executeCentralPushAdmin({ action: 'stats' });
-        if (countNode) countNode.textContent = String(result.subscribers ?? 0);
+        centralPushSubscriberTotal = Number(result.subscribers || 0);
+        if (Array.isArray(result.devices)) centralPushDevices = result.devices.map(normalizeCentralPushDevice).filter(item => item.id);
+        if (countNode) countNode.textContent = String(centralPushSubscriberTotal);
         if (statusNode) statusNode.textContent = 'Aparelhos autorizados a receber';
       } catch (error) {
         if (countNode) countNode.textContent = '—';
         if (statusNode) statusNode.textContent = error?.message || 'Canal ainda não configurado';
       }
+      renderCentralDevices();
     }
+
+    function normalizeCentralPushDevice(device = {}) {
+      return {
+        id: String(device.id || device.$id || '').trim(),
+        userAgent: String(device.userAgent || '').trim(),
+        updatedAt: String(device.updatedAt || device.$updatedAt || '').trim(),
+        active: device.active !== false
+      };
+    }
+
+    function getCentralDevicesFromRecords() {
+      const devices = new Map();
+      [...centralPendingRecords]
+        .sort((a, b) => String(b?.atualizadoEm || b?.criadoEm || b?.$updatedAt || '').localeCompare(String(a?.atualizadoEm || a?.criadoEm || a?.$updatedAt || '')))
+        .forEach((record) => {
+          const id = String(record?.pushSubscriptionId || '').trim();
+          if (!id || devices.has(id)) return;
+          devices.set(id, {
+            id,
+            userAgent: '',
+            updatedAt: String(record?.atualizadoEm || record?.criadoEm || record?.$updatedAt || ''),
+            active: true
+          });
+        });
+      return [...devices.values()];
+    }
+
+    function getCentralDeviceRecord(deviceId) {
+      return [...centralPendingRecords]
+        .filter(record => String(record?.pushSubscriptionId || '').trim() === deviceId)
+        .sort((a, b) => String(b?.atualizadoEm || b?.criadoEm || b?.$updatedAt || '').localeCompare(String(a?.atualizadoEm || a?.criadoEm || a?.$updatedAt || '')))[0] || null;
+    }
+
+    function getCentralDeviceDriver(deviceId) {
+      const savedDriverId = String(centralDeviceLinks?.[deviceId]?.driverId || '').trim();
+      const saved = allDrivers.find(driver => driver.id === savedDriverId);
+      if (saved) return saved;
+      const record = getCentralDeviceRecord(deviceId);
+      const recordDriverName = normalizeComparableText(record?.motorista || '');
+      if (!recordDriverName) return null;
+      return allDrivers.find(driver => normalizeComparableText(driver.nome || '') === recordDriverName) || null;
+    }
+
+    function describeCentralDevice(userAgent = '') {
+      const ua = String(userAgent || '');
+      const platform = /iphone|ipad|ios/i.test(ua) ? 'iPhone / iOS' : /android/i.test(ua) ? 'Android' : /windows/i.test(ua) ? 'Windows' : /macintosh|mac os/i.test(ua) ? 'macOS' : 'Aparelho móvel';
+      const browser = /edg\//i.test(ua) ? 'Edge' : /firefox|fxios/i.test(ua) ? 'Firefox' : /crios|chrome/i.test(ua) ? 'Chrome' : /safari/i.test(ua) ? 'Safari' : '';
+      return browser ? `${platform} • ${browser}` : platform;
+    }
+
+    function formatCentralDeviceDate(value) {
+      if (!value) return 'Atividade ainda não informada';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return 'Atividade recente';
+      return `Atualizado em ${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    function renderCentralDevices() {
+      const list = document.getElementById('central-devices-list');
+      const count = document.getElementById('central-devices-count');
+      if (!list) return;
+      const merged = new Map(getCentralDevicesFromRecords().map(device => [device.id, device]));
+      centralPushDevices.forEach(device => merged.set(device.id, { ...(merged.get(device.id) || {}), ...device }));
+      const devices = [...merged.values()].sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+      if (count) count.textContent = String(centralPushSubscriberTotal || devices.length || 0);
+      if (centralDevicesLoading) {
+        list.innerHTML = '<div class="central-devices-empty"><span class="central-devices-spinner"></span>Atualizando aparelhos inscritos…</div>';
+        return;
+      }
+      if (!devices.length) {
+        list.innerHTML = '<div class="central-devices-empty">Nenhum aparelho com notificações autorizadas foi encontrado.</div>';
+        return;
+      }
+      list.innerHTML = devices.map((device) => {
+        const linkedDriver = getCentralDeviceDriver(device.id);
+        const latestRecord = getCentralDeviceRecord(device.id);
+        const shortId = device.id.slice(-6).toUpperCase();
+        const status = device.active === false ? 'Inativo' : 'Ativo';
+        const recordLabel = latestRecord
+          ? `Último envio: ${escapeHtml(latestRecord.motorista || 'motorista não informado')} • ${escapeHtml(getCentralPendingRecordType(latestRecord))}`
+          : 'Ainda não enviou registros para a Central';
+        return `
+          <article class="central-device-card ${linkedDriver ? 'is-linked' : ''}">
+            <div class="central-device-main">
+              <span class="central-device-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="7" y="2.5" width="10" height="19" rx="2.5" stroke-width="1.9"/><path d="M10 5.5h4M11 18.5h2" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+              <div class="central-device-copy">
+                <div><strong>${linkedDriver ? escapeHtml(linkedDriver.nome) : 'Aparelho não vinculado'}</strong><span class="central-device-status ${device.active === false ? 'is-inactive' : ''}">${status}</span></div>
+                <p>${escapeHtml(describeCentralDevice(device.userAgent))} • ID ${escapeHtml(shortId)}</p>
+                <small>${escapeHtml(formatCentralDeviceDate(device.updatedAt))}</small>
+                <small>${recordLabel}</small>
+              </div>
+            </div>
+            <div class="central-device-linking">
+              <label for="central-device-driver-${escapeHtml(device.id)}">Motorista vinculado</label>
+              <select id="central-device-driver-${escapeHtml(device.id)}">
+                <option value="">Selecione um motorista</option>
+                ${getSortedDrivers().map(driver => `<option value="${escapeHtml(driver.id)}" ${linkedDriver?.id === driver.id ? 'selected' : ''}>${escapeHtml(driver.nome)}${isEntityActive(driver) ? '' : ' (inativo)'}</option>`).join('')}
+              </select>
+              <button type="button" onclick="saveCentralDeviceLink('${escapeHtml(device.id)}')">${linkedDriver ? 'Atualizar vínculo' : 'Vincular motorista'}</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    async function refreshCentralDevices() {
+      if (centralDevicesLoading) return;
+      centralDevicesLoading = true;
+      renderCentralDevices();
+      try {
+        await refreshCentralPendingRecords({ silent: true });
+        await refreshPushSubscriberStats();
+      } finally {
+        centralDevicesLoading = false;
+        renderCentralDevices();
+      }
+    }
+
+    async function saveCentralDeviceLink(deviceId) {
+      const select = document.getElementById(`central-device-driver-${deviceId}`);
+      const driverId = String(select?.value || '').trim();
+      if (!driverId) {
+        delete centralDeviceLinks[deviceId];
+        await saveToLocalStorage();
+        renderCentralDevices();
+        showToast('Vínculo removido. O aparelho continua autorizado a receber notificações.');
+        return;
+      }
+      const driver = allDrivers.find(item => item.id === driverId);
+      if (!driver) return showToast('Motorista não encontrado. Atualize os cadastros e tente novamente.');
+      centralDeviceLinks[deviceId] = { driverId, linkedAt: new Date().toISOString() };
+      await saveToLocalStorage();
+      renderCentralDevices();
+      showToast(`Aparelho vinculado a ${driver.nome}.`);
+    }
+
+    window.refreshCentralDevices = refreshCentralDevices;
+    window.saveCentralDeviceLink = saveCentralDeviceLink;
 
     function confirmPushBroadcast() {
       if (centralPushSending) return;
@@ -3483,18 +3656,38 @@
       showCentralSection(activeCentralSection);
     }
 
+    function setCentralNavExpanded(expanded) {
+      const group = document.getElementById('central-nav-group');
+      const toggle = document.getElementById('central-nav-toggle');
+      group?.classList.toggle('open', Boolean(expanded));
+      toggle?.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }
+
+    function openCentralModule(button = null) {
+      const isAlreadyOpen = activeModule === 'central' && document.getElementById('central-nav-group')?.classList.contains('open');
+      showModule('central', button || document.getElementById('central-nav-toggle'));
+      setCentralNavExpanded(!isAlreadyOpen || activeModule !== 'central');
+    }
+
+    function showCentralSubmodule(section, button = null) {
+      setCentralNavExpanded(true);
+      showModule('central', document.getElementById('central-nav-toggle'));
+      showCentralSection(section, button);
+    }
+
     function showCentralSection(section = 'registros', button = null) {
       const allowedSections = new Set(['registros', 'notificacoes', 'usuarios', 'configuracoes']);
       activeCentralSection = allowedSections.has(section) ? section : 'registros';
       document.querySelectorAll('.central-management-view').forEach((view) => {
         view.classList.toggle('active', view.id === `central-view-${activeCentralSection}`);
       });
-      document.querySelectorAll('.central-management-tab').forEach((tab) => {
+      document.querySelectorAll('[data-central-section]').forEach((tab) => {
         const isActive = tab.dataset.centralSection === activeCentralSection;
         tab.classList.toggle('active', isActive);
-        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        if (tab.hasAttribute('aria-selected')) tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
       });
       if (button) button.focus({ preventScroll: true });
+      if (activeModule === 'central') updateModuleHeader('central');
       if (activeCentralSection === 'registros') {
         refreshCentralPendingRecords({ silent: true });
         renderDocuments();
@@ -3505,9 +3698,12 @@
         refreshCentralPendingRecords({ silent: true });
         refreshPushSubscriberStats();
       }
+      if (activeCentralSection === 'usuarios') refreshCentralDevices();
     }
 
     window.showCentralSection = showCentralSection;
+    window.openCentralModule = openCentralModule;
+    window.showCentralSubmodule = showCentralSubmodule;
 
     function showModule(module, button) {
       const legacyCentralSection = module === 'documentos'
@@ -3521,7 +3717,9 @@
       });
       const panel = document.getElementById(`panel-${module}`);
       if (panel) panel.classList.add('active');
-      if (button) button.classList.add('active');
+      const activeButton = button || (module === 'central' ? document.getElementById('central-nav-toggle') : getModuleNavButton(module));
+      if (activeButton) activeButton.classList.add('active');
+      setCentralNavExpanded(module === 'central');
       updateModuleHeader(module);
       updateContextualSearchUi();
       if (window.innerWidth <= 1120 && sidebarCollapsed) {
@@ -3532,6 +3730,7 @@
     }
 
     function getModuleNavButton(module) {
+      if (module === 'central') return document.getElementById('central-nav-toggle');
       return Array.from(document.querySelectorAll('.nav-btn'))
         .find(button => (button.getAttribute('onclick') || '').includes(`showModule('${module}'`)) || null;
     }
@@ -4378,6 +4577,7 @@
       allAdministrations = [];
       deletedOrders = [];
       systemNotifications = [];
+      centralDeviceLinks = {};
       selectedVehicles.clear();
       selectedDrivers.clear();
       selectedSuppliers.clear();
@@ -5223,19 +5423,41 @@
         .toUpperCase();
     }
 
-    function findOpenRevisionOrder(vehicleId, revisionKm) {
-      const revisionToken = normalizeRevisionText(getRevisionDescription(revisionKm));
-      const legacyRevisionToken = normalizeRevisionText(`REVISAO DE ${Number(revisionKm || 0).toLocaleString('pt-BR')}KM`);
-      const previousRevisionToken = normalizeRevisionText(`REVISAO ${Number(revisionKm || 0).toLocaleString('pt-BR')} KM`);
+    function getMaintenanceOrderMatchScore(order, revisionKm) {
+      const description = normalizeRevisionText(order?.descricao);
+      const targetKm = String(Math.max(0, Number(revisionKm || 0)));
+      let score = 0;
+
+      if (Number(order?.maintenanceRevisionKm || 0) === Number(revisionKm || 0)) score += 240;
+      if ((order?.tipoOs || '').toLowerCase() === 'revisao') score += 90;
+      if (description.includes('REVISAO')) score += 75;
+      if (/(MANUTENCAO|PREVENTIVA|PERIODICA)/.test(description)) score += 55;
+      if (/(TROCADEOLEO|FILTRO|ALINHAMENTO|BALANCEAMENTO)/.test(description)) score += 25;
+      if (targetKm && description.includes(targetKm)) score += 55;
+      if (order?.status === 'aberta') score += 18;
+      if (order?.status === 'andamento') score += 14;
+      if (order?.status === 'cancelada') score -= 180;
+
+      return score;
+    }
+
+    function findLinkedRevisionOrder(vehicleId, revisionKm) {
       return allOrders.find(order =>
         order.vehicleId === vehicleId
-        && order.status !== 'fechada'
-        && (
-          normalizeRevisionText(order.descricao).includes(revisionToken)
-          || normalizeRevisionText(order.descricao).includes(legacyRevisionToken)
-          || normalizeRevisionText(order.descricao).includes(previousRevisionToken)
-        )
+        && Number(order.maintenanceRevisionKm || 0) === Number(revisionKm || 0)
       ) || null;
+    }
+
+    function findSuggestedRevisionOrder(vehicleId, revisionKm, linkedOrder = null) {
+      const candidates = allOrders
+        .filter(order => order.vehicleId === vehicleId && order.id !== linkedOrder?.id)
+        .map(order => ({ order, score: getMaintenanceOrderMatchScore(order, revisionKm) }))
+        .filter(item => item.score >= 55)
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return String(b.order.dataInicio || '').localeCompare(String(a.order.dataInicio || ''));
+        });
+      return candidates[0]?.order || null;
     }
 
     function getVehicleMaintenanceStatus(vehicle) {
@@ -5246,21 +5468,61 @@
           nextRevisionKm: null,
           remainingKm: null,
           isAlert: false,
-          openOrder: null
+          linkedOrder: null,
+          suggestedOrder: null
         };
       }
 
       const nextRevisionKm = Math.ceil(currentKm / 10000) * 10000 || 10000;
       const remainingKm = Math.max(nextRevisionKm - currentKm, 0);
-      const openOrder = findOpenRevisionOrder(vehicle.id, nextRevisionKm);
+      const linkedOrder = findLinkedRevisionOrder(vehicle.id, nextRevisionKm);
+      const suggestedOrder = findSuggestedRevisionOrder(vehicle.id, nextRevisionKm, linkedOrder);
 
       return {
         currentKm,
         nextRevisionKm,
         remainingKm,
         isAlert: remainingKm <= 2000,
-        openOrder
+        linkedOrder,
+        suggestedOrder
       };
+    }
+
+    function linkSuggestedMaintenanceOrder(vehicleId, orderId) {
+      const vehicle = allVehicles.find(item => item.id === vehicleId);
+      const order = allOrders.find(item => item.id === orderId);
+      if (!vehicle || !order || order.vehicleId !== vehicle.id) {
+        showToast('Não foi possível validar a OS sugerida para este veículo.');
+        return;
+      }
+
+      const maintenance = getVehicleMaintenanceStatus(vehicle);
+      if (!maintenance.nextRevisionKm) {
+        showToast('Esse veículo ainda não possui KM atual para vincular a revisão.');
+        return;
+      }
+
+      const statusLabel = getOrderStatusUi(order.status).label;
+      const vehicleLabel = `${vehicle.numeroFrota || '-'} - ${vehicle.placa || '-'} ${vehicle.modelo || ''}`.trim();
+      openPromptModal({
+        mode: 'confirm',
+        title: `Vincular a OS ${getOrderNumberLabel(order)}?`,
+        text: `${vehicleLabel} • revisão de ${maintenance.nextRevisionKm.toLocaleString('pt-BR')} km. A OS está ${statusLabel.toLowerCase()} e será identificada como a revisão deste veículo.`,
+        confirmLabel: 'Vincular OS',
+        cancelLabel: 'Cancelar',
+        onConfirm: async () => {
+          allOrders = allOrders.map(item => item.id === order.id
+            ? {
+                ...item,
+                maintenanceRevisionKm: maintenance.nextRevisionKm,
+                maintenanceLinkedAt: new Date().toISOString()
+              }
+            : item);
+          await saveToLocalStorage();
+          renderAll();
+          showToast(`OS ${getOrderNumberLabel(order)} vinculada à revisão do veículo.`);
+        }
+      });
     }
 
     function openRevisionOrderForVehicle(vehicleId) {
@@ -5276,7 +5538,7 @@
         return;
       }
 
-      if (maintenance.openOrder) {
+      if (maintenance.linkedOrder && maintenance.linkedOrder.status !== 'fechada') {
         showToast(`Já existe uma OS aberta para a revisão de ${maintenance.nextRevisionKm.toLocaleString('pt-BR')} KM.`);
         return;
       }
@@ -5292,6 +5554,8 @@
       document.getElementById('modal-title').textContent = 'Abrir OS de revisão';
       showToast(`OS preparada para revisão de ${maintenance.nextRevisionKm.toLocaleString('pt-BR')} KM.`);
     }
+
+    window.linkSuggestedMaintenanceOrder = linkSuggestedMaintenanceOrder;
 
     function getVehicleCostStats(options = {}) {
       const vehicleId = options.vehicleId || '';
@@ -6324,8 +6588,8 @@
 
       if (filters.type === 'maintenance_due') {
         const items = getReportMaintenanceItems(filters);
-        const alertCount = items.filter(item => item.maintenance.isAlert && !item.maintenance.openOrder).length;
-        const openOsCount = items.filter(item => item.maintenance.openOrder).length;
+        const alertCount = items.filter(item => item.maintenance.isAlert && !item.maintenance.linkedOrder).length;
+        const openOsCount = items.filter(item => item.maintenance.linkedOrder && item.maintenance.linkedOrder.status !== 'fechada').length;
         const noKmCount = items.filter(item => item.maintenance.currentKm === null).length;
         return {
           title,
@@ -6348,8 +6612,8 @@
           rows: items.map(({ vehicle, maintenance }) => {
             const statusLabel = maintenance.currentKm === null
               ? 'Aguardando KM'
-              : maintenance.openOrder
-                ? `OS ${getOrderNumberLabel(maintenance.openOrder)} aberta`
+              : maintenance.linkedOrder
+                ? `OS ${getOrderNumberLabel(maintenance.linkedOrder)} ${getOrderStatusUi(maintenance.linkedOrder.status).label.toLowerCase()}`
                 : maintenance.remainingKm <= 0
                   ? 'Revisão vencida'
                   : maintenance.remainingKm <= 2000
@@ -6357,7 +6621,7 @@
                     : 'No prazo';
             const tone = maintenance.currentKm === null
               ? 'neutral'
-              : maintenance.openOrder
+              : maintenance.linkedOrder
                 ? 'ok'
                 : maintenance.remainingKm <= 0
                   ? 'danger'
@@ -7470,12 +7734,18 @@
             const remainingLabel = maintenance.currentKm === null
               ? 'Aguardando KM'
               : `${maintenance.remainingKm.toLocaleString('pt-BR')} km`;
-            const shortcutAction = maintenance.openOrder
-              ? `openOrderFromHome('${maintenance.openOrder.id}')`
+            const shortcutAction = maintenance.linkedOrder
+              ? `openOrderFromHome('${maintenance.linkedOrder.id}')`
               : `openVehicleFromHome('${vehicle.id}')`;
+            const linkedStatus = maintenance.linkedOrder
+              ? getOrderStatusUi(maintenance.linkedOrder.status).label
+              : '';
+            const suggestedStatus = maintenance.suggestedOrder
+              ? getOrderStatusUi(maintenance.suggestedOrder.status).label
+              : '';
 
             return `
-              <div class="home-maintenance-row home-maintenance-row--${maintenance.openOrder ? 'open' : maintenance.isAlert ? 'alert' : 'ok'}" role="button" tabindex="0" onclick="${shortcutAction}" onkeydown="handleDashboardShortcutKey(event, '${maintenance.openOrder ? 'openOrderFromHome' : 'openVehicleFromHome'}', '${maintenance.openOrder ? maintenance.openOrder.id : vehicle.id}')">
+              <div class="home-maintenance-row home-maintenance-row--${maintenance.linkedOrder ? 'open' : maintenance.isAlert ? 'alert' : 'ok'} ${maintenance.isAlert && maintenance.suggestedOrder ? 'home-maintenance-row--has-suggestion' : ''}" role="button" tabindex="0" onclick="${shortcutAction}" onkeydown="handleDashboardShortcutKey(event, '${maintenance.linkedOrder ? 'openOrderFromHome' : 'openVehicleFromHome'}', '${maintenance.linkedOrder ? maintenance.linkedOrder.id : vehicle.id}')">
                 <div>
                   <p>${escapeHtml(vehicle.numeroFrota || '-')} - ${escapeHtml(vehicle.placa || '-')}</p>
                   <span>${escapeHtml(vehicle.modelo || 'Veículo')}</span>
@@ -7484,10 +7754,16 @@
                   <span>KM atual <strong>${escapeHtml(currentKmLabel)}</strong></span>
                   <span>Faltam <strong>${escapeHtml(remainingLabel)}</strong></span>
                 </div>
-                ${maintenance.openOrder
-                  ? `<span class="home-maintenance-pill">OS ${escapeHtml(getOrderNumberLabel(maintenance.openOrder))}</span>`
+                ${maintenance.linkedOrder
+                  ? `<span class="home-maintenance-pill">OS ${escapeHtml(getOrderNumberLabel(maintenance.linkedOrder))} • ${escapeHtml(linkedStatus)}</span>`
                   : maintenance.isAlert
-                    ? `<button type="button" class="home-maintenance-btn" onclick="event.stopPropagation(); openRevisionOrderForVehicle('${vehicle.id}')">Abrir OS</button>`
+                    ? `<div class="home-maintenance-actions">
+                        <button type="button" class="home-maintenance-btn" onclick="event.stopPropagation(); openRevisionOrderForVehicle('${vehicle.id}')">Abrir OS</button>
+                        ${maintenance.suggestedOrder ? `
+                          <span class="home-maintenance-suggestion">Sugestão: OS ${escapeHtml(getOrderNumberLabel(maintenance.suggestedOrder))} • ${escapeHtml(suggestedStatus)}</span>
+                          <button type="button" class="home-maintenance-link-btn" onclick="event.stopPropagation(); linkSuggestedMaintenanceOrder('${vehicle.id}', '${maintenance.suggestedOrder.id}')">Vincular OS</button>
+                        ` : ''}
+                      </div>`
                     : `<span class="home-maintenance-pill">No prazo</span>`}
               </div>
             `;
@@ -12475,7 +12751,6 @@
     }
 
     function setupStickyTableHeaders() {
-      if (window.innerWidth <= 1120) return;
       document.querySelectorAll('.orders-table-shell').forEach((shell) => {
         const toolbar = shell.querySelector(':scope > .orders-toolbar');
         const scroll = shell.querySelector(':scope > .orders-table-scroll');
