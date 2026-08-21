@@ -5733,6 +5733,99 @@ body.dark-mode .central-device-linking select { border-color: #334155; color: #f
   .central-device-copy small { overflow: visible; white-space: normal; }
 }
 
+.central-config-shell { max-width: 1240px; }
+.central-config-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 5px;
+  border: 1px solid #e5ebf4;
+  border-radius: 16px;
+  background: #f6f9fd;
+}
+.central-config-tab {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #64748b;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.central-config-tab:hover { color: #3151d3; background: rgba(255, 255, 255, .7); }
+.central-config-tab.active {
+  border-color: #d5e0fb;
+  color: #2448d8;
+  background: #fff;
+  box-shadow: 0 5px 16px rgba(49, 81, 211, .09);
+}
+.central-config-view { display: none; }
+.central-config-view.active { display: block; }
+.central-communication-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 20px 0 14px;
+  padding: 16px 18px;
+  border: 1px solid #dce7f7;
+  border-radius: 17px;
+  background: linear-gradient(135deg, #f7faff 0%, #eef4ff 100%);
+}
+.central-communication-intro > div { display: grid; gap: 4px; }
+.central-communication-intro strong { color: #172033; font-size: 14px; font-weight: 900; }
+.central-communication-intro span { color: #64748b; font-size: 11px; line-height: 1.45; }
+.central-communication-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  color: #15803d !important;
+  background: #f0fdf4;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.central-communication-status i { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
+.central-communication-grid {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  gap: 16px;
+}
+.central-communication-card {
+  min-width: 0;
+  padding: 19px;
+  border: 1px solid #e2e8f0;
+  border-radius: 19px;
+  background: #fbfdff;
+}
+.central-communication-card-head { min-width: 0; margin-bottom: 14px; }
+.central-communication-card-head > span { color: #4f6ee8; font-size: 9px; font-weight: 900; letter-spacing: .14em; }
+.central-communication-card-head h3 { margin: 4px 0 3px; color: #172033; font-size: 17px; font-weight: 900; }
+.central-communication-card-head p { margin: 0; color: #64748b; font-size: 11px; line-height: 1.5; }
+.central-config-prepared-grid { margin-top: 20px; }
+body.dark-mode .central-config-tabs { border-color: #334155; background: #111827; }
+body.dark-mode .central-config-tab { color: #94a3b8; }
+body.dark-mode .central-config-tab:hover { color: #dbeafe; background: #1e293b; }
+body.dark-mode .central-config-tab.active { border-color: #475569; color: #bfdbfe; background: #263449; }
+body.dark-mode .central-communication-intro { border-color: #334155; background: linear-gradient(135deg, #172033 0%, #1e293b 100%); }
+body.dark-mode .central-communication-intro strong,
+body.dark-mode .central-communication-card-head h3 { color: #f8fafc; }
+body.dark-mode .central-communication-intro span,
+body.dark-mode .central-communication-card-head p { color: #94a3b8; }
+body.dark-mode .central-communication-card { border-color: #334155; background: #172033; }
+body.dark-mode .central-banner-preview-shell { border-color: #334155; background: #111827; }
+body.dark-mode .central-banner-preview-placeholder { color: #94a3b8; background: radial-gradient(circle at 50% 35%, rgba(96, 165, 250, .14), transparent 38%), #111827; }
+body.dark-mode .central-banner-preview-placeholder span { color: #e2e8f0; }
+body.dark-mode .central-banner-item { border-color: #334155; background: #111827; }
+body.dark-mode .central-banner-item-copy strong { color: #f8fafc; }
+body.dark-mode .central-banner-item-copy span { color: #94a3b8; }
+body.dark-mode .central-banner-item-actions button { border-color: #475569; color: #e2e8f0; background: #1e293b; }
+
 .central-banner-form { gap: 14px; }
 .central-banner-upload {
   display: grid;
@@ -5747,8 +5840,29 @@ body.dark-mode .central-device-linking select { border-color: #334155; color: #f
 .central-banner-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .central-banner-upload span { font-size: 13px; font-weight: 900; }
 .central-banner-upload small { color: #64748b; font-size: 11px; }
-.central-banner-preview { width: 100%; max-height: 190px; object-fit: cover; border-radius: 15px; border: 1px solid #dbe4f0; }
+.central-banner-preview-shell {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border: 1px solid #dbe4f0;
+  border-radius: 15px;
+  background: #eaf0f8;
+}
+.central-banner-preview { width: 100%; height: 100%; object-fit: cover; }
 .central-banner-preview.hidden { display: none; }
+.central-banner-preview-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 4px;
+  color: #64748b;
+  text-align: center;
+  background: radial-gradient(circle at 50% 35%, rgba(79, 110, 232, .13), transparent 38%), #f4f7fb;
+}
+.central-banner-preview-placeholder.hidden { display: none; }
+.central-banner-preview-placeholder span { color: #334155; font-size: 12px; font-weight: 850; }
+.central-banner-preview-placeholder small { font-size: 10px; }
 .central-banner-list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .central-banner-list { display: grid; gap: 12px; }
 .central-banner-item {
@@ -6564,4 +6678,27 @@ svg.h-8 { height: 2rem; }
     height: 38px;
     flex: 0 0 38px;
   }
+}
+
+@media (max-width: 900px) {
+  .central-config-shell { padding: 18px; }
+  .central-config-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .central-config-tabs::-webkit-scrollbar { display: none; }
+  .central-config-tab { flex: 0 0 auto; }
+  .central-communication-intro { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .central-communication-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .central-config-shell { margin-top: 12px; padding: 14px; border-radius: 18px; }
+  .central-config-shell .central-prepared-heading { gap: 11px; }
+  .central-config-shell .central-prepared-icon { flex-basis: 40px; height: 40px; border-radius: 12px; }
+  .central-config-shell .central-prepared-heading h2 { font-size: 19px; }
+  .central-config-tabs { margin-top: 14px; }
+  .central-config-tab { min-height: 38px; padding: 0 12px; font-size: 11px; }
+  .central-communication-card { padding: 14px; border-radius: 16px; }
+  .central-banner-list-head { align-items: flex-start; }
 }

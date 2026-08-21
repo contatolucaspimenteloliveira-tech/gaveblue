@@ -37,7 +37,6 @@ const DRIVER_ONBOARDING_VERSION_KEY = 'postoscredenciados-covreecia:driver-onboa
 const DRIVER_ONBOARDING_VERSION = '2026-08-directory-v1';
 const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
-const PWA_INSTALL_DONE_KEY = 'pwa-install-installed';
 const PWA_DISMISS_DAYS = 7;
 const CENTRAL_PUSH_FUNCTION_ID = 'central-push';
 const CENTRAL_PUSH_PUBLIC_KEY = 'BK6Dhnrl6Wr4nO4PtE-ZlnW7ttRe0vtA3b7ssZsa7S9bGdR8gcBBu9SNuNBoMntUkcMBkAOAcgvhMJalNysihgw';
@@ -274,7 +273,10 @@ function isRunningStandalone() {
 }
 
 function syncPwaInstallEntries() {
-  const installed = isRunningStandalone() || localStorage.getItem(PWA_INSTALL_DONE_KEY) === 'true';
+  // O navegador não oferece uma API confiável para consultar se o PWA está
+  // instalado fora do modo standalone. A entrada deve continuar disponível no
+  // Chrome/Safari e sumir somente dentro do aplicativo realmente aberto.
+  const installed = isRunningStandalone();
   document.querySelectorAll('[data-pwa-install-entry]').forEach((entry) => {
     entry.classList.toggle('hidden', installed);
     entry.setAttribute('aria-hidden', installed ? 'true' : 'false');
@@ -299,7 +301,6 @@ function wasPwaPromptRecentlyDismissed() {
 function shouldOfferPwaInstall(force = false) {
   return isMobileViewport()
     && !isRunningStandalone()
-    && (force || localStorage.getItem(PWA_INSTALL_DONE_KEY) !== 'true')
     && (force || !wasPwaPromptRecentlyDismissed());
 }
 
@@ -406,7 +407,6 @@ function openPwaInstallFromMenu() {
     return;
   }
 
-  localStorage.removeItem(PWA_INSTALL_DONE_KEY);
   localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
 
   if (isIosDevice()) {
@@ -472,9 +472,6 @@ function setupPwaInstallExperience() {
   dismissButton?.addEventListener('click', dismissPwaInstallModal);
   dismissAreas.forEach((element) => element.addEventListener('click', dismissPwaInstallModal));
 
-  if (isRunningStandalone()) {
-    localStorage.setItem(PWA_INSTALL_DONE_KEY, 'true');
-  }
   syncPwaInstallEntries();
 
   const displayMode = window.matchMedia('(display-mode: standalone)');
@@ -558,7 +555,7 @@ function shouldShowCentralPushPrompt() {
   if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
     return false;
   }
-  if (Notification.permission === 'denied') {
+  if (Notification.permission !== 'default') {
     return false;
   }
   return !localStorage.getItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY);
@@ -626,30 +623,55 @@ async function enableCentralPushNotifications() {
 }
 
 function setupCentralPushExperience() {
-  if (!shouldShowCentralPushPrompt()) {
-    return;
-  }
-
   window.setTimeout(async () => {
+    if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      refreshCentralNotificationSetting();
+      return;
+    }
+
+    const permissionAlreadyGranted = Notification.permission === 'granted';
     try {
-      if (Notification.permission === 'granted') {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        if (subscription) {
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = permissionAlreadyGranted
+        ? await registration.pushManager.getSubscription()
+        : null;
+      if (permissionAlreadyGranted && !subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(CENTRAL_PUSH_PUBLIC_KEY)
+        });
+      }
+      if (subscription) {
+        document.getElementById('central-push-prompt')?.remove();
+        refreshCentralNotificationSetting();
+        try {
           const result = await executeCentralPushFunction({
             action: 'subscribe',
             subscription: subscription.toJSON(),
             userAgent: navigator.userAgent
           });
           saveCentralPushSubscriptionId(result.subscriptionId);
-          refreshCentralNotificationSetting();
-          return;
+        } catch (error) {
+          // A inscrição local continua válida. Uma falha temporária ao renovar
+          // o cadastro no servidor não deve pedir autorização novamente.
+          console.warn('Não foi possível renovar a inscrição de push no servidor.', error);
         }
+        return;
       }
     } catch (error) {
-      console.warn('Não foi possível renovar a inscrição de push.', error);
+      console.warn('Não foi possível consultar a inscrição de push.', error);
     }
-    renderCentralPushPrompt();
+
+    if (permissionAlreadyGranted) {
+      document.getElementById('central-push-prompt')?.remove();
+      refreshCentralNotificationSetting();
+      return;
+    }
+    if (shouldShowCentralPushPrompt()) renderCentralPushPrompt();
+    refreshCentralNotificationSetting();
   }, 1800);
 }
 
@@ -755,14 +777,12 @@ function registerServiceWorker() {
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
   deferredPwaPrompt = event;
-  localStorage.removeItem(PWA_INSTALL_DONE_KEY);
   syncPwaInstallEntries();
   showPwaInstallModal('android');
 });
 
 window.addEventListener('appinstalled', () => {
   deferredPwaPrompt = null;
-  localStorage.setItem(PWA_INSTALL_DONE_KEY, 'true');
   localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
   updatePwaInstallStatus('Instala\u00e7\u00e3o conclu\u00edda', 100);
   showSuccessMessage('Central de Registros instalada com sucesso.');
