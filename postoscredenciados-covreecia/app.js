@@ -30,6 +30,8 @@ const COMPRESSED_RECEIPT_QUALITY = 0.72;
 const RECEIPT_CAMERA_LABEL_PATTERN = /back|rear|environment|world|traseir|externa|principal/i;
 const DRIVER_NAMES_STORAGE_KEY = 'postoscredenciados-covreecia:driver-names';
 const LAST_FUEL_ENTRY_STORAGE_KEY = 'postoscredenciados-covreecia:last-fuel-entry';
+const DRIVER_PROFILE_STORAGE_KEY = 'postoscredenciados-covreecia:driver-profile-v1';
+const CENTRAL_LAST_SENT_STORAGE_KEY = 'postoscredenciados-covreecia:last-sent-record-v1';
 const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
 const PWA_INSTALL_DONE_KEY = 'pwa-install-installed';
@@ -820,6 +822,151 @@ function saveLastFuelEntry(entry) {
   }
 }
 
+function getDriverProfile() {
+  try {
+    const storedProfile = localStorage.getItem(DRIVER_PROFILE_STORAGE_KEY);
+    const profile = storedProfile ? JSON.parse(storedProfile) : null;
+    if (!profile || typeof profile !== 'object') return null;
+
+    const name = String(profile.name || '').trim();
+    const vehicle = String(profile.vehicle || '').trim();
+    const plate = String(profile.plate || '').trim().toUpperCase();
+    return name && vehicle && plate ? { name, vehicle, plate } : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function getCentralLastSentRecord() {
+  try {
+    const storedRecord = localStorage.getItem(CENTRAL_LAST_SENT_STORAGE_KEY);
+    const record = storedRecord ? JSON.parse(storedRecord) : null;
+    return record && typeof record === 'object' ? record : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveCentralLastSentRecord(record) {
+  try {
+    localStorage.setItem(CENTRAL_LAST_SENT_STORAGE_KEY, JSON.stringify(record));
+    renderHomeDriverArea();
+  } catch (error) {
+    console.warn('N\u00e3o foi poss\u00edvel atualizar o resumo do \u00faltimo envio.', error);
+  }
+}
+
+function formatHomeSentDate(record) {
+  const rawDate = String(record?.date || '');
+  const rawTime = String(record?.time || '');
+  const dateParts = rawDate.split('-');
+  const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : rawDate;
+  return [formattedDate, rawTime].filter(Boolean).join(' \u2022 ');
+}
+
+function renderHomeDriverArea() {
+  const profile = getDriverProfile();
+  const lastSent = getCentralLastSentRecord();
+  const name = document.getElementById('home-driver-name');
+  const summary = document.getElementById('home-driver-summary');
+  const setupButton = document.getElementById('home-profile-setup');
+  const vehicleName = document.getElementById('home-vehicle-name');
+  const vehiclePlate = document.getElementById('home-vehicle-plate');
+  const vehicleStatus = document.getElementById('home-vehicle-status');
+  const vehicleHint = document.getElementById('home-vehicle-hint');
+
+  if (profile) {
+    if (name) name.textContent = profile.name.split(/\s+/)[0];
+    if (summary) summary.textContent = `Motorista \u2022 ${profile.vehicle} \u2022 ${profile.plate}`;
+    if (vehicleName) vehicleName.textContent = profile.vehicle;
+    if (vehiclePlate) {
+      vehiclePlate.textContent = profile.plate;
+      vehiclePlate.classList.remove('is-empty');
+    }
+    if (vehicleStatus) vehicleStatus.textContent = 'Ve\u00edculo ativo';
+    if (vehicleHint) vehicleHint.textContent = 'Pronto para abastecer';
+    setupButton?.classList.add('hidden');
+  } else {
+    if (name) name.textContent = 'motorista';
+    if (summary) summary.textContent = 'Configure seu perfil para agilizar os pr\u00f3ximos registros.';
+    if (vehicleName) vehicleName.textContent = 'Nenhum ve\u00edculo configurado';
+    if (vehiclePlate) {
+      vehiclePlate.textContent = 'SEM PLACA';
+      vehiclePlate.classList.add('is-empty');
+    }
+    if (vehicleStatus) vehicleStatus.textContent = 'Perfil pendente';
+    if (vehicleHint) vehicleHint.textContent = 'Configure para agilizar seus registros';
+    setupButton?.classList.remove('hidden');
+  }
+
+  const emptyState = document.getElementById('home-last-send-empty');
+  const contentState = document.getElementById('home-last-send-content');
+  emptyState?.classList.toggle('hidden', Boolean(lastSent));
+  contentState?.classList.toggle('hidden', !lastSent);
+
+  if (lastSent) {
+    const type = document.getElementById('home-last-send-type');
+    const date = document.getElementById('home-last-send-date');
+    const value = document.getElementById('home-last-send-value');
+    const status = document.getElementById('home-last-send-status');
+    if (type) type.textContent = lastSent.type || 'Registro';
+    if (date) date.textContent = formatHomeSentDate(lastSent);
+    if (value) value.textContent = lastSent.value || 'Valor n\u00e3o informado';
+    if (status) status.textContent = lastSent.status || 'Enviado';
+  }
+}
+
+function openDriverProfile() {
+  const modal = document.getElementById('driver-profile-modal');
+  const profile = getDriverProfile();
+  const lastFuelEntry = getLastFuelEntry();
+  const nameInput = document.getElementById('driver-profile-name');
+  const vehicleInput = document.getElementById('driver-profile-vehicle');
+  const plateInput = document.getElementById('driver-profile-plate');
+
+  if (nameInput) nameInput.value = profile?.name || lastFuelEntry?.motorista || '';
+  if (vehicleInput) vehicleInput.value = profile?.vehicle || '';
+  if (plateInput) plateInput.value = profile?.plate || '';
+  modal?.classList.remove('hidden');
+  modal?.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('driver-profile-open');
+  window.setTimeout(() => nameInput?.focus(), 80);
+}
+
+function closeDriverProfile() {
+  const modal = document.getElementById('driver-profile-modal');
+  modal?.classList.add('hidden');
+  modal?.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('driver-profile-open');
+}
+
+function saveDriverProfile(event) {
+  event.preventDefault();
+  const name = String(document.getElementById('driver-profile-name')?.value || '').trim().replace(/\s+/g, ' ');
+  const vehicle = String(document.getElementById('driver-profile-vehicle')?.value || '').trim().replace(/\s+/g, ' ');
+  const plate = String(document.getElementById('driver-profile-plate')?.value || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 7);
+
+  if (!name || !vehicle || plate.length !== 7) {
+    showErrorMessage('Informe nome, ve\u00edculo e uma placa v\u00e1lida com 7 caracteres.');
+    return;
+  }
+
+  try {
+    localStorage.setItem(DRIVER_PROFILE_STORAGE_KEY, JSON.stringify({ name, vehicle, plate }));
+  } catch (error) {
+    showErrorMessage('N\u00e3o foi poss\u00edvel salvar o perfil neste aparelho.');
+    return;
+  }
+
+  saveDriverNameSuggestion(name);
+  renderHomeDriverArea();
+  closeDriverProfile();
+  showSuccessMessage('Perfil atualizado neste aparelho.');
+}
+
 function buildFuelReceiptFileName(driverName, dateValue, originalFileName) {
   const normalizedDriverName = driverName
     .normalize('NFD')
@@ -1168,7 +1315,7 @@ function prepareFuelForm(options = {}) {
   const lastFuelEntry = useLastEntry ? getLastFuelEntry() : null;
   const selectedCity = cidade || lastFuelEntry?.cidade || '';
   const selectedPosto = posto || lastFuelEntry?.posto || '';
-  const selectedDriver = lastFuelEntry?.motorista || '';
+  const selectedDriver = getDriverProfile()?.name || lastFuelEntry?.motorista || '';
 
   document.getElementById('fuel-form').reset();
   applyFuelFormMode(mode);
@@ -1230,6 +1377,17 @@ function prepareLooseNoteForm() {
     form.reset();
   }
   populateDriverOptions();
+  const profileDriver = getDriverProfile()?.name || '';
+  const driverSelect = document.getElementById('loose-driver-name');
+  if (profileDriver && driverSelect) {
+    if (getStoredDriverNames().includes(profileDriver)) {
+      driverSelect.value = profileDriver;
+    } else {
+      driverSelect.value = OTHER_DRIVER_OPTION;
+      const customInput = document.getElementById('loose-custom-driver-name');
+      if (customInput) customInput.value = profileDriver;
+    }
+  }
   setLooseDateToToday();
   resetLoosePhotoState();
   toggleLooseCustomDriverField();
@@ -2106,6 +2264,13 @@ async function submitFuelForm(e) {
 
   saveDriverNameSuggestion(formData.motorista);
   saveLastFuelEntry({ motorista: formData.motorista, cidade: formData.cidade, posto: formData.posto });
+  saveCentralLastSentRecord({
+    type: 'Abastecimento',
+    date: formData.data,
+    time: formData.horaFormatada,
+    value: isComplete && formData.valor ? `R$ ${formData.valor}` : 'Valor n\u00e3o informado',
+    status: 'Enviado'
+  });
   document.getElementById('fuel-form').reset();
   document.getElementById('fuel-form-modal').classList.add('hidden');
   resetFuelPhotoState();
@@ -2173,6 +2338,13 @@ async function submitLooseNoteForm(e) {
   }
 
   saveDriverNameSuggestion(formData.motorista);
+  saveCentralLastSentRecord({
+    type: 'Servi\u00e7o',
+    date: formData.data,
+    time: formData.horaFormatada,
+    value: formData.valor ? `R$ ${formData.valor}` : 'Valor n\u00e3o informado',
+    status: 'Enviado'
+  });
   closeLooseNoteForm();
   showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar o registro de servi\u00e7os.');
 }
@@ -2225,6 +2397,7 @@ function goToWelcome() {
   document.getElementById('about-section')?.classList.add('hidden');
   currentView = 'welcome';
   setMobileNavActive('home');
+  renderHomeDriverArea();
   updateBackButtonVisibility();
 }
 
@@ -3195,6 +3368,13 @@ function renderCityImageCards() {
 window.addEventListener('DOMContentLoaded', () => {
   renderCityImageCards();
   retryPendingCentralRegistro();
+  renderHomeDriverArea();
+});
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !document.getElementById('driver-profile-modal')?.classList.contains('hidden')) {
+    closeDriverProfile();
+  }
 });
 
 function initHomeHeroCarousel() {
