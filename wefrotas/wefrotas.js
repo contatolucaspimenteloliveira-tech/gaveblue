@@ -11,6 +11,10 @@
     let centralPendingLoaded = false;
     let centralPendingAutoRefreshTimer = null;
     let centralPushSending = false;
+    let centralPushSubscriberTotal = 0;
+    let centralPushDevices = [];
+    let centralDevicesLoading = false;
+    let centralDeviceLinks = {};
     let centralHomeBanners = [];
     let centralBannerSaving = false;
     const CENTRAL_PENDING_FILTERS_KEY = 'wefrotas:central-pending-filters';
@@ -1473,6 +1477,7 @@
         deletedOrders,
         orderCounter,
         notifications: systemNotifications,
+        centralDeviceLinks,
         customLogoEnabled,
         customLogoUrl,
         customLogoScale,
@@ -1501,6 +1506,9 @@
       allAdministrations = normalizeAdministrationList(snapshot.administrations || snapshot.administracoes || []);
       deletedOrders = Array.isArray(snapshot.deletedOrders) ? snapshot.deletedOrders : [];
       systemNotifications = Array.isArray(snapshot.notifications) ? snapshot.notifications : [];
+      centralDeviceLinks = snapshot.centralDeviceLinks && typeof snapshot.centralDeviceLinks === 'object'
+        ? snapshot.centralDeviceLinks
+        : {};
       orderCounter = Number(snapshot.orderCounter) || 1;
       customLogoEnabled = snapshot.customLogoEnabled === true || snapshot.customLogoEnabled === 'true';
       customLogoUrl = snapshot.customLogoUrl || '';
@@ -1524,6 +1532,7 @@
         deletedOrders: parseLocalStorageJson('wefrotas_deleted_orders', []),
         orderCounter: localStorage.getItem('wefrotas_order_counter') || 1,
         notifications: parseLocalStorageJson('wefrotas_notifications', []),
+        centralDeviceLinks: parseLocalStorageJson('wefrotas_central_device_links', {}),
         customLogoEnabled: localStorage.getItem('wefrotas_custom_logo_enabled') === 'true',
         customLogoUrl: localStorage.getItem('wefrotas_custom_logo_url') || '',
         customLogoScale: localStorage.getItem('wefrotas_custom_logo_scale') || 60,
@@ -1542,6 +1551,7 @@
         localStorage.setItem('wefrotas_manager_display_name', snapshot.managerDisplayName || 'Gestor');
         localStorage.setItem('wefrotas_allow_manual_order_number_editing', snapshot.allowManualOrderNumberEditing ? 'true' : 'false');
         localStorage.setItem('wefrotas_administrations', JSON.stringify(snapshot.administrations || []));
+        localStorage.setItem('wefrotas_central_device_links', JSON.stringify(snapshot.centralDeviceLinks || {}));
       } catch (error) {
         console.warn('Não foi possível salvar preferências pequenas no localStorage.', error);
       }
@@ -1557,6 +1567,7 @@
         localStorage.setItem('wefrotas_administrations', JSON.stringify(snapshot.administrations || []));
         localStorage.setItem('wefrotas_deleted_orders', JSON.stringify(snapshot.deletedOrders || []));
         localStorage.setItem('wefrotas_notifications', JSON.stringify(snapshot.notifications || []));
+        localStorage.setItem('wefrotas_central_device_links', JSON.stringify(snapshot.centralDeviceLinks || {}));
         saveSmallSettingsToLocalStorage(snapshot);
       } catch (error) {
         console.warn('Não foi possível salvar snapshot completo no localStorage.', error);
@@ -3241,10 +3252,31 @@
       }
     };
 
+    const centralSectionHeaderContent = {
+      registros: {
+        title: 'Registros da Central',
+        subtitle: 'Analise, aprove, rejeite e acompanhe os registros enviados pelo aplicativo.'
+      },
+      notificacoes: {
+        title: 'Notificações da Central',
+        subtitle: 'Envie comunicados gerais ou mensagens para um aparelho específico.'
+      },
+      usuarios: {
+        title: 'Usuários da Central',
+        subtitle: 'Relacione os aparelhos inscritos aos motoristas cadastrados no WeFrotas.'
+      },
+      configuracoes: {
+        title: 'Configurações da Central',
+        subtitle: 'Organize comunicação, regras de registro e integrações do aplicativo.'
+      }
+    };
+
     function updateModuleHeader(module) {
       const titleNode = document.getElementById('module-header-title');
       const subtitleNode = document.getElementById('module-header-subtitle');
-      const content = moduleHeaderContent[module] || moduleHeaderContent.home;
+      const content = module === 'central'
+        ? (centralSectionHeaderContent[activeCentralSection] || moduleHeaderContent.central)
+        : (moduleHeaderContent[module] || moduleHeaderContent.home);
       if (titleNode) titleNode.textContent = content.title;
       if (subtitleNode) subtitleNode.textContent = content.subtitle;
     }
@@ -3355,13 +3387,154 @@
       if (statusNode) statusNode.textContent = 'Atualizando...';
       try {
         const result = await executeCentralPushAdmin({ action: 'stats' });
-        if (countNode) countNode.textContent = String(result.subscribers ?? 0);
+        centralPushSubscriberTotal = Number(result.subscribers || 0);
+        if (Array.isArray(result.devices)) centralPushDevices = result.devices.map(normalizeCentralPushDevice).filter(item => item.id);
+        if (countNode) countNode.textContent = String(centralPushSubscriberTotal);
         if (statusNode) statusNode.textContent = 'Aparelhos autorizados a receber';
       } catch (error) {
         if (countNode) countNode.textContent = '—';
         if (statusNode) statusNode.textContent = error?.message || 'Canal ainda não configurado';
       }
+      renderCentralDevices();
     }
+
+    function normalizeCentralPushDevice(device = {}) {
+      return {
+        id: String(device.id || device.$id || '').trim(),
+        userAgent: String(device.userAgent || '').trim(),
+        updatedAt: String(device.updatedAt || device.$updatedAt || '').trim(),
+        active: device.active !== false
+      };
+    }
+
+    function getCentralDevicesFromRecords() {
+      const devices = new Map();
+      [...centralPendingRecords]
+        .sort((a, b) => String(b?.atualizadoEm || b?.criadoEm || b?.$updatedAt || '').localeCompare(String(a?.atualizadoEm || a?.criadoEm || a?.$updatedAt || '')))
+        .forEach((record) => {
+          const id = String(record?.pushSubscriptionId || '').trim();
+          if (!id || devices.has(id)) return;
+          devices.set(id, {
+            id,
+            userAgent: '',
+            updatedAt: String(record?.atualizadoEm || record?.criadoEm || record?.$updatedAt || ''),
+            active: true
+          });
+        });
+      return [...devices.values()];
+    }
+
+    function getCentralDeviceRecord(deviceId) {
+      return [...centralPendingRecords]
+        .filter(record => String(record?.pushSubscriptionId || '').trim() === deviceId)
+        .sort((a, b) => String(b?.atualizadoEm || b?.criadoEm || b?.$updatedAt || '').localeCompare(String(a?.atualizadoEm || a?.criadoEm || a?.$updatedAt || '')))[0] || null;
+    }
+
+    function getCentralDeviceDriver(deviceId) {
+      const savedDriverId = String(centralDeviceLinks?.[deviceId]?.driverId || '').trim();
+      const saved = allDrivers.find(driver => driver.id === savedDriverId);
+      if (saved) return saved;
+      const record = getCentralDeviceRecord(deviceId);
+      const recordDriverName = normalizeComparableText(record?.motorista || '');
+      if (!recordDriverName) return null;
+      return allDrivers.find(driver => normalizeComparableText(driver.nome || '') === recordDriverName) || null;
+    }
+
+    function describeCentralDevice(userAgent = '') {
+      const ua = String(userAgent || '');
+      const platform = /iphone|ipad|ios/i.test(ua) ? 'iPhone / iOS' : /android/i.test(ua) ? 'Android' : /windows/i.test(ua) ? 'Windows' : /macintosh|mac os/i.test(ua) ? 'macOS' : 'Aparelho móvel';
+      const browser = /edg\//i.test(ua) ? 'Edge' : /firefox|fxios/i.test(ua) ? 'Firefox' : /crios|chrome/i.test(ua) ? 'Chrome' : /safari/i.test(ua) ? 'Safari' : '';
+      return browser ? `${platform} • ${browser}` : platform;
+    }
+
+    function formatCentralDeviceDate(value) {
+      if (!value) return 'Atividade ainda não informada';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return 'Atividade recente';
+      return `Atualizado em ${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    function renderCentralDevices() {
+      const list = document.getElementById('central-devices-list');
+      const count = document.getElementById('central-devices-count');
+      if (!list) return;
+      const merged = new Map(getCentralDevicesFromRecords().map(device => [device.id, device]));
+      centralPushDevices.forEach(device => merged.set(device.id, { ...(merged.get(device.id) || {}), ...device }));
+      const devices = [...merged.values()].sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+      if (count) count.textContent = String(centralPushSubscriberTotal || devices.length || 0);
+      if (centralDevicesLoading) {
+        list.innerHTML = '<div class="central-devices-empty"><span class="central-devices-spinner"></span>Atualizando aparelhos inscritos…</div>';
+        return;
+      }
+      if (!devices.length) {
+        list.innerHTML = '<div class="central-devices-empty">Nenhum aparelho com notificações autorizadas foi encontrado.</div>';
+        return;
+      }
+      list.innerHTML = devices.map((device) => {
+        const linkedDriver = getCentralDeviceDriver(device.id);
+        const latestRecord = getCentralDeviceRecord(device.id);
+        const shortId = device.id.slice(-6).toUpperCase();
+        const status = device.active === false ? 'Inativo' : 'Ativo';
+        const recordLabel = latestRecord
+          ? `Último envio: ${escapeHtml(latestRecord.motorista || 'motorista não informado')} • ${escapeHtml(getCentralPendingRecordType(latestRecord))}`
+          : 'Ainda não enviou registros para a Central';
+        return `
+          <article class="central-device-card ${linkedDriver ? 'is-linked' : ''}">
+            <div class="central-device-main">
+              <span class="central-device-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="7" y="2.5" width="10" height="19" rx="2.5" stroke-width="1.9"/><path d="M10 5.5h4M11 18.5h2" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+              <div class="central-device-copy">
+                <div><strong>${linkedDriver ? escapeHtml(linkedDriver.nome) : 'Aparelho não vinculado'}</strong><span class="central-device-status ${device.active === false ? 'is-inactive' : ''}">${status}</span></div>
+                <p>${escapeHtml(describeCentralDevice(device.userAgent))} • ID ${escapeHtml(shortId)}</p>
+                <small>${escapeHtml(formatCentralDeviceDate(device.updatedAt))}</small>
+                <small>${recordLabel}</small>
+              </div>
+            </div>
+            <div class="central-device-linking">
+              <label for="central-device-driver-${escapeHtml(device.id)}">Motorista vinculado</label>
+              <select id="central-device-driver-${escapeHtml(device.id)}">
+                <option value="">Selecione um motorista</option>
+                ${getSortedDrivers().map(driver => `<option value="${escapeHtml(driver.id)}" ${linkedDriver?.id === driver.id ? 'selected' : ''}>${escapeHtml(driver.nome)}${isEntityActive(driver) ? '' : ' (inativo)'}</option>`).join('')}
+              </select>
+              <button type="button" onclick="saveCentralDeviceLink('${escapeHtml(device.id)}')">${linkedDriver ? 'Atualizar vínculo' : 'Vincular motorista'}</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    async function refreshCentralDevices() {
+      if (centralDevicesLoading) return;
+      centralDevicesLoading = true;
+      renderCentralDevices();
+      try {
+        await refreshCentralPendingRecords({ silent: true });
+        await refreshPushSubscriberStats();
+      } finally {
+        centralDevicesLoading = false;
+        renderCentralDevices();
+      }
+    }
+
+    async function saveCentralDeviceLink(deviceId) {
+      const select = document.getElementById(`central-device-driver-${deviceId}`);
+      const driverId = String(select?.value || '').trim();
+      if (!driverId) {
+        delete centralDeviceLinks[deviceId];
+        await saveToLocalStorage();
+        renderCentralDevices();
+        showToast('Vínculo removido. O aparelho continua autorizado a receber notificações.');
+        return;
+      }
+      const driver = allDrivers.find(item => item.id === driverId);
+      if (!driver) return showToast('Motorista não encontrado. Atualize os cadastros e tente novamente.');
+      centralDeviceLinks[deviceId] = { driverId, linkedAt: new Date().toISOString() };
+      await saveToLocalStorage();
+      renderCentralDevices();
+      showToast(`Aparelho vinculado a ${driver.nome}.`);
+    }
+
+    window.refreshCentralDevices = refreshCentralDevices;
+    window.saveCentralDeviceLink = saveCentralDeviceLink;
 
     function confirmPushBroadcast() {
       if (centralPushSending) return;
@@ -3483,18 +3656,38 @@
       showCentralSection(activeCentralSection);
     }
 
+    function setCentralNavExpanded(expanded) {
+      const group = document.getElementById('central-nav-group');
+      const toggle = document.getElementById('central-nav-toggle');
+      group?.classList.toggle('open', Boolean(expanded));
+      toggle?.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }
+
+    function openCentralModule(button = null) {
+      const isAlreadyOpen = activeModule === 'central' && document.getElementById('central-nav-group')?.classList.contains('open');
+      showModule('central', button || document.getElementById('central-nav-toggle'));
+      setCentralNavExpanded(!isAlreadyOpen || activeModule !== 'central');
+    }
+
+    function showCentralSubmodule(section, button = null) {
+      setCentralNavExpanded(true);
+      showModule('central', document.getElementById('central-nav-toggle'));
+      showCentralSection(section, button);
+    }
+
     function showCentralSection(section = 'registros', button = null) {
       const allowedSections = new Set(['registros', 'notificacoes', 'usuarios', 'configuracoes']);
       activeCentralSection = allowedSections.has(section) ? section : 'registros';
       document.querySelectorAll('.central-management-view').forEach((view) => {
         view.classList.toggle('active', view.id === `central-view-${activeCentralSection}`);
       });
-      document.querySelectorAll('.central-management-tab').forEach((tab) => {
+      document.querySelectorAll('[data-central-section]').forEach((tab) => {
         const isActive = tab.dataset.centralSection === activeCentralSection;
         tab.classList.toggle('active', isActive);
-        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        if (tab.hasAttribute('aria-selected')) tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
       });
       if (button) button.focus({ preventScroll: true });
+      if (activeModule === 'central') updateModuleHeader('central');
       if (activeCentralSection === 'registros') {
         refreshCentralPendingRecords({ silent: true });
         renderDocuments();
@@ -3505,9 +3698,12 @@
         refreshCentralPendingRecords({ silent: true });
         refreshPushSubscriberStats();
       }
+      if (activeCentralSection === 'usuarios') refreshCentralDevices();
     }
 
     window.showCentralSection = showCentralSection;
+    window.openCentralModule = openCentralModule;
+    window.showCentralSubmodule = showCentralSubmodule;
 
     function showModule(module, button) {
       const legacyCentralSection = module === 'documentos'
@@ -3521,7 +3717,9 @@
       });
       const panel = document.getElementById(`panel-${module}`);
       if (panel) panel.classList.add('active');
-      if (button) button.classList.add('active');
+      const activeButton = button || (module === 'central' ? document.getElementById('central-nav-toggle') : getModuleNavButton(module));
+      if (activeButton) activeButton.classList.add('active');
+      setCentralNavExpanded(module === 'central');
       updateModuleHeader(module);
       updateContextualSearchUi();
       if (window.innerWidth <= 1120 && sidebarCollapsed) {
@@ -3532,6 +3730,7 @@
     }
 
     function getModuleNavButton(module) {
+      if (module === 'central') return document.getElementById('central-nav-toggle');
       return Array.from(document.querySelectorAll('.nav-btn'))
         .find(button => (button.getAttribute('onclick') || '').includes(`showModule('${module}'`)) || null;
     }
@@ -4378,6 +4577,7 @@
       allAdministrations = [];
       deletedOrders = [];
       systemNotifications = [];
+      centralDeviceLinks = {};
       selectedVehicles.clear();
       selectedDrivers.clear();
       selectedSuppliers.clear();

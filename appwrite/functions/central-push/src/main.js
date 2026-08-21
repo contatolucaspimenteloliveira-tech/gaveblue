@@ -387,7 +387,13 @@ export default async ({ req, res, log, error }) => {
       await assertAdmin(req);
       const databases = createDatabaseClient(req);
       const subscriptions = await listSubscriptions(databases);
-      return json(res, 200, { ok: true, subscribers: subscriptions.length });
+      const devices = subscriptions.map((document) => ({
+        id: String(document.$id || ''),
+        userAgent: String(document.userAgent || ''),
+        active: document.active !== false,
+        updatedAt: String(document.updatedAt || document.$updatedAt || '')
+      }));
+      return json(res, 200, { ok: true, subscribers: subscriptions.length, devices });
     }
 
     if (action === 'broadcast') {
