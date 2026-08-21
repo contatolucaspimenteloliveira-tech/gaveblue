@@ -8,7 +8,11 @@
   "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#ef4444",
-  "categories": ["business", "productivity", "utilities"],
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "assets/pwa/icon-192.png",
@@ -28,5 +32,6 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "id": "./"
 }

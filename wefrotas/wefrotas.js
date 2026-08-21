@@ -10,6 +10,7 @@
     let centralPendingError = '';
     let centralPendingLoaded = false;
     let centralPendingAutoRefreshTimer = null;
+    let centralPushSending = false;
     const CENTRAL_PENDING_FILTERS_KEY = 'wefrotas:central-pending-filters';
     let centralPendingStatusFilter = 'pendente';
     let centralPendingDateStart = '';
@@ -3088,6 +3089,10 @@
         title: 'Documentos',
         subtitle: 'Acompanhe os registros recebidos da Central antes de aprovar os lançamentos.'
       },
+      notificacoes: {
+        title: 'Notificações',
+        subtitle: 'Envie comunicados gerais para todos os aparelhos inscritos na Central de Registros.'
+      },
       relatorios: {
         title: 'Relatórios',
         subtitle: 'Visualize custos, desempenho e histórico da operação com leitura rápida.'
@@ -3100,6 +3105,145 @@
       const content = moduleHeaderContent[module] || moduleHeaderContent.home;
       if (titleNode) titleNode.textContent = content.title;
       if (subtitleNode) subtitleNode.textContent = content.subtitle;
+    }
+
+
+    async function executeCentralPushAdmin(payload) {
+      const config = window.WEFROTAS_APPWRITE_CONFIG || {};
+      const functionId = config.pushFunctionId || 'central-push';
+      if (!config.endpoint || !config.projectId) {
+        throw new Error('Configuração do Appwrite indisponível.');
+      }
+
+      const response = await fetch(config.endpoint + '/functions/' + functionId + '/executions', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'content-type': 'application/json',
+          'x-appwrite-project': config.projectId
+        },
+        body: JSON.stringify({
+          body: JSON.stringify(payload),
+          async: false,
+          method: 'POST',
+          path: '/'
+        })
+      });
+
+      const execution = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(execution?.message || 'Não foi possível acessar o canal de notificações.');
+      }
+
+      let result = {};
+      try {
+        result = JSON.parse(execution.responseBody || '{}');
+      } catch (error) {
+        result = {};
+      }
+
+      if (execution.status === 'failed' || result.ok === false) {
+        throw new Error(result.error || execution.errors || 'A função de notificações não concluiu a operação.');
+      }
+      return result;
+    }
+
+    function updatePushBroadcastPreview() {
+      const title = document.getElementById('push-broadcast-title')?.value.trim() || '';
+      const body = document.getElementById('push-broadcast-body')?.value.trim() || '';
+      const titlePreview = document.getElementById('push-preview-title');
+      const bodyPreview = document.getElementById('push-preview-body');
+      const titleCount = document.getElementById('push-title-count');
+      const bodyCount = document.getElementById('push-body-count');
+      if (titlePreview) titlePreview.textContent = title || 'Título da notificação';
+      if (bodyPreview) bodyPreview.textContent = body || 'O subtítulo do comunicado aparecerá aqui.';
+      if (titleCount) titleCount.textContent = String(title.length);
+      if (bodyCount) bodyCount.textContent = String(body.length);
+    }
+
+    function setPushBroadcastFeedback(message, type = '') {
+      const node = document.getElementById('push-broadcast-feedback');
+      if (!node) return;
+      node.textContent = message || '';
+      node.className = 'push-broadcast-feedback' + (type ? ' is-' + type : '');
+    }
+
+    async function refreshPushSubscriberStats() {
+      const countNode = document.getElementById('push-subscriber-count');
+      const statusNode = document.getElementById('push-subscriber-status');
+      if (statusNode) statusNode.textContent = 'Atualizando...';
+      try {
+        const result = await executeCentralPushAdmin({ action: 'stats' });
+        if (countNode) countNode.textContent = String(result.subscribers ?? 0);
+        if (statusNode) statusNode.textContent = 'Aparelhos autorizados a receber';
+      } catch (error) {
+        if (countNode) countNode.textContent = '—';
+        if (statusNode) statusNode.textContent = error?.message || 'Canal ainda não configurado';
+      }
+    }
+
+    function confirmPushBroadcast() {
+      if (centralPushSending) return;
+      const title = document.getElementById('push-broadcast-title')?.value.trim() || '';
+      const body = document.getElementById('push-broadcast-body')?.value.trim() || '';
+      if (!title || !body) {
+        setPushBroadcastFeedback('Preencha o título e o subtítulo antes de enviar.', 'error');
+        return;
+      }
+
+      openPromptModal({
+        title: 'Enviar notificação para todos?',
+        text: 'A mensagem será disparada para todos os aparelhos inscritos na Central de Registros.',
+        mode: 'confirm',
+        confirmLabel: 'Enviar agora',
+        cancelLabel: 'Revisar',
+        onConfirm: sendPushBroadcast
+      });
+    }
+
+    async function sendPushBroadcast() {
+      if (centralPushSending) return;
+      const titleInput = document.getElementById('push-broadcast-title');
+      const bodyInput = document.getElementById('push-broadcast-body');
+      const urlInput = document.getElementById('push-broadcast-url');
+      const button = document.getElementById('push-broadcast-send');
+      const title = titleInput?.value.trim() || '';
+      const body = bodyInput?.value.trim() || '';
+      if (!title || !body) return;
+
+      centralPushSending = true;
+      if (button) {
+        button.disabled = true;
+        button.querySelector('span').textContent = 'Enviando...';
+      }
+      setPushBroadcastFeedback('Disparando a notificação geral...', 'loading');
+
+      try {
+        const result = await executeCentralPushAdmin({
+          action: 'broadcast',
+          title,
+          body,
+          url: urlInput?.value || './'
+        });
+        const sent = Number(result.sent || 0);
+        const failed = Number(result.failed || 0);
+        setPushBroadcastFeedback(
+          sent + ' aparelho(s) receberam o envio' + (failed ? '; ' + failed + ' falharam.' : '.'),
+          failed ? 'warning' : 'success'
+        );
+        titleInput.value = '';
+        bodyInput.value = '';
+        updatePushBroadcastPreview();
+        await refreshPushSubscriberStats();
+      } catch (error) {
+        setPushBroadcastFeedback(error?.message || 'Não foi possível enviar a notificação.', 'error');
+      } finally {
+        centralPushSending = false;
+        if (button) {
+          button.disabled = false;
+          button.querySelector('span').textContent = 'Enviar para todos';
+        }
+      }
     }
 
     function applySidebarState() {
@@ -3139,6 +3283,10 @@
       if (module === 'documentos') {
         refreshCentralPendingRecords({ silent: true });
         renderDocuments();
+      }
+      if (module === 'notificacoes') {
+        updatePushBroadcastPreview();
+        refreshPushSubscriberStats();
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }

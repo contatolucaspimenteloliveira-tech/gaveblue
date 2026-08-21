@@ -5,6 +5,7 @@ window.WEFROTAS_APPWRITE_CONFIG = Object.freeze({
   databaseId: '6a68ce8c000a36a44d98',
   tableId: 'gaveblue_wefrotas',
   centralTableId: 'central_registros_pendentes',
+  pushFunctionId: 'central-push',
   bucketId: '6a6fce300023ca843972',
   companyId: 'covre-e-cia',
   teamId: ''
