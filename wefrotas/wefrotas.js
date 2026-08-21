@@ -12475,7 +12475,6 @@
     }
 
     function setupStickyTableHeaders() {
-      if (window.innerWidth <= 1120) return;
       document.querySelectorAll('.orders-table-shell').forEach((shell) => {
         const toolbar = shell.querySelector(':scope > .orders-toolbar');
         const scroll = shell.querySelector(':scope > .orders-table-scroll');
