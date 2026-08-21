@@ -58,6 +58,7 @@
     let currentEditingId = null;
     let currentFinanceEntryType = null;
     let activeModule = 'home';
+    let activeCentralSection = 'registros';
     let orderViewerZoom = 1;
     let systemNotifications = [];
     let pendingBatchImportEntity = null;
@@ -3230,13 +3231,9 @@
         title: 'Calendário',
         subtitle: 'Planeje revisões, acompanhe agendamentos e relacione OS futuras.'
       },
-      documentos: {
-        title: 'Documentos',
-        subtitle: 'Acompanhe os registros recebidos da Central antes de aprovar os lançamentos.'
-      },
-      notificacoes: {
-        title: 'Notificações',
-        subtitle: 'Envie comunicados gerais ou mensagens ao aparelho vinculado a um registro da Central.'
+      central: {
+        title: 'Central de Registros',
+        subtitle: 'Gerencie registros, notificações, usuários e configurações da Central em um único lugar.'
       },
       relatorios: {
         title: 'Relatórios',
@@ -3468,7 +3465,55 @@
 
     window.toggleSidebar = toggleSidebar;
 
+    function initializeCentralManagement() {
+      const registrosView = document.getElementById('central-view-registros');
+      const notificacoesView = document.getElementById('central-view-notificacoes');
+      const documentosPanel = document.getElementById('panel-documentos');
+      const notificacoesPanel = document.getElementById('panel-notificacoes');
+      if (registrosView && documentosPanel && documentosPanel.parentElement !== registrosView) {
+        documentosPanel.classList.remove('module-panel');
+        documentosPanel.classList.add('central-embedded-panel');
+        registrosView.appendChild(documentosPanel);
+      }
+      if (notificacoesView && notificacoesPanel && notificacoesPanel.parentElement !== notificacoesView) {
+        notificacoesPanel.classList.remove('module-panel');
+        notificacoesPanel.classList.add('central-embedded-panel');
+        notificacoesView.appendChild(notificacoesPanel);
+      }
+      showCentralSection(activeCentralSection);
+    }
+
+    function showCentralSection(section = 'registros', button = null) {
+      const allowedSections = new Set(['registros', 'notificacoes', 'usuarios', 'configuracoes']);
+      activeCentralSection = allowedSections.has(section) ? section : 'registros';
+      document.querySelectorAll('.central-management-view').forEach((view) => {
+        view.classList.toggle('active', view.id === `central-view-${activeCentralSection}`);
+      });
+      document.querySelectorAll('.central-management-tab').forEach((tab) => {
+        const isActive = tab.dataset.centralSection === activeCentralSection;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+      if (button) button.focus({ preventScroll: true });
+      if (activeCentralSection === 'registros') {
+        refreshCentralPendingRecords({ silent: true });
+        renderDocuments();
+      }
+      if (activeCentralSection === 'notificacoes') {
+        updatePushBroadcastPreview();
+        updatePushAudienceMode();
+        refreshCentralPendingRecords({ silent: true });
+        refreshPushSubscriberStats();
+      }
+    }
+
+    window.showCentralSection = showCentralSection;
+
     function showModule(module, button) {
+      const legacyCentralSection = module === 'documentos'
+        ? 'registros'
+        : (module === 'notificacoes' ? 'notificacoes' : '');
+      if (legacyCentralSection) module = 'central';
       activeModule = module;
       document.querySelectorAll('.module-panel').forEach(panel => panel.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -3482,16 +3527,7 @@
       if (window.innerWidth <= 1120 && sidebarCollapsed) {
         toggleSidebar(false);
       }
-      if (module === 'documentos') {
-        refreshCentralPendingRecords({ silent: true });
-        renderDocuments();
-      }
-      if (module === 'notificacoes') {
-        updatePushBroadcastPreview();
-        updatePushAudienceMode();
-        refreshCentralPendingRecords({ silent: true });
-        refreshPushSubscriberStats();
-      }
+      if (module === 'central') showCentralSection(legacyCentralSection || activeCentralSection);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -12407,6 +12443,7 @@
     async function initializeWeFrotas() {
       await loadFromStorage();
       if (syncAllocatedOrderStatuses()) saveToLocalStorage();
+      initializeCentralManagement();
       updateStickyTableOffset();
       setupStickyTableHeaders();
       setupUnifiedModuleHeaders();
