@@ -1,4 +1,9 @@
-const CACHE_NAME = 'central-registros-static-v20260815-push-native-1';
+const CACHE_NAME = 'central-registros-static-v20260820-push-native-2';
+const APPWRITE_AUTH_CACHE = 'central-registros-appwrite-auth-v1';
+const APPWRITE_ENDPOINT_ORIGIN = 'https://nyc.cloud.appwrite.io';
+const APPWRITE_PROJECT_ID = '6a68cb3e00312ec0a3fd';
+const APPWRITE_CENTRAL_ROWS_PATH = '/v1/tablesdb/6a68ce8c000a36a44d98/tables/central_registros_pendentes/rows';
+const APPWRITE_FALLBACK_CACHE_KEY = new URL('./__central_appwrite_fallback_cookie__', self.location.href).href;
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -36,7 +41,11 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME && key !== APPWRITE_AUTH_CACHE)
+          .map((key) => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
   );
 });
@@ -85,14 +94,141 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
+async function readAppwriteFallbackCookie() {
+  try {
+    const cache = await caches.open(APPWRITE_AUTH_CACHE);
+    const response = await cache.match(APPWRITE_FALLBACK_CACHE_KEY);
+    return response ? await response.text() : '';
+  } catch (error) {
+    console.warn('Central: não foi possível recuperar a sessão anônima do Appwrite.', error);
+    return '';
+  }
+}
+
+async function writeAppwriteFallbackCookie(value) {
+  if (!value) return;
+  try {
+    const cache = await caches.open(APPWRITE_AUTH_CACHE);
+    await cache.put(
+      APPWRITE_FALLBACK_CACHE_KEY,
+      new Response(value, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'no-store'
+        }
+      })
+    );
+  } catch (error) {
+    console.warn('Central: não foi possível persistir a sessão anônima do Appwrite.', error);
+  }
+}
+
+async function clearAppwriteFallbackCookie() {
+  try {
+    const cache = await caches.open(APPWRITE_AUTH_CACHE);
+    await cache.delete(APPWRITE_FALLBACK_CACHE_KEY);
+  } catch (error) {
+    console.warn('Central: não foi possível limpar a sessão anônima do Appwrite.', error);
+  }
+}
+
+function buildAppwriteRequest(request, fallbackCookie = '') {
+  const headers = new Headers(request.headers);
+
+  // O formato de resposta é opcional. Não congelamos a Central em uma versão
+  // antiga do protocolo do Appwrite; deixamos o Cloud responder no formato atual.
+  headers.delete('X-Appwrite-Response-Format');
+
+  if (fallbackCookie) {
+    headers.set('X-Fallback-Cookies', fallbackCookie);
+  }
+
+  return new Request(request, {
+    headers,
+    credentials: 'include'
+  });
+}
+
+async function createAnonymousAppwriteSession() {
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+    'X-Appwrite-Project': APPWRITE_PROJECT_ID
+  });
+
+  const storedFallbackCookie = await readAppwriteFallbackCookie();
+  if (storedFallbackCookie) {
+    headers.set('X-Fallback-Cookies', storedFallbackCookie);
+  }
+
+  const response = await fetch(`${APPWRITE_ENDPOINT_ORIGIN}/v1/account/sessions/anonymous`, {
+    method: 'POST',
+    headers,
+    body: '{}',
+    credentials: 'include'
+  });
+
+  if (!response.ok && response.status !== 409) {
+    throw new Error(`Falha ao criar sessão anônima no Appwrite (${response.status}).`);
+  }
+
+  const fallbackCookie = response.headers.get('X-Fallback-Cookies') || '';
+  if (fallbackCookie) {
+    await writeAppwriteFallbackCookie(fallbackCookie);
+  }
+
+  return fallbackCookie || storedFallbackCookie;
+}
+
+function isAppwriteAuthError(response) {
+  return response && (response.status === 401 || response.status === 403);
+}
+
+async function handleCentralAppwriteWrite(request) {
+  // 1) Mantém compatibilidade com a permissão antiga de visitante (Role.guests/any).
+  const guestResponse = await fetch(buildAppwriteRequest(request.clone()));
+  if (!isAppwriteAuthError(guestResponse)) {
+    return guestResponse;
+  }
+
+  // 2) Se já há sessão anônima salva, tenta como Role.users antes de criar outra.
+  let fallbackCookie = await readAppwriteFallbackCookie();
+  if (fallbackCookie) {
+    const authenticatedResponse = await fetch(buildAppwriteRequest(request.clone(), fallbackCookie));
+    if (!isAppwriteAuthError(authenticatedResponse)) {
+      return authenticatedResponse;
+    }
+    await clearAppwriteFallbackCookie();
+    fallbackCookie = '';
+  }
+
+  // 3) Cria uma sessão anônima e repete a gravação. Role.users() no Appwrite
+  // inclui usuários anônimos, preservando a Central sem exigir login do motorista.
+  try {
+    fallbackCookie = await createAnonymousAppwriteSession();
+    return await fetch(buildAppwriteRequest(request.clone(), fallbackCookie));
+  } catch (error) {
+    console.error('Central: falha no fallback de autenticação do Appwrite.', error);
+    return guestResponse;
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const request = event.request;
+  const requestUrl = new URL(request.url);
+
+  if (
+    request.method === 'POST'
+    && requestUrl.origin === APPWRITE_ENDPOINT_ORIGIN
+    && requestUrl.pathname === APPWRITE_CENTRAL_ROWS_PATH
+  ) {
+    event.respondWith(handleCentralAppwriteWrite(request));
+    return;
+  }
 
   if (request.method !== 'GET') {
     return;
   }
 
-  const requestUrl = new URL(request.url);
   if (requestUrl.origin !== self.location.origin) {
     return;
   }
@@ -107,3 +243,4 @@ self.addEventListener('fetch', (event) => {
       .catch(() => caches.match(request).then((cachedResponse) => cachedResponse || caches.match('./index.html')))
   );
 });
+
