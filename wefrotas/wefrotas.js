@@ -8164,6 +8164,20 @@
       }
     }
 
+    async function notifyCentralRecordRejection(record, reason) {
+      const subscriptionId = String(record?.pushSubscriptionId || '').trim();
+      if (!subscriptionId) {
+        return { skipped: true, reason: 'missing-subscription' };
+      }
+      return executeCentralPushAdmin({
+        action: 'notify',
+        subscriptionId,
+        title: 'Registro recusado',
+        body: `Motivo: ${String(reason || '').trim()}`,
+        url: './'
+      });
+    }
+
     function rejectCentralPendingRecord(rowId) {
       const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
       if (!record) return showToast('Registro da Central não encontrado.');
@@ -8172,7 +8186,15 @@
         onConfirm: async (reason) => {
           try {
             await setCentralPendingRecordStatus(record, { status: 'rejeitado', resolucao: reason });
-            showToast('Registro rejeitado com justificativa.');
+            try {
+              const notification = await notifyCentralRecordRejection(record, reason);
+              showToast(notification?.skipped
+                ? 'Registro rejeitado. Este envio antigo não possui aparelho vinculado para aviso.'
+                : 'Registro rejeitado e motivo enviado ao aparelho de origem.');
+            } catch (notificationError) {
+              console.warn('Registro rejeitado, mas o aparelho não recebeu o aviso.', notificationError);
+              showToast('Registro rejeitado, mas não foi possível avisar o aparelho de origem.');
+            }
           } catch (error) {
             showToast(error?.message || 'Não foi possível rejeitar o registro.');
           }

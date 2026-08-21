@@ -1,10 +1,10 @@
 # Função central-push
 
-Backend do canal geral de notificações da Central de Registros.
+Backend dos canais geral e individual de notificações da Central de Registros.
 
 ## Configuração no Appwrite
 
-Crie uma Function com ID `central-push`, runtime Node.js 22, ponto de entrada `src/main.js` e permissão de execução para `Any`. A própria função bloqueia `stats` e `broadcast` para usuários que não estejam em `ADMIN_USER_IDS`, validando o ID e o JWT temporário que o Appwrite encaminha para execuções autenticadas.
+Crie uma Function com ID `central-push`, runtime Node.js 22, ponto de entrada `src/main.js` e permissão de execução para `Any`. A própria função bloqueia `stats`, `broadcast` e `notify` para usuários que não estejam em `ADMIN_USER_IDS`, validando o ID e o JWT temporário que o Appwrite encaminha para execuções autenticadas. As ações públicas `subscribe` e `unsubscribe` só registram ou desativam a inscrição técnica enviada pelo próprio aparelho.
 
 Variáveis:
 
@@ -15,7 +15,7 @@ Variáveis:
 - `VAPID_PRIVATE_KEY` — segredo; nunca colocar no repositório
 - `ADMIN_USER_IDS` — IDs Appwrite autorizados, separados por vírgula
 
-Escopos da chave dinâmica: `databases.read` e `databases.write`.
+Escopos da chave dinâmica: `databases.read`, `databases.write`, `documents.read` e `documents.write`.
 
 ## Coleção central_push_subscriptions
 
@@ -31,4 +31,9 @@ Criar no database acima, sem permissões públicas, com Document Security desati
 | updatedAt | datetime | — | sim |
 
 O identificador do documento é um hash do endpoint, evitando inscrições duplicadas. Nenhum nome, motorista, placa ou localização é armazenado.
+
+## Vínculo com o registro da Central
+
+A tabela `central_registros_pendentes` possui a coluna de texto opcional `pushSubscriptionId`. Novos registros guardam nela apenas o hash técnico devolvido por `subscribe`. Ao rejeitar um registro, o WeFrotas usa a ação administrativa `notify` para enviar a justificativa exclusivamente ao aparelho de origem. Registros antigos sem esse campo não geram disparo individual.
+
 

@@ -1,4 +1,4 @@
-﻿const defaultConfig = {
+const defaultConfig = {
   page_title: 'Postos Credenciados',
   background_color: '#f9fafb',
   card_color: '#ffffff',
@@ -37,6 +37,7 @@ const PWA_DISMISS_DAYS = 7;
 const CENTRAL_PUSH_FUNCTION_ID = 'central-push';
 const CENTRAL_PUSH_PUBLIC_KEY = 'BK6Dhnrl6Wr4nO4PtE-ZlnW7ttRe0vtA3b7ssZsa7S9bGdR8gcBBu9SNuNBoMntUkcMBkAOAcgvhMJalNysihgw';
 const CENTRAL_PUSH_PROMPT_DISMISSED_KEY = 'central-push-prompt-dismissed';
+const CENTRAL_PUSH_SUBSCRIPTION_ID_KEY = 'central-push-subscription-id';
 const REMOVED_DRIVER_NAMES = ['ELOIS DOS SANTOS'];
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
@@ -498,6 +499,19 @@ function dismissCentralPushPrompt() {
   document.getElementById('central-push-prompt')?.remove();
 }
 
+function saveCentralPushSubscriptionId(subscriptionId) {
+  const normalizedId = String(subscriptionId || '').trim();
+  if (normalizedId) {
+    localStorage.setItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY, normalizedId);
+  } else {
+    localStorage.removeItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY);
+  }
+}
+
+function getCentralPushSubscriptionId() {
+  return String(localStorage.getItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY) || '').trim();
+}
+
 function shouldShowCentralPushPrompt() {
   if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
     return false;
@@ -549,12 +563,13 @@ async function enableCentralPushNotifications() {
       });
     }
 
-    await executeCentralPushFunction({
+    const result = await executeCentralPushFunction({
       action: 'subscribe',
       subscription: subscription.toJSON(),
       userAgent: navigator.userAgent
     });
 
+    saveCentralPushSubscriptionId(result.subscriptionId);
     localStorage.removeItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY);
     document.getElementById('central-push-prompt')?.remove();
     showSuccessMessage('Notificações ativadas neste celular.');
@@ -579,11 +594,13 @@ function setupCentralPushExperience() {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
         if (subscription) {
-          await executeCentralPushFunction({
+          const result = await executeCentralPushFunction({
             action: 'subscribe',
             subscription: subscription.toJSON(),
             userAgent: navigator.userAgent
           });
+          saveCentralPushSubscriptionId(result.subscriptionId);
+          refreshCentralNotificationSetting();
           return;
         }
       }
@@ -592,6 +609,78 @@ function setupCentralPushExperience() {
     }
     renderCentralPushPrompt();
   }, 1800);
+}
+
+async function getCentralPushSubscription() {
+  if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
+    return null;
+  }
+  const registration = await navigator.serviceWorker.ready;
+  return registration.pushManager.getSubscription();
+}
+
+async function refreshCentralNotificationSetting() {
+  const toggle = document.getElementById('central-notification-toggle');
+  const status = document.getElementById('central-notification-status');
+  if (!toggle || !status) return;
+
+  const supported = 'Notification' in window && 'PushManager' in window && 'serviceWorker' in navigator;
+  if (!supported) {
+    toggle.disabled = true;
+    toggle.setAttribute('aria-checked', 'false');
+    toggle.classList.remove('is-active');
+    status.textContent = 'Este navegador não oferece notificações.';
+    return;
+  }
+
+  if (Notification.permission === 'denied') {
+    toggle.disabled = true;
+    toggle.setAttribute('aria-checked', 'false');
+    toggle.classList.remove('is-active');
+    status.textContent = 'Bloqueadas nas configurações do navegador.';
+    return;
+  }
+
+  try {
+    const subscription = Notification.permission === 'granted' ? await getCentralPushSubscription() : null;
+    const enabled = Boolean(subscription);
+    toggle.disabled = false;
+    toggle.setAttribute('aria-checked', String(enabled));
+    toggle.classList.toggle('is-active', enabled);
+    status.textContent = enabled ? 'Ativadas neste aparelho.' : 'Desativadas neste aparelho.';
+  } catch (error) {
+    toggle.disabled = false;
+    status.textContent = 'Não foi possível consultar o estado agora.';
+  }
+}
+
+async function disableCentralPushNotifications() {
+  const subscription = await getCentralPushSubscription();
+  if (subscription) {
+    await executeCentralPushFunction({ action: 'unsubscribe', subscription: subscription.toJSON() });
+    await subscription.unsubscribe();
+  }
+  saveCentralPushSubscriptionId('');
+  localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
+  showSuccessMessage('Notificações desativadas neste celular.');
+}
+
+async function toggleCentralPushNotifications() {
+  const toggle = document.getElementById('central-notification-toggle');
+  if (!toggle || toggle.disabled) return;
+  toggle.disabled = true;
+  try {
+    const subscription = await getCentralPushSubscription();
+    if (subscription) {
+      await disableCentralPushNotifications();
+    } else {
+      await enableCentralPushNotifications();
+    }
+  } catch (error) {
+    showErrorMessage(error?.message || 'Não foi possível alterar as notificações.');
+  } finally {
+    await refreshCentralNotificationSetting();
+  }
 }
 
 function registerServiceWorker() {
@@ -1437,6 +1526,7 @@ function buildCentralRegistroPayload({ type, formData, receiptUrl, mensagem }) {
     comprovanteUrl: receiptUrl,
     mensagemWhatsapp: mensagem,
     origem: CENTRAL_APPWRITE_ORIGIN,
+    pushSubscriptionId: getCentralPushSubscriptionId() || undefined,
     criadoEm: now.toISOString()
   };
 
@@ -2265,6 +2355,7 @@ function showAboutSection() {
   currentView = 'about';
   setMobileNavActive('about');
   updateBackButtonVisibility();
+  refreshCentralNotificationSetting();
 }
 
 function closeOpenFormsSilently() {
@@ -3215,3 +3306,4 @@ function initHomeHeroCarousel() {
 }
 
 window.addEventListener('DOMContentLoaded', initHomeHeroCarousel);
+
