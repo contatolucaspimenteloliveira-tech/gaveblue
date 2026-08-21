@@ -5423,19 +5423,41 @@
         .toUpperCase();
     }
 
-    function findOpenRevisionOrder(vehicleId, revisionKm) {
-      const revisionToken = normalizeRevisionText(getRevisionDescription(revisionKm));
-      const legacyRevisionToken = normalizeRevisionText(`REVISAO DE ${Number(revisionKm || 0).toLocaleString('pt-BR')}KM`);
-      const previousRevisionToken = normalizeRevisionText(`REVISAO ${Number(revisionKm || 0).toLocaleString('pt-BR')} KM`);
+    function getMaintenanceOrderMatchScore(order, revisionKm) {
+      const description = normalizeRevisionText(order?.descricao);
+      const targetKm = String(Math.max(0, Number(revisionKm || 0)));
+      let score = 0;
+
+      if (Number(order?.maintenanceRevisionKm || 0) === Number(revisionKm || 0)) score += 240;
+      if ((order?.tipoOs || '').toLowerCase() === 'revisao') score += 90;
+      if (description.includes('REVISAO')) score += 75;
+      if (/(MANUTENCAO|PREVENTIVA|PERIODICA)/.test(description)) score += 55;
+      if (/(TROCADEOLEO|FILTRO|ALINHAMENTO|BALANCEAMENTO)/.test(description)) score += 25;
+      if (targetKm && description.includes(targetKm)) score += 55;
+      if (order?.status === 'aberta') score += 18;
+      if (order?.status === 'andamento') score += 14;
+      if (order?.status === 'cancelada') score -= 180;
+
+      return score;
+    }
+
+    function findLinkedRevisionOrder(vehicleId, revisionKm) {
       return allOrders.find(order =>
         order.vehicleId === vehicleId
-        && order.status !== 'fechada'
-        && (
-          normalizeRevisionText(order.descricao).includes(revisionToken)
-          || normalizeRevisionText(order.descricao).includes(legacyRevisionToken)
-          || normalizeRevisionText(order.descricao).includes(previousRevisionToken)
-        )
+        && Number(order.maintenanceRevisionKm || 0) === Number(revisionKm || 0)
       ) || null;
+    }
+
+    function findSuggestedRevisionOrder(vehicleId, revisionKm, linkedOrder = null) {
+      const candidates = allOrders
+        .filter(order => order.vehicleId === vehicleId && order.id !== linkedOrder?.id)
+        .map(order => ({ order, score: getMaintenanceOrderMatchScore(order, revisionKm) }))
+        .filter(item => item.score >= 55)
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return String(b.order.dataInicio || '').localeCompare(String(a.order.dataInicio || ''));
+        });
+      return candidates[0]?.order || null;
     }
 
     function getVehicleMaintenanceStatus(vehicle) {
@@ -5446,21 +5468,61 @@
           nextRevisionKm: null,
           remainingKm: null,
           isAlert: false,
-          openOrder: null
+          linkedOrder: null,
+          suggestedOrder: null
         };
       }
 
       const nextRevisionKm = Math.ceil(currentKm / 10000) * 10000 || 10000;
       const remainingKm = Math.max(nextRevisionKm - currentKm, 0);
-      const openOrder = findOpenRevisionOrder(vehicle.id, nextRevisionKm);
+      const linkedOrder = findLinkedRevisionOrder(vehicle.id, nextRevisionKm);
+      const suggestedOrder = findSuggestedRevisionOrder(vehicle.id, nextRevisionKm, linkedOrder);
 
       return {
         currentKm,
         nextRevisionKm,
         remainingKm,
         isAlert: remainingKm <= 2000,
-        openOrder
+        linkedOrder,
+        suggestedOrder
       };
+    }
+
+    function linkSuggestedMaintenanceOrder(vehicleId, orderId) {
+      const vehicle = allVehicles.find(item => item.id === vehicleId);
+      const order = allOrders.find(item => item.id === orderId);
+      if (!vehicle || !order || order.vehicleId !== vehicle.id) {
+        showToast('Não foi possível validar a OS sugerida para este veículo.');
+        return;
+      }
+
+      const maintenance = getVehicleMaintenanceStatus(vehicle);
+      if (!maintenance.nextRevisionKm) {
+        showToast('Esse veículo ainda não possui KM atual para vincular a revisão.');
+        return;
+      }
+
+      const statusLabel = getOrderStatusUi(order.status).label;
+      const vehicleLabel = `${vehicle.numeroFrota || '-'} - ${vehicle.placa || '-'} ${vehicle.modelo || ''}`.trim();
+      openPromptModal({
+        mode: 'confirm',
+        title: `Vincular a OS ${getOrderNumberLabel(order)}?`,
+        text: `${vehicleLabel} • revisão de ${maintenance.nextRevisionKm.toLocaleString('pt-BR')} km. A OS está ${statusLabel.toLowerCase()} e será identificada como a revisão deste veículo.`,
+        confirmLabel: 'Vincular OS',
+        cancelLabel: 'Cancelar',
+        onConfirm: async () => {
+          allOrders = allOrders.map(item => item.id === order.id
+            ? {
+                ...item,
+                maintenanceRevisionKm: maintenance.nextRevisionKm,
+                maintenanceLinkedAt: new Date().toISOString()
+              }
+            : item);
+          await saveToLocalStorage();
+          renderAll();
+          showToast(`OS ${getOrderNumberLabel(order)} vinculada à revisão do veículo.`);
+        }
+      });
     }
 
     function openRevisionOrderForVehicle(vehicleId) {
@@ -5476,7 +5538,7 @@
         return;
       }
 
-      if (maintenance.openOrder) {
+      if (maintenance.linkedOrder && maintenance.linkedOrder.status !== 'fechada') {
         showToast(`Já existe uma OS aberta para a revisão de ${maintenance.nextRevisionKm.toLocaleString('pt-BR')} KM.`);
         return;
       }
@@ -5492,6 +5554,8 @@
       document.getElementById('modal-title').textContent = 'Abrir OS de revisão';
       showToast(`OS preparada para revisão de ${maintenance.nextRevisionKm.toLocaleString('pt-BR')} KM.`);
     }
+
+    window.linkSuggestedMaintenanceOrder = linkSuggestedMaintenanceOrder;
 
     function getVehicleCostStats(options = {}) {
       const vehicleId = options.vehicleId || '';
@@ -6524,8 +6588,8 @@
 
       if (filters.type === 'maintenance_due') {
         const items = getReportMaintenanceItems(filters);
-        const alertCount = items.filter(item => item.maintenance.isAlert && !item.maintenance.openOrder).length;
-        const openOsCount = items.filter(item => item.maintenance.openOrder).length;
+        const alertCount = items.filter(item => item.maintenance.isAlert && !item.maintenance.linkedOrder).length;
+        const openOsCount = items.filter(item => item.maintenance.linkedOrder && item.maintenance.linkedOrder.status !== 'fechada').length;
         const noKmCount = items.filter(item => item.maintenance.currentKm === null).length;
         return {
           title,
@@ -6548,8 +6612,8 @@
           rows: items.map(({ vehicle, maintenance }) => {
             const statusLabel = maintenance.currentKm === null
               ? 'Aguardando KM'
-              : maintenance.openOrder
-                ? `OS ${getOrderNumberLabel(maintenance.openOrder)} aberta`
+              : maintenance.linkedOrder
+                ? `OS ${getOrderNumberLabel(maintenance.linkedOrder)} ${getOrderStatusUi(maintenance.linkedOrder.status).label.toLowerCase()}`
                 : maintenance.remainingKm <= 0
                   ? 'Revisão vencida'
                   : maintenance.remainingKm <= 2000
@@ -6557,7 +6621,7 @@
                     : 'No prazo';
             const tone = maintenance.currentKm === null
               ? 'neutral'
-              : maintenance.openOrder
+              : maintenance.linkedOrder
                 ? 'ok'
                 : maintenance.remainingKm <= 0
                   ? 'danger'
@@ -7670,12 +7734,18 @@
             const remainingLabel = maintenance.currentKm === null
               ? 'Aguardando KM'
               : `${maintenance.remainingKm.toLocaleString('pt-BR')} km`;
-            const shortcutAction = maintenance.openOrder
-              ? `openOrderFromHome('${maintenance.openOrder.id}')`
+            const shortcutAction = maintenance.linkedOrder
+              ? `openOrderFromHome('${maintenance.linkedOrder.id}')`
               : `openVehicleFromHome('${vehicle.id}')`;
+            const linkedStatus = maintenance.linkedOrder
+              ? getOrderStatusUi(maintenance.linkedOrder.status).label
+              : '';
+            const suggestedStatus = maintenance.suggestedOrder
+              ? getOrderStatusUi(maintenance.suggestedOrder.status).label
+              : '';
 
             return `
-              <div class="home-maintenance-row home-maintenance-row--${maintenance.openOrder ? 'open' : maintenance.isAlert ? 'alert' : 'ok'}" role="button" tabindex="0" onclick="${shortcutAction}" onkeydown="handleDashboardShortcutKey(event, '${maintenance.openOrder ? 'openOrderFromHome' : 'openVehicleFromHome'}', '${maintenance.openOrder ? maintenance.openOrder.id : vehicle.id}')">
+              <div class="home-maintenance-row home-maintenance-row--${maintenance.linkedOrder ? 'open' : maintenance.isAlert ? 'alert' : 'ok'} ${maintenance.isAlert && maintenance.suggestedOrder ? 'home-maintenance-row--has-suggestion' : ''}" role="button" tabindex="0" onclick="${shortcutAction}" onkeydown="handleDashboardShortcutKey(event, '${maintenance.linkedOrder ? 'openOrderFromHome' : 'openVehicleFromHome'}', '${maintenance.linkedOrder ? maintenance.linkedOrder.id : vehicle.id}')">
                 <div>
                   <p>${escapeHtml(vehicle.numeroFrota || '-')} - ${escapeHtml(vehicle.placa || '-')}</p>
                   <span>${escapeHtml(vehicle.modelo || 'Veículo')}</span>
@@ -7684,10 +7754,16 @@
                   <span>KM atual <strong>${escapeHtml(currentKmLabel)}</strong></span>
                   <span>Faltam <strong>${escapeHtml(remainingLabel)}</strong></span>
                 </div>
-                ${maintenance.openOrder
-                  ? `<span class="home-maintenance-pill">OS ${escapeHtml(getOrderNumberLabel(maintenance.openOrder))}</span>`
+                ${maintenance.linkedOrder
+                  ? `<span class="home-maintenance-pill">OS ${escapeHtml(getOrderNumberLabel(maintenance.linkedOrder))} • ${escapeHtml(linkedStatus)}</span>`
                   : maintenance.isAlert
-                    ? `<button type="button" class="home-maintenance-btn" onclick="event.stopPropagation(); openRevisionOrderForVehicle('${vehicle.id}')">Abrir OS</button>`
+                    ? `<div class="home-maintenance-actions">
+                        <button type="button" class="home-maintenance-btn" onclick="event.stopPropagation(); openRevisionOrderForVehicle('${vehicle.id}')">Abrir OS</button>
+                        ${maintenance.suggestedOrder ? `
+                          <span class="home-maintenance-suggestion">Sugestão: OS ${escapeHtml(getOrderNumberLabel(maintenance.suggestedOrder))} • ${escapeHtml(suggestedStatus)}</span>
+                          <button type="button" class="home-maintenance-link-btn" onclick="event.stopPropagation(); linkSuggestedMaintenanceOrder('${vehicle.id}', '${maintenance.suggestedOrder.id}')">Vincular OS</button>
+                        ` : ''}
+                      </div>`
                     : `<span class="home-maintenance-pill">No prazo</span>`}
               </div>
             `;

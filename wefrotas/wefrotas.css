@@ -1068,6 +1068,13 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       border-color: #bbf7d0;
       background: linear-gradient(90deg, #f0fdf4 0%, #ffffff 100%);
     }
+    .home-maintenance-row--has-suggestion {
+      grid-template-columns: minmax(0, 1fr) minmax(160px, 0.9fr);
+    }
+    .home-maintenance-row--has-suggestion .home-maintenance-actions {
+      grid-column: 2;
+      justify-self: stretch;
+    }
     .home-maintenance-metrics {
       display: flex;
       align-items: center;
@@ -1090,7 +1097,8 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       font-weight: 900;
     }
     .home-maintenance-pill,
-    .home-maintenance-btn {
+    .home-maintenance-btn,
+    .home-maintenance-link-btn {
       border-radius: 999px;
       padding: 9px 12px;
       font-size: 0.74rem;
@@ -1108,6 +1116,30 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       color: #ffffff;
       cursor: pointer;
       box-shadow: 0 10px 22px rgba(79, 70, 229, 0.18);
+    }
+    .home-maintenance-actions {
+      min-width: 118px;
+      display: grid;
+      gap: 6px;
+      justify-items: stretch;
+    }
+    .home-maintenance-suggestion {
+      color: #64748b;
+      font-size: 0.66rem;
+      font-weight: 800;
+      line-height: 1.25;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .home-maintenance-link-btn {
+      border: 1px solid #c7d2fe;
+      background: #eef2ff;
+      color: #4338ca;
+      cursor: pointer;
+    }
+    .home-maintenance-link-btn:hover {
+      border-color: #818cf8;
+      background: #e0e7ff;
     }
     .soft-input {
       background: #f3f6fb;
@@ -1928,6 +1960,15 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       .home-maintenance-row {
         grid-template-columns: 1fr;
         align-items: start;
+      }
+      .home-maintenance-actions {
+        width: 100%;
+      }
+      .home-maintenance-row--has-suggestion {
+        grid-template-columns: 1fr;
+      }
+      .home-maintenance-row--has-suggestion .home-maintenance-actions {
+        grid-column: auto;
       }
       .home-insurance-row {
         grid-template-columns: 1fr;
