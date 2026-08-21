@@ -114,6 +114,27 @@ async function saveSubscription(databases, payload) {
   return documentId;
 }
 
+async function disableSubscription(databases, payload) {
+  const endpoint = String(payload.subscription?.endpoint || '').trim();
+  if (!endpoint.startsWith('https://')) {
+    const error = new Error('Inscrição de push inválida.');
+    error.status = 400;
+    throw error;
+  }
+  const documentId = subscriptionDocumentId(endpoint);
+  try {
+    await databases.updateDocument({
+      databaseId: DATABASE_ID,
+      collectionId: COLLECTION_ID,
+      documentId,
+      data: { active: false, updatedAt: new Date().toISOString() }
+    });
+  } catch (error) {
+    if (Number(error?.code) !== 404) throw error;
+  }
+  return documentId;
+}
+
 async function listSubscriptions(databases) {
   const documents = [];
   let offset = 0;
@@ -143,8 +164,7 @@ async function markInactive(databases, documentId) {
   }
 }
 
-async function broadcast(databases, payload, log) {
-  assertPushConfigured();
+function getNotificationContent(payload) {
   const title = String(payload.title || '').trim().slice(0, 60);
   const body = String(payload.body || '').trim().slice(0, 160);
   const url = String(payload.url || './').trim().slice(0, 500);
@@ -153,6 +173,67 @@ async function broadcast(databases, payload, log) {
     error.status = 400;
     throw error;
   }
+  return { title, body, url };
+}
+
+async function sendToSubscription(databases, document, payload, log, tagPrefix = 'central-comunicado') {
+  const { title, body, url } = getNotificationContent(payload);
+  if (document.active === false) {
+    const error = new Error('As notificações estão desativadas neste aparelho.');
+    error.status = 409;
+    throw error;
+  }
+  const subscription = {
+    endpoint: document.endpoint,
+    keys: { p256dh: document.p256dh, auth: document.auth }
+  };
+  try {
+    await webpush.sendNotification(
+      subscription,
+      JSON.stringify({ title, body, url, tag: tagPrefix + '-' + Date.now() }),
+      { TTL: 86400, urgency: 'normal' }
+    );
+    return { sent: 1, failed: 0 };
+  } catch (error) {
+    const statusCode = Number(error?.statusCode || 0);
+    if (statusCode === 404 || statusCode === 410) {
+      await markInactive(databases, document.$id);
+    }
+    log('Falha de push ' + document.$id + ': ' + (error?.message || statusCode));
+    throw error;
+  }
+}
+
+async function notifySubscription(databases, payload, log) {
+  assertPushConfigured();
+  const subscriptionId = String(payload.subscriptionId || '').trim();
+  if (!/^[a-f0-9]{36}$/i.test(subscriptionId)) {
+    const error = new Error('O registro não possui um aparelho de origem válido.');
+    error.status = 400;
+    throw error;
+  }
+  let document;
+  try {
+    document = await databases.getDocument({
+      databaseId: DATABASE_ID,
+      collectionId: COLLECTION_ID,
+      documentId: subscriptionId
+    });
+  } catch (error) {
+    if (Number(error?.code) === 404) {
+      const notFound = new Error('O aparelho de origem não está mais inscrito.');
+      notFound.status = 404;
+      throw notFound;
+    }
+    throw error;
+  }
+  const result = await sendToSubscription(databases, document, payload, log, 'central-retorno');
+  return { subscribers: 1, ...result };
+}
+
+async function broadcast(databases, payload, log) {
+  assertPushConfigured();
+  const { title, body, url } = getNotificationContent(payload);
 
   const subscriptions = await listSubscriptions(databases);
   let sent = 0;
@@ -203,6 +284,12 @@ export default async ({ req, res, log, error }) => {
       return json(res, 200, { ok: true, subscriptionId });
     }
 
+    if (action === 'unsubscribe') {
+      const databases = createDatabaseClient(req);
+      const subscriptionId = await disableSubscription(databases, payload);
+      return json(res, 200, { ok: true, subscriptionId });
+    }
+
     if (action === 'stats') {
       await assertAdmin(req);
       const databases = createDatabaseClient(req);
@@ -218,6 +305,14 @@ export default async ({ req, res, log, error }) => {
       return json(res, 200, { ok: true, ...result });
     }
 
+    if (action === 'notify') {
+      const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const result = await notifySubscription(databases, payload, log);
+      log('Notificação individual enviada por ' + senderId + ': ' + JSON.stringify(result));
+      return json(res, 200, { ok: true, ...result });
+    }
+
     return json(res, 400, { ok: false, error: 'Ação inválida.' });
   } catch (caught) {
     error(caught?.stack || caught?.message || String(caught));
@@ -227,4 +322,5 @@ export default async ({ req, res, log, error }) => {
     });
   }
 };
+
 
