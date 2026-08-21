@@ -269,6 +269,9 @@
       emitStatus('syncing', 'Enviando dados otimizados...');
     }
     await updateOrCreateRow(rowId, { workspaceId: config.companyId, snapshot: valueForPrimaryRow, updatedAt, updatedBy: currentUser.$id });
+    await syncCentralDriverDirectory(preparedSnapshot).catch((error) => {
+      console.warn('Não foi possível atualizar o diretório da Central.', error);
+    });
     lastSerializedSnapshot = serialized;
     setPendingSync(false);
     emitStatus('online', 'Dados sincronizados.');
@@ -398,6 +401,70 @@
     return String(storage.getFileView({ bucketId: config.bucketId, fileId: uploaded.$id }));
   }
 
+  function isDirectoryEntityActive(entity) {
+    return entity?.ativo !== false && entity?.active !== false;
+  }
+
+  function buildCentralDriverDirectoryRows(snapshot = {}) {
+    const drivers = (Array.isArray(snapshot.drivers) ? snapshot.drivers : []).filter(isDirectoryEntityActive);
+    const vehicles = (Array.isArray(snapshot.vehicles) ? snapshot.vehicles : []).filter(isDirectoryEntityActive);
+    const updatedAt = new Date().toISOString();
+    const rows = [];
+    drivers.forEach((driver) => {
+      const driverId = String(driver?.id || '').trim();
+      const driverName = String(driver?.nome || driver?.name || '').trim();
+      if (!driverId || !driverName) return;
+      const linkedIds = new Set((Array.isArray(driver.vehicleIds) ? driver.vehicleIds : driver.vehicleId ? [driver.vehicleId] : []).map(String));
+      const linkedVehicles = vehicles.filter((vehicle) => linkedIds.has(String(vehicle?.id || '')) || String(vehicle?.motoristaId || vehicle?.driverId || '') === driverId);
+      const candidates = linkedVehicles.length ? linkedVehicles : [null];
+      candidates.forEach((vehicle) => rows.push({
+        driverId,
+        driverName,
+        vehicleId: String(vehicle?.id || ''),
+        vehicleName: String(vehicle?.modelo || vehicle?.model || ''),
+        plate: String(vehicle?.placa || vehicle?.plate || '').toUpperCase(),
+        fleetNumber: String(vehicle?.numeroFrota || vehicle?.fleetNumber || ''),
+        active: true,
+        updatedAt
+      }));
+    });
+    return rows;
+  }
+
+  async function syncCentralDriverDirectory(snapshot = {}) {
+    if (!currentUser || !config.centralDriverDirectoryTableId) return;
+    const desiredRows = buildCentralDriverDirectoryRows(snapshot);
+    const queries = global.Appwrite?.Query?.limit ? [global.Appwrite.Query.limit(500)] : [];
+    const existingResult = await tablesDB.listRows({
+      databaseId: config.databaseId,
+      tableId: config.centralDriverDirectoryTableId,
+      queries
+    });
+    const existingRows = Array.isArray(existingResult?.rows) ? existingResult.rows : [];
+    const desiredIds = new Set();
+    for (const data of desiredRows) {
+      const rowId = await digestId(`central-driver:${data.driverId}:${data.vehicleId || 'without-vehicle'}`);
+      desiredIds.add(rowId);
+      const current = existingRows.find((row) => row.$id === rowId);
+      const changed = !current || ['driverId', 'driverName', 'vehicleId', 'vehicleName', 'plate', 'fleetNumber', 'active']
+        .some((key) => String(current?.[key] ?? '') !== String(data[key] ?? ''));
+      if (!changed) continue;
+      await updateOrCreateDirectoryRow(rowId, data);
+    }
+    await Promise.all(existingRows
+      .filter((row) => !desiredIds.has(row.$id))
+      .map((row) => tablesDB.deleteRow({ databaseId: config.databaseId, tableId: config.centralDriverDirectoryTableId, rowId: row.$id })));
+  }
+
+  async function updateOrCreateDirectoryRow(rowId, data) {
+    try {
+      return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralDriverDirectoryTableId, rowId, data });
+    } catch (error) {
+      if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
+      return tablesDB.createRow({ databaseId: config.databaseId, tableId: config.centralDriverDirectoryTableId, rowId, data });
+    }
+  }
+
   function getPublicBannerFilePermissions() {
     const { Permission, Role } = global.Appwrite;
     const managerRole = config.teamId ? Role.team(config.teamId) : Role.users();
@@ -520,6 +587,7 @@
       lastSerializedSnapshot = remoteSerialized;
       setPendingSync(false);
       await currentSnapshotApplier?.(remoteRecord.snapshot);
+      await syncCentralDriverDirectory(remoteRecord.snapshot).catch((error) => console.warn('Não foi possível atualizar o diretório da Central.', error));
       emitStatus('online', 'Dados da empresa carregados do servidor.');
       return { mode: 'remote-authoritative', snapshot: remoteRecord.snapshot };
     }
@@ -544,6 +612,7 @@
     syncNow,
     uploadReceipt, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord,
     uploadCentralBanner, deleteCentralBannerFile, listCentralHomeBanners,
-    createCentralHomeBanner, updateCentralHomeBanner, deleteCentralHomeBanner
+    createCentralHomeBanner, updateCentralHomeBanner, deleteCentralHomeBanner,
+    syncCentralDriverDirectory
   });
 })(window);

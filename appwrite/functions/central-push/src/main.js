@@ -4,6 +4,8 @@ import webpush from 'web-push';
 
 const DATABASE_ID = process.env.DATABASE_ID || '6a68ce8c000a36a44d98';
 const COLLECTION_ID = process.env.COLLECTION_ID || 'central_push_subscriptions';
+const CENTRAL_RECORDS_COLLECTION_ID = process.env.CENTRAL_RECORDS_COLLECTION_ID || 'central_registros_pendentes';
+const DRIVER_DIRECTORY_COLLECTION_ID = process.env.DRIVER_DIRECTORY_COLLECTION_ID || 'central_driver_directory';
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:adm01@covreecia.com.br';
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
@@ -151,6 +153,85 @@ async function listSubscriptions(databases) {
   return documents;
 }
 
+async function listDriverDirectory(databases) {
+  const rows = [];
+  let offset = 0;
+  while (true) {
+    const page = await databases.listDocuments({
+      databaseId: DATABASE_ID,
+      collectionId: DRIVER_DIRECTORY_COLLECTION_ID,
+      queries: [Query.limit(100), Query.offset(offset)]
+    });
+    rows.push(...page.documents.filter((document) => document.active !== false));
+    if (page.documents.length < 100) break;
+    offset += page.documents.length;
+  }
+  return rows
+    .map((document) => ({
+      driverId: String(document.driverId || ''),
+      driverName: String(document.driverName || ''),
+      vehicleId: String(document.vehicleId || ''),
+      vehicleName: String(document.vehicleName || ''),
+      plate: String(document.plate || ''),
+      fleetNumber: String(document.fleetNumber || '')
+    }))
+    .filter((item) => item.driverId && item.driverName)
+    .sort((a, b) => a.driverName.localeCompare(b.driverName, 'pt-BR'));
+}
+
+function isValidDeviceId(value) {
+  return /^[a-f0-9-]{32,64}$/i.test(String(value || '').trim());
+}
+
+function isValidSubscriptionId(value) {
+  return /^[a-f0-9]{36}$/i.test(String(value || '').trim());
+}
+
+async function listHistoryByField(databases, field, value) {
+  if (!value) return [];
+  const page = await databases.listDocuments({
+    databaseId: DATABASE_ID,
+    collectionId: CENTRAL_RECORDS_COLLECTION_ID,
+    queries: [Query.equal(field, [value]), Query.orderDesc('$createdAt'), Query.limit(50)]
+  });
+  return page.documents;
+}
+
+async function listDeviceHistory(databases, payload) {
+  const deviceId = String(payload.deviceId || '').trim();
+  const subscriptionId = String(payload.subscriptionId || '').trim();
+  if (!isValidDeviceId(deviceId) && !isValidSubscriptionId(subscriptionId)) {
+    const error = new Error('Este aparelho ainda não possui um vínculo válido para consultar os envios.');
+    error.status = 400;
+    throw error;
+  }
+  const pages = await Promise.all([
+    isValidDeviceId(deviceId) ? listHistoryByField(databases, 'deviceId', deviceId) : [],
+    isValidSubscriptionId(subscriptionId) ? listHistoryByField(databases, 'pushSubscriptionId', subscriptionId) : []
+  ]);
+  const unique = new Map();
+  pages.flat().forEach((document) => unique.set(document.$id, document));
+  return [...unique.values()]
+    .sort((a, b) => String(b.criadoEm || b.$createdAt || '').localeCompare(String(a.criadoEm || a.$createdAt || '')))
+    .slice(0, 50)
+    .map((document) => ({
+      id: document.$id,
+      protocol: String(document.protocolo || ''),
+      type: String(document.tipo || ''),
+      status: String(document.status || 'pendente'),
+      driver: String(document.motorista || ''),
+      date: String(document.data || ''),
+      time: String(document.hora || ''),
+      value: document.valor ?? '',
+      numericValue: Number(document.valorNumero || 0),
+      supplier: String(document.posto || document.fornecedor || ''),
+      resolution: String(document.resolucao || ''),
+      receiptUrl: String(document.comprovanteUrl || ''),
+      createdAt: String(document.criadoEm || document.$createdAt || ''),
+      updatedAt: String(document.$updatedAt || '')
+    }));
+}
+
 async function markInactive(databases, documentId) {
   try {
     await databases.updateDocument({
@@ -288,6 +369,18 @@ export default async ({ req, res, log, error }) => {
       const databases = createDatabaseClient(req);
       const subscriptionId = await disableSubscription(databases, payload);
       return json(res, 200, { ok: true, subscriptionId });
+    }
+
+    if (action === 'directory') {
+      const databases = createDatabaseClient(req);
+      const directory = await listDriverDirectory(databases);
+      return json(res, 200, { ok: true, directory });
+    }
+
+    if (action === 'history') {
+      const databases = createDatabaseClient(req);
+      const records = await listDeviceHistory(databases, payload);
+      return json(res, 200, { ok: true, records });
     }
 
     if (action === 'stats') {

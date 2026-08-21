@@ -8287,6 +8287,18 @@
       return Number.isFinite(value) && value > 0 ? value : 0;
     }
 
+    async function notifyCentralRecordApproval(record) {
+      const subscriptionId = String(record?.pushSubscriptionId || '').trim();
+      if (!subscriptionId) return { skipped: true, reason: 'missing-subscription' };
+      return executeCentralPushAdmin({
+        action: 'notify',
+        subscriptionId,
+        title: 'Registro aprovado',
+        body: 'Seu registro foi aprovado e lançado no WeFrotas.',
+        url: './#meus-envios'
+      });
+    }
+
     async function approveCentralPendingRecord(rowId) {
       const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
       if (!record) return showToast('Registro da Central não encontrado.');
@@ -8305,6 +8317,7 @@
           await persistFinanceImmediately();
           await setCentralPendingRecordStatus(record, approvalData);
           setCentralPendingRecordStatusLocally(record, approvalData);
+          notifyCentralRecordApproval(record).catch((error) => console.warn('Registro aprovado, mas o aparelho não recebeu o aviso.', error));
           showToast('Este registro já estava lançado. O status da Central foi corrigido.');
         } catch (error) {
           showToast(`O lançamento já existe no Financeiro, mas a confirmação da Central ficou pendente: ${error?.message || 'erro desconhecido'}`);
@@ -8361,6 +8374,7 @@
         await persistFinanceImmediately();
         await setCentralPendingRecordStatus(record, approvalData);
         setCentralPendingRecordStatusLocally(record, approvalData);
+        notifyCentralRecordApproval(record).catch((error) => console.warn('Registro aprovado, mas o aparelho não recebeu o aviso.', error));
         showToast('Registro aprovado e lançado no financeiro.');
       } catch (error) {
         showToast(`O lançamento já está visível no Financeiro, mas a confirmação da Central ficou pendente: ${error?.message || 'erro desconhecido'}`);
@@ -8379,7 +8393,7 @@
         subscriptionId,
         title: 'Registro recusado',
         body: `Motivo: ${String(reason || '').trim()}`,
-        url: './'
+        url: './#meus-envios'
       });
     }
 

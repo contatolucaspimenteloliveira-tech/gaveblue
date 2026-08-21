@@ -20,7 +20,7 @@
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css">
-  <link rel="stylesheet" href="./styles.css?v=20260821-managed-banners-1">
+  <link rel="stylesheet" href="./styles.css?v=20260821-driver-history-1">
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full flex flex-col">
@@ -576,32 +576,60 @@
 
    <div id="driver-profile-modal" class="driver-profile-overlay hidden" aria-hidden="true">
     <button type="button" class="driver-profile-backdrop" onclick="closeDriverProfile()" aria-label="Fechar perfil"></button>
-    <section class="driver-profile-dialog" role="dialog" aria-modal="true" aria-labelledby="driver-profile-title">
+    <section class="driver-profile-dialog driver-onboarding-dialog" role="dialog" aria-modal="true" aria-labelledby="driver-profile-title">
      <div class="driver-profile-dialog-header">
       <div>
        <p>PERFIL DESTE APARELHO</p>
-       <h2 id="driver-profile-title">Motorista e ve&iacute;culo</h2>
+       <h2 id="driver-profile-title">Vamos deixar seus abastecimentos mais r&aacute;pidos?</h2>
       </div>
       <button type="button" class="driver-profile-close" onclick="closeDriverProfile()" aria-label="Fechar">
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 6 12 12M18 6 6 18" stroke-width="2.2" stroke-linecap="round"/></svg>
       </button>
      </div>
-     <p class="driver-profile-description">Esses dados ficam somente neste celular e ajudam a identificar os pr&oacute;ximos registros.</p>
-     <form id="driver-profile-form" class="driver-profile-form" onsubmit="saveDriverProfile(event)">
-      <label>
-       <span>Nome do motorista</span>
-       <input id="driver-profile-name" type="text" required maxlength="80" autocomplete="name" placeholder="Ex.: Jo&atilde;o da Silva">
-      </label>
-      <label>
-       <span>Ve&iacute;culo</span>
-       <input id="driver-profile-vehicle" type="text" required maxlength="80" placeholder="Ex.: Fiat Strada">
-      </label>
-      <label>
-       <span>Placa</span>
-       <input id="driver-profile-plate" type="text" required maxlength="8" autocomplete="off" inputmode="text" placeholder="ABC1D23">
-      </label>
-      <button type="submit" class="driver-profile-save">Salvar perfil</button>
-     </form>
+     <p class="driver-profile-description">Escolha seu nome. O ve&iacute;culo vinculado no WeFrotas aparece automaticamente para confirma&ccedil;&atilde;o.</p>
+     <div id="driver-directory-loading" class="driver-directory-message">Buscando motoristas e ve&iacute;culos...</div>
+     <div id="driver-directory-error" class="driver-directory-message is-error hidden"></div>
+     <div id="driver-onboarding-driver-step" class="driver-onboarding-step hidden">
+      <label class="driver-search-label" for="driver-profile-search">Qual &eacute; o seu nome?</label>
+      <div class="driver-search-shell">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke-width="2" stroke-linecap="round"/></svg>
+       <input id="driver-profile-search" type="search" autocomplete="off" placeholder="Pesquisar motorista" oninput="filterDriverDirectory()">
+      </div>
+      <div id="driver-profile-results" class="driver-profile-results"></div>
+     </div>
+     <div id="driver-onboarding-vehicle-step" class="driver-onboarding-step hidden">
+      <article class="driver-found-vehicle">
+       <strong>Encontramos seu ve&iacute;culo</strong>
+       <div class="driver-found-vehicle-main">
+        <span class="driver-found-vehicle-image" aria-hidden="true">
+         <svg viewBox="0 0 96 58" fill="none"><path d="M14 38 22 21c1.4-3 4.4-5 7.8-5h29.7c3.2 0 6.2 1.8 7.7 4.7L75 35l9 3v11H10V39l4-1Z" fill="#eef2f7" stroke="#1e293b" stroke-width="2.4"/><path d="M29 19h29l8 16H22l7-16Z" fill="#cbd5e1" stroke="#1e293b" stroke-width="2"/><path d="M33 20v15M59 20l7 15" stroke="#fff" stroke-width="2"/><circle cx="25" cy="47" r="7" fill="#1e293b"/><circle cx="25" cy="47" r="3" fill="#cbd5e1"/><circle cx="70" cy="47" r="7" fill="#1e293b"/><circle cx="70" cy="47" r="3" fill="#cbd5e1"/></svg>
+        </span>
+        <span><small id="driver-found-fleet"></small><strong id="driver-found-vehicle-name">Ve&iacute;culo</strong><b id="driver-found-plate">---</b></span>
+       </div>
+       <div class="driver-found-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3 7 3v5c0 4.7-2.8 8-7 10-4.2-2-7-5.3-7-10V6l7-3Z" stroke-width="2"/><path d="m9 12 2 2 4-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Esses dados ser&atilde;o usados como padr&atilde;o nos pr&oacute;ximos abastecimentos.</span>
+       </div>
+      </article>
+      <button type="button" class="driver-profile-save" onclick="confirmSuggestedDriverVehicle()">&#10003;&nbsp; Confirmar</button>
+      <button id="driver-change-vehicle" type="button" class="driver-profile-secondary" onclick="cycleSuggestedVehicle()">&#128663;&nbsp; Alterar ve&iacute;culo</button>
+      <button type="button" class="driver-profile-skip" onclick="returnToDriverSelection()">Escolher outro motorista</button>
+     </div>
+     <button type="button" class="driver-profile-skip" onclick="skipDriverOnboarding()">Pular por enquanto</button>
+    </section>
+   </div>
+
+   <div id="my-submissions-modal" class="driver-profile-overlay hidden" aria-hidden="true">
+    <button type="button" class="driver-profile-backdrop" onclick="closeMySubmissions()" aria-label="Fechar meus envios"></button>
+    <section class="driver-profile-dialog submissions-dialog" role="dialog" aria-modal="true" aria-labelledby="my-submissions-title">
+     <div class="driver-profile-dialog-header">
+      <div><p>CENTRAL DE REGISTROS</p><h2 id="my-submissions-title">Meus envios</h2></div>
+      <button type="button" class="driver-profile-close" onclick="closeMySubmissions()" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 6 12 12M18 6 6 18" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+     </div>
+     <p class="driver-profile-description">Acompanhe o retorno do WeFrotas para os registros enviados por este aparelho.</p>
+     <div id="my-submissions-summary" class="submissions-summary hidden"></div>
+     <div id="my-submissions-list" class="submissions-list"><div class="driver-directory-message">Buscando seus envios...</div></div>
+     <button type="button" class="driver-profile-secondary" onclick="refreshMySubmissions()">Atualizar</button>
     </section>
    </div>
 
@@ -651,7 +679,7 @@
        <article class="home-overview-card home-last-send-card">
         <div class="home-overview-heading">
          <span>&Uacute;ltimo envio</span>
-         <button type="button" onclick="showComingSoon()">Ver meus envios <span aria-hidden="true">&rsaquo;</span></button>
+         <button type="button" onclick="openMySubmissions()">Ver meus envios <span aria-hidden="true">&rsaquo;</span></button>
         </div>
         <div id="home-last-send-empty" class="home-last-send-empty">
          <span class="home-last-send-icon" aria-hidden="true">
@@ -984,7 +1012,7 @@
     <span>Sobre</span>
    </button>
   </nav>
-  <script src="./app.js?v=20260821-managed-banners-1"></script>
+  <script src="./app.js?v=20260821-driver-history-1"></script>
  </body>
 </html>
 
