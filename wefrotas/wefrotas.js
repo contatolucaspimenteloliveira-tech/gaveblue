@@ -8462,13 +8462,35 @@
       if (!subscriptionId) {
         return { skipped: true, reason: 'missing-subscription' };
       }
-      return executeCentralPushAdmin({
-        action: 'notify',
-        subscriptionId,
-        title: 'Registro recusado',
-        body: `Motivo: ${String(reason || '').trim()}`,
-        url: './#meus-envios'
-      });
+      try {
+        return await executeCentralPushAdmin({
+          action: 'notify',
+          subscriptionId,
+          title: 'Registro recusado',
+          body: `Motivo: ${String(reason || '').trim()}`,
+          url: './#meus-envios'
+        });
+      } catch (error) {
+        const message = normalizeComparableText(error?.message || '');
+        if (message.includes('notificacoes estao desativadas')) {
+          return { skipped: true, reason: 'notifications-disabled' };
+        }
+        if (message.includes('nao esta mais inscrito') || message.includes('nao possui um aparelho de origem valido')) {
+          return { skipped: true, reason: 'subscription-unavailable' };
+        }
+        throw error;
+      }
+    }
+
+    function getCentralRejectionFeedback(notification) {
+      if (!notification?.skipped) return 'Registro rejeitado e motivo enviado ao aparelho de origem.';
+      if (notification.reason === 'notifications-disabled') {
+        return 'Registro rejeitado. Os avisos estão desativados neste aparelho, mas o motivo está disponível em Meus envios.';
+      }
+      if (notification.reason === 'subscription-unavailable') {
+        return 'Registro rejeitado. O vínculo de notificações do aparelho expirou, mas o motivo está disponível em Meus envios.';
+      }
+      return 'Registro rejeitado. Este envio antigo não possui aparelho vinculado; o motivo está disponível em Meus envios.';
     }
 
     function rejectCentralPendingRecord(rowId) {
@@ -8491,9 +8513,7 @@
             }
             try {
               const notification = await notifyCentralRecordRejection(confirmedRecord, normalizedReason);
-              showToast(notification?.skipped
-                ? 'Registro rejeitado. Este envio antigo não possui aparelho vinculado para aviso.'
-                : 'Registro rejeitado e motivo enviado ao aparelho de origem.');
+              showToast(getCentralRejectionFeedback(notification));
             } catch (notificationError) {
               console.warn('Registro rejeitado, mas o aparelho não recebeu o aviso.', notificationError);
               showToast('Registro rejeitado, mas não foi possível avisar o aparelho de origem.');
