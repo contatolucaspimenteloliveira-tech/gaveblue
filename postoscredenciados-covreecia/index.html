@@ -20,7 +20,7 @@
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css">
-  <link rel="stylesheet" href="./styles.css?v=20260820-targeted-push-1">
+  <link rel="stylesheet" href="./styles.css?v=20260820-driver-home-1">
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full flex flex-col">
@@ -574,19 +574,106 @@
     </div>
    </div>
 
-   <div class="sticky top-0 z-30 bg-white/85 shadow-lg backdrop-blur-sm">
-    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
-     <div class="flex items-center justify-between relative">
-      <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-1 justify-center">
-       <img src="https://i.ibb.co/fGzJKxy8/Grupo-Covre-0000.png" alt="Logo Grupo Covre" loading="lazy" decoding="async" class="h-16 sm:h-24 lg:h-32 w-auto object-contain" onerror="console.error('Image failed to load:', this.src); this.style.display='none';">
+   <div id="driver-profile-modal" class="driver-profile-overlay hidden" aria-hidden="true">
+    <button type="button" class="driver-profile-backdrop" onclick="closeDriverProfile()" aria-label="Fechar perfil"></button>
+    <section class="driver-profile-dialog" role="dialog" aria-modal="true" aria-labelledby="driver-profile-title">
+     <div class="driver-profile-dialog-header">
+      <div>
+       <p>PERFIL DESTE APARELHO</p>
+       <h2 id="driver-profile-title">Motorista e ve&iacute;culo</h2>
       </div>
+      <button type="button" class="driver-profile-close" onclick="closeDriverProfile()" aria-label="Fechar">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 6 12 12M18 6 6 18" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
      </div>
-    </div>
+     <p class="driver-profile-description">Esses dados ficam somente neste celular e ajudam a identificar os pr&oacute;ximos registros.</p>
+     <form id="driver-profile-form" class="driver-profile-form" onsubmit="saveDriverProfile(event)">
+      <label>
+       <span>Nome do motorista</span>
+       <input id="driver-profile-name" type="text" required maxlength="80" autocomplete="name" placeholder="Ex.: Jo&atilde;o da Silva">
+      </label>
+      <label>
+       <span>Ve&iacute;culo</span>
+       <input id="driver-profile-vehicle" type="text" required maxlength="80" placeholder="Ex.: Fiat Strada">
+      </label>
+      <label>
+       <span>Placa</span>
+       <input id="driver-profile-plate" type="text" required maxlength="8" autocomplete="off" inputmode="text" placeholder="ABC1D23">
+      </label>
+      <button type="submit" class="driver-profile-save">Salvar perfil</button>
+     </form>
+    </section>
    </div>
+
+   <header class="home-app-header">
+    <div class="home-app-header-inner">
+     <img src="https://i.ibb.co/fGzJKxy8/Grupo-Covre-0000.png" alt="Grupo Covre" loading="lazy" decoding="async" class="home-brand-logo" onerror="this.style.display='none'">
+     <button type="button" class="home-profile-button" onclick="openDriverProfile()" aria-label="Abrir perfil do motorista">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4" stroke-width="2"/><path d="M4 21a8 8 0 0 1 16 0" stroke-width="2" stroke-linecap="round"/></svg>
+     </button>
+    </div>
+   </header>
 
    <div class="flex-1 overflow-y-auto">
     <div id="welcome-screen" class="w-full px-3 sm:px-6 pt-4 sm:pt-8 pb-28 sm:pb-20 flex items-center justify-center">
      <div class="home-shell max-w-4xl mx-auto w-full">
+      <section class="home-driver-welcome" aria-labelledby="home-driver-greeting">
+       <div>
+        <h1 id="home-driver-greeting">Ol&aacute; <span id="home-driver-name">motorista</span> <span aria-hidden="true">&#128075;</span></h1>
+        <p id="home-driver-summary">Configure seu perfil para agilizar os pr&oacute;ximos registros.</p>
+       </div>
+       <button id="home-profile-setup" type="button" class="home-profile-setup" onclick="openDriverProfile()">Configurar</button>
+      </section>
+
+      <div class="home-overview-grid">
+       <article class="home-overview-card home-vehicle-card">
+        <div class="home-overview-heading">
+         <span>Seu ve&iacute;culo</span>
+         <button type="button" onclick="openDriverProfile()">Alterar <span aria-hidden="true">&rsaquo;</span></button>
+        </div>
+        <div class="home-vehicle-content">
+         <span class="home-vehicle-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none"><path d="M8 29.5 11.5 19a4 4 0 0 1 3.8-2.7h17.4a4 4 0 0 1 3.8 2.7L40 29.5" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M6 29.5h36v8H6v-8Z" fill="currentColor" opacity=".12" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><circle cx="13" cy="37" r="3.5" fill="white" stroke="currentColor" stroke-width="2.4"/><circle cx="35" cy="37" r="3.5" fill="white" stroke="currentColor" stroke-width="2.4"/><path d="M13 22h22M7 27l-3-2M41 27l3-2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+         </span>
+         <div>
+          <strong id="home-vehicle-name">Nenhum ve&iacute;culo configurado</strong>
+          <span id="home-vehicle-plate" class="home-vehicle-plate is-empty">SEM PLACA</span>
+         </div>
+        </div>
+        <div class="home-vehicle-state">
+         <span class="home-state-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 22h12M4 9h10M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9.8L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+         </span>
+         <span><strong id="home-vehicle-status">Perfil pendente</strong><small id="home-vehicle-hint">Configure para agilizar seus registros</small></span>
+        </div>
+       </article>
+
+       <article class="home-overview-card home-last-send-card">
+        <div class="home-overview-heading">
+         <span>&Uacute;ltimo envio</span>
+         <button type="button" onclick="showComingSoon()">Ver meus envios <span aria-hidden="true">&rsaquo;</span></button>
+        </div>
+        <div id="home-last-send-empty" class="home-last-send-empty">
+         <span class="home-last-send-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 22h12M4 9h10M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9.8L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+         </span>
+         <span><strong>Nenhum envio neste aparelho</strong><small>Seu pr&oacute;ximo registro aparecer&aacute; aqui.</small></span>
+        </div>
+        <div id="home-last-send-content" class="home-last-send-content hidden">
+         <div class="home-last-send-main">
+          <span class="home-last-send-icon" aria-hidden="true">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 22h12M4 9h10M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9.8L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span><strong id="home-last-send-type">Abastecimento</strong><small id="home-last-send-date"></small></span>
+         </div>
+         <div class="home-last-send-footer">
+          <strong id="home-last-send-value"></strong>
+          <span id="home-last-send-status">Enviado</span>
+         </div>
+        </div>
+       </article>
+      </div>
+
       <section class="home-hero-card" id="home-hero-carousel" aria-label="Destaques da Central de Registros">
        <div class="home-hero-slides" aria-hidden="true">
         <div class="home-hero-slide is-active hero-main">
@@ -897,7 +984,7 @@
     <span>Sobre</span>
    </button>
   </nav>
-  <script src="./app.js?v=20260820-targeted-push-1"></script>
+  <script src="./app.js?v=20260820-driver-home-1"></script>
  </body>
 </html>
 

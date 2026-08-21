@@ -648,6 +648,452 @@ button {
   contain: layout style paint;
 }
 
+body.driver-profile-open {
+  overflow: hidden;
+}
+
+body.driver-profile-open .mobile-bottom-nav {
+  display: none !important;
+}
+
+.home-app-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  flex: 0 0 auto;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.78);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(18px);
+}
+
+.home-app-header-inner {
+  display: flex;
+  width: min(100%, 80rem);
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 auto;
+  padding: 0.55rem 0.9rem;
+}
+
+.home-brand-logo {
+  width: auto;
+  max-width: 10.5rem;
+  height: 3.15rem;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.home-profile-button {
+  display: grid;
+  flex: 0 0 2.6rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  color: #0f172a;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.home-profile-button:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.13);
+  transform: translateY(-1px);
+}
+
+.home-profile-button svg {
+  width: 1.18rem;
+  height: 1.18rem;
+}
+
+.driver-profile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.85rem;
+}
+
+.driver-profile-overlay.hidden {
+  display: none;
+}
+
+.driver-profile-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+.driver-profile-dialog {
+  position: relative;
+  width: min(100%, 31rem);
+  max-height: calc(100dvh - 1.7rem);
+  overflow-y: auto;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 1.5rem;
+  background: #ffffff;
+  padding: 1.15rem;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+  animation: profileSheetUp 220ms ease-out both;
+}
+
+.driver-profile-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.driver-profile-dialog-header p {
+  color: #2563eb;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+}
+
+.driver-profile-dialog-header h2 {
+  margin-top: 0.15rem;
+  color: #0f172a;
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+.driver-profile-close {
+  display: grid;
+  flex: 0 0 2.35rem;
+  width: 2.35rem;
+  height: 2.35rem;
+  place-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  color: #475569;
+  background: #f8fafc;
+}
+
+.driver-profile-close svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.driver-profile-description {
+  margin-top: 0.65rem;
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.driver-profile-form {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.driver-profile-form label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.driver-profile-form label > span {
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.driver-profile-form input {
+  width: 100%;
+  min-height: 2.9rem;
+  border: 1px solid #dbe3ef;
+  border-radius: 0.9rem;
+  outline: none;
+  padding: 0 0.9rem;
+  color: #0f172a;
+  background: #f8fafc;
+  font-size: 0.88rem;
+  font-weight: 650;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.driver-profile-form input:focus {
+  border-color: #60a5fa;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.11);
+}
+
+.driver-profile-save {
+  min-height: 3rem;
+  margin-top: 0.15rem;
+  border-radius: 0.95rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb, #0b67ff);
+  font-size: 0.88rem;
+  font-weight: 900;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.23);
+}
+
+.home-driver-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  margin-bottom: 0.75rem;
+  padding: 0 0.1rem;
+}
+
+.home-driver-welcome h1 {
+  color: #0f172a;
+  font-size: clamp(1.35rem, 5vw, 1.85rem);
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+.home-driver-welcome p {
+  margin-top: 0.3rem;
+  color: #64748b;
+  font-size: 0.73rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.home-profile-setup {
+  flex: 0 0 auto;
+  min-height: 2.2rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  padding: 0 0.8rem;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.home-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.8rem;
+}
+
+.home-overview-card {
+  min-width: 0;
+  border: 1px solid #e5eaf2;
+  border-radius: 1.2rem;
+  background: #ffffff;
+  padding: 0.85rem;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+}
+
+.home-overview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.home-overview-heading > span {
+  color: #334155;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.home-overview-heading button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+  color: #2563eb;
+  font-size: 0.64rem;
+  line-height: 1.15;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.home-overview-heading button span {
+  font-size: 1rem;
+  line-height: 0.8;
+}
+
+.home-vehicle-content,
+.home-last-send-main,
+.home-last-send-empty {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.62rem;
+}
+
+.home-vehicle-content {
+  min-height: 4.25rem;
+  padding: 0.65rem 0 0.55rem;
+}
+
+.home-vehicle-icon,
+.home-last-send-icon,
+.home-state-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.home-vehicle-icon {
+  width: 3.3rem;
+  height: 3.3rem;
+  border-radius: 1rem;
+}
+
+.home-vehicle-icon svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.home-vehicle-content > div,
+.home-last-send-main > span:last-child,
+.home-last-send-empty > span:last-child,
+.home-vehicle-state > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 0.12rem;
+}
+
+.home-vehicle-content strong,
+.home-last-send-main strong,
+.home-last-send-empty strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 0.76rem;
+  line-height: 1.2;
+  font-weight: 850;
+  text-overflow: ellipsis;
+}
+
+.home-vehicle-content strong,
+.home-last-send-empty strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+.home-last-send-main strong {
+  white-space: nowrap;
+}
+
+.home-vehicle-plate {
+  justify-self: start;
+  border-radius: 0.48rem;
+  padding: 0.24rem 0.4rem;
+  color: #0f172a;
+  background: #eef2f7;
+  font-size: 0.88rem;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: 0.045em;
+}
+
+.home-vehicle-plate.is-empty {
+  color: #94a3b8;
+  font-size: 0.68rem;
+}
+
+.home-vehicle-state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-top: 1px solid #eef2f7;
+  padding-top: 0.55rem;
+}
+
+.home-state-icon {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 0.55rem;
+}
+
+.home-state-icon svg,
+.home-last-send-icon svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.home-vehicle-state strong {
+  color: #334155;
+  font-size: 0.62rem;
+  line-height: 1.1;
+  font-weight: 850;
+}
+
+.home-vehicle-state small,
+.home-last-send-main small,
+.home-last-send-empty small {
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 0.56rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-last-send-empty {
+  min-height: 6.3rem;
+  color: #64748b;
+}
+
+.home-last-send-icon {
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 0.85rem;
+}
+
+.home-last-send-content {
+  padding-top: 0.8rem;
+}
+
+.home-last-send-main {
+  min-height: 3.3rem;
+}
+
+.home-last-send-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+  border-top: 1px solid #eef2f7;
+  padding-top: 0.5rem;
+}
+
+.home-last-send-footer > strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-last-send-footer > span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.28rem 0.48rem;
+  color: #1d4ed8;
+  background: #dbeafe;
+  font-size: 0.56rem;
+  font-weight: 850;
+}
+
 .home-shell {
   animation: homeFadeUp 0.45s ease both;
 }
@@ -1194,7 +1640,20 @@ button {
   }
 }
 
+@keyframes profileSheetUp {
+  from { opacity: 0; transform: translateY(1rem) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 @media (min-width: 768px) {
+  .driver-profile-overlay {
+    align-items: center;
+  }
+
+  .home-overview-card {
+    padding: 1rem;
+  }
+
   body[data-mobile-nav="home"] .mobile-bottom-nav,
   body[data-mobile-nav="postos"] .mobile-bottom-nav {
     left: 50%;
@@ -1242,16 +1701,18 @@ button {
 
   body[data-mobile-nav="home"] #welcome-screen {
     min-height: 100%;
-    padding-top: 0.65rem;
+    padding-top: 0.75rem;
     padding-bottom: calc(4.85rem + env(safe-area-inset-bottom));
   }
 
   .home-hero-card {
-    min-height: 220px;
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+    border-radius: 1.2rem;
   }
 
   .home-hero-content {
-    min-height: 220px;
+    min-height: 100%;
     padding: 1.55rem;
   }
 
@@ -1292,7 +1753,7 @@ button {
   }
 
   .home-action-card {
-    min-height: 96px;
+    min-height: 86px;
     display: flex;
     align-items: center;
     padding: 0.88rem 3rem 0.88rem 4.75rem;
@@ -1411,6 +1872,28 @@ button {
   #loose-note-modal .sticky {
     padding-top: 0.75rem !important;
     padding-bottom: 0.75rem !important;
+  }
+}
+
+@media (max-width: 359px) {
+  .home-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-overview-card {
+    padding: 0.72rem;
+  }
+
+  .home-overview-heading button {
+    font-size: 0.56rem;
+  }
+
+  .home-driver-welcome {
+    align-items: flex-start;
+  }
+
+  .home-driver-welcome p {
+    max-width: 14rem;
   }
 }
 
