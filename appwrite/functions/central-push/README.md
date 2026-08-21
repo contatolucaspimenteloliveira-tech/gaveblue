@@ -14,6 +14,8 @@ Variáveis:
 - `VAPID_PUBLIC_KEY` — mesma chave pública usada na Central
 - `VAPID_PRIVATE_KEY` — segredo; nunca colocar no repositório
 - `ADMIN_USER_IDS` — IDs Appwrite autorizados, separados por vírgula
+- `CENTRAL_RECORDS_COLLECTION_ID=central_registros_pendentes`
+- `DRIVER_DIRECTORY_COLLECTION_ID=central_driver_directory`
 
 Escopos da chave dinâmica: `databases.read`, `databases.write`, `documents.read` e `documents.write`.
 
@@ -34,6 +36,18 @@ O identificador do documento é um hash do endpoint, evitando inscrições dupli
 
 ## Vínculo com o registro da Central
 
-A tabela `central_registros_pendentes` possui a coluna de texto opcional `pushSubscriptionId`. Novos registros guardam nela apenas o hash técnico devolvido por `subscribe`. Ao rejeitar um registro, o WeFrotas usa a ação administrativa `notify` para enviar a justificativa exclusivamente ao aparelho de origem. Registros antigos sem esse campo não geram disparo individual.
+A tabela `central_registros_pendentes` possui as colunas opcionais `pushSubscriptionId` e `deviceId`. O primeiro é o hash técnico devolvido por `subscribe`, usado no push individual. O segundo é um identificador aleatório e persistente criado no aparelho, usado para consultar o histórico mesmo quando a pessoa não habilita notificações. Não há uso de IP ou localização.
+
+As ações públicas da Function são:
+
+- `subscribe` e `unsubscribe`: administram somente a inscrição técnica do próprio aparelho;
+- `directory`: retorna apenas os vínculos ativos mínimos de motorista e veículo publicados pelo WeFrotas;
+- `history`: retorna os registros vinculados ao `deviceId` ou à inscrição técnica informada.
+
+As ações `stats`, `broadcast` e `notify` continuam administrativas. Ao aprovar ou rejeitar um registro, o WeFrotas usa `notify` para devolver o resultado exclusivamente ao aparelho de origem, quando houver uma inscrição ativa.
+
+## Diretório da Central
+
+A tabela `central_driver_directory` não tem permissão pública e é mantida pelo usuário autenticado no WeFrotas. Ela contém somente `driverId`, `driverName`, `vehicleId`, `vehicleName`, `plate`, `fleetNumber`, `active` e `updatedAt`. A Central consulta uma versão saneada pela Function, sem acesso direto ao restante do snapshot administrativo.
 
 

@@ -269,6 +269,9 @@
       emitStatus('syncing', 'Enviando dados otimizados...');
     }
     await updateOrCreateRow(rowId, { workspaceId: config.companyId, snapshot: valueForPrimaryRow, updatedAt, updatedBy: currentUser.$id });
+    await syncCentralDriverDirectory(preparedSnapshot).catch((error) => {
+      console.warn('Não foi possível atualizar o diretório da Central.', error);
+    });
     lastSerializedSnapshot = serialized;
     setPendingSync(false);
     emitStatus('online', 'Dados sincronizados.');
@@ -398,6 +401,131 @@
     return String(storage.getFileView({ bucketId: config.bucketId, fileId: uploaded.$id }));
   }
 
+  function isDirectoryEntityActive(entity) {
+    return entity?.ativo !== false && entity?.active !== false;
+  }
+
+  function buildCentralDriverDirectoryRows(snapshot = {}) {
+    const drivers = (Array.isArray(snapshot.drivers) ? snapshot.drivers : []).filter(isDirectoryEntityActive);
+    const vehicles = (Array.isArray(snapshot.vehicles) ? snapshot.vehicles : []).filter(isDirectoryEntityActive);
+    const updatedAt = new Date().toISOString();
+    const rows = [];
+    drivers.forEach((driver) => {
+      const driverId = String(driver?.id || '').trim();
+      const driverName = String(driver?.nome || driver?.name || '').trim();
+      if (!driverId || !driverName) return;
+      const linkedIds = new Set((Array.isArray(driver.vehicleIds) ? driver.vehicleIds : driver.vehicleId ? [driver.vehicleId] : []).map(String));
+      const linkedVehicles = vehicles.filter((vehicle) => linkedIds.has(String(vehicle?.id || '')) || String(vehicle?.motoristaId || vehicle?.driverId || '') === driverId);
+      const candidates = linkedVehicles.length ? linkedVehicles : [null];
+      candidates.forEach((vehicle) => rows.push({
+        driverId,
+        driverName,
+        vehicleId: String(vehicle?.id || ''),
+        vehicleName: String(vehicle?.modelo || vehicle?.model || ''),
+        plate: String(vehicle?.placa || vehicle?.plate || '').toUpperCase(),
+        fleetNumber: String(vehicle?.numeroFrota || vehicle?.fleetNumber || ''),
+        active: true,
+        updatedAt
+      }));
+    });
+    return rows;
+  }
+
+  async function syncCentralDriverDirectory(snapshot = {}) {
+    if (!currentUser || !config.centralDriverDirectoryTableId) return;
+    const desiredRows = buildCentralDriverDirectoryRows(snapshot);
+    const queries = global.Appwrite?.Query?.limit ? [global.Appwrite.Query.limit(500)] : [];
+    const existingResult = await tablesDB.listRows({
+      databaseId: config.databaseId,
+      tableId: config.centralDriverDirectoryTableId,
+      queries
+    });
+    const existingRows = Array.isArray(existingResult?.rows) ? existingResult.rows : [];
+    const desiredIds = new Set();
+    for (const data of desiredRows) {
+      const rowId = await digestId(`central-driver:${data.driverId}:${data.vehicleId || 'without-vehicle'}`);
+      desiredIds.add(rowId);
+      const current = existingRows.find((row) => row.$id === rowId);
+      const changed = !current || ['driverId', 'driverName', 'vehicleId', 'vehicleName', 'plate', 'fleetNumber', 'active']
+        .some((key) => String(current?.[key] ?? '') !== String(data[key] ?? ''));
+      if (!changed) continue;
+      await updateOrCreateDirectoryRow(rowId, data);
+    }
+    await Promise.all(existingRows
+      .filter((row) => !desiredIds.has(row.$id))
+      .map((row) => tablesDB.deleteRow({ databaseId: config.databaseId, tableId: config.centralDriverDirectoryTableId, rowId: row.$id })));
+  }
+
+  async function updateOrCreateDirectoryRow(rowId, data) {
+    try {
+      return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralDriverDirectoryTableId, rowId, data });
+    } catch (error) {
+      if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
+      return tablesDB.createRow({ databaseId: config.databaseId, tableId: config.centralDriverDirectoryTableId, rowId, data });
+    }
+  }
+
+  function getPublicBannerFilePermissions() {
+    const { Permission, Role } = global.Appwrite;
+    const managerRole = config.teamId ? Role.team(config.teamId) : Role.users();
+    return [
+      Permission.read(Role.any()),
+      Permission.update(managerRole),
+      Permission.delete(managerRole)
+    ];
+  }
+
+  async function uploadCentralBanner(file) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online antes de enviar banners.');
+    if (!file) throw new Error('Selecione uma imagem para o banner.');
+    if (!String(file.type || '').startsWith('image/')) throw new Error('O arquivo selecionado precisa ser uma imagem.');
+    const uploaded = await storage.createFile({
+      bucketId: config.bucketId,
+      fileId: global.Appwrite.ID.unique(),
+      file,
+      permissions: getPublicBannerFilePermissions()
+    });
+    return {
+      fileId: uploaded.$id,
+      imageUrl: String(storage.getFileView({ bucketId: config.bucketId, fileId: uploaded.$id }))
+    };
+  }
+
+  async function deleteCentralBannerFile(fileId) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir banners.');
+    if (!fileId) return;
+    return storage.deleteFile({ bucketId: config.bucketId, fileId });
+  }
+
+  async function listCentralHomeBanners() {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para administrar os banners.');
+    if (!config.centralBannersTableId) throw new Error('Tabela de banners não configurada.');
+    const queries = [];
+    if (global.Appwrite?.Query?.limit) queries.push(global.Appwrite.Query.limit(100));
+    const result = await tablesDB.listRows({ databaseId: config.databaseId, tableId: config.centralBannersTableId, queries });
+    return Array.isArray(result?.rows) ? result.rows : [];
+  }
+
+  async function createCentralHomeBanner(data) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para cadastrar banners.');
+    return tablesDB.createRow({
+      databaseId: config.databaseId,
+      tableId: config.centralBannersTableId,
+      rowId: global.Appwrite.ID.unique(),
+      data
+    });
+  }
+
+  async function updateCentralHomeBanner(rowId, data) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para alterar banners.');
+    return tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data });
+  }
+
+  async function deleteCentralHomeBanner(rowId) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir banners.');
+    return tablesDB.deleteRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId });
+  }
+
   async function listCentralPendingRecords(limit = 100) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para consultar a Central de Registros.');
     if (!tablesDB) throw new Error('Banco de dados do Appwrite não está conectado.');
@@ -459,6 +587,7 @@
       lastSerializedSnapshot = remoteSerialized;
       setPendingSync(false);
       await currentSnapshotApplier?.(remoteRecord.snapshot);
+      await syncCentralDriverDirectory(remoteRecord.snapshot).catch((error) => console.warn('Não foi possível atualizar o diretório da Central.', error));
       emitStatus('online', 'Dados da empresa carregados do servidor.');
       return { mode: 'remote-authoritative', snapshot: remoteRecord.snapshot };
     }
@@ -481,6 +610,9 @@
     getUser: () => currentUser,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
     syncNow,
-    uploadReceipt, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord
+    uploadReceipt, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord,
+    uploadCentralBanner, deleteCentralBannerFile, listCentralHomeBanners,
+    createCentralHomeBanner, updateCentralHomeBanner, deleteCentralHomeBanner,
+    syncCentralDriverDirectory
   });
 })(window);

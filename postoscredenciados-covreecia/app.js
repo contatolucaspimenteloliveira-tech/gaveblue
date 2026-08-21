@@ -32,6 +32,9 @@ const DRIVER_NAMES_STORAGE_KEY = 'postoscredenciados-covreecia:driver-names';
 const LAST_FUEL_ENTRY_STORAGE_KEY = 'postoscredenciados-covreecia:last-fuel-entry';
 const DRIVER_PROFILE_STORAGE_KEY = 'postoscredenciados-covreecia:driver-profile-v1';
 const CENTRAL_LAST_SENT_STORAGE_KEY = 'postoscredenciados-covreecia:last-sent-record-v1';
+const CENTRAL_DEVICE_ID_KEY = 'postoscredenciados-covreecia:device-id-v1';
+const DRIVER_ONBOARDING_VERSION_KEY = 'postoscredenciados-covreecia:driver-onboarding-version';
+const DRIVER_ONBOARDING_VERSION = '2026-08-directory-v1';
 const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
 const PWA_INSTALL_DONE_KEY = 'pwa-install-installed';
@@ -63,6 +66,12 @@ let receiptCameraDeviceIndex = 0;
 let receiptCameraFlashEnabled = false;
 let pendingReceiptCameraFile = null;
 let pendingReceiptCameraPreviewUrl = '';
+let centralDriverDirectory = [];
+let selectedDirectoryDriver = null;
+let selectedDirectoryVehicles = [];
+let selectedDirectoryVehicleIndex = 0;
+let centralSubmissionHistory = [];
+let centralSubmissionHistoryLoaded = false;
 const optimizedReceiptFiles = new WeakSet();
 const DEFAULT_DRIVER_NAMES = [
   'AMANDA P. BONATTO',
@@ -514,6 +523,14 @@ function getCentralPushSubscriptionId() {
   return String(localStorage.getItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY) || '').trim();
 }
 
+function getCentralDeviceId() {
+  let deviceId = String(localStorage.getItem(CENTRAL_DEVICE_ID_KEY) || '').trim();
+  if (/^[a-f0-9-]{32,64}$/i.test(deviceId)) return deviceId;
+  deviceId = globalThis.crypto?.randomUUID?.() || `${Date.now().toString(16)}-${Array.from(globalThis.crypto?.getRandomValues?.(new Uint8Array(16)) || []).map((value) => value.toString(16).padStart(2, '0')).join('')}`;
+  localStorage.setItem(CENTRAL_DEVICE_ID_KEY, deviceId);
+  return deviceId;
+}
+
 function shouldShowCentralPushPrompt() {
   if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
     return false;
@@ -831,7 +848,13 @@ function getDriverProfile() {
     const name = String(profile.name || '').trim();
     const vehicle = String(profile.vehicle || '').trim();
     const plate = String(profile.plate || '').trim().toUpperCase();
-    return name && vehicle && plate ? { name, vehicle, plate } : null;
+    return name && vehicle && plate ? {
+      name,
+      vehicle,
+      plate,
+      driverId: String(profile.driverId || ''),
+      vehicleId: String(profile.vehicleId || '')
+    } : null;
   } catch (error) {
     return null;
   }
@@ -850,6 +873,8 @@ function getCentralLastSentRecord() {
 function saveCentralLastSentRecord(record) {
   try {
     localStorage.setItem(CENTRAL_LAST_SENT_STORAGE_KEY, JSON.stringify(record));
+    centralSubmissionHistory = [record, ...centralSubmissionHistory.filter((item) => String(item?.id || '') !== String(record?.id || ''))];
+    centralSubmissionHistoryLoaded = true;
     renderHomeDriverArea();
   } catch (error) {
     console.warn('N\u00e3o foi poss\u00edvel atualizar o resumo do \u00faltimo envio.', error);
@@ -864,9 +889,40 @@ function formatHomeSentDate(record) {
   return [formattedDate, rawTime].filter(Boolean).join(' \u2022 ');
 }
 
+function escapeCentralHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getSubmissionStatus(record) {
+  const value = String(record?.status || 'pendente').toLowerCase();
+  if (value.includes('aprov') || value.includes('import')) return { label: 'Aprovado', className: 'approved' };
+  if (value.includes('reje') || value.includes('recus')) return { label: 'Recusado', className: 'rejected' };
+  return { label: 'Em análise', className: 'pending' };
+}
+
+function getSubmissionType(record) {
+  const type = String(record?.type || record?.tipo || '').toLowerCase();
+  if (type.includes('servico')) return 'Serviço';
+  if (type.includes('rapido')) return 'Abastecimento rápido';
+  return record?.type || 'Abastecimento';
+}
+
+function getSubmissionValue(record) {
+  const numeric = Number(record?.numericValue || 0);
+  if (numeric > 0) return numeric.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const raw = String(record?.value || '').trim();
+  if (!raw || /não informado/i.test(raw)) return '';
+  return /^R\$/i.test(raw) ? raw : `R$ ${raw}`;
+}
+
 function renderHomeDriverArea() {
   const profile = getDriverProfile();
-  const lastSent = getCentralLastSentRecord();
+  const lastSent = centralSubmissionHistoryLoaded ? centralSubmissionHistory[0] || null : getCentralLastSentRecord();
   const name = document.getElementById('home-driver-name');
   const summary = document.getElementById('home-driver-summary');
   const setupButton = document.getElementById('home-profile-setup');
@@ -909,28 +965,173 @@ function renderHomeDriverArea() {
     const date = document.getElementById('home-last-send-date');
     const value = document.getElementById('home-last-send-value');
     const status = document.getElementById('home-last-send-status');
-    if (type) type.textContent = lastSent.type || 'Registro';
+    const statusInfo = getSubmissionStatus(lastSent);
+    const submissionValue = getSubmissionValue(lastSent);
+    if (type) type.textContent = getSubmissionType(lastSent);
     if (date) date.textContent = formatHomeSentDate(lastSent);
-    if (value) value.textContent = lastSent.value || 'Valor n\u00e3o informado';
-    if (status) status.textContent = lastSent.status || 'Enviado';
+    if (value) {
+      value.textContent = submissionValue;
+      value.classList.toggle('hidden', !submissionValue);
+    }
+    if (status) {
+      status.textContent = statusInfo.label;
+      status.className = statusInfo.className;
+    }
   }
 }
 
-function openDriverProfile() {
+function shouldOpenDriverOnboarding() {
+  return localStorage.getItem(DRIVER_ONBOARDING_VERSION_KEY) !== DRIVER_ONBOARDING_VERSION;
+}
+
+function getDirectoryDrivers() {
+  const drivers = new Map();
+  centralDriverDirectory.forEach((row) => {
+    if (!drivers.has(row.driverId)) drivers.set(row.driverId, { id: row.driverId, name: row.driverName, vehicles: [] });
+    if (row.vehicleId && row.vehicleName && row.plate) drivers.get(row.driverId).vehicles.push(row);
+  });
+  return [...drivers.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+}
+
+async function loadDriverDirectory() {
+  const loading = document.getElementById('driver-directory-loading');
+  const errorNode = document.getElementById('driver-directory-error');
+  const driverStep = document.getElementById('driver-onboarding-driver-step');
+  loading?.classList.remove('hidden');
+  errorNode?.classList.add('hidden');
+  driverStep?.classList.add('hidden');
+  try {
+    const result = await executeCentralPushFunction({ action: 'directory' });
+    centralDriverDirectory = Array.isArray(result?.directory) ? result.directory : [];
+    loading?.classList.add('hidden');
+    if (!centralDriverDirectory.length) throw new Error('O diretório ainda está vazio. Abra o WeFrotas e sincronize os dados para publicar os vínculos ativos.');
+    driverStep?.classList.remove('hidden');
+    renderDriverDirectoryResults();
+    return true;
+  } catch (error) {
+    loading?.classList.add('hidden');
+    if (errorNode) {
+      errorNode.textContent = error?.message || 'Não foi possível consultar os motoristas agora.';
+      errorNode.classList.remove('hidden');
+    }
+    return false;
+  }
+}
+
+function renderDriverDirectoryResults() {
+  const results = document.getElementById('driver-profile-results');
+  if (!results) return;
+  const query = String(document.getElementById('driver-profile-search')?.value || '').trim().toLocaleLowerCase('pt-BR');
+  const drivers = getDirectoryDrivers().filter((driver) => !query || driver.name.toLocaleLowerCase('pt-BR').includes(query));
+  results.innerHTML = drivers.length ? drivers.map((driver) => `
+    <button type="button" class="driver-profile-result" data-driver-id="${escapeCentralHtml(driver.id)}">
+      <span class="driver-profile-result-mark">✓</span>
+      <span>${escapeCentralHtml(driver.name)}<small>${driver.vehicles.length ? `${driver.vehicles.length} veículo(s) vinculado(s)` : 'Sem veículo ativo vinculado'}</small></span>
+    </button>
+  `).join('') : '<div class="driver-directory-message">Nenhum motorista encontrado.</div>';
+  results.querySelectorAll('[data-driver-id]').forEach((button) => button.addEventListener('click', () => selectDirectoryDriver(button.dataset.driverId)));
+}
+
+function filterDriverDirectory() {
+  renderDriverDirectoryResults();
+}
+
+function selectDirectoryDriver(driverId) {
+  selectedDirectoryDriver = getDirectoryDrivers().find((driver) => driver.id === driverId) || null;
+  selectedDirectoryVehicles = selectedDirectoryDriver?.vehicles || [];
+  selectedDirectoryVehicleIndex = 0;
+  if (!selectedDirectoryDriver || !selectedDirectoryVehicles.length) {
+    showErrorMessage('Este motorista ainda não possui um veículo ativo vinculado no WeFrotas.');
+    return;
+  }
+  document.getElementById('driver-onboarding-driver-step')?.classList.add('hidden');
+  document.getElementById('driver-onboarding-vehicle-step')?.classList.remove('hidden');
+  renderSuggestedDriverVehicle();
+}
+
+function renderSuggestedDriverVehicle() {
+  const vehicle = selectedDirectoryVehicles[selectedDirectoryVehicleIndex];
+  if (!vehicle) return;
+  const fleet = document.getElementById('driver-found-fleet');
+  const name = document.getElementById('driver-found-vehicle-name');
+  const plate = document.getElementById('driver-found-plate');
+  const change = document.getElementById('driver-change-vehicle');
+  if (fleet) fleet.textContent = vehicle.fleetNumber ? `Frota ${vehicle.fleetNumber}` : '';
+  if (name) name.textContent = vehicle.vehicleName;
+  if (plate) plate.textContent = vehicle.plate;
+  if (change) {
+    change.disabled = selectedDirectoryVehicles.length < 2;
+    change.textContent = selectedDirectoryVehicles.length < 2 ? '🚗 Veículo vinculado' : '🚗 Alterar veículo';
+  }
+}
+
+function cycleSuggestedVehicle() {
+  if (selectedDirectoryVehicles.length < 2) return;
+  selectedDirectoryVehicleIndex = (selectedDirectoryVehicleIndex + 1) % selectedDirectoryVehicles.length;
+  renderSuggestedDriverVehicle();
+}
+
+function returnToDriverSelection() {
+  selectedDirectoryDriver = null;
+  selectedDirectoryVehicles = [];
+  document.getElementById('driver-onboarding-vehicle-step')?.classList.add('hidden');
+  document.getElementById('driver-onboarding-driver-step')?.classList.remove('hidden');
+  document.getElementById('driver-profile-search')?.focus();
+}
+
+function confirmSuggestedDriverVehicle() {
+  const vehicle = selectedDirectoryVehicles[selectedDirectoryVehicleIndex];
+  if (!selectedDirectoryDriver || !vehicle) return;
+  try {
+    localStorage.setItem(DRIVER_PROFILE_STORAGE_KEY, JSON.stringify({
+      name: selectedDirectoryDriver.name,
+      vehicle: vehicle.vehicleName,
+      plate: vehicle.plate,
+      driverId: selectedDirectoryDriver.id,
+      vehicleId: vehicle.vehicleId
+    }));
+    localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, DRIVER_ONBOARDING_VERSION);
+  } catch (error) {
+    showErrorMessage('Não foi possível salvar o perfil neste aparelho.');
+    return;
+  }
+  saveDriverNameSuggestion(selectedDirectoryDriver.name);
+  renderHomeDriverArea();
+  closeDriverProfile();
+  showSuccessMessage('Motorista e veículo confirmados.');
+}
+
+function skipDriverOnboarding() {
+  localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, DRIVER_ONBOARDING_VERSION);
+  closeDriverProfile();
+}
+
+async function openDriverProfile() {
   const modal = document.getElementById('driver-profile-modal');
   const profile = getDriverProfile();
-  const lastFuelEntry = getLastFuelEntry();
-  const nameInput = document.getElementById('driver-profile-name');
-  const vehicleInput = document.getElementById('driver-profile-vehicle');
-  const plateInput = document.getElementById('driver-profile-plate');
-
-  if (nameInput) nameInput.value = profile?.name || lastFuelEntry?.motorista || '';
-  if (vehicleInput) vehicleInput.value = profile?.vehicle || '';
-  if (plateInput) plateInput.value = profile?.plate || '';
+  document.getElementById('driver-onboarding-vehicle-step')?.classList.add('hidden');
+  document.getElementById('driver-onboarding-driver-step')?.classList.add('hidden');
+  const search = document.getElementById('driver-profile-search');
+  if (search) search.value = profile?.name || '';
   modal?.classList.remove('hidden');
   modal?.setAttribute('aria-hidden', 'false');
   document.body.classList.add('driver-profile-open');
-  window.setTimeout(() => nameInput?.focus(), 80);
+  const loaded = await loadDriverDirectory();
+  if (!loaded) return;
+  const existingDriver = profile && getDirectoryDrivers().find((driver) => driver.id === profile.driverId || driver.name.toLocaleLowerCase('pt-BR') === profile.name.toLocaleLowerCase('pt-BR'));
+  if (existingDriver?.vehicles?.length) {
+    selectedDirectoryDriver = existingDriver;
+    selectedDirectoryVehicles = existingDriver.vehicles;
+    selectedDirectoryVehicleIndex = Math.max(0, selectedDirectoryVehicles.findIndex((vehicle) => vehicle.vehicleId === profile.vehicleId || vehicle.plate === profile.plate));
+    document.getElementById('driver-onboarding-driver-step')?.classList.add('hidden');
+    document.getElementById('driver-onboarding-vehicle-step')?.classList.remove('hidden');
+    renderSuggestedDriverVehicle();
+  } else {
+    if (existingDriver && !existingDriver.vehicles.length) {
+      showErrorMessage('Seu cadastro foi encontrado, mas ainda não possui um veículo ativo vinculado no WeFrotas.');
+    }
+    window.setTimeout(() => search?.focus(), 80);
+  }
 }
 
 function closeDriverProfile() {
@@ -940,31 +1141,68 @@ function closeDriverProfile() {
   document.body.classList.remove('driver-profile-open');
 }
 
-function saveDriverProfile(event) {
-  event.preventDefault();
-  const name = String(document.getElementById('driver-profile-name')?.value || '').trim().replace(/\s+/g, ' ');
-  const vehicle = String(document.getElementById('driver-profile-vehicle')?.value || '').trim().replace(/\s+/g, ' ');
-  const plate = String(document.getElementById('driver-profile-plate')?.value || '')
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
-    .slice(0, 7);
+function formatHistoryDate(record) {
+  return formatHomeSentDate({ date: record?.date || '', time: record?.time || '' });
+}
 
-  if (!name || !vehicle || plate.length !== 7) {
-    showErrorMessage('Informe nome, ve\u00edculo e uma placa v\u00e1lida com 7 caracteres.');
+function renderMySubmissions() {
+  const list = document.getElementById('my-submissions-list');
+  const summary = document.getElementById('my-submissions-summary');
+  if (!list || !summary) return;
+  const counts = centralSubmissionHistory.reduce((acc, record) => {
+    acc[getSubmissionStatus(record).className] += 1;
+    return acc;
+  }, { pending: 0, approved: 0, rejected: 0 });
+  summary.innerHTML = `<span>${counts.pending}<br>Em análise</span><span>${counts.approved}<br>Aprovados</span><span>${counts.rejected}<br>Recusados</span>`;
+  summary.classList.toggle('hidden', !centralSubmissionHistory.length);
+  if (!centralSubmissionHistory.length) {
+    list.innerHTML = '<div class="driver-directory-message">Nenhum envio encontrado para este aparelho.</div>';
     return;
   }
+  list.innerHTML = centralSubmissionHistory.map((record) => {
+    const status = getSubmissionStatus(record);
+    const value = getSubmissionValue(record);
+    return `<article class="submission-item">
+      <div class="submission-item-head"><span><strong>${escapeCentralHtml(getSubmissionType(record))}</strong><small>${escapeCentralHtml(formatHistoryDate(record))}</small></span><span class="submission-status ${status.className}">${status.label}</span></div>
+      <p>${escapeCentralHtml(record.supplier || 'Fornecedor não informado')}${record.protocol ? ` • ${escapeCentralHtml(record.protocol)}` : ''}</p>
+      ${status.className === 'rejected' && record.resolution ? `<p><strong>Motivo:</strong> ${escapeCentralHtml(record.resolution)}</p>` : ''}
+      <div class="submission-item-foot"><span class="submission-item-value">${escapeCentralHtml(value)}</span>${record.receiptUrl ? `<a class="submission-receipt" href="${escapeCentralHtml(record.receiptUrl)}" target="_blank" rel="noopener">Ver comprovante</a>` : ''}</div>
+    </article>`;
+  }).join('');
+}
 
+async function refreshMySubmissions(options = {}) {
+  const { silent = false } = options;
+  const list = document.getElementById('my-submissions-list');
+  if (!silent && list) list.innerHTML = '<div class="driver-directory-message">Buscando seus envios...</div>';
   try {
-    localStorage.setItem(DRIVER_PROFILE_STORAGE_KEY, JSON.stringify({ name, vehicle, plate }));
+    const result = await executeCentralPushFunction({
+      action: 'history',
+      deviceId: getCentralDeviceId(),
+      subscriptionId: getCentralPushSubscriptionId() || undefined
+    });
+    centralSubmissionHistory = Array.isArray(result?.records) ? result.records : [];
+    centralSubmissionHistoryLoaded = true;
+    renderHomeDriverArea();
+    renderMySubmissions();
   } catch (error) {
-    showErrorMessage('N\u00e3o foi poss\u00edvel salvar o perfil neste aparelho.');
-    return;
+    if (!silent && list) list.innerHTML = `<div class="driver-directory-message is-error">${escapeCentralHtml(error?.message || 'Não foi possível consultar seus envios.')}</div>`;
   }
+}
 
-  saveDriverNameSuggestion(name);
-  renderHomeDriverArea();
-  closeDriverProfile();
-  showSuccessMessage('Perfil atualizado neste aparelho.');
+function openMySubmissions() {
+  const modal = document.getElementById('my-submissions-modal');
+  modal?.classList.remove('hidden');
+  modal?.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('driver-profile-open');
+  refreshMySubmissions();
+}
+
+function closeMySubmissions() {
+  const modal = document.getElementById('my-submissions-modal');
+  modal?.classList.add('hidden');
+  modal?.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('driver-profile-open');
 }
 
 function buildFuelReceiptFileName(driverName, dateValue, originalFileName) {
@@ -1684,6 +1922,7 @@ function buildCentralRegistroPayload({ type, formData, receiptUrl, mensagem }) {
     comprovanteUrl: receiptUrl,
     mensagemWhatsapp: mensagem,
     origem: CENTRAL_APPWRITE_ORIGIN,
+    deviceId: getCentralDeviceId(),
     pushSubscriptionId: getCentralPushSubscriptionId() || undefined,
     criadoEm: now.toISOString()
   };
@@ -2265,11 +2504,16 @@ async function submitFuelForm(e) {
   saveDriverNameSuggestion(formData.motorista);
   saveLastFuelEntry({ motorista: formData.motorista, cidade: formData.cidade, posto: formData.posto });
   saveCentralLastSentRecord({
-    type: 'Abastecimento',
+    id: appwritePayload.rowId,
+    protocol: appwritePayload.data.protocolo,
+    type: appwritePayload.data.tipo,
     date: formData.data,
     time: formData.horaFormatada,
-    value: isComplete && formData.valor ? `R$ ${formData.valor}` : 'Valor n\u00e3o informado',
-    status: 'Enviado'
+    value: isComplete && formData.valor ? formData.valor : '',
+    numericValue: isComplete ? (parseCentralMoney(formData.valor) || 0) : 0,
+    supplier: formData.posto,
+    receiptUrl: uploadedFuelReceipt.result.secure_url,
+    status: 'pendente'
   });
   document.getElementById('fuel-form').reset();
   document.getElementById('fuel-form-modal').classList.add('hidden');
@@ -2339,11 +2583,16 @@ async function submitLooseNoteForm(e) {
 
   saveDriverNameSuggestion(formData.motorista);
   saveCentralLastSentRecord({
-    type: 'Servi\u00e7o',
+    id: appwritePayload.rowId,
+    protocol: appwritePayload.data.protocolo,
+    type: appwritePayload.data.tipo,
     date: formData.data,
     time: formData.horaFormatada,
-    value: formData.valor ? `R$ ${formData.valor}` : 'Valor n\u00e3o informado',
-    status: 'Enviado'
+    value: formData.valor || '',
+    numericValue: parseCentralMoney(formData.valor) || 0,
+    supplier: formData.fornecedor,
+    receiptUrl: uploadedLooseNoteReceipt.result.secure_url,
+    status: 'pendente'
   });
   closeLooseNoteForm();
   showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar o registro de servi\u00e7os.');
@@ -3368,14 +3617,65 @@ function renderCityImageCards() {
 window.addEventListener('DOMContentLoaded', () => {
   renderCityImageCards();
   retryPendingCentralRegistro();
+  getCentralDeviceId();
   renderHomeDriverArea();
+  refreshMySubmissions({ silent: true });
+  if (window.location.hash === '#meus-envios') window.setTimeout(() => openMySubmissions(), 350);
+  else if (shouldOpenDriverOnboarding()) window.setTimeout(() => openDriverProfile(), 450);
 });
 
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !document.getElementById('driver-profile-modal')?.classList.contains('hidden')) {
     closeDriverProfile();
+  } else if (event.key === 'Escape' && !document.getElementById('my-submissions-modal')?.classList.contains('hidden')) {
+    closeMySubmissions();
   }
 });
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshMySubmissions({ silent: true });
+});
+
+const CENTRAL_BANNERS_CONFIG = Object.freeze({
+  endpoint: 'https://nyc.cloud.appwrite.io/v1',
+  projectId: '6a68cb3e00312ec0a3fd',
+  databaseId: '6a68ce8c000a36a44d98',
+  tableId: 'central_home_banners'
+});
+
+async function loadManagedHomeBanners() {
+  const slidesContainer = document.querySelector('#home-hero-carousel .home-hero-slides');
+  if (!slidesContainer) return false;
+  try {
+    const config = CENTRAL_BANNERS_CONFIG;
+    const response = await fetch(`${config.endpoint}/tablesdb/${config.databaseId}/tables/${config.tableId}/rows`, {
+      headers: { 'x-appwrite-project': config.projectId }
+    });
+    if (!response.ok) throw new Error(`Appwrite respondeu ${response.status}`);
+    const payload = await response.json();
+    const banners = (Array.isArray(payload?.rows) ? payload.rows : [])
+      .filter((banner) => banner?.active && String(banner?.imageUrl || '').trim())
+      .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+    if (!banners.length) return false;
+
+    const fragment = document.createDocumentFragment();
+    banners.forEach((banner, index) => {
+      const slide = document.createElement('div');
+      slide.className = `home-hero-slide hero-managed${index === 0 ? ' is-active' : ''}`;
+      const image = document.createElement('img');
+      image.src = String(banner.imageUrl);
+      image.alt = String(banner.title || 'Aviso da Central de Registros');
+      image.loading = index === 0 ? 'eager' : 'lazy';
+      slide.appendChild(image);
+      fragment.appendChild(slide);
+    });
+    slidesContainer.replaceChildren(fragment);
+    return true;
+  } catch (error) {
+    console.warn('Não foi possível carregar os banners administrados; usando os banners locais.', error);
+    return false;
+  }
+}
 
 function initHomeHeroCarousel() {
   const carousel = document.getElementById('home-hero-carousel');
@@ -3385,7 +3685,14 @@ function initHomeHeroCarousel() {
   let slides = [];
   let dots = [];
 
-  if (!carousel || allSlides.length < 2 || !dotsContainer) {
+  if (!carousel || !allSlides.length || !dotsContainer) {
+    return;
+  }
+
+  if (allSlides.length === 1) {
+    allSlides[0].classList.add('is-active');
+    carousel.classList.toggle('is-message-slide', !allSlides[0].classList.contains('hero-main'));
+    dotsContainer.innerHTML = '<span class="is-active"></span>';
     return;
   }
 
@@ -3485,5 +3792,8 @@ function initHomeHeroCarousel() {
   restartAutoplay();
 }
 
-window.addEventListener('DOMContentLoaded', initHomeHeroCarousel);
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadManagedHomeBanners();
+  initHomeHeroCarousel();
+});
 
