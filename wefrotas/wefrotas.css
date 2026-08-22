@@ -5878,6 +5878,7 @@ body.dark-mode .central-banner-item-actions button { border-color: #475569; colo
 .central-banner-item > img { width: 104px; height: 68px; object-fit: cover; border-radius: 11px; background: #f1f5f9; }
 .central-banner-item-copy { display: grid; align-content: center; gap: 4px; min-width: 0; }
 .central-banner-item-copy strong { overflow: hidden; color: #0f172a; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.central-banner-item-copy strong em { display: inline-flex; margin-left: 5px; padding: 3px 6px; border-radius: 999px; color: #3151d3; background: #eef3ff; font-size: 8px; font-style: normal; font-weight: 900; letter-spacing: .08em; vertical-align: middle; }
 .central-banner-item-copy span { color: #64748b; font-size: 11px; }
 .central-banner-item-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 7px; }
 .central-banner-item-actions button { min-height: 34px; padding: 0 11px; border: 1px solid #dbe4f0; border-radius: 10px; color: #334155; background: #f8fafc; font-size: 11px; font-weight: 850; }
