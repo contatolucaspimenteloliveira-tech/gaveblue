@@ -17,6 +17,26 @@
     let centralDeviceLinks = {};
     let centralHomeBanners = [];
     let centralBannerSaving = false;
+    let centralDefaultBannersSeeding = null;
+    const CENTRAL_DEFAULT_BANNERS = Object.freeze([
+      { rowId: 'builtin-hero-posto', fileId: 'builtin:hero-posto', title: 'Postos credenciados', path: 'hero-posto.png', sortOrder: 0 },
+      { rowId: 'builtin-revisao-km', fileId: 'builtin:hero-revisao-km', title: 'Atenção à revisão de KM', path: 'hero-revisao-km-desktop.jpeg', sortOrder: 1 },
+      { rowId: 'builtin-posto-proximo', fileId: 'builtin:hero-posto-proximo', title: 'Encontre um posto próximo', path: 'hero-posto-proximo-desktop.jpeg', sortOrder: 2 },
+      { rowId: 'builtin-agro-show', fileId: 'builtin:agro-show-2026', title: 'Pinheiros Agro Show 2026', path: 'agro-show-2026.jpeg', sortOrder: 3 },
+      { rowId: 'builtin-alerta-painel', fileId: 'builtin:mobile-alerta-painel', title: 'Alerta do painel', path: 'mobile-alerta-painel.jpeg', sortOrder: 4 },
+      { rowId: 'builtin-placa-suja', fileId: 'builtin:mobile-placa-suja', title: 'Cuidados com a placa', path: 'mobile-placa-suja.jpeg', sortOrder: 5 },
+      { rowId: 'builtin-sinistro', fileId: 'builtin:mobile-sinistro', title: 'Orientação em caso de sinistro', path: 'mobile-sinistro.jpeg', sortOrder: 6 },
+      { rowId: 'builtin-sinalizacao', fileId: 'builtin:mobile-sinalizacao', title: 'Atenção à sinalização', path: 'mobile-sinalizacao.jpeg', sortOrder: 7 },
+      { rowId: 'builtin-celular-volante', fileId: 'builtin:mobile-celular-volante', title: 'Não use o celular ao volante', path: 'mobile-celular-volante.jpeg', sortOrder: 8 },
+      { rowId: 'builtin-agosto-lilas', fileId: 'builtin:mobile-agosto-lilas', title: 'Agosto Lilás', path: 'mobile-agosto-lilas.jpg', sortOrder: 9 }
+    ]);
+    const CENTRAL_DEFAULT_BANNERS_MIGRATION = Object.freeze({
+      rowId: 'builtin-migration-v1',
+      fileId: 'builtin:migration-v1',
+      title: 'Migração dos banners padrão',
+      path: 'hero-posto.png',
+      sortOrder: 0
+    });
     const CENTRAL_PENDING_FILTERS_KEY = 'wefrotas:central-pending-filters';
     let centralPendingStatusFilter = 'pendente';
     let centralPendingDateStart = '';
@@ -2257,7 +2277,9 @@
     function renderCentralBanners() {
       const list = document.getElementById('central-banner-list');
       if (!list) return;
-      const rows = [...centralHomeBanners].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+      const rows = centralHomeBanners
+        .filter((banner) => !isCentralBannerMigrationMarker(banner))
+        .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
       if (!rows.length) {
         list.innerHTML = '<p class="settings-description">Nenhum banner personalizado. A Central continua usando os banners padrão do aplicativo.</p>';
         return;
@@ -2266,7 +2288,7 @@
         <article class="central-banner-item ${banner.active ? '' : 'is-disabled'}">
           <img src="${escapeHtml(banner.imageUrl || '')}" alt="${escapeHtml(banner.title || 'Banner da Central')}">
           <div class="central-banner-item-copy">
-            <strong>${escapeHtml(banner.title || 'Banner sem descrição')}</strong>
+            <strong>${escapeHtml(banner.title || 'Banner sem descrição')} ${isBuiltinCentralBanner(banner) ? '<em>PADRÃO</em>' : ''}</strong>
             <span>${banner.active ? 'Visível no aplicativo' : 'Oculto no aplicativo'}</span>
           </div>
           <div class="central-banner-item-actions">
@@ -2279,11 +2301,59 @@
       `).join('');
     }
 
+    function isBuiltinCentralBanner(banner) {
+      return String(banner?.fileId || '').startsWith('builtin:');
+    }
+
+    function isCentralBannerMigrationMarker(banner) {
+      return String(banner?.fileId || '') === CENTRAL_DEFAULT_BANNERS_MIGRATION.fileId;
+    }
+
+    function getBuiltinCentralBannerData(definition) {
+      return {
+        title: definition.title,
+        imageUrl: new URL(`../postoscredenciados-covreecia/assets/home/${definition.path}`, window.location.href).href,
+        fileId: definition.fileId,
+        active: true,
+        sortOrder: definition.sortOrder
+      };
+    }
+
+    async function ensureDefaultCentralBanners(rows) {
+      if (rows.some(isCentralBannerMigrationMarker)) return rows;
+      if (!window.WeFrotasBackend?.upsertCentralHomeBanner) return rows;
+      if (!centralDefaultBannersSeeding) {
+        centralDefaultBannersSeeding = (async () => {
+          const customRows = [...rows]
+            .filter((banner) => !isBuiltinCentralBanner(banner))
+            .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+          await Promise.all(customRows.map((banner, index) => (
+            window.WeFrotasBackend.updateCentralHomeBanner(banner.$id, { sortOrder: 100 + index })
+          )));
+          await Promise.all(CENTRAL_DEFAULT_BANNERS.map((definition) => (
+            window.WeFrotasBackend.upsertCentralHomeBanner(definition.rowId, getBuiltinCentralBannerData(definition))
+          )));
+          await window.WeFrotasBackend.upsertCentralHomeBanner(
+            CENTRAL_DEFAULT_BANNERS_MIGRATION.rowId,
+            { ...getBuiltinCentralBannerData(CENTRAL_DEFAULT_BANNERS_MIGRATION), active: false }
+          );
+        })().finally(() => {
+          centralDefaultBannersSeeding = null;
+        });
+      }
+      await centralDefaultBannersSeeding;
+      return window.WeFrotasBackend.listCentralHomeBanners();
+    }
+
     async function loadCentralBanners() {
       const list = document.getElementById('central-banner-list');
       if (list) list.innerHTML = '<p class="settings-description">Carregando banners...</p>';
       try {
         centralHomeBanners = await window.WeFrotasBackend.listCentralHomeBanners();
+        if (!centralHomeBanners.some(isCentralBannerMigrationMarker)) {
+          if (list) list.innerHTML = '<p class="settings-description">Importando os banners atuais da Central...</p>';
+          centralHomeBanners = await ensureDefaultCentralBanners(centralHomeBanners);
+        }
         renderCentralBanners();
       } catch (error) {
         if (list) list.innerHTML = `<p class="settings-description is-error">${escapeHtml(error?.message || 'Não foi possível carregar os banners.')}</p>`;
@@ -2307,7 +2377,9 @@
       let upload = null;
       try {
         upload = await window.WeFrotasBackend.uploadCentralBanner(file);
-        const nextOrder = centralHomeBanners.reduce((max, item) => Math.max(max, Number(item.sortOrder || 0)), -1) + 1;
+        const nextOrder = centralHomeBanners
+          .filter((item) => !isCentralBannerMigrationMarker(item))
+          .reduce((max, item) => Math.max(max, Number(item.sortOrder || 0)), -1) + 1;
         await window.WeFrotasBackend.createCentralHomeBanner({ title, imageUrl: upload.imageUrl, fileId: upload.fileId, active: true, sortOrder: nextOrder });
         fileInput.value = '';
         titleInput.value = '';
@@ -2334,7 +2406,9 @@
     }
 
     async function moveCentralBanner(rowId, direction) {
-      const rows = [...centralHomeBanners].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+      const rows = centralHomeBanners
+        .filter((banner) => !isCentralBannerMigrationMarker(banner))
+        .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
       const index = rows.findIndex(item => item.$id === rowId);
       const other = rows[index + direction];
       if (index < 0 || !other) return;
@@ -2357,7 +2431,9 @@
       if (!banner) return;
       openPromptModal({
         title: 'Excluir este banner?',
-        text: 'A imagem deixará de aparecer no aplicativo. Esta ação não altera os banners padrão.',
+        text: isBuiltinCentralBanner(banner)
+          ? 'Este banner padrão deixará de aparecer no aplicativo. Você poderá reenviá-lo manualmente depois.'
+          : 'A imagem deixará de aparecer no aplicativo.',
         mode: 'confirm',
         confirmLabel: 'Excluir',
         onConfirm: () => deleteCentralBanner(rowId)

@@ -3697,6 +3697,10 @@ const CENTRAL_BANNERS_CONFIG = Object.freeze({
   databaseId: '6a68ce8c000a36a44d98',
   tableId: 'central_home_banners'
 });
+const CENTRAL_BUILTIN_BANNER_VARIANTS = Object.freeze({
+  'builtin:hero-revisao-km': './assets/home/hero-revisao-km-mobile.jpeg',
+  'builtin:hero-posto-proximo': './assets/home/hero-posto-proximo-mobile.jpeg'
+});
 
 async function loadManagedHomeBanners() {
   const slidesContainer = document.querySelector('#home-hero-carousel .home-hero-slides');
@@ -3708,23 +3712,42 @@ async function loadManagedHomeBanners() {
     });
     if (!response.ok) throw new Error(`Appwrite respondeu ${response.status}`);
     const payload = await response.json();
-    const banners = (Array.isArray(payload?.rows) ? payload.rows : [])
+    const rows = Array.isArray(payload?.rows) ? payload.rows : [];
+    const managesBuiltinBanners = rows.some((banner) => String(banner?.fileId || '').startsWith('builtin:'));
+    const banners = rows
       .filter((banner) => banner?.active && String(banner?.imageUrl || '').trim())
       .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
     if (!banners.length) return false;
 
     const fragment = document.createDocumentFragment();
     banners.forEach((banner, index) => {
-      const slide = document.createElement('div');
-      slide.className = `home-hero-slide hero-managed${index === 0 ? ' is-active' : ''}`;
+      const fileId = String(banner.fileId || '');
+      const mobileVariant = CENTRAL_BUILTIN_BANNER_VARIANTS[fileId] || '';
+      const slide = document.createElement(mobileVariant ? 'picture' : 'div');
+      const classes = ['home-hero-slide', 'hero-managed'];
+      if (fileId === 'builtin:hero-posto') classes.push('hero-main');
+      if (fileId.startsWith('builtin:mobile-')) classes.push('hero-mobile-only');
+      if (managesBuiltinBanners && index === 0) classes.push('is-active');
+      slide.className = classes.join(' ');
+      if (mobileVariant) {
+        const source = document.createElement('source');
+        source.media = '(max-width: 767px)';
+        source.srcset = mobileVariant;
+        slide.appendChild(source);
+      }
       const image = document.createElement('img');
       image.src = String(banner.imageUrl);
       image.alt = String(banner.title || 'Aviso da Central de Registros');
       image.loading = index === 0 ? 'eager' : 'lazy';
+      image.draggable = false;
       slide.appendChild(image);
       fragment.appendChild(slide);
     });
-    slidesContainer.replaceChildren(fragment);
+    if (managesBuiltinBanners) {
+      slidesContainer.replaceChildren(fragment);
+    } else {
+      slidesContainer.appendChild(fragment);
+    }
     return true;
   } catch (error) {
     console.warn('Não foi possível carregar os banners administrados; usando os banners locais.', error);

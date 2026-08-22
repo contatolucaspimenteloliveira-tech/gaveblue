@@ -493,7 +493,7 @@
 
   async function deleteCentralBannerFile(fileId) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir banners.');
-    if (!fileId) return;
+    if (!fileId || String(fileId).startsWith('builtin:')) return;
     return storage.deleteFile({ bucketId: config.bucketId, fileId });
   }
 
@@ -514,6 +514,16 @@
       rowId: global.Appwrite.ID.unique(),
       data
     });
+  }
+
+  async function upsertCentralHomeBanner(rowId, data) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para cadastrar banners.');
+    try {
+      return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data });
+    } catch (error) {
+      if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
+      return tablesDB.createRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data });
+    }
   }
 
   async function updateCentralHomeBanner(rowId, data) {
@@ -612,7 +622,7 @@
     syncNow,
     uploadReceipt, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord,
     uploadCentralBanner, deleteCentralBannerFile, listCentralHomeBanners,
-    createCentralHomeBanner, updateCentralHomeBanner, deleteCentralHomeBanner,
+    createCentralHomeBanner, upsertCentralHomeBanner, updateCentralHomeBanner, deleteCentralHomeBanner,
     syncCentralDriverDirectory
   });
 })(window);
