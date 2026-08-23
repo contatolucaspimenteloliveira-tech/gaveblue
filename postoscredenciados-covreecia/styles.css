@@ -1136,7 +1136,7 @@ body.driver-profile-open .mobile-bottom-nav {
 .driver-profile-info-card > span:nth-child(2) { display: grid; min-width: 0; gap: 0.15rem; }
 .driver-profile-info-card small { color: #64748b; font-size: 0.62rem; font-weight: 750; }
 .driver-profile-info-card strong { overflow: hidden; color: #0f172a; font-size: 0.82rem; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
-.driver-profile-info-card b { justify-self: start; border-radius: 0.42rem; padding: 0.25rem 0.4rem; color: #0f172a; background: #eef2f7; font-size: 0.82rem; letter-spacing: 0.045em; }
+.driver-profile-info-card b { color: inherit; }
 .driver-profile-info-card button { color: #2563eb; background: transparent; font-size: 0.68rem; font-weight: 850; }
 
 .driver-onboarding-step { display: grid; gap: 0.65rem; margin-top: 0.75rem; }
@@ -1203,7 +1203,7 @@ body.driver-profile-open .mobile-bottom-nav {
 .driver-found-vehicle-main > span:last-child { display: grid; justify-items: start; gap: 0.22rem; min-width: 0; }
 .driver-found-vehicle-main small { color: #64748b; font-size: 0.62rem; font-weight: 750; }
 .driver-found-vehicle-main strong { color: #334155; font-size: 0.8rem; }
-.driver-found-vehicle-main b { border-radius: 0.45rem; padding: 0.35rem 0.55rem; color: #0f172a; background: #eef2f7; font-size: 1rem; letter-spacing: .035em; }
+.driver-found-vehicle-main b { color: inherit; }
 .driver-found-note { display: flex; align-items: center; gap: 0.65rem; border-top: 1px solid #edf1f5; padding-top: 0.75rem; color: #64748b; font-size: 0.62rem; line-height: 1.4; }
 .driver-found-note svg { flex: 0 0 1.25rem; width: 1.25rem; color: #1769e0; }
 .driver-profile-secondary { min-height: 2.8rem; border: 1px solid #1769e0; border-radius: 0.75rem; color: #1769e0; background: #fff; font-size: 0.78rem; font-weight: 850; }
@@ -1412,21 +1412,92 @@ body.driver-profile-open .mobile-bottom-nav {
   white-space: nowrap;
 }
 
-.home-vehicle-plate {
-  justify-self: start;
-  border-radius: 0.48rem;
-  padding: 0.24rem 0.4rem;
-  color: #0f172a;
-  background: #eef2f7;
-  font-size: 0.88rem;
+.mercosur-plate {
+  display: inline-grid;
+  width: min(100%, 7.8rem);
+  aspect-ratio: 3.15 / 1;
+  grid-template-rows: 0.78rem minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid #aeb8c6;
+  border-radius: 0.42rem;
+  color: #101828;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+  vertical-align: middle;
+}
+
+.mercosur-plate-band {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 0.28rem;
+  color: #ffffff;
+  background: linear-gradient(180deg, #175ecb 0%, #0b4eae 100%);
+  font-size: 0.38rem;
+  font-style: normal;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.mercosur-plate-band span {
+  justify-self: center;
+  font-size: 0.43rem;
+  letter-spacing: 0.12em;
+}
+
+.mercosur-plate-band i {
+  font-size: 0.32rem;
+  font-style: normal;
+  opacity: 0.82;
+}
+
+.mercosur-plate-band i:last-child {
+  justify-self: end;
+}
+
+.mercosur-plate-number {
+  display: grid;
+  min-width: 0;
+  place-items: center;
+  padding: 0 0.34rem;
+  color: #111827;
+  font-family: "Arial Narrow", "Roboto Condensed", "Inter", sans-serif;
+  font-size: 1.02rem;
   line-height: 1;
   font-weight: 950;
+  letter-spacing: 0.075em;
+  white-space: nowrap;
+}
+
+.mercosur-plate-number.is-empty {
+  color: #94a3b8;
+  font-size: 0.61rem;
   letter-spacing: 0.045em;
 }
 
-.home-vehicle-plate.is-empty {
-  color: #94a3b8;
-  font-size: 0.68rem;
+.mercosur-plate--home {
+  justify-self: start;
+  width: min(100%, 6.45rem);
+  grid-template-rows: 0.68rem minmax(0, 1fr);
+  border-radius: 0.36rem;
+}
+
+.mercosur-plate--home .mercosur-plate-number {
+  font-size: 0.84rem;
+}
+
+.mercosur-plate--home .mercosur-plate-number.is-empty {
+  font-size: 0.55rem;
+}
+
+.mercosur-plate--profile {
+  width: min(100%, 6.4rem);
+  grid-template-rows: 0.62rem minmax(0, 1fr);
+}
+
+.mercosur-plate--profile .mercosur-plate-number {
+  font-size: 0.78rem;
 }
 
 .home-vehicle-state {
@@ -2426,9 +2497,21 @@ body.driver-profile-open .mobile-bottom-nav {
     font-size: 0.7rem;
   }
 
-  .home-vehicle-plate {
-    padding: 0.2rem 0.34rem;
-    font-size: 0.76rem;
+  .mercosur-plate--home {
+    width: min(100%, 5.75rem);
+    grid-template-rows: 0.58rem minmax(0, 1fr);
+  }
+
+  .mercosur-plate--home .mercosur-plate-band {
+    font-size: 0.3rem;
+  }
+
+  .mercosur-plate--home .mercosur-plate-band span {
+    font-size: 0.34rem;
+  }
+
+  .mercosur-plate--home .mercosur-plate-number {
+    font-size: 0.72rem;
   }
 
   .home-last-send-content {
