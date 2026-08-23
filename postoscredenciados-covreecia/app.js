@@ -907,6 +907,7 @@ function getDriverProfile() {
       name,
       vehicle,
       plate,
+      vehicleImageUrl: String(profile.vehicleImageUrl || '').trim(),
       driverId: String(profile.driverId || ''),
       vehicleId: String(profile.vehicleId || '')
     } : null;
@@ -975,16 +976,45 @@ function getSubmissionValue(record) {
   return /^R\$/i.test(raw) ? raw : `R$ ${raw}`;
 }
 
+function getHomeGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Bom dia';
+  if (hour < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+function renderHomeVehicleImage(imageUrl) {
+  const image = document.getElementById('home-vehicle-image');
+  const fallback = document.getElementById('home-vehicle-fallback');
+  const url = String(imageUrl || '').trim();
+  if (!image || !fallback) return;
+  const showFallback = () => {
+    image.classList.add('hidden');
+    fallback.classList.remove('hidden');
+  };
+  if (!url) {
+    image.removeAttribute('src');
+    showFallback();
+    return;
+  }
+  image.onload = () => {
+    image.classList.remove('hidden');
+    fallback.classList.add('hidden');
+  };
+  image.onerror = showFallback;
+  image.src = url;
+}
+
 function renderHomeDriverArea() {
   const profile = getDriverProfile();
   const lastSent = centralSubmissionHistoryLoaded ? centralSubmissionHistory[0] || null : getCentralLastSentRecord();
   const name = document.getElementById('home-driver-name');
+  const greeting = document.getElementById('home-greeting-prefix');
   const summary = document.getElementById('home-driver-summary');
   const setupButton = document.getElementById('home-profile-setup');
   const vehicleName = document.getElementById('home-vehicle-name');
   const vehiclePlate = document.getElementById('home-vehicle-plate');
-  const vehicleStatus = document.getElementById('home-vehicle-status');
-  const vehicleHint = document.getElementById('home-vehicle-hint');
+  if (greeting) greeting.textContent = getHomeGreeting();
 
   if (profile) {
     if (name) name.textContent = profile.name.split(/\s+/)[0];
@@ -994,8 +1024,7 @@ function renderHomeDriverArea() {
       vehiclePlate.textContent = profile.plate;
       vehiclePlate.classList.remove('is-empty');
     }
-    if (vehicleStatus) vehicleStatus.textContent = 'Ve\u00edculo ativo';
-    if (vehicleHint) vehicleHint.textContent = 'Pronto para abastecer';
+    renderHomeVehicleImage(profile.vehicleImageUrl);
     setupButton?.classList.add('hidden');
   } else {
     if (name) name.textContent = 'motorista';
@@ -1005,8 +1034,7 @@ function renderHomeDriverArea() {
       vehiclePlate.textContent = 'SEM PLACA';
       vehiclePlate.classList.add('is-empty');
     }
-    if (vehicleStatus) vehicleStatus.textContent = 'Perfil pendente';
-    if (vehicleHint) vehicleHint.textContent = 'Configure para agilizar seus registros';
+    renderHomeVehicleImage('');
     setupButton?.classList.remove('hidden');
   }
 
@@ -1018,16 +1046,10 @@ function renderHomeDriverArea() {
   if (lastSent) {
     const type = document.getElementById('home-last-send-type');
     const date = document.getElementById('home-last-send-date');
-    const value = document.getElementById('home-last-send-value');
     const status = document.getElementById('home-last-send-status');
     const statusInfo = getSubmissionStatus(lastSent);
-    const submissionValue = getSubmissionValue(lastSent);
     if (type) type.textContent = getSubmissionType(lastSent);
     if (date) date.textContent = formatHomeSentDate(lastSent);
-    if (value) {
-      value.textContent = submissionValue;
-      value.classList.toggle('hidden', !submissionValue);
-    }
     if (status) {
       status.textContent = statusInfo.label;
       status.className = statusInfo.className;
@@ -1077,10 +1099,14 @@ function renderDriverDirectoryResults() {
   const results = document.getElementById('driver-profile-results');
   if (!results) return;
   const query = String(document.getElementById('driver-profile-search')?.value || '').trim().toLocaleLowerCase('pt-BR');
-  const drivers = getDirectoryDrivers().filter((driver) => !query || driver.name.toLocaleLowerCase('pt-BR').includes(query));
+  if (!query) {
+    results.innerHTML = '';
+    return;
+  }
+  const drivers = getDirectoryDrivers().filter((driver) => driver.name.toLocaleLowerCase('pt-BR').includes(query));
   results.innerHTML = drivers.length ? drivers.map((driver) => `
     <button type="button" class="driver-profile-result" data-driver-id="${escapeCentralHtml(driver.id)}">
-      <span class="driver-profile-result-mark">✓</span>
+      <span class="driver-profile-result-mark" aria-hidden="true"></span>
       <span>${escapeCentralHtml(driver.name)}<small>${driver.vehicles.length ? `${driver.vehicles.length} veículo(s) vinculado(s)` : 'Sem veículo ativo vinculado'}</small></span>
     </button>
   `).join('') : '<div class="driver-directory-message">Nenhum motorista encontrado.</div>';
@@ -1142,6 +1168,7 @@ function confirmSuggestedDriverVehicle() {
       name: selectedDirectoryDriver.name,
       vehicle: vehicle.vehicleName,
       plate: vehicle.plate,
+      vehicleImageUrl: String(vehicle.vehicleImageUrl || vehicle.imageUrl || vehicle.photoUrl || ''),
       driverId: selectedDirectoryDriver.id,
       vehicleId: vehicle.vehicleId
     }));
@@ -1161,32 +1188,45 @@ function skipDriverOnboarding() {
   closeDriverProfile();
 }
 
-async function openDriverProfile() {
+function openDriverProfile(mode = 'profile') {
   const modal = document.getElementById('driver-profile-modal');
   const profile = getDriverProfile();
+  document.getElementById('driver-profile-overview')?.classList.add('hidden');
+  document.getElementById('driver-directory-loading')?.classList.add('hidden');
+  document.getElementById('driver-directory-error')?.classList.add('hidden');
   document.getElementById('driver-onboarding-vehicle-step')?.classList.add('hidden');
   document.getElementById('driver-onboarding-driver-step')?.classList.add('hidden');
   const search = document.getElementById('driver-profile-search');
-  if (search) search.value = profile?.name || '';
   modal?.classList.remove('hidden');
   modal?.setAttribute('aria-hidden', 'false');
   document.body.classList.add('driver-profile-open');
-  const loaded = await loadDriverDirectory();
-  if (!loaded) return;
-  const existingDriver = profile && getDirectoryDrivers().find((driver) => driver.id === profile.driverId || driver.name.toLocaleLowerCase('pt-BR') === profile.name.toLocaleLowerCase('pt-BR'));
-  if (existingDriver?.vehicles?.length) {
-    selectedDirectoryDriver = existingDriver;
-    selectedDirectoryVehicles = existingDriver.vehicles;
-    selectedDirectoryVehicleIndex = Math.max(0, selectedDirectoryVehicles.findIndex((vehicle) => vehicle.vehicleId === profile.vehicleId || vehicle.plate === profile.plate));
-    document.getElementById('driver-onboarding-driver-step')?.classList.add('hidden');
-    document.getElementById('driver-onboarding-vehicle-step')?.classList.remove('hidden');
-    renderSuggestedDriverVehicle();
-  } else {
-    if (existingDriver && !existingDriver.vehicles.length) {
-      showErrorMessage('Seu cadastro foi encontrado, mas ainda não possui um veículo ativo vinculado no WeFrotas.');
-    }
-    window.setTimeout(() => search?.focus(), 80);
+  if (profile && mode !== 'edit') {
+    const title = document.getElementById('driver-profile-title');
+    if (title) title.textContent = 'Meu perfil';
+    if (search) search.value = '';
+    document.getElementById('driver-overview-name').textContent = profile.name;
+    document.getElementById('driver-overview-vehicle').textContent = profile.vehicle;
+    document.getElementById('driver-overview-plate').textContent = profile.plate;
+    document.getElementById('driver-profile-overview')?.classList.remove('hidden');
+    document.getElementById('driver-profile-skip')?.classList.add('hidden');
+    return;
   }
+  startDriverProfileEditing();
+}
+
+async function startDriverProfileEditing() {
+  document.getElementById('driver-profile-overview')?.classList.add('hidden');
+  document.getElementById('driver-onboarding-vehicle-step')?.classList.add('hidden');
+  const title = document.getElementById('driver-profile-title');
+  if (title) title.textContent = 'Vamos deixar seus abastecimentos mais rápidos?';
+  document.getElementById('driver-profile-skip')?.classList.remove('hidden');
+  selectedDirectoryDriver = null;
+  selectedDirectoryVehicles = [];
+  selectedDirectoryVehicleIndex = 0;
+  const search = document.getElementById('driver-profile-search');
+  if (search) search.value = '';
+  const loaded = await loadDriverDirectory();
+  if (loaded) window.setTimeout(() => search?.focus(), 80);
 }
 
 function closeDriverProfile() {
@@ -2833,6 +2873,14 @@ function showAboutSection() {
   setMobileNavActive('about');
   updateBackButtonVisibility();
   refreshCentralNotificationSetting();
+}
+
+function openCentralNotificationSettings() {
+  showAboutSection();
+  window.setTimeout(() => {
+    const setting = document.getElementById('central-notification-toggle')?.closest('.about-notification-setting');
+    setting?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 120);
 }
 
 function closeOpenFormsSilently() {

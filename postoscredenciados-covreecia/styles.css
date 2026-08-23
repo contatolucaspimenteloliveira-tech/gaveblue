@@ -685,6 +685,16 @@ body.driver-profile-open .mobile-bottom-nav {
   object-position: left center;
 }
 
+.home-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.home-notification-button {
+  color: #2563eb;
+}
+
 .home-profile-button {
   display: grid;
   flex: 0 0 2.6rem;
@@ -715,7 +725,7 @@ body.driver-profile-open .mobile-bottom-nav {
   inset: 0;
   z-index: 95;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   padding: 0.85rem;
 }
@@ -857,7 +867,44 @@ body.driver-profile-open .mobile-bottom-nav {
 
 .driver-directory-message.is-error { color: #b91c1c; background: #fff1f2; }
 .driver-directory-message.hidden,
-.driver-onboarding-step.hidden { display: none; }
+.driver-onboarding-step.hidden,
+.driver-profile-overview.hidden { display: none; }
+
+.driver-profile-overview {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.driver-profile-info-card {
+  display: grid;
+  grid-template-columns: 2.8rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 0.85rem;
+  background: #ffffff;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+}
+
+.driver-profile-info-icon {
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  place-items: center;
+  border-radius: 0.85rem;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.driver-profile-info-icon svg { width: 1.45rem; height: 1.45rem; }
+.driver-profile-vehicle-icon svg { width: 2rem; height: 2rem; }
+.driver-profile-info-card > span:nth-child(2) { display: grid; min-width: 0; gap: 0.15rem; }
+.driver-profile-info-card small { color: #64748b; font-size: 0.62rem; font-weight: 750; }
+.driver-profile-info-card strong { overflow: hidden; color: #0f172a; font-size: 0.82rem; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.driver-profile-info-card b { justify-self: start; border-radius: 0.42rem; padding: 0.25rem 0.4rem; color: #0f172a; background: #eef2f7; font-size: 0.82rem; letter-spacing: 0.045em; }
+.driver-profile-info-card button { color: #2563eb; background: transparent; font-size: 0.68rem; font-weight: 850; }
 
 .driver-onboarding-step { display: grid; gap: 0.75rem; margin-top: 1rem; }
 .driver-search-label { color: #0f172a; font-size: 0.78rem; font-weight: 900; }
@@ -892,7 +939,9 @@ body.driver-profile-open .mobile-bottom-nav {
 }
 .driver-profile-result:hover,
 .driver-profile-result.is-selected { color: #1e3a8a; background: #eaf2ff; }
-.driver-profile-result-mark { display: grid; width: 1.2rem; height: 1.2rem; place-items: center; border-radius: 999px; color: #fff; background: #1769e0; font-size: 0.68rem; }
+.driver-profile-result-mark { display: grid; flex: 0 0 1.2rem; width: 1.2rem; height: 1.2rem; place-items: center; border: 2px solid #94a3b8; border-radius: 999px; color: #fff; background: #fff; font-size: 0.68rem; }
+.driver-profile-result.is-selected .driver-profile-result-mark { border-color: #1769e0; background: #1769e0; }
+.driver-profile-result.is-selected .driver-profile-result-mark::after { content: '\2713'; }
 .driver-profile-result small { display: block; margin-top: 0.12rem; color: #64748b; font-size: 0.62rem; font-weight: 650; }
 
 .driver-found-vehicle {
@@ -1052,6 +1101,27 @@ body.driver-profile-open .mobile-bottom-nav {
   border-radius: 1rem;
 }
 
+.home-vehicle-media {
+  position: relative;
+  display: grid;
+  flex: 0 0 3.3rem;
+  width: 3.3rem;
+  height: 3.3rem;
+  overflow: hidden;
+  place-items: center;
+  border-radius: 1rem;
+  background: #eff6ff;
+}
+
+.home-vehicle-media > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-vehicle-media > img.hidden,
+.home-vehicle-media > .hidden { display: none; }
+
 .home-vehicle-icon svg {
   width: 2.5rem;
   height: 2.5rem;
@@ -1167,7 +1237,7 @@ body.driver-profile-open .mobile-bottom-nav {
 .home-last-send-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.45rem;
   margin-top: 0.45rem;
   border-top: 1px solid #eef2f7;
@@ -1191,6 +1261,21 @@ body.driver-profile-open .mobile-bottom-nav {
   background: #dbeafe;
   font-size: 0.56rem;
   font-weight: 850;
+}
+
+.home-last-send-footer > span.pending {
+  color: #9a6700;
+  background: #fff4ce;
+}
+
+.home-last-send-footer > span.approved {
+  color: #067647;
+  background: #dcfae6;
+}
+
+.home-last-send-footer > span.rejected {
+  color: #b42318;
+  background: #fee4e2;
 }
 
 .home-shell {
