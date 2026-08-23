@@ -71,6 +71,9 @@ let selectedDirectoryVehicles = [];
 let selectedDirectoryVehicleIndex = 0;
 let centralSubmissionHistory = [];
 let centralSubmissionHistoryLoaded = false;
+let driverDirectoryLoadPromise = null;
+let driverDirectorySearchTimer = null;
+let driverDirectorySearchSequence = 0;
 const optimizedReceiptFiles = new WeakSet();
 const DEFAULT_DRIVER_NAMES = [
   'AMANDA P. BONATTO',
@@ -1070,35 +1073,28 @@ function getDirectoryDrivers() {
   return [...drivers.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 }
 
-async function loadDriverDirectory() {
-  const loading = document.getElementById('driver-directory-loading');
-  const errorNode = document.getElementById('driver-directory-error');
-  const driverStep = document.getElementById('driver-onboarding-driver-step');
-  loading?.classList.remove('hidden');
-  errorNode?.classList.add('hidden');
-  driverStep?.classList.add('hidden');
-  try {
-    const result = await executeCentralPushFunction({ action: 'directory' });
-    centralDriverDirectory = Array.isArray(result?.directory) ? result.directory : [];
-    loading?.classList.add('hidden');
-    if (!centralDriverDirectory.length) throw new Error('O diretório ainda está vazio. Abra o WeFrotas e sincronize os dados para publicar os vínculos ativos.');
-    driverStep?.classList.remove('hidden');
-    renderDriverDirectoryResults();
-    return true;
-  } catch (error) {
-    loading?.classList.add('hidden');
-    if (errorNode) {
-      errorNode.textContent = error?.message || 'Não foi possível consultar os motoristas agora.';
-      errorNode.classList.remove('hidden');
-    }
-    return false;
+async function ensureDriverDirectoryLoaded() {
+  if (centralDriverDirectory.length) return centralDriverDirectory;
+  if (!driverDirectoryLoadPromise) {
+    driverDirectoryLoadPromise = executeCentralPushFunction({ action: 'directory' })
+      .then((result) => {
+        centralDriverDirectory = Array.isArray(result?.directory) ? result.directory : [];
+        if (!centralDriverDirectory.length) {
+          throw new Error('O diretório ainda está vazio. Abra o WeFrotas e sincronize os dados para publicar os vínculos ativos.');
+        }
+        return centralDriverDirectory;
+      })
+      .finally(() => {
+        driverDirectoryLoadPromise = null;
+      });
   }
+  return driverDirectoryLoadPromise;
 }
 
-function renderDriverDirectoryResults() {
+function renderDriverDirectoryResults(queryValue) {
   const results = document.getElementById('driver-profile-results');
   if (!results) return;
-  const query = String(document.getElementById('driver-profile-search')?.value || '').trim().toLocaleLowerCase('pt-BR');
+  const query = String(queryValue ?? document.getElementById('driver-profile-search')?.value ?? '').trim().toLocaleLowerCase('pt-BR');
   if (!query) {
     results.innerHTML = '';
     return;
@@ -1113,8 +1109,39 @@ function renderDriverDirectoryResults() {
   results.querySelectorAll('[data-driver-id]').forEach((button) => button.addEventListener('click', () => selectDirectoryDriver(button.dataset.driverId)));
 }
 
+async function runDriverDirectorySearch(query, sequence) {
+  const results = document.getElementById('driver-profile-results');
+  if (!results) return;
+  results.innerHTML = '<div class="driver-search-loading" role="status"><span class="driver-search-spinner" aria-hidden="true"></span><span>Buscando motoristas...</span></div>';
+  try {
+    await Promise.all([
+      ensureDriverDirectoryLoaded(),
+      new Promise((resolve) => window.setTimeout(resolve, 180))
+    ]);
+    const currentQuery = String(document.getElementById('driver-profile-search')?.value || '').trim().toLocaleLowerCase('pt-BR');
+    if (sequence !== driverDirectorySearchSequence || currentQuery !== query) return;
+    renderDriverDirectoryResults(query);
+  } catch (error) {
+    if (sequence !== driverDirectorySearchSequence) return;
+    results.innerHTML = `<div class="driver-directory-message is-error">${escapeCentralHtml(error?.message || 'Não foi possível consultar os motoristas agora.')}</div>`;
+  }
+}
+
 function filterDriverDirectory() {
-  renderDriverDirectoryResults();
+  const results = document.getElementById('driver-profile-results');
+  const query = String(document.getElementById('driver-profile-search')?.value || '').trim().toLocaleLowerCase('pt-BR');
+  window.clearTimeout(driverDirectorySearchTimer);
+  driverDirectorySearchTimer = null;
+  const sequence = ++driverDirectorySearchSequence;
+  if (!query) {
+    if (results) results.innerHTML = '';
+    return;
+  }
+  const delay = query.length >= 4 ? 0 : 1500;
+  if (delay && results) {
+    results.innerHTML = '<div class="driver-search-waiting">Continue digitando ou aguarde a busca...</div>';
+  }
+  driverDirectorySearchTimer = window.setTimeout(() => runDriverDirectorySearch(query, sequence), delay);
 }
 
 function selectDirectoryDriver(driverId) {
@@ -1234,7 +1261,7 @@ function openDriverProfile(mode = 'profile') {
   startDriverProfileEditing();
 }
 
-async function startDriverProfileEditing() {
+function startDriverProfileEditing() {
   document.getElementById('driver-profile-overview')?.classList.add('hidden');
   document.getElementById('driver-onboarding-vehicle-step')?.classList.add('hidden');
   const title = document.getElementById('driver-profile-title');
@@ -1243,10 +1270,17 @@ async function startDriverProfileEditing() {
   selectedDirectoryDriver = null;
   selectedDirectoryVehicles = [];
   selectedDirectoryVehicleIndex = 0;
+  window.clearTimeout(driverDirectorySearchTimer);
+  driverDirectorySearchTimer = null;
+  driverDirectorySearchSequence += 1;
   const search = document.getElementById('driver-profile-search');
   if (search) search.value = '';
-  const loaded = await loadDriverDirectory();
-  if (loaded) window.setTimeout(() => search?.focus(), 80);
+  const results = document.getElementById('driver-profile-results');
+  if (results) results.innerHTML = '';
+  document.getElementById('driver-directory-loading')?.classList.add('hidden');
+  document.getElementById('driver-directory-error')?.classList.add('hidden');
+  document.getElementById('driver-onboarding-driver-step')?.classList.remove('hidden');
+  window.setTimeout(() => search?.focus(), 80);
 }
 
 function closeDriverProfile() {
@@ -1254,6 +1288,9 @@ function closeDriverProfile() {
   modal?.classList.add('hidden');
   modal?.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('driver-profile-open');
+  window.clearTimeout(driverDirectorySearchTimer);
+  driverDirectorySearchTimer = null;
+  driverDirectorySearchSequence += 1;
 }
 
 function formatHistoryDate(record) {
