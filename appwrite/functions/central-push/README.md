@@ -48,6 +48,6 @@ As ações `stats`, `broadcast` e `notify` continuam administrativas. `stats` re
 
 ## Diretório da Central
 
-A tabela `central_driver_directory` não tem permissão pública e é mantida pelo usuário autenticado no WeFrotas. Ela contém somente `driverId`, `driverName`, `vehicleId`, `vehicleName`, `plate`, `fleetNumber`, `active` e `updatedAt`. A Central consulta uma versão saneada pela Function, sem acesso direto ao restante do snapshot administrativo.
+A tabela `central_driver_directory` não tem permissão pública e é mantida pelo usuário autenticado no WeFrotas. Ela contém somente `driverId`, `driverName`, `vehicleId`, `vehicleName`, `vehicleImageUrl`, `plate`, `fleetNumber`, `active` e `updatedAt`. `vehicleImageUrl` é uma string opcional de até 2048 caracteres. A Central consulta uma versão saneada pela Function, sem acesso direto ao restante do snapshot administrativo.
 
 

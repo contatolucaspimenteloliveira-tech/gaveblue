@@ -401,6 +401,23 @@
     return String(storage.getFileView({ bucketId: config.bucketId, fileId: uploaded.$id }));
   }
 
+  async function uploadVehicleImage(file) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online antes de enviar a foto do veículo.');
+    if (!file) throw new Error('Selecione uma foto do veículo.');
+    if (!String(file.type || '').startsWith('image/')) throw new Error('O arquivo selecionado precisa ser uma imagem.');
+    if (Number(file.size || 0) > 8 * 1024 * 1024) throw new Error('A foto do veículo deve ter no máximo 8 MB.');
+    const uploaded = await storage.createFile({
+      bucketId: config.bucketId,
+      fileId: global.Appwrite.ID.unique(),
+      file,
+      permissions: getPublicVehicleFilePermissions()
+    });
+    return {
+      fileId: uploaded.$id,
+      imageUrl: String(storage.getFileView({ bucketId: config.bucketId, fileId: uploaded.$id }))
+    };
+  }
+
   function isDirectoryEntityActive(entity) {
     return entity?.ativo !== false && entity?.active !== false;
   }
@@ -422,6 +439,7 @@
         driverName,
         vehicleId: String(vehicle?.id || ''),
         vehicleName: String(vehicle?.modelo || vehicle?.model || ''),
+        vehicleImageUrl: String(vehicle?.vehicleImageUrl || vehicle?.imageUrl || ''),
         plate: String(vehicle?.placa || vehicle?.plate || '').toUpperCase(),
         fleetNumber: String(vehicle?.numeroFrota || vehicle?.fleetNumber || ''),
         active: true,
@@ -446,7 +464,7 @@
       const rowId = await digestId(`central-driver:${data.driverId}:${data.vehicleId || 'without-vehicle'}`);
       desiredIds.add(rowId);
       const current = existingRows.find((row) => row.$id === rowId);
-      const changed = !current || ['driverId', 'driverName', 'vehicleId', 'vehicleName', 'plate', 'fleetNumber', 'active']
+      const changed = !current || ['driverId', 'driverName', 'vehicleId', 'vehicleName', 'vehicleImageUrl', 'plate', 'fleetNumber', 'active']
         .some((key) => String(current?.[key] ?? '') !== String(data[key] ?? ''));
       if (!changed) continue;
       await updateOrCreateDirectoryRow(rowId, data);
@@ -472,6 +490,16 @@
       Permission.read(Role.any()),
       Permission.update(managerRole),
       Permission.delete(managerRole)
+    ];
+  }
+
+  function getPublicVehicleFilePermissions() {
+    const { Permission, Role } = global.Appwrite;
+    const ownerRole = currentUser?.$id && Role.user ? Role.user(currentUser.$id) : (config.teamId ? Role.team(config.teamId) : Role.users());
+    return [
+      Permission.read(Role.any()),
+      Permission.update(ownerRole),
+      Permission.delete(ownerRole)
     ];
   }
 
@@ -620,7 +648,7 @@
     getUser: () => currentUser,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
     syncNow,
-    uploadReceipt, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord,
+    uploadReceipt, uploadVehicleImage, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord,
     uploadCentralBanner, deleteCentralBannerFile, listCentralHomeBanners,
     createCentralHomeBanner, upsertCentralHomeBanner, updateCentralHomeBanner, deleteCentralHomeBanner,
     syncCentralDriverDirectory
