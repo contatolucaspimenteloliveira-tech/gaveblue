@@ -1137,9 +1137,29 @@ function renderSuggestedDriverVehicle() {
   const name = document.getElementById('driver-found-vehicle-name');
   const plate = document.getElementById('driver-found-plate');
   const change = document.getElementById('driver-change-vehicle');
+  const photo = document.getElementById('driver-found-vehicle-photo');
+  const fallback = document.getElementById('driver-found-vehicle-fallback');
   if (fleet) fleet.textContent = vehicle.fleetNumber ? `Frota ${vehicle.fleetNumber}` : '';
   if (name) name.textContent = vehicle.vehicleName;
   if (plate) plate.textContent = vehicle.plate;
+  if (photo && fallback) {
+    const imageUrl = String(vehicle.vehicleImageUrl || '').trim();
+    const showFallback = () => {
+      photo.classList.add('hidden');
+      fallback.classList.remove('hidden');
+    };
+    if (imageUrl) {
+      photo.onload = () => {
+        photo.classList.remove('hidden');
+        fallback.classList.add('hidden');
+      };
+      photo.onerror = showFallback;
+      photo.src = imageUrl;
+    } else {
+      photo.removeAttribute('src');
+      showFallback();
+    }
+  }
   if (change) {
     change.disabled = selectedDirectoryVehicles.length < 2;
     change.textContent = selectedDirectoryVehicles.length < 2 ? '🚗 Veículo vinculado' : '🚗 Alterar veículo';

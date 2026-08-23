@@ -5863,6 +5863,58 @@ body.dark-mode .central-banner-item-actions button { border-color: #475569; colo
 .central-banner-preview-placeholder.hidden { display: none; }
 .central-banner-preview-placeholder span { color: #334155; font-size: 12px; font-weight: 850; }
 .central-banner-preview-placeholder small { font-size: 10px; }
+
+.vehicle-image-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  align-items: stretch;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid #dbe4f0;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+.vehicle-image-copy { display: grid; align-content: start; gap: 6px; }
+.vehicle-image-copy > label { color: #0f172a; font-size: 13px; font-weight: 850; }
+.vehicle-image-copy > span { color: #64748b; font-size: 11px; }
+.vehicle-image-upload {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  margin-top: 5px;
+  padding: 11px 13px;
+  border: 1px dashed #93c5fd;
+  border-radius: 12px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  cursor: pointer;
+}
+.vehicle-image-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.vehicle-image-upload strong { font-size: 12px; }
+.vehicle-image-upload small { color: #64748b; font-size: 10px; }
+.vehicle-image-remove { justify-self: start; color: #dc2626; background: transparent; font-size: 11px; font-weight: 800; }
+.vehicle-image-remove.hidden { display: none; }
+.vehicle-image-preview-shell {
+  position: relative;
+  overflow: hidden;
+  min-height: 118px;
+  border: 1px solid #dbe4f0;
+  border-radius: 13px;
+  background: #eaf0f8;
+}
+.vehicle-image-preview { width: 100%; height: 100%; min-height: 118px; object-fit: cover; }
+.vehicle-image-preview.hidden { display: none; }
+.vehicle-image-placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: #94a3b8; font-size: 11px; font-weight: 800; }
+.vehicle-image-placeholder.hidden { display: none; }
+body.dark-mode .vehicle-image-field { border-color: #334155; background: #111827; }
+body.dark-mode .vehicle-image-copy > label { color: #e2e8f0; }
+body.dark-mode .vehicle-image-preview-shell { border-color: #334155; background: #0f172a; }
+
+@media (max-width: 640px) {
+  .vehicle-image-field { grid-template-columns: 1fr; }
+  .vehicle-image-preview-shell { min-height: 150px; }
+}
+
 .central-banner-list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .central-banner-list { display: grid; gap: 12px; }
 .central-banner-item {

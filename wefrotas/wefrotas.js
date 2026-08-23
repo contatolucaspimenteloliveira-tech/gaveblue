@@ -81,6 +81,7 @@
     let currentModalType = null;
     let currentEditingId = null;
     let currentFinanceEntryType = null;
+    let vehicleImagePreviewObjectUrl = '';
     let activeModule = 'home';
     let activeCentralSection = 'registros';
     let activeCentralConfigSection = 'comunicacao';
@@ -4218,6 +4219,58 @@
       backdrop.classList.add('show');
     }
 
+    function releaseVehicleImagePreviewUrl() {
+      if (!vehicleImagePreviewObjectUrl) return;
+      URL.revokeObjectURL(vehicleImagePreviewObjectUrl);
+      vehicleImagePreviewObjectUrl = '';
+    }
+
+    function setVehicleImagePreview(url = '', options = {}) {
+      const preview = document.getElementById('vehicle-image-preview');
+      const placeholder = document.getElementById('vehicle-image-placeholder');
+      const removeButton = document.getElementById('vehicle-image-remove');
+      const input = document.getElementById('vehicle-image-file');
+      if (!preview || !placeholder) return;
+      const source = String(url || '').trim();
+      preview.src = source;
+      preview.classList.toggle('hidden', !source);
+      placeholder.classList.toggle('hidden', Boolean(source));
+      removeButton?.classList.toggle('hidden', !source);
+      if (input && options.keepRemovalState !== true) delete input.dataset.removeExisting;
+    }
+
+    function previewVehicleImageFile() {
+      const input = document.getElementById('vehicle-image-file');
+      const file = input?.files?.[0];
+      if (!file) return;
+      if (!String(file.type || '').startsWith('image/')) {
+        showToast('Selecione um arquivo de imagem válido.');
+        input.value = '';
+        return;
+      }
+      if (Number(file.size || 0) > 8 * 1024 * 1024) {
+        showToast('A foto do veículo deve ter no máximo 8 MB.');
+        input.value = '';
+        return;
+      }
+      releaseVehicleImagePreviewUrl();
+      vehicleImagePreviewObjectUrl = URL.createObjectURL(file);
+      setVehicleImagePreview(vehicleImagePreviewObjectUrl);
+    }
+
+    function clearVehicleImageSelection() {
+      const input = document.getElementById('vehicle-image-file');
+      if (input) {
+        input.value = '';
+        input.dataset.removeExisting = 'true';
+      }
+      releaseVehicleImagePreviewUrl();
+      setVehicleImagePreview('', { keepRemovalState: true });
+    }
+
+    window.previewVehicleImageFile = previewVehicleImageFile;
+    window.clearVehicleImageSelection = clearVehicleImageSelection;
+
     function openCadastroModal(type) {
       currentModalType = type;
       currentEditingId = null;
@@ -4271,6 +4324,22 @@
             <label>Chassi</label>
             <input class="soft-input w-full" id="vehicle-chassi" placeholder="9BWZZZ377VT004251">
           </div>
+          <div class="field-wrap full vehicle-image-field">
+            <div class="vehicle-image-copy">
+              <label>Foto do veículo</label>
+              <span>Essa imagem aparecerá no perfil do motorista na Central.</span>
+              <label class="vehicle-image-upload" for="vehicle-image-file">
+                <input id="vehicle-image-file" type="file" accept="image/png,image/jpeg,image/webp" onchange="previewVehicleImageFile()">
+                <strong>Escolher foto</strong>
+                <small>PNG, JPG ou WebP de até 8 MB</small>
+              </label>
+              <button id="vehicle-image-remove" class="vehicle-image-remove hidden" type="button" onclick="clearVehicleImageSelection()">Remover foto</button>
+            </div>
+            <div class="vehicle-image-preview-shell">
+              <div id="vehicle-image-placeholder" class="vehicle-image-placeholder">Sem foto</div>
+              <img id="vehicle-image-preview" class="vehicle-image-preview hidden" alt="Prévia do veículo">
+            </div>
+          </div>
           <div class="field-wrap full entity-active-field">
             <div><strong>Veículo ativo</strong><small>Disponível para novos vínculos e lançamentos.</small></div>
             <label class="entity-active-switch" aria-label="Ativar ou desativar veículo">
@@ -4279,6 +4348,7 @@
             </label>
           </div>
         `;
+        setVehicleImagePreview('');
       } else if (type === 'driver') {
         setModalVisual('default', 'Cadastre o motorista e vincule os veículos quando necessário.');
         kicker.textContent = 'Motoristas';
@@ -4558,6 +4628,7 @@
       currentFinanceEntryType = null;
       setModalSubmitState(true, 'Salvar cadastro');
       setModalActionsVisible(true);
+      releaseVehicleImagePreviewUrl();
     }
 
     function handleModalBackdrop(event) {
@@ -10851,6 +10922,7 @@
       syncCustomSelectById('vehicle-motorista');
       document.getElementById('vehicle-chassi').value = vehicle.chassi || '';
       document.getElementById('vehicle-active').checked = isEntityActive(vehicle);
+      setVehicleImagePreview(vehicle.vehicleImageUrl || vehicle.imageUrl || '');
       document.getElementById('modal-title').textContent = 'Editar veículo';
     }
 
@@ -12283,7 +12355,7 @@
       createOrders: createBatchOrdersFromPayload
     };
 
-    document.getElementById('cadastro-form').addEventListener('submit', function (event) {
+    document.getElementById('cadastro-form').addEventListener('submit', async function (event) {
       event.preventDefault();
       if (currentModalType === 'vehicle') {
         const numeroFrota = document.getElementById('vehicle-frota').value.trim();
@@ -12295,6 +12367,15 @@
         const motoristaId = document.getElementById('vehicle-motorista').value.trim();
         const chassi = document.getElementById('vehicle-chassi').value.trim();
         const ativo = document.getElementById('vehicle-active')?.checked !== false;
+        const vehicleImageInput = document.getElementById('vehicle-image-file');
+        const vehicleImageFile = vehicleImageInput?.files?.[0] || null;
+        const currentVehicle = currentEditingId ? allVehicles.find(vehicle => vehicle.id === currentEditingId) : null;
+        let vehicleImageUrl = vehicleImageInput?.dataset.removeExisting === 'true'
+          ? ''
+          : String(currentVehicle?.vehicleImageUrl || currentVehicle?.imageUrl || '');
+        let vehicleImageFileId = vehicleImageInput?.dataset.removeExisting === 'true'
+          ? ''
+          : String(currentVehicle?.vehicleImageFileId || '');
         if (!numeroFrota || !placa || !modelo || !ano) {
           showToast('Preencha número de frota, placa, modelo e ano.');
           return;
@@ -12303,13 +12384,30 @@
           showToast('Já existe um veículo com essa frota ou placa cadastrada.');
           return;
         }
+        if (vehicleImageFile) {
+          const submitButton = document.getElementById('modal-submit-btn');
+          const submitLabel = submitButton?.querySelector('span');
+          if (submitButton) submitButton.disabled = true;
+          if (submitLabel) submitLabel.textContent = 'Enviando foto...';
+          try {
+            const uploadedImage = await window.WeFrotasBackend?.uploadVehicleImage?.(vehicleImageFile);
+            if (!uploadedImage?.imageUrl) throw new Error('O serviço de upload da foto não está disponível.');
+            vehicleImageUrl = uploadedImage.imageUrl;
+            vehicleImageFileId = uploadedImage.fileId || '';
+          } catch (error) {
+            if (submitButton) submitButton.disabled = false;
+            if (submitLabel) submitLabel.textContent = currentEditingId ? 'Salvar alterações' : 'Salvar cadastro';
+            showToast(error?.message || 'Não foi possível enviar a foto do veículo.');
+            return;
+          }
+        }
         if (currentEditingId) {
           allVehicles = allVehicles.map(vehicle => vehicle.id === currentEditingId
-            ? { ...vehicle, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo }
+            ? { ...vehicle, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo, vehicleImageUrl, vehicleImageFileId }
             : vehicle);
           showToast('Veículo atualizado com sucesso.');
         } else {
-          allVehicles.unshift({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo });
+          allVehicles.unshift({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo, vehicleImageUrl, vehicleImageFileId });
           showToast('Veículo cadastrado com sucesso.');
         }
         saveToLocalStorage();

@@ -851,6 +851,10 @@ body.driver-profile-open .mobile-bottom-nav {
 }
 
 .driver-onboarding-dialog {
+  display: flex;
+  flex-direction: column;
+  height: min(39rem, calc(100dvh - 1.7rem));
+  overflow: hidden;
   padding: 1.25rem;
 }
 
@@ -907,6 +911,9 @@ body.driver-profile-open .mobile-bottom-nav {
 .driver-profile-info-card button { color: #2563eb; background: transparent; font-size: 0.68rem; font-weight: 850; }
 
 .driver-onboarding-step { display: grid; gap: 0.75rem; margin-top: 1rem; }
+#driver-onboarding-driver-step { flex: 1; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; }
+#driver-onboarding-vehicle-step,
+.driver-profile-overview { min-height: 0; overflow-y: auto; }
 .driver-search-label { color: #0f172a; font-size: 0.78rem; font-weight: 900; }
 .driver-search-shell { position: relative; }
 .driver-search-shell svg { position: absolute; top: 50%; left: 0.85rem; width: 1rem; height: 1rem; color: #94a3b8; transform: translateY(-50%); }
@@ -922,7 +929,7 @@ body.driver-profile-open .mobile-bottom-nav {
   font-size: 0.8rem;
 }
 .driver-search-shell input:focus { border-color: #60a5fa; box-shadow: 0 0 0 4px rgba(59,130,246,.11); }
-.driver-profile-results { display: grid; gap: 0.35rem; max-height: 15rem; overflow-y: auto; }
+.driver-profile-results { display: grid; align-content: start; gap: 0.35rem; min-height: 0; max-height: none; overflow-y: auto; }
 .driver-profile-result {
   display: flex;
   align-items: center;
@@ -955,7 +962,10 @@ body.driver-profile-open .mobile-bottom-nav {
 }
 .driver-found-vehicle > strong { color: #0f172a; font-size: 0.8rem; }
 .driver-found-vehicle-main { display: grid; grid-template-columns: 8rem minmax(0,1fr); align-items: center; gap: 0.75rem; }
-.driver-found-vehicle-image { display: grid; place-items: center; height: 5.2rem; }
+.driver-found-vehicle-image { display: grid; overflow: hidden; place-items: center; height: 5.2rem; border-radius: 0.85rem; background: #f1f5f9; }
+.driver-found-vehicle-image > img { width: 100%; height: 100%; object-fit: cover; }
+.driver-found-vehicle-image > img.hidden,
+.driver-found-vehicle-image > .hidden { display: none; }
 .driver-found-vehicle-image svg { width: 8rem; max-width: 100%; }
 .driver-found-vehicle-main > span:last-child { display: grid; justify-items: start; gap: 0.22rem; min-width: 0; }
 .driver-found-vehicle-main small { color: #64748b; font-size: 0.62rem; font-weight: 750; }

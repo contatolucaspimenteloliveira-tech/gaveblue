@@ -172,6 +172,7 @@ async function listDriverDirectory(databases) {
       driverName: String(document.driverName || ''),
       vehicleId: String(document.vehicleId || ''),
       vehicleName: String(document.vehicleName || ''),
+      vehicleImageUrl: String(document.vehicleImageUrl || ''),
       plate: String(document.plate || ''),
       fleetNumber: String(document.fleetNumber || '')
     }))
