@@ -1289,6 +1289,7 @@ body.driver-profile-open .mobile-bottom-nav {
 }
 
 .home-shell {
+  max-width: 90rem !important;
   animation: homeFadeUp 0.45s ease both;
 }
 
@@ -2067,6 +2068,131 @@ body.driver-profile-open .mobile-bottom-nav {
     padding-top: 0.75rem !important;
     padding-bottom: 0.75rem !important;
   }
+
+  .home-app-header-inner {
+    min-height: 4rem;
+    padding: 0.42rem 0.85rem;
+  }
+
+  .home-brand-logo {
+    height: 2.7rem;
+  }
+
+  .home-driver-welcome {
+    gap: 0.65rem;
+    margin-bottom: 0.72rem;
+  }
+
+  .home-driver-welcome h1 {
+    font-size: clamp(1.14rem, 5.2vw, 1.45rem);
+  }
+
+  .home-driver-welcome p {
+    margin-top: 0.2rem;
+    font-size: 0.68rem;
+    line-height: 1.28;
+  }
+
+  .home-profile-setup {
+    min-height: 2rem;
+    padding-inline: 0.68rem;
+    font-size: 0.64rem;
+  }
+
+  .home-overview-grid {
+    gap: 0.5rem;
+    margin-bottom: 0.72rem;
+  }
+
+  .home-overview-card {
+    display: flex;
+    min-height: 6.75rem;
+    flex-direction: column;
+    padding: 0.68rem;
+    border-radius: 1rem;
+  }
+
+  .home-overview-heading > span {
+    font-size: 0.63rem;
+  }
+
+  .home-overview-heading button {
+    font-size: 0.58rem;
+  }
+
+  .home-vehicle-content {
+    min-height: 0;
+    flex: 1;
+    padding: 0.4rem 0 0;
+  }
+
+  .home-vehicle-media {
+    flex-basis: 2.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.82rem;
+  }
+
+  .home-vehicle-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.82rem;
+  }
+
+  .home-vehicle-icon svg {
+    width: 2.15rem;
+    height: 2.15rem;
+  }
+
+  .home-vehicle-content strong,
+  .home-last-send-main strong,
+  .home-last-send-empty strong {
+    font-size: 0.7rem;
+  }
+
+  .home-vehicle-plate {
+    padding: 0.2rem 0.34rem;
+    font-size: 0.76rem;
+  }
+
+  .home-last-send-content {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    padding-top: 0.45rem;
+  }
+
+  .home-last-send-content.hidden {
+    display: none;
+  }
+
+  .home-last-send-main {
+    min-height: 0;
+    flex: 1;
+  }
+
+  .home-last-send-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 0.75rem;
+  }
+
+  .home-last-send-footer {
+    margin-top: 0.25rem;
+    padding-top: 0.34rem;
+  }
+
+  .home-last-send-footer > span {
+    padding: 0.22rem 0.4rem;
+    font-size: 0.51rem;
+  }
+
+  .home-last-send-empty {
+    min-height: 0;
+    flex: 1;
+    padding-top: 0.35rem;
+  }
 }
 
 @media (max-width: 359px) {
@@ -2088,6 +2214,24 @@ body.driver-profile-open .mobile-bottom-nav {
 
   .home-driver-welcome p {
     max-width: 14rem;
+  }
+}
+
+@media (min-width: 360px) and (max-width: 390px) {
+  .home-overview-heading button {
+    justify-content: flex-end;
+    white-space: normal;
+    text-align: right;
+  }
+}
+
+@media (min-width: 768px) {
+  .home-app-header-inner {
+    width: min(calc(100% - 2rem), 90rem);
+  }
+
+  #welcome-screen {
+    align-items: flex-start;
   }
 }
 
