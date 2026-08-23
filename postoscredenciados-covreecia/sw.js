@@ -1,4 +1,4 @@
-const CENTRAL_RELEASE = '20260823-home-responsive-1';
+const CENTRAL_RELEASE = '20260823-mobile-layout-recovery-2';
 const CACHE_NAME = `central-registros-static-v${CENTRAL_RELEASE}`;
 const APPWRITE_AUTH_CACHE = 'central-registros-appwrite-auth-v1';
 const APPWRITE_ENDPOINT_ORIGIN = 'https://nyc.cloud.appwrite.io';
@@ -8,8 +8,8 @@ const APPWRITE_FALLBACK_CACHE_KEY = new URL('./__central_appwrite_fallback_cooki
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=20260823-home-responsive-1',
-  './app.js?v=20260823-home-responsive-1',
+  './styles.css?v=20260823-mobile-layout-recovery-2',
+  './app.js?v=20260823-mobile-layout-recovery-2',
   './manifest.webmanifest',
   './assets/home/hero-posto.png',
   './assets/home/hero-revisao-km-desktop.jpeg',
