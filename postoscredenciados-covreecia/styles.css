@@ -1,4 +1,7 @@
-* {
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
   scroll-behavior: auto;
   -webkit-font-smoothing: antialiased;
   -webkit-backface-visibility: hidden;
@@ -6,9 +9,26 @@
 
 html,
 body {
-  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 100%;
+  margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow-x: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font: inherit;
+}
+
+.hidden {
+  display: none !important;
 }
 
 @keyframes fadeIn {
@@ -645,7 +665,34 @@ button {
 }
 
 #app-container {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 52%, #e2e8f0 100%);
   contain: layout style paint;
+}
+
+#app-container > .flex-1.overflow-y-auto {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#welcome-screen {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem 5rem;
 }
 
 body.driver-profile-open {
@@ -669,6 +716,8 @@ body.driver-profile-open .mobile-bottom-nav {
 .home-app-header-inner {
   display: flex;
   width: min(100%, 80rem);
+  max-width: 100%;
+  min-width: 0;
   min-height: 4.5rem;
   align-items: center;
   justify-content: space-between;
@@ -701,6 +750,7 @@ body.driver-profile-open .mobile-bottom-nav {
   width: 2.6rem;
   height: 2.6rem;
   place-items: center;
+  padding: 0;
   border: 1px solid #e2e8f0;
   border-radius: 999px;
   color: #0f172a;
@@ -1037,13 +1087,19 @@ body.driver-profile-open .mobile-bottom-nav {
 
 .home-overview-grid {
   display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.65rem;
   margin-bottom: 0.8rem;
 }
 
 .home-overview-card {
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  overflow: hidden;
   border: 1px solid #e5eaf2;
   border-radius: 1.2rem;
   background: #ffffff;
@@ -1069,7 +1125,10 @@ body.driver-profile-open .mobile-bottom-nav {
   align-items: center;
   gap: 0.2rem;
   min-width: 0;
+  border: 0;
+  padding: 0;
   color: #2563eb;
+  background: transparent;
   font-size: 0.64rem;
   line-height: 1.15;
   font-weight: 800;
@@ -1289,7 +1348,10 @@ body.driver-profile-open .mobile-bottom-nav {
 }
 
 .home-shell {
-  max-width: 90rem !important;
+  width: 100%;
+  min-width: 0;
+  max-width: 80rem !important;
+  margin-inline: auto;
   animation: homeFadeUp 0.45s ease both;
 }
 
@@ -1301,6 +1363,14 @@ body.driver-profile-open .mobile-bottom-nav {
   color: #ffffff;
   box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
   isolation: isolate;
+}
+
+.home-hero-card,
+.home-action-list,
+.home-action-card {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .home-hero-card {
@@ -1743,6 +1813,9 @@ body.driver-profile-open .mobile-bottom-nav {
   bottom: 0;
   z-index: 70;
   display: none;
+  width: 100%;
+  min-width: 0;
+  max-width: 100vw;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: stretch;
   min-height: 4.18rem;
@@ -1884,8 +1957,28 @@ body.driver-profile-open .mobile-bottom-nav {
 }
 
 @media (max-width: 767px) {
+  #welcome-screen {
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+  }
+
+  .home-shell {
+    max-width: 100% !important;
+  }
+
+  .home-app-header,
+  .home-app-header-inner {
+    width: 100%;
+    max-width: 100%;
+  }
+
   .mobile-bottom-nav {
+    left: 0;
+    right: 0;
     display: grid;
+    width: 100vw;
+    max-width: 100vw;
+    transform: none;
   }
 
   body[data-mobile-nav="home"] .flex-1.overflow-y-auto {
@@ -2227,7 +2320,7 @@ body.driver-profile-open .mobile-bottom-nav {
 
 @media (min-width: 768px) {
   .home-app-header-inner {
-    width: min(calc(100% - 2rem), 90rem);
+    width: min(calc(100% - 2rem), 80rem);
   }
 
   #welcome-screen {
