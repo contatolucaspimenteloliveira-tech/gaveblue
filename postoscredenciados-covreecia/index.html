@@ -20,7 +20,7 @@
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css">
-  <link rel="stylesheet" href="./styles.css?v=20260823-mobile-layout-recovery-2">
+  <link rel="stylesheet" href="./styles.css?v=20260823-driver-search-1">
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full flex flex-col">
@@ -610,7 +610,7 @@
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke-width="2" stroke-linecap="round"/></svg>
        <input id="driver-profile-search" type="search" autocomplete="off" placeholder="Pesquisar motorista" oninput="filterDriverDirectory()">
       </div>
-      <div id="driver-profile-results" class="driver-profile-results"></div>
+      <div id="driver-profile-results" class="driver-profile-results" aria-live="polite"></div>
      </div>
      <div id="driver-onboarding-vehicle-step" class="driver-onboarding-step hidden">
       <article class="driver-found-vehicle">
@@ -1029,7 +1029,7 @@
     <span>Sobre</span>
    </button>
   </nav>
-  <script src="./app.js?v=20260823-mobile-layout-recovery-2"></script>
+  <script src="./app.js?v=20260823-driver-search-1"></script>
  </body>
 </html>
 
