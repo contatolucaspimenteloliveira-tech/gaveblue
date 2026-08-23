@@ -42,6 +42,8 @@ const CENTRAL_PUSH_FUNCTION_ID = 'central-push';
 const CENTRAL_PUSH_PUBLIC_KEY = 'BK6Dhnrl6Wr4nO4PtE-ZlnW7ttRe0vtA3b7ssZsa7S9bGdR8gcBBu9SNuNBoMntUkcMBkAOAcgvhMJalNysihgw';
 const CENTRAL_PUSH_PROMPT_DISMISSED_KEY = 'central-push-prompt-dismissed';
 const CENTRAL_PUSH_SUBSCRIPTION_ID_KEY = 'central-push-subscription-id';
+const CENTRAL_NOTIFICATIONS_DB = 'central-registros-notifications-v1';
+const CENTRAL_NOTIFICATIONS_STORE = 'notifications';
 const REMOVED_DRIVER_NAMES = ['ELOIS DOS SANTOS'];
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
@@ -1355,6 +1357,177 @@ function closeMySubmissions() {
   modal?.classList.add('hidden');
   modal?.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('driver-profile-open');
+}
+
+function openCentralNotificationsDb() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) {
+      reject(new Error('Histórico de notificações indisponível neste navegador.'));
+      return;
+    }
+    const request = indexedDB.open(CENTRAL_NOTIFICATIONS_DB, 1);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(CENTRAL_NOTIFICATIONS_STORE)) {
+        const store = database.createObjectStore(CENTRAL_NOTIFICATIONS_STORE, { keyPath: 'id' });
+        store.createIndex('createdAt', 'createdAt');
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error('Não foi possível abrir o histórico de notificações.'));
+  });
+}
+
+async function getCentralNotifications() {
+  const database = await openCentralNotificationsDb();
+  try {
+    const records = await new Promise((resolve, reject) => {
+      const transaction = database.transaction(CENTRAL_NOTIFICATIONS_STORE, 'readonly');
+      const request = transaction.objectStore(CENTRAL_NOTIFICATIONS_STORE).getAll();
+      request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : []);
+      request.onerror = () => reject(request.error);
+    });
+    return records
+      .sort((first, second) => new Date(second.createdAt || 0) - new Date(first.createdAt || 0))
+      .slice(0, 100);
+  } finally {
+    database.close();
+  }
+}
+
+async function markAllCentralNotificationsRead() {
+  const database = await openCentralNotificationsDb();
+  try {
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction(CENTRAL_NOTIFICATIONS_STORE, 'readwrite');
+      const store = transaction.objectStore(CENTRAL_NOTIFICATIONS_STORE);
+      const request = store.openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        if (!cursor.value.read) cursor.update({ ...cursor.value, read: true });
+        cursor.continue();
+      };
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+    });
+  } finally {
+    database.close();
+  }
+}
+
+async function markCentralNotificationRead(id) {
+  if (!id) return;
+  const database = await openCentralNotificationsDb();
+  try {
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction(CENTRAL_NOTIFICATIONS_STORE, 'readwrite');
+      const store = transaction.objectStore(CENTRAL_NOTIFICATIONS_STORE);
+      const request = store.get(id);
+      request.onsuccess = () => {
+        if (request.result) store.put({ ...request.result, read: true });
+      };
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+    });
+  } finally {
+    database.close();
+  }
+}
+
+function formatCentralNotificationDate(value) {
+  const date = new Date(value || 0);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+}
+
+function renderCentralNotifications(records) {
+  const list = document.getElementById('central-notifications-list');
+  if (!list) return;
+  if (!records.length) {
+    list.innerHTML = `<div class="notification-center-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" stroke-width="2" stroke-linecap="round"/><path d="M10 21h4" stroke-width="2" stroke-linecap="round"/></svg>
+      <strong>Nenhum aviso recebido</strong>
+      <span>As notificações enviadas pelo WeFrotas aparecerão aqui.</span>
+    </div>`;
+    return;
+  }
+  list.innerHTML = records.map((record) => `<button type="button" class="notification-center-item${record.read ? '' : ' is-unread'}" data-notification-id="${escapeCentralHtml(record.id)}">
+    <span class="notification-center-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" stroke-width="2" stroke-linecap="round"/><path d="M10 21h4" stroke-width="2" stroke-linecap="round"/></svg></span>
+    <span class="notification-center-copy"><strong>${escapeCentralHtml(record.title || 'Central de Registros')}</strong><span>${escapeCentralHtml(record.body || '')}</span><time>${escapeCentralHtml(formatCentralNotificationDate(record.createdAt))}</time></span>
+    <span class="notification-center-dot" aria-hidden="true"></span>
+  </button>`).join('');
+  list.querySelectorAll('[data-notification-id]').forEach((button) => {
+    button.addEventListener('click', () => openCentralNotificationItem(button.dataset.notificationId));
+  });
+}
+
+async function refreshCentralNotificationBadge() {
+  const badge = document.getElementById('home-notification-badge');
+  if (!badge) return;
+  try {
+    const records = await getCentralNotifications();
+    const unread = records.filter((record) => !record.read).length;
+    badge.textContent = unread > 99 ? '99+' : String(unread);
+    badge.classList.toggle('hidden', unread === 0);
+  } catch (error) {
+    badge.classList.add('hidden');
+  }
+}
+
+async function refreshCentralNotifications() {
+  const list = document.getElementById('central-notifications-list');
+  if (list) list.innerHTML = '<div class="driver-directory-message">Carregando avisos...</div>';
+  try {
+    const records = await getCentralNotifications();
+    renderCentralNotifications(records);
+    if (records.some((record) => !record.read)) await markAllCentralNotificationsRead();
+    await refreshCentralNotificationBadge();
+  } catch (error) {
+    if (list) list.innerHTML = `<div class="driver-directory-message is-error">${escapeCentralHtml(error?.message || 'Não foi possível carregar as notificações.')}</div>`;
+  }
+}
+
+async function openCentralNotifications() {
+  const modal = document.getElementById('central-notifications-modal');
+  modal?.classList.remove('hidden');
+  modal?.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('driver-profile-open');
+  await refreshCentralNotifications();
+}
+
+function closeCentralNotifications() {
+  const modal = document.getElementById('central-notifications-modal');
+  modal?.classList.add('hidden');
+  modal?.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('driver-profile-open');
+}
+
+function openNotificationSettingsFromCenter() {
+  closeCentralNotifications();
+  openCentralNotificationSettings();
+}
+
+async function openCentralNotificationItem(id) {
+  try {
+    const records = await getCentralNotifications();
+    const record = records.find((item) => item.id === id);
+    await markCentralNotificationRead(id);
+    await refreshCentralNotificationBadge();
+    if (!record?.url) return;
+    const target = new URL(record.url, window.location.href);
+    if (target.origin !== window.location.origin) return;
+    closeCentralNotifications();
+    if (target.href !== window.location.href) window.location.href = target.href;
+  } catch (error) {
+    console.warn('Central: não foi possível abrir a notificação.', error);
+  }
 }
 
 function buildFuelReceiptFileName(driverName, dateValue, originalFileName) {
@@ -3697,6 +3870,14 @@ window.addEventListener('DOMContentLoaded', function() {
   setupPwaInstallExperience();
   registerServiceWorker();
   setupCentralPushExperience();
+  refreshCentralNotificationBadge();
+
+  navigator.serviceWorker?.addEventListener('message', (event) => {
+    if (event.data?.type !== 'CENTRAL_NOTIFICATION_RECEIVED') return;
+    refreshCentralNotificationBadge();
+    const modal = document.getElementById('central-notifications-modal');
+    if (modal && !modal.classList.contains('hidden')) refreshCentralNotifications();
+  });
 });
 
 const cityImageCards = [
@@ -3789,6 +3970,8 @@ window.addEventListener('keydown', (event) => {
     closeDriverProfile();
   } else if (event.key === 'Escape' && !document.getElementById('my-submissions-modal')?.classList.contains('hidden')) {
     closeMySubmissions();
+  } else if (event.key === 'Escape' && !document.getElementById('central-notifications-modal')?.classList.contains('hidden')) {
+    closeCentralNotifications();
   }
 });
 

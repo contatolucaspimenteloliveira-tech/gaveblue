@@ -1,4 +1,4 @@
-const CENTRAL_RELEASE = '20260823-driver-search-1';
+const CENTRAL_RELEASE = '20260823-notification-center-1';
 const CACHE_NAME = `central-registros-static-v${CENTRAL_RELEASE}`;
 const APPWRITE_AUTH_CACHE = 'central-registros-appwrite-auth-v1';
 const APPWRITE_ENDPOINT_ORIGIN = 'https://nyc.cloud.appwrite.io';
@@ -8,8 +8,8 @@ const APPWRITE_FALLBACK_CACHE_KEY = new URL('./__central_appwrite_fallback_cooki
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=20260823-driver-search-1',
-  './app.js?v=20260823-driver-search-1',
+  './styles.css?v=20260823-notification-center-1',
+  './app.js?v=20260823-notification-center-1',
   './manifest.webmanifest',
   './assets/home/hero-posto.png',
   './assets/home/hero-revisao-km-desktop.jpeg',
@@ -30,6 +30,51 @@ const STATIC_ASSETS = [
   './assets/pwa/icon-512.png',
   './assets/pwa/icon-maskable-512.png'
 ];
+
+const CENTRAL_NOTIFICATIONS_DB = 'central-registros-notifications-v1';
+const CENTRAL_NOTIFICATIONS_STORE = 'notifications';
+
+function openCentralNotificationsDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(CENTRAL_NOTIFICATIONS_DB, 1);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(CENTRAL_NOTIFICATIONS_STORE)) {
+        const store = database.createObjectStore(CENTRAL_NOTIFICATIONS_STORE, { keyPath: 'id' });
+        store.createIndex('createdAt', 'createdAt');
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function storeCentralNotification(notification) {
+  const database = await openCentralNotificationsDb();
+  await new Promise((resolve, reject) => {
+    const transaction = database.transaction(CENTRAL_NOTIFICATIONS_STORE, 'readwrite');
+    transaction.objectStore(CENTRAL_NOTIFICATIONS_STORE).put(notification);
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+  });
+  database.close();
+}
+
+async function markCentralNotificationRead(id) {
+  if (!id) return;
+  const database = await openCentralNotificationsDb();
+  await new Promise((resolve, reject) => {
+    const transaction = database.transaction(CENTRAL_NOTIFICATIONS_STORE, 'readwrite');
+    const store = transaction.objectStore(CENTRAL_NOTIFICATIONS_STORE);
+    const request = store.get(id);
+    request.onsuccess = () => {
+      if (request.result) store.put({ ...request.result, read: true });
+    };
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+  });
+  database.close();
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -78,25 +123,44 @@ self.addEventListener('push', (event) => {
   }
 
   const title = payload.title || 'Central de Registros';
-  const options = {
+  const notificationId = payload.notificationId || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const storedNotification = {
+    id: notificationId,
+    title,
     body: payload.body || 'Você recebeu um novo comunicado.',
+    url: payload.url || './',
+    tag: payload.tag || 'central-comunicado',
+    createdAt: new Date().toISOString(),
+    read: false
+  };
+  const options = {
+    body: storedNotification.body,
     icon: './assets/pwa/icon-192.png',
     badge: './assets/pwa/icon-192.png',
     tag: payload.tag || 'central-comunicado',
     renotify: true,
     data: {
-      url: payload.url || './'
+      url: storedNotification.url,
+      notificationId
     }
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  const persistAndNotifyClients = storeCentralNotification(storedNotification)
+    .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+    .then((clients) => clients.forEach((client) => client.postMessage({ type: 'CENTRAL_NOTIFICATION_RECEIVED' })))
+    .catch((error) => console.warn('Central: não foi possível salvar o aviso no histórico.', error));
+
+  event.waitUntil(Promise.all([
+    persistAndNotifyClients,
+    self.registration.showNotification(title, options)
+  ]));
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = new URL(event.notification?.data?.url || './', self.location.href).href;
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    markCentralNotificationRead(event.notification?.data?.notificationId).catch(() => null).then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true })).then((clients) => {
       const existing = clients.find((client) => client.url.startsWith(self.registration.scope));
       if (existing) {
         existing.navigate(targetUrl);
