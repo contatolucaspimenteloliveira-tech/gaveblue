@@ -6,6 +6,7 @@ const DATABASE_ID = process.env.DATABASE_ID || '6a68ce8c000a36a44d98';
 const COLLECTION_ID = process.env.COLLECTION_ID || 'central_push_subscriptions';
 const CENTRAL_RECORDS_COLLECTION_ID = process.env.CENTRAL_RECORDS_COLLECTION_ID || 'central_registros_pendentes';
 const DRIVER_DIRECTORY_COLLECTION_ID = process.env.DRIVER_DIRECTORY_COLLECTION_ID || 'central_driver_directory';
+const APPROVAL_LOCKS_COLLECTION_ID = process.env.APPROVAL_LOCKS_COLLECTION_ID || 'central_approval_locks';
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:adm01@covreecia.com.br';
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
@@ -31,6 +32,20 @@ function json(res, status, payload) {
 
 function subscriptionDocumentId(endpoint) {
   return crypto.createHash('sha256').update(endpoint).digest('hex').slice(0, 36);
+}
+
+function approvalLockDocumentId(recordId) {
+  return crypto.createHash('sha256').update(`central-approval:${recordId}`).digest('hex').slice(0, 36);
+}
+
+function assertCentralRecordId(value) {
+  const recordId = String(value || '').trim();
+  if (!/^[a-zA-Z0-9_-]{1,36}$/.test(recordId)) {
+    const error = new Error('Identificador de registro da Central inválido.');
+    error.status = 400;
+    throw error;
+  }
+  return recordId;
 }
 
 function createDatabaseClient(req) {
@@ -198,14 +213,17 @@ async function listHistoryByField(databases, field, value) {
   return page.documents;
 }
 
+// Quando o navegador renova a inscrição Web Push (algo comum no iPhone), os
+// registros antigos continuam apontando para o ID anterior. Reata-os ao
+// aparelho atual sem guardar qualquer dado pessoal adicional.
 async function linkDeviceSubscription(databases, deviceId, subscriptionId, log) {
   if (!isValidDeviceId(deviceId) || !isValidSubscriptionId(subscriptionId)) return 0;
   try {
     const records = await listHistoryByField(databases, 'deviceId', String(deviceId).trim());
-    const outdatedRecords = records.filter((record) => String(record.pushSubscriptionId || '').trim() !== subscriptionId);
+    const outdated = records.filter((record) => String(record.pushSubscriptionId || '').trim() !== subscriptionId);
     let linked = 0;
-    for (let index = 0; index < outdatedRecords.length; index += 20) {
-      const batch = outdatedRecords.slice(index, index + 20);
+    for (let index = 0; index < outdated.length; index += 20) {
+      const batch = outdated.slice(index, index + 20);
       const results = await Promise.allSettled(batch.map((record) => databases.updateDocument({
         databaseId: DATABASE_ID,
         collectionId: CENTRAL_RECORDS_COLLECTION_ID,
@@ -261,6 +279,113 @@ async function listDeviceHistory(databases, payload) {
     }));
 }
 
+async function getCentralRecord(databases, recordId) {
+  return databases.getDocument({
+    databaseId: DATABASE_ID,
+    collectionId: CENTRAL_RECORDS_COLLECTION_ID,
+    documentId: recordId
+  });
+}
+
+async function claimCentralApproval(databases, senderId, payload) {
+  const recordId = assertCentralRecordId(payload.recordId);
+  const record = await getCentralRecord(databases, recordId);
+  const recordStatus = String(record?.status || 'pendente').toLocaleLowerCase('pt-BR');
+  if (recordStatus.includes('aprov') || recordStatus.includes('import')) {
+    return { claimed: false, state: 'approved', financeEntryId: String(record?.lancamentoFinanceiroId || '') };
+  }
+  if (recordStatus.includes('rejeit')) {
+    const error = new Error('Este registro já foi rejeitado e não pode ser aprovado sem auditoria.');
+    error.status = 409;
+    throw error;
+  }
+
+  const lockId = approvalLockDocumentId(recordId);
+  const claimedAt = new Date().toISOString();
+  try {
+    await databases.createDocument({
+      databaseId: DATABASE_ID,
+      collectionId: APPROVAL_LOCKS_COLLECTION_ID,
+      documentId: lockId,
+      data: {
+        centralRecordId: recordId,
+        status: 'em_aprovacao',
+        claimedBy: senderId,
+        claimedAt,
+        // These two attributes are required in Appwrite. A neutral placeholder
+        // keeps the claim document valid until the finance entry is completed.
+        financeEntryId: '-',
+        completedAt: '-',
+        updatedAt: claimedAt
+      }
+    });
+    return { claimed: true, lockId, state: 'claimed' };
+  } catch (caught) {
+    if (Number(caught?.code) !== 409) throw caught;
+    const lock = await databases.getDocument({
+      databaseId: DATABASE_ID,
+      collectionId: APPROVAL_LOCKS_COLLECTION_ID,
+      documentId: lockId
+    });
+    if (String(lock?.claimedBy || '') === senderId && String(lock?.status || '') === 'em_aprovacao') {
+      return { claimed: true, lockId, state: 'claimed' };
+    }
+    return {
+      claimed: false,
+      lockId,
+      state: String(lock?.status || 'em_aprovacao'),
+      financeEntryId: String(lock?.financeEntryId || '')
+    };
+  }
+}
+
+async function completeCentralApproval(databases, senderId, payload) {
+  const recordId = assertCentralRecordId(payload.recordId);
+  const financeEntryId = String(payload.financeEntryId || '').trim().slice(0, 128);
+  if (!financeEntryId) {
+    const error = new Error('Identificador do lançamento financeiro é obrigatório.');
+    error.status = 400;
+    throw error;
+  }
+  const lockId = approvalLockDocumentId(recordId);
+  const lock = await databases.getDocument({
+    databaseId: DATABASE_ID,
+    collectionId: APPROVAL_LOCKS_COLLECTION_ID,
+    documentId: lockId
+  });
+  if (String(lock?.claimedBy || '') !== senderId) {
+    const error = new Error('A aprovação deste registro está em andamento por outro gestor.');
+    error.status = 409;
+    throw error;
+  }
+  const completedAt = new Date().toISOString();
+  await databases.updateDocument({
+    databaseId: DATABASE_ID,
+    collectionId: APPROVAL_LOCKS_COLLECTION_ID,
+    documentId: lockId,
+    data: { status: 'approved', financeEntryId, completedAt, updatedAt: completedAt }
+  });
+  return { completed: true, lockId };
+}
+
+async function releaseCentralApproval(databases, senderId, payload) {
+  const recordId = assertCentralRecordId(payload.recordId);
+  const lockId = approvalLockDocumentId(recordId);
+  try {
+    const lock = await databases.getDocument({
+      databaseId: DATABASE_ID,
+      collectionId: APPROVAL_LOCKS_COLLECTION_ID,
+      documentId: lockId
+    });
+    if (String(lock?.claimedBy || '') === senderId && String(lock?.status || '') === 'em_aprovacao') {
+      await databases.deleteDocument({ databaseId: DATABASE_ID, collectionId: APPROVAL_LOCKS_COLLECTION_ID, documentId: lockId });
+    }
+  } catch (caught) {
+    if (Number(caught?.code) !== 404) throw caught;
+  }
+  return { released: true };
+}
+
 async function markInactive(databases, documentId) {
   try {
     await databases.updateDocument({
@@ -310,36 +435,37 @@ async function sendToSubscription(databases, document, payload, log, tagPrefix =
     endpoint: document.endpoint,
     keys: { p256dh: document.p256dh, auth: document.auth }
   };
-  const requestedNotificationId = String(payload.notificationId || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 96);
-  const notificationId = requestedNotificationId || crypto.randomUUID();
-  const tag = `${tagPrefix}-${notificationId}`;
-  const notificationBody = JSON.stringify({ title, body, url, tag, notificationId });
-  const maxAttempts = 3;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+  const rawNotificationId = String(payload.notificationId || crypto.randomUUID());
+  const notificationId = rawNotificationId.replace(/[^a-z0-9_-]/gi, '').slice(0, 64) || crypto.randomUUID();
+  const notificationPayload = JSON.stringify({
+    title,
+    body,
+    url,
+    tag: tagPrefix + '-' + notificationId,
+    notificationId
+  });
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
-      await webpush.sendNotification(
-        subscription,
-        notificationBody,
-        { TTL: 86400, urgency: tagPrefix === 'central-retorno' ? 'high' : 'normal' }
-      );
-      return { sent: 1, failed: 0, attempts: attempt };
+      await webpush.sendNotification(subscription, notificationPayload, {
+        TTL: 86400,
+        urgency: tagPrefix === 'central-retorno' ? 'high' : 'normal'
+      });
+      return { sent: 1, failed: 0, attempts: attempt, notificationId };
     } catch (caught) {
+      lastError = caught;
       const statusCode = getPushStatusCode(caught);
       if (statusCode === 404 || statusCode === 410) {
         await markInactive(databases, document.$id);
+        break;
       }
-      if (attempt < maxAttempts && isRetryablePushError(caught)) {
-        log('Tentativa ' + attempt + ' de push falhou para ' + document.$id + ': ' + (caught?.message || statusCode));
-        await wait(attempt * 400);
-        continue;
-      }
-      log('Falha de push ' + document.$id + ': ' + (caught?.message || statusCode));
-      throw caught;
+      if (!isRetryablePushError(caught) || attempt === 3) break;
+      await wait(400 * attempt);
     }
   }
-
-  throw new Error('O serviço de push não confirmou o envio.');
+  const statusCode = getPushStatusCode(lastError);
+  log('Falha de push ' + document.$id + ': ' + (lastError?.message || statusCode));
+  throw lastError;
 }
 
 async function notifySubscription(databases, payload, log) {
@@ -351,46 +477,35 @@ async function notifySubscription(databases, payload, log) {
     error.status = 400;
     throw error;
   }
-
-  const candidateIds = [];
+  const candidateIds = new Set();
+  if (isValidSubscriptionId(subscriptionId)) candidateIds.add(subscriptionId);
   if (isValidDeviceId(deviceId)) {
     const records = await listHistoryByField(databases, 'deviceId', deviceId);
     records.forEach((record) => {
       const candidateId = String(record.pushSubscriptionId || '').trim();
-      if (isValidSubscriptionId(candidateId) && !candidateIds.includes(candidateId)) candidateIds.push(candidateId);
+      if (isValidSubscriptionId(candidateId)) candidateIds.add(candidateId);
     });
   }
-  if (isValidSubscriptionId(subscriptionId) && !candidateIds.includes(subscriptionId)) candidateIds.push(subscriptionId);
-
-  let lastError = null;
+  let lastError;
   let attempted = 0;
   for (const candidateId of candidateIds) {
-    let document;
     try {
-      document = await databases.getDocument({
+      const document = await databases.getDocument({
         databaseId: DATABASE_ID,
         collectionId: COLLECTION_ID,
         documentId: candidateId
       });
-    } catch (caught) {
-      if (Number(caught?.code) === 404) {
-        lastError = caught;
-        continue;
-      }
-      throw caught;
-    }
-    if (document.active === false) continue;
-    attempted += 1;
-    try {
+      attempted += 1;
       const result = await sendToSubscription(databases, document, payload, log, 'central-retorno');
-      return { subscribers: candidateIds.length, attempted, ...result };
+      return { subscribers: candidateIds.size, attempted, ...result };
     } catch (caught) {
       lastError = caught;
+      log('Falha ao tentar retorno para inscrição ' + candidateId + ': ' + (caught?.message || caught));
     }
   }
-
-  const notFound = new Error(lastError?.message || 'O aparelho de origem não possui uma inscrição ativa.');
-  notFound.status = Number(lastError?.statusCode || lastError?.status || lastError?.code || 404);
+  if (lastError) throw lastError;
+  const notFound = new Error('O aparelho de origem não está mais inscrito.');
+  notFound.status = 404;
   throw notFound;
 }
 
@@ -495,6 +610,27 @@ export default async ({ req, res, log, error }) => {
       return json(res, 200, { ok: true, ...result });
     }
 
+    if (action === 'claim-approval') {
+      const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const result = await claimCentralApproval(databases, senderId, payload);
+      return json(res, 200, { ok: true, ...result });
+    }
+
+    if (action === 'complete-approval') {
+      const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const result = await completeCentralApproval(databases, senderId, payload);
+      return json(res, 200, { ok: true, ...result });
+    }
+
+    if (action === 'release-approval') {
+      const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const result = await releaseCentralApproval(databases, senderId, payload);
+      return json(res, 200, { ok: true, ...result });
+    }
+
     return json(res, 400, { ok: false, error: 'Ação inválida.' });
   } catch (caught) {
     error(caught?.stack || caught?.message || String(caught));
@@ -504,3 +640,6 @@ export default async ({ req, res, log, error }) => {
     });
   }
 };
+
+
+
