@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { gunzipSync } from 'node:zlib';
 import { Account, Client, Databases, Query } from 'node-appwrite';
 import webpush from 'web-push';
 
@@ -7,6 +8,8 @@ const COLLECTION_ID = process.env.COLLECTION_ID || 'central_push_subscriptions';
 const CENTRAL_RECORDS_COLLECTION_ID = process.env.CENTRAL_RECORDS_COLLECTION_ID || 'central_registros_pendentes';
 const DRIVER_DIRECTORY_COLLECTION_ID = process.env.DRIVER_DIRECTORY_COLLECTION_ID || 'central_driver_directory';
 const APPROVAL_LOCKS_COLLECTION_ID = process.env.APPROVAL_LOCKS_COLLECTION_ID || 'central_approval_locks';
+const WEFROTAS_TABLE_ID = process.env.WEFROTAS_TABLE_ID || 'gaveblue_wefrotas';
+const WEFROTAS_COMPANY_ID = process.env.WEFROTAS_COMPANY_ID || 'covre-e-cia';
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:adm01@covreecia.com.br';
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
@@ -242,6 +245,62 @@ async function linkDeviceSubscription(databases, deviceId, subscriptionId, log) 
     log('Falha ao renovar vínculos push do aparelho: ' + (caught?.message || caught));
     return 0;
   }
+}
+
+function wefrotasSnapshotDocumentId() {
+  return crypto.createHash('sha256').update(WEFROTAS_COMPANY_ID).digest('hex').slice(0, 36);
+}
+
+function wefrotasSnapshotChunkDocumentId(generation, index) {
+  return crypto.createHash('sha256').update(`${WEFROTAS_COMPANY_ID}:snapshot:${generation}:${index}`).digest('hex').slice(0, 36);
+}
+
+async function decodeWefrotasSnapshot(databases, storedValue) {
+  const value = String(storedValue || '');
+  if (value.startsWith('chunked-v1:')) {
+    const manifest = JSON.parse(value.slice('chunked-v1:'.length));
+    if (!manifest?.generation || !Number.isInteger(manifest.count) || manifest.count < 1 || manifest.count > 200) {
+      throw new Error('O índice de postos do WeFrotas é inválido.');
+    }
+    const chunks = [];
+    for (let index = 0; index < manifest.count; index += 4) {
+      const batch = await Promise.all(Array.from({ length: Math.min(4, manifest.count - index) }, (_, offset) =>
+        databases.getDocument({
+          databaseId: DATABASE_ID,
+          collectionId: WEFROTAS_TABLE_ID,
+          documentId: wefrotasSnapshotChunkDocumentId(manifest.generation, index + offset)
+        })
+      ));
+      chunks.push(...batch.map((row) => String(row?.snapshot || '')));
+    }
+    return decodeWefrotasSnapshot(databases, chunks.join(''));
+  }
+  if (value.startsWith('gzip-base64:')) {
+    return JSON.parse(gunzipSync(Buffer.from(value.slice('gzip-base64:'.length), 'base64')).toString('utf8'));
+  }
+  return JSON.parse(value || '{}');
+}
+
+async function listCentralStations(databases) {
+  const row = await databases.getDocument({
+    databaseId: DATABASE_ID,
+    collectionId: WEFROTAS_TABLE_ID,
+    documentId: wefrotasSnapshotDocumentId()
+  });
+  const snapshot = await decodeWefrotasSnapshot(databases, row?.snapshot);
+  const stations = Array.isArray(snapshot?.suppliers) ? snapshot.suppliers : [];
+  return stations
+    .filter((supplier) => String(supplier?.tipo || '') === 'posto' && supplier?.ativo !== false)
+    .map((supplier) => ({
+      id: String(supplier?.id || ''),
+      name: String(supplier?.nome || '').trim().slice(0, 160),
+      city: String(supplier?.cidade || supplier?.cidadePosto || '').trim().slice(0, 120),
+      address: String(supplier?.endereco || supplier?.address || '').trim().slice(0, 360),
+      mapsUrl: String(supplier?.mapaUrl || supplier?.linkMapa || supplier?.mapLink || '').trim().slice(0, 1000)
+    }))
+    .filter((station) => station.name && station.city && station.address)
+    .map((station) => ({ ...station, mapsUrl: /^https:\/\//i.test(station.mapsUrl) ? station.mapsUrl : '' }))
+    .sort((a, b) => a.city.localeCompare(b.city, 'pt-BR') || a.name.localeCompare(b.name, 'pt-BR'));
 }
 
 async function listDeviceHistory(databases, payload) {
@@ -567,6 +626,12 @@ export default async ({ req, res, log, error }) => {
       const databases = createDatabaseClient(req);
       const subscriptionId = await disableSubscription(databases, payload);
       return json(res, 200, { ok: true, subscriptionId });
+    }
+
+    if (action === 'stations') {
+      const databases = createDatabaseClient(req);
+      const stations = await listCentralStations(databases);
+      return json(res, 200, { ok: true, stations, updatedAt: new Date().toISOString() });
     }
 
     if (action === 'directory') {
