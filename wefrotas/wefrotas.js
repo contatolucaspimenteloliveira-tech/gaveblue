@@ -2703,7 +2703,10 @@
       return {
         ...supplier,
         ativo: isEntityActive(supplier),
-        tipoLabel: supplier?.tipoLabel || getSupplierTypeLabel(supplier?.tipo)
+        tipoLabel: supplier?.tipoLabel || getSupplierTypeLabel(supplier?.tipo),
+        cidade: String(supplier?.cidade || supplier?.cidadePosto || '').trim(),
+        endereco: String(supplier?.endereco || supplier?.address || '').trim(),
+        mapaUrl: String(supplier?.mapaUrl || supplier?.linkMapa || supplier?.mapLink || '').trim()
       };
     }
 
@@ -4456,6 +4459,19 @@
           <div class="field-wrap">
             <label>Telefone</label>
             <input class="soft-input w-full" id="supplier-phone" placeholder="(00) 00000-0000">
+          </div>
+          <div class="field-wrap">
+            <label>Cidade do posto</label>
+            <input class="soft-input w-full" id="supplier-city" placeholder="Ex.: Pinheiros">
+          </div>
+          <div class="field-wrap full">
+            <label>Endereço</label>
+            <input class="soft-input w-full" id="supplier-address" placeholder="Rua, número, bairro e cidade">
+          </div>
+          <div class="field-wrap full">
+            <label>Link da rota / Google Maps</label>
+            <input class="soft-input w-full" id="supplier-map-url" type="url" placeholder="https://maps.app.goo.gl/...">
+            <small>Os dados são usados na Central de Registros quando o parceiro for um posto ativo.</small>
           </div>
           <div class="field-wrap">
             <label>E-mail</label>
@@ -10969,6 +10985,9 @@
       syncCustomSelectById('supplier-type');
       document.getElementById('supplier-document').value = supplier.documento || '';
       document.getElementById('supplier-phone').value = supplier.telefone || '';
+      document.getElementById('supplier-city').value = supplier.cidade || '';
+      document.getElementById('supplier-address').value = supplier.endereco || '';
+      document.getElementById('supplier-map-url').value = supplier.mapaUrl || '';
       document.getElementById('supplier-email').value = supplier.email || '';
       document.getElementById('supplier-notes').value = supplier.observacoes || '';
       document.getElementById('supplier-active').checked = isEntityActive(supplier);
@@ -12464,11 +12483,22 @@
         const tipo = document.getElementById('supplier-type').value;
         const documento = formatCpfOrCnpj(document.getElementById('supplier-document').value.trim());
         const telefone = document.getElementById('supplier-phone').value.trim();
+        const cidade = document.getElementById('supplier-city').value.trim();
+        const endereco = document.getElementById('supplier-address').value.trim();
+        const mapaUrl = document.getElementById('supplier-map-url').value.trim();
         const email = document.getElementById('supplier-email').value.trim();
         const observacoes = document.getElementById('supplier-notes').value.trim();
         const ativo = document.getElementById('supplier-active')?.checked !== false;
         if (!nome || !tipo) {
           showToast('Preencha o nome do parceiro e o tipo de fornecedor.');
+          return;
+        }
+        if (tipo === 'posto' && (!cidade || !endereco)) {
+          showToast('Para publicar um posto na Central, informe cidade e endereço.');
+          return;
+        }
+        if (mapaUrl && !/^https?:\/\//i.test(mapaUrl)) {
+          showToast('Informe um link válido do Google Maps, iniciado por https://.');
           return;
         }
         if (documento) {
@@ -12486,11 +12516,11 @@
         const tipoLabel = getSupplierTypeLabel(tipo);
         if (currentEditingId) {
           allSuppliers = allSuppliers.map(supplier => supplier.id === currentEditingId
-            ? { ...supplier, nome, tipo, tipoLabel, documento, telefone, email, observacoes, ativo }
+            ? { ...supplier, nome, tipo, tipoLabel, documento, telefone, cidade, endereco, mapaUrl, email, observacoes, ativo }
             : supplier);
           showToast('Fornecedor atualizado com sucesso.');
         } else {
-          allSuppliers.unshift({ id: generateId(), nome, tipo, tipoLabel, documento, telefone, email, observacoes, ativo });
+          allSuppliers.unshift({ id: generateId(), nome, tipo, tipoLabel, documento, telefone, cidade, endereco, mapaUrl, email, observacoes, ativo });
           showToast('Fornecedor cadastrado com sucesso.');
         }
         saveToLocalStorage();
