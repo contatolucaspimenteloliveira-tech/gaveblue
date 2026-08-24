@@ -2,6 +2,47 @@
 
 Use este arquivo antes de cada publicação importante. Marque os itens somente depois de testar com dados controlados.
 
+## Situação da auditoria de 23/08/2026
+
+- [x] Registro de teste de GLEIDSON LAURENTINO DE MELO recebido automaticamente na Central.
+- [x] Registro rejeitado com o motivo `Teste de notificação — comprovante recusado.`.
+- [x] Status confirmado como **Rejeitado** no WeFrotas.
+- [x] Notificação de rejeição recebida no aparelho de teste e exibindo o motivo informado.
+- [x] Central verificada sem estouro horizontal em 360, 768 e 1.024 px.
+- [x] WeFrotas verificado sem estouro horizontal da página em 390, 768, 910 e 1.440 px.
+- [x] Registro Rápido, Registro Completo, Serviços, busca de postos, filtros e seleção por linha abertos sem erro.
+- [x] Central → Usuários encontrou 4 aparelhos inscritos.
+- [ ] Validar câmera nativa e push com o aplicativo fechado em aparelho físico.
+
+## Melhorias priorizadas encontradas na auditoria
+
+### P0 — integridade financeira
+
+- [x] Criar a coleção `central_approval_locks` para reserva atômica por `centralRecordId`.
+- [x] Implantar na Function a reserva administrativa determinística para impedir duas aprovações simultâneas.
+- [ ] Validar em produção a aprovação concorrente com duas sessões de gestor antes de considerar a regra concluída.
+- [ ] Definir uma ação administrativa de reconciliação para travas que ficarem em `em_aprovacao` após uma falha de rede.
+- [ ] Auditar as duas linhas visualmente idênticas de POSTO NATER COOP, veículo 005, data 13/08/2026 e valor R$ 218,43 antes de qualquer exclusão.
+- [ ] Criar teste automático de aprovação simultânea e de repetição de clique.
+
+### P1 — publicação e consistência cadastral
+
+- [ ] Publicar o WeFrotas atual e atualizar os tokens de versão/cache dos arquivos estáticos.
+- [ ] Confirmar em produção a orientação de banner **1320 × 600 px (2,2:1)**.
+- [ ] Substituir as listas fixas de motoristas dos formulários pelo diretório de motoristas ativos do WeFrotas.
+- [ ] Corrigir a divergência `ELOI DOS SANTOS` / `ELOIS DOS SANTOS`.
+- [ ] Garantir que motorista ou veículo inativo não apareça para novos registros.
+- [ ] Adicionar testes de aprovação, rejeição, auditoria e retorno do Financeiro para a Central.
+
+### P2 — experiência, segurança e manutenção
+
+- [x] Compactar o modal vazio de **Meus envios** e manter o botão Atualizar com largura adequada.
+- [ ] Tornar mais evidente a rolagem horizontal das tabelas em telas pequenas.
+- [ ] Remover a dependência do Tailwind CDN em produção e gerar o CSS no processo de publicação.
+- [ ] Configurar domínio próprio do Appwrite para evitar sessão baseada em `localStorage`.
+- [ ] Tratar ou silenciar corretamente o erro visual `AbortError: Transition was skipped`.
+- [ ] Criar suíte de regressão executada antes de cada merge/publicação.
+
 ## 1. Central de Registros — prioridade máxima
 
 - [ ] Enviar um abastecimento pelo aplicativo e confirmar que aparece automaticamente em **Pendentes**.
@@ -71,3 +112,4 @@ Testar Home, OS, Financeiro, Veículos, Motoristas, Fornecedores, Central e Rela
 - [ ] Retorno dos status: Em análise, Aprovado e Recusado.
 - [ ] Carrossel administrado em **Central → Configurações → Comunicação**.
 - [ ] Botão **Baixar app** visível no navegador e oculto somente dentro do PWA instalado.
+
