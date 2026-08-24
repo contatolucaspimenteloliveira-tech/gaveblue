@@ -751,9 +751,10 @@ body.driver-profile-open .mobile-bottom-nav {
 
 .home-refresh-button svg {
   display: block;
-  width: 1rem;
-  height: 1rem;
+  width: 1.12rem;
+  height: 1.12rem;
   aspect-ratio: 1;
+  transform: translateY(0.02rem);
 }
 
 .home-refresh-button.is-refreshing svg { animation: home-refresh-spin 700ms linear infinite; }
