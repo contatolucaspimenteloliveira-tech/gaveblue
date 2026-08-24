@@ -745,6 +745,11 @@ body.driver-profile-open .mobile-bottom-nav {
   color: #2563eb;
 }
 
+.home-refresh-button { color: #475569; }
+.home-refresh-button.is-refreshing svg { animation: home-refresh-spin 700ms linear infinite; }
+.home-refresh-button:disabled { cursor: wait; opacity: .7; }
+@keyframes home-refresh-spin { to { transform: rotate(360deg); } }
+
 .home-notification-badge {
   position: absolute;
   top: -0.28rem;
@@ -1210,11 +1215,16 @@ body.driver-profile-open .mobile-bottom-nav {
 .driver-profile-secondary:disabled { opacity: .45; }
 .driver-profile-skip { min-height: 1.8rem; margin-top: 0.45rem; border: 0; padding: 0; color: #1769e0; background: transparent; font-size: 0.72rem; font-weight: 850; }
 
-.submissions-dialog { align-self: stretch; }
+.submissions-dialog {
+  align-self: center;
+  width: min(100%, 31rem);
+}
 .submissions-summary { display: flex; gap: 0.45rem; margin-top: 0.8rem; }
 .submissions-summary.hidden { display: none; }
 .submissions-summary span { flex: 1; border-radius: 0.75rem; padding: 0.55rem; color: #475569; background: #f8fafc; text-align: center; font-size: 0.62rem; font-weight: 800; }
-.submissions-list { display: grid; gap: 0.65rem; max-height: min(60dvh, 32rem); margin: 0.9rem 0; overflow-y: auto; }
+.submissions-list { display: grid; gap: 0.65rem; max-height: min(52dvh, 28rem); margin: 0.9rem 0; overflow-y: auto; }
+.submissions-list > .driver-directory-message { margin: 0; padding: 1rem 0.8rem; }
+.submissions-dialog .driver-profile-secondary { align-self: flex-end; min-width: 8.75rem; width: auto; padding-inline: 1rem; }
 .submission-item { display: grid; gap: 0.55rem; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 0.85rem; background: #fff; }
 .submission-item-head, .submission-item-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
 .submission-item-head strong { color: #0f172a; font-size: 0.78rem; }
@@ -1227,8 +1237,8 @@ body.driver-profile-open .mobile-bottom-nav {
 .submission-status.rejected { color: #b42318; background: #fee4e2; }
 .submission-receipt { color: #1769e0; font-size: 0.62rem; font-weight: 850; }
 
-@media (min-width: 640px) {
-  .submissions-dialog { align-self: center; }
+@media (max-width: 420px) {
+  .submissions-dialog { padding: 1rem; }
 }
 
 .home-driver-welcome {
@@ -3020,4 +3030,5 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
   .central-push-prompt-copy span { display: none; }
   .central-push-prompt-action { grid-column: auto; min-height: 2.35rem; padding: 0 0.75rem; }
 }
+
 
