@@ -6,6 +6,7 @@ const DATABASE_ID = process.env.DATABASE_ID || '6a68ce8c000a36a44d98';
 const COLLECTION_ID = process.env.COLLECTION_ID || 'central_push_subscriptions';
 const CENTRAL_RECORDS_COLLECTION_ID = process.env.CENTRAL_RECORDS_COLLECTION_ID || 'central_registros_pendentes';
 const DRIVER_DIRECTORY_COLLECTION_ID = process.env.DRIVER_DIRECTORY_COLLECTION_ID || 'central_driver_directory';
+const APPROVAL_LOCKS_COLLECTION_ID = process.env.APPROVAL_LOCKS_COLLECTION_ID || 'central_approval_locks';
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:adm01@covreecia.com.br';
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
@@ -31,6 +32,20 @@ function json(res, status, payload) {
 
 function subscriptionDocumentId(endpoint) {
   return crypto.createHash('sha256').update(endpoint).digest('hex').slice(0, 36);
+}
+
+function approvalLockDocumentId(recordId) {
+  return crypto.createHash('sha256').update(`central-approval:${recordId}`).digest('hex').slice(0, 36);
+}
+
+function assertCentralRecordId(value) {
+  const recordId = String(value || '').trim();
+  if (!/^[a-zA-Z0-9_-]{1,36}$/.test(recordId)) {
+    const error = new Error('Identificador de registro da Central inválido.');
+    error.status = 400;
+    throw error;
+  }
+  return recordId;
 }
 
 function createDatabaseClient(req) {
@@ -233,6 +248,113 @@ async function listDeviceHistory(databases, payload) {
     }));
 }
 
+async function getCentralRecord(databases, recordId) {
+  return databases.getDocument({
+    databaseId: DATABASE_ID,
+    collectionId: CENTRAL_RECORDS_COLLECTION_ID,
+    documentId: recordId
+  });
+}
+
+async function claimCentralApproval(databases, senderId, payload) {
+  const recordId = assertCentralRecordId(payload.recordId);
+  const record = await getCentralRecord(databases, recordId);
+  const recordStatus = String(record?.status || 'pendente').toLocaleLowerCase('pt-BR');
+  if (recordStatus.includes('aprov') || recordStatus.includes('import')) {
+    return { claimed: false, state: 'approved', financeEntryId: String(record?.lancamentoFinanceiroId || '') };
+  }
+  if (recordStatus.includes('rejeit')) {
+    const error = new Error('Este registro já foi rejeitado e não pode ser aprovado sem auditoria.');
+    error.status = 409;
+    throw error;
+  }
+
+  const lockId = approvalLockDocumentId(recordId);
+  const claimedAt = new Date().toISOString();
+  try {
+    await databases.createDocument({
+      databaseId: DATABASE_ID,
+      collectionId: APPROVAL_LOCKS_COLLECTION_ID,
+      documentId: lockId,
+      data: {
+        centralRecordId: recordId,
+        status: 'em_aprovacao',
+        claimedBy: senderId,
+        claimedAt,
+        // These two attributes are required in Appwrite. A neutral placeholder
+        // keeps the claim document valid until the finance entry is completed.
+        financeEntryId: '-',
+        completedAt: '-',
+        updatedAt: claimedAt
+      }
+    });
+    return { claimed: true, lockId, state: 'claimed' };
+  } catch (caught) {
+    if (Number(caught?.code) !== 409) throw caught;
+    const lock = await databases.getDocument({
+      databaseId: DATABASE_ID,
+      collectionId: APPROVAL_LOCKS_COLLECTION_ID,
+      documentId: lockId
+    });
+    if (String(lock?.claimedBy || '') === senderId && String(lock?.status || '') === 'em_aprovacao') {
+      return { claimed: true, lockId, state: 'claimed' };
+    }
+    return {
+      claimed: false,
+      lockId,
+      state: String(lock?.status || 'em_aprovacao'),
+      financeEntryId: String(lock?.financeEntryId || '')
+    };
+  }
+}
+
+async function completeCentralApproval(databases, senderId, payload) {
+  const recordId = assertCentralRecordId(payload.recordId);
+  const financeEntryId = String(payload.financeEntryId || '').trim().slice(0, 128);
+  if (!financeEntryId) {
+    const error = new Error('Identificador do lançamento financeiro é obrigatório.');
+    error.status = 400;
+    throw error;
+  }
+  const lockId = approvalLockDocumentId(recordId);
+  const lock = await databases.getDocument({
+    databaseId: DATABASE_ID,
+    collectionId: APPROVAL_LOCKS_COLLECTION_ID,
+    documentId: lockId
+  });
+  if (String(lock?.claimedBy || '') !== senderId) {
+    const error = new Error('A aprovação deste registro está em andamento por outro gestor.');
+    error.status = 409;
+    throw error;
+  }
+  const completedAt = new Date().toISOString();
+  await databases.updateDocument({
+    databaseId: DATABASE_ID,
+    collectionId: APPROVAL_LOCKS_COLLECTION_ID,
+    documentId: lockId,
+    data: { status: 'approved', financeEntryId, completedAt, updatedAt: completedAt }
+  });
+  return { completed: true, lockId };
+}
+
+async function releaseCentralApproval(databases, senderId, payload) {
+  const recordId = assertCentralRecordId(payload.recordId);
+  const lockId = approvalLockDocumentId(recordId);
+  try {
+    const lock = await databases.getDocument({
+      databaseId: DATABASE_ID,
+      collectionId: APPROVAL_LOCKS_COLLECTION_ID,
+      documentId: lockId
+    });
+    if (String(lock?.claimedBy || '') === senderId && String(lock?.status || '') === 'em_aprovacao') {
+      await databases.deleteDocument({ databaseId: DATABASE_ID, collectionId: APPROVAL_LOCKS_COLLECTION_ID, documentId: lockId });
+    }
+  } catch (caught) {
+    if (Number(caught?.code) !== 404) throw caught;
+  }
+  return { released: true };
+}
+
 async function markInactive(databases, documentId) {
   try {
     await databases.updateDocument({
@@ -413,6 +535,27 @@ export default async ({ req, res, log, error }) => {
       return json(res, 200, { ok: true, ...result });
     }
 
+    if (action === 'claim-approval') {
+      const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const result = await claimCentralApproval(databases, senderId, payload);
+      return json(res, 200, { ok: true, ...result });
+    }
+
+    if (action === 'complete-approval') {
+      const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const result = await completeCentralApproval(databases, senderId, payload);
+      return json(res, 200, { ok: true, ...result });
+    }
+
+    if (action === 'release-approval') {
+      const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const result = await releaseCentralApproval(databases, senderId, payload);
+      return json(res, 200, { ok: true, ...result });
+    }
+
     return json(res, 400, { ok: false, error: 'Ação inválida.' });
   } catch (caught) {
     error(caught?.stack || caught?.message || String(caught));
@@ -422,5 +565,6 @@ export default async ({ req, res, log, error }) => {
     });
   }
 };
+
 
 
