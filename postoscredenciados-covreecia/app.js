@@ -1023,7 +1023,7 @@ function renderHomeDriverArea() {
 
   if (profile) {
     if (name) name.textContent = profile.name.split(/\s+/)[0];
-    if (summary) summary.textContent = `Motorista \u2022 ${profile.vehicle} \u2022 ${profile.plate}`;
+    if (summary) summary.textContent = `${profile.vehicle} \u2022 ${profile.plate}`;
     if (vehicleName) vehicleName.textContent = profile.vehicle;
     if (vehiclePlate) {
       vehiclePlate.textContent = profile.plate;
@@ -1165,7 +1165,6 @@ function renderSuggestedDriverVehicle() {
   const fleet = document.getElementById('driver-found-fleet');
   const name = document.getElementById('driver-found-vehicle-name');
   const plate = document.getElementById('driver-found-plate');
-  const change = document.getElementById('driver-change-vehicle');
   const photo = document.getElementById('driver-found-vehicle-photo');
   const fallback = document.getElementById('driver-found-vehicle-fallback');
   if (fleet) fleet.textContent = vehicle.fleetNumber ? `Frota ${vehicle.fleetNumber}` : '';
@@ -1188,10 +1187,6 @@ function renderSuggestedDriverVehicle() {
       photo.removeAttribute('src');
       showFallback();
     }
-  }
-  if (change) {
-    change.disabled = selectedDirectoryVehicles.length < 2;
-    change.textContent = selectedDirectoryVehicles.length < 2 ? '🚗 Veículo vinculado' : '🚗 Alterar veículo';
   }
 }
 
