@@ -20,7 +20,7 @@
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css">
-  <link rel="stylesheet" href="./styles.css?v=20260824-central-reliability-1">
+  <link rel="stylesheet" href="./styles.css?v=20260824-manual-refresh-1">
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full flex flex-col">
@@ -668,6 +668,9 @@
     <div class="home-app-header-inner">
      <img src="./assets/brand/covre-e-cia.png" alt="Covre &amp; Cia" loading="eager" decoding="async" fetchpriority="high" class="home-brand-logo">
      <div class="home-header-actions">
+      <button id="home-refresh-button" type="button" class="home-profile-button home-refresh-button" onclick="refreshCentralApplication()" aria-label="Atualizar aplicativo" title="Buscar atualização do aplicativo">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 11a8 8 0 1 0 2 5.3" stroke-width="2" stroke-linecap="round"/><path d="M20 4v7h-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
       <button type="button" class="home-profile-button home-notification-button" onclick="openCentralNotifications()" aria-label="Abrir notifica&ccedil;&otilde;es recebidas">
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" stroke-width="2" stroke-linecap="round"/><path d="M10 21h4" stroke-width="2" stroke-linecap="round"/></svg>
        <span id="home-notification-badge" class="home-notification-badge hidden">0</span>
@@ -1045,6 +1048,6 @@
     <span>Sobre</span>
    </button>
   </nav>
-  <script src="./app.js?v=20260824-central-reliability-1"></script>
+  <script src="./app.js?v=20260824-manual-refresh-1"></script>
  </body>
 </html>
