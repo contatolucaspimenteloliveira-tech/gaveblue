@@ -812,6 +812,23 @@ function setFuelDateToToday() {
   }
 }
 
+async function refreshCentralApplication() {
+  const button = document.getElementById('home-refresh-button');
+  if (button) {
+    button.disabled = true;
+    button.classList.add('is-refreshing');
+  }
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    await registration?.update();
+    registration?.waiting?.postMessage('SKIP_WAITING');
+    window.setTimeout(() => window.location.reload(), 240);
+  } catch (error) {
+    console.warn('Não foi possível procurar atualização do aplicativo.', error);
+    window.location.reload();
+  }
+}
+
 function getStoredDriverNames() {
   try {
     const storedNames = localStorage.getItem(DRIVER_NAMES_STORAGE_KEY);
