@@ -16,6 +16,7 @@ Variáveis:
 - `ADMIN_USER_IDS` — IDs Appwrite autorizados, separados por vírgula
 - `CENTRAL_RECORDS_COLLECTION_ID=central_registros_pendentes`
 - `DRIVER_DIRECTORY_COLLECTION_ID=central_driver_directory`
+- `APPROVAL_LOCKS_COLLECTION_ID=central_approval_locks`
 
 Escopos da chave dinâmica: `databases.read`, `databases.write`, `documents.read` e `documents.write`.
 
@@ -46,8 +47,25 @@ As ações públicas da Function são:
 
 As ações `stats`, `broadcast` e `notify` continuam administrativas. `stats` retorna somente a identificação técnica, o tipo de navegador e a última atualização dos aparelhos ativos; endpoint e chaves Web Push nunca são enviados ao frontend. Ao aprovar ou rejeitar um registro, o WeFrotas usa `notify` para devolver o resultado exclusivamente ao aparelho de origem, quando houver uma inscrição ativa.
 
+As ações administrativas `claim-approval`, `complete-approval` e `release-approval` protegem a aprovação financeira contra dois gestores aprovarem o mesmo registro ao mesmo tempo. A primeira cria um bloqueio com ID determinístico do registro; somente quem o assumiu pode concluí-lo ou liberá-lo após falha de sincronização.
+
+## Coleção central_approval_locks
+
+Crie esta coleção sem permissões públicas diretas e com Document Security desativada. A Function é a única responsável pelas operações.
+
+| atributo | tipo | tamanho | obrigatório |
+| --- | --- | ---: | --- |
+| centralRecordId | string | 36 | sim |
+| status | string | 32 | sim |
+| claimedBy | string | 64 | sim |
+| claimedAt | string (ISO 8601) | 64 | sim |
+| financeEntryId | string | 128 | sim |
+| completedAt | string (ISO 8601) | 64 | sim |
+| updatedAt | string (ISO 8601) | 64 | sim |
+
 ## Diretório da Central
 
 A tabela `central_driver_directory` não tem permissão pública e é mantida pelo usuário autenticado no WeFrotas. Ela contém somente `driverId`, `driverName`, `vehicleId`, `vehicleName`, `vehicleImageUrl`, `plate`, `fleetNumber`, `active` e `updatedAt`. `vehicleImageUrl` é uma string opcional de até 2048 caracteres. A Central consulta uma versão saneada pela Function, sem acesso direto ao restante do snapshot administrativo.
+
 
 
