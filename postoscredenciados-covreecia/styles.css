@@ -2448,7 +2448,7 @@ body.driver-profile-open .mobile-bottom-nav {
   }
 
   .home-overview-grid {
-    grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
     margin-bottom: 0.72rem;
   }
@@ -2472,27 +2472,32 @@ body.driver-profile-open .mobile-bottom-nav {
   .home-vehicle-content {
     min-height: 0;
     flex: 1;
-    padding: 0.4rem 0 0;
+    align-items: center;
+    padding: 0.28rem 0 0;
+  }
+
+  .home-vehicle-card {
+    padding: 0.62rem;
   }
 
   .home-vehicle-media {
-    flex-basis: 3.5rem;
-    width: 3.5rem;
-    height: 3.5rem;
+    flex-basis: 3.9rem;
+    width: 3.9rem;
+    height: 3.9rem;
     border-radius: 0.82rem;
     padding: 0.14rem;
     background: #ffffff;
   }
 
   .home-vehicle-icon {
-    width: 3.2rem;
-    height: 3.2rem;
+    width: 3.55rem;
+    height: 3.55rem;
     border-radius: 0.82rem;
   }
 
   .home-vehicle-icon svg {
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 2.65rem;
+    height: 2.65rem;
   }
 
   .home-vehicle-content strong,

@@ -5840,6 +5840,15 @@ body.dark-mode .central-banner-item-actions button { border-color: #475569; colo
 .central-banner-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .central-banner-upload span { font-size: 13px; font-weight: 900; }
 .central-banner-upload small { color: #64748b; font-size: 11px; }
+.central-banner-upload .central-banner-size-hint {
+  justify-self: start;
+  margin-top: 4px;
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: #1d4ed8;
+  background: #dbeafe;
+  font-weight: 850;
+}
 .central-banner-preview-shell {
   position: relative;
   overflow: hidden;
