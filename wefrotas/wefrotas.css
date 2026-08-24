@@ -5843,7 +5843,7 @@ body.dark-mode .central-banner-item-actions button { border-color: #475569; colo
 .central-banner-preview-shell {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 2.2 / 1;
   border: 1px solid #dbe4f0;
   border-radius: 15px;
   background: #eaf0f8;
