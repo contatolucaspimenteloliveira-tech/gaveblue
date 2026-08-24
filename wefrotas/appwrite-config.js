@@ -8,7 +8,9 @@ window.WEFROTAS_APPWRITE_CONFIG = Object.freeze({
   centralBannersTableId: 'central_home_banners',
   centralDriverDirectoryTableId: 'central_driver_directory',
   pushFunctionId: 'central-push',
+  centralApprovalLockEnabled: true,
   bucketId: '6a6fce300023ca843972',
   companyId: 'covre-e-cia',
   teamId: ''
 });
+
