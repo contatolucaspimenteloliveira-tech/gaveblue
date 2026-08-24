@@ -91,7 +91,7 @@ const DEFAULT_DRIVER_NAMES = [
   OTHER_DRIVER_OPTION
 ];
 
-const postosPorCidade = {
+let postosPorCidade = {
   'Boa Esperan\u00e7a': [
     { nome: 'Auto Posto 4 Rodas', endereco: 'Boa Esperan\u00e7a, ES', link: 'https://www.google.com/maps/place/Auto+Posto+4+Rodas/@-18.5404958,-40.2937824,826m/data=!3m2!1e3!4b1!4m6!3m5!1s0xb5956c7feac48d:0xc15be322b9fed420!8m2!3d-18.5404958!4d-40.2912075!16s%2Fg%2F1tfp3pxm' }
   ],
@@ -529,6 +529,51 @@ async function executeCentralPushFunction(payload) {
     throw new Error(result.error || execution.errors || 'Não foi possível ativar as notificações.');
   }
   return result;
+}
+
+function refreshCentralStationCityOptions() {
+  const select = document.getElementById('fuel-city');
+  if (!select) return;
+  const existing = new Set(Array.from(select.options).map((option) => option.value));
+  Object.keys(postosPorCidade).sort((a, b) => a.localeCompare(b, 'pt-BR')).forEach((city) => {
+    if (existing.has(city)) return;
+    const option = document.createElement('option');
+    option.value = city;
+    option.textContent = city;
+    option.dataset.centralManaged = 'true';
+    select.appendChild(option);
+  });
+}
+
+async function loadManagedCentralStations() {
+  try {
+    const result = await executeCentralPushFunction({ action: 'stations' });
+    const stations = Array.isArray(result?.stations) ? result.stations : [];
+    if (!stations.length) return false;
+
+    const nextDirectory = {};
+    stations.forEach((station) => {
+      const city = String(station?.city || '').trim();
+      const name = String(station?.name || '').trim();
+      const address = String(station?.address || '').trim();
+      if (!city || !name || !address) return;
+      if (!nextDirectory[city]) nextDirectory[city] = [];
+      nextDirectory[city].push({
+        nome: name,
+        endereco: address,
+        link: /^https:\/\//i.test(String(station?.mapsUrl || '')) ? String(station.mapsUrl) : ''
+      });
+    });
+
+    if (!Object.keys(nextDirectory).length) return false;
+    postosPorCidade = nextDirectory;
+    refreshCentralStationCityOptions();
+    renderCityImageCards();
+    return true;
+  } catch (error) {
+    console.warn('Não foi possível atualizar os postos administrados pelo WeFrotas.', error);
+    return false;
+  }
 }
 
 function dismissCentralPushPrompt() {
@@ -3963,7 +4008,14 @@ function renderCityImageCards() {
   grid.className = 'city-card-grid';
   grid.innerHTML = '';
 
-  cityImageCards.forEach((city) => {
+  const availableCards = cityImageCards
+    .filter((city) => Array.isArray(postosPorCidade[city.name]) && postosPorCidade[city.name].length)
+    .map((city) => ({
+      ...city,
+      postos: `${postosPorCidade[city.name].length} posto${postosPorCidade[city.name].length === 1 ? '' : 's'}`
+    }));
+
+  (availableCards.length ? availableCards : cityImageCards).forEach((city) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'city-image-card';
@@ -3995,6 +4047,7 @@ function renderCityImageCards() {
 
 window.addEventListener('DOMContentLoaded', () => {
   renderCityImageCards();
+  loadManagedCentralStations();
   retryPendingCentralRegistro();
   getCentralDeviceId();
   renderHomeDriverArea();
