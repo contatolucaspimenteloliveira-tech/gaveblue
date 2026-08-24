@@ -1,4 +1,4 @@
-﻿let allVehicles = [];
+let allVehicles = [];
     let allDrivers = [];
     let allSuppliers = [];
     let allOrders = [];
@@ -3489,7 +3489,8 @@
         id: String(device.id || device.$id || '').trim(),
         userAgent: String(device.userAgent || '').trim(),
         updatedAt: String(device.updatedAt || device.$updatedAt || '').trim(),
-        active: device.active !== false
+        active: device.active !== false,
+        pushEnabled: true
       };
     }
 
@@ -3498,13 +3499,14 @@
       [...centralPendingRecords]
         .sort((a, b) => String(b?.atualizadoEm || b?.criadoEm || b?.$updatedAt || '').localeCompare(String(a?.atualizadoEm || a?.criadoEm || a?.$updatedAt || '')))
         .forEach((record) => {
-          const id = String(record?.pushSubscriptionId || '').trim();
+          const id = String(record?.pushSubscriptionId || record?.deviceId || '').trim();
           if (!id || devices.has(id)) return;
           devices.set(id, {
             id,
             userAgent: '',
             updatedAt: String(record?.atualizadoEm || record?.criadoEm || record?.$updatedAt || ''),
-            active: true
+            active: true,
+            pushEnabled: Boolean(String(record?.pushSubscriptionId || '').trim())
           });
         });
       return [...devices.values()];
@@ -3512,7 +3514,7 @@
 
     function getCentralDeviceRecord(deviceId) {
       return [...centralPendingRecords]
-        .filter(record => String(record?.pushSubscriptionId || '').trim() === deviceId)
+        .filter(record => String(record?.pushSubscriptionId || record?.deviceId || '').trim() === deviceId)
         .sort((a, b) => String(b?.atualizadoEm || b?.criadoEm || b?.$updatedAt || '').localeCompare(String(a?.atualizadoEm || a?.criadoEm || a?.$updatedAt || '')))[0] || null;
     }
 
@@ -3560,7 +3562,7 @@
         const linkedDriver = getCentralDeviceDriver(device.id);
         const latestRecord = getCentralDeviceRecord(device.id);
         const shortId = device.id.slice(-6).toUpperCase();
-        const status = device.active === false ? 'Inativo' : 'Ativo';
+        const status = device.active === false ? 'Inativo' : (device.pushEnabled === false ? 'Sem push' : 'Ativo');
         const recordLabel = latestRecord
           ? `Último envio: ${escapeHtml(latestRecord.motorista || 'motorista não informado')} • ${escapeHtml(getCentralPendingRecordType(latestRecord))}`
           : 'Ainda não enviou registros para a Central';
@@ -3572,6 +3574,7 @@
                 <div><strong>${linkedDriver ? escapeHtml(linkedDriver.nome) : 'Aparelho não vinculado'}</strong><span class="central-device-status ${device.active === false ? 'is-inactive' : ''}">${status}</span></div>
                 <p>${escapeHtml(describeCentralDevice(device.userAgent))} • ID ${escapeHtml(shortId)}</p>
                 <small>${escapeHtml(formatCentralDeviceDate(device.updatedAt))}</small>
+                ${device.pushEnabled === false ? '<small>Este aparelho enviou registro, mas ainda não autorizou notificações.</small>' : ''}
                 <small>${recordLabel}</small>
               </div>
             </div>
@@ -8785,6 +8788,20 @@
       });
     }
 
+    function isCentralApprovalLockEnabled() {
+      return window.WEFROTAS_APPWRITE_CONFIG?.centralApprovalLockEnabled === true;
+    }
+
+    async function claimCentralRecordApproval(rowId) {
+      if (!isCentralApprovalLockEnabled()) return { claimed: true, state: 'local-fallback' };
+      return executeCentralPushAdmin({ action: 'claim-approval', recordId: rowId });
+    }
+
+    async function completeCentralRecordApproval(rowId, financeEntryId) {
+      if (!isCentralApprovalLockEnabled()) return { completed: true, state: 'local-fallback' };
+      return executeCentralPushAdmin({ action: 'complete-approval', recordId: rowId, financeEntryId });
+    }
+
     async function approveCentralPendingRecord(rowId) {
       const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
       if (!record) return showToast('Registro da Central não encontrado.');
@@ -8837,6 +8854,25 @@
         return;
       }
 
+      centralApprovalInProgress.add(rowId);
+      let approvalClaim;
+      try {
+        approvalClaim = await claimCentralRecordApproval(rowId);
+      } catch (error) {
+        centralApprovalInProgress.delete(rowId);
+        showToast(`Não foi possível reservar este registro para aprovação: ${error?.message || 'erro desconhecido'}`);
+        return;
+      }
+      if (!approvalClaim?.claimed) {
+        centralApprovalInProgress.delete(rowId);
+        const message = approvalClaim?.state === 'approved'
+          ? 'Este registro já foi aprovado por outro gestor.'
+          : 'Este registro já está sendo aprovado por outro gestor. Aguarde a conclusão.';
+        showToast(message);
+        await refreshCentralPendingRecords({ silent: true }).catch(() => undefined);
+        return;
+      }
+
       const financeId = generateId();
       const entry = isService ? {
         id: financeId, centralRecordId: getCentralPendingRecordId(record), createdAt: new Date().toISOString(), entryType: 'despesa', orderId: '', vehicleId: '', kind: 'despesa', kindLabel: 'Despesa',
@@ -8850,7 +8886,6 @@
       };
 
       const approvalData = { status: 'aprovado', importadoEm: new Date().toISOString(), lancamentoFinanceiroId: financeId, resolucao: 'Aprovado e lançado no financeiro.' };
-      centralApprovalInProgress.add(rowId);
       allFinanceEntries.unshift(entry);
       renderAll();
       try {
@@ -8860,6 +8895,9 @@
         await persistFinanceImmediately();
         await setCentralPendingRecordStatus(record, approvalData);
         setCentralPendingRecordStatusLocally(record, approvalData);
+        completeCentralRecordApproval(rowId, financeId).catch((error) => {
+          console.warn('Lançamento aprovado, mas a confirmação da trava de concorrência ficou pendente.', error);
+        });
         notifyCentralRecordApproval(record).catch((error) => console.warn('Registro aprovado, mas o aparelho não recebeu o aviso.', error));
         showToast('Registro aprovado e lançado no financeiro.');
       } catch (error) {
@@ -13077,3 +13115,4 @@
       updateStickyTableOffset();
     });
     document.addEventListener('click', blockDisabledActionClicks, true);
+
