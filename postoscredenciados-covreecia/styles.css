@@ -745,6 +745,11 @@ body.driver-profile-open .mobile-bottom-nav {
   color: #2563eb;
 }
 
+.home-refresh-button { color: #475569; }
+.home-refresh-button.is-refreshing svg { animation: home-refresh-spin 700ms linear infinite; }
+.home-refresh-button:disabled { cursor: wait; opacity: .7; }
+@keyframes home-refresh-spin { to { transform: rotate(360deg); } }
+
 .home-notification-badge {
   position: absolute;
   top: -0.28rem;
