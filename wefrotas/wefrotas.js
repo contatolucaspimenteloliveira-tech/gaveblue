@@ -8775,10 +8775,13 @@
 
     async function notifyCentralRecordApproval(record) {
       const subscriptionId = String(record?.pushSubscriptionId || '').trim();
-      if (!subscriptionId) return { skipped: true, reason: 'missing-subscription' };
+      const deviceId = String(record?.deviceId || '').trim();
+      if (!subscriptionId && !deviceId) return { skipped: true, reason: 'missing-device-link' };
       return executeCentralPushAdmin({
         action: 'notify',
         subscriptionId,
+        deviceId,
+        notificationId: `central-approved-${getCentralPendingRecordId(record)}-${Date.now()}`,
         title: 'Registro aprovado',
         body: 'Seu registro foi aprovado e lançado no WeFrotas.',
         url: './#meus-envios'
@@ -8871,12 +8874,15 @@
 
     async function notifyCentralRecordRejection(record, reason) {
       const subscriptionId = String(record?.pushSubscriptionId || '').trim();
-      if (!subscriptionId) {
-        return { skipped: true, reason: 'missing-subscription' };
+      const deviceId = String(record?.deviceId || '').trim();
+      if (!subscriptionId && !deviceId) {
+        return { skipped: true, reason: 'missing-device-link' };
       }
       return executeCentralPushAdmin({
         action: 'notify',
         subscriptionId,
+        deviceId,
+        notificationId: `central-rejected-${getCentralPendingRecordId(record)}-${Date.now()}`,
         title: 'Registro recusado',
         body: `Motivo: ${String(reason || '').trim()}`,
         url: './#meus-envios'
@@ -8898,7 +8904,7 @@
                 : 'Registro rejeitado e motivo enviado ao aparelho de origem.');
             } catch (notificationError) {
               console.warn('Registro rejeitado, mas o aparelho não recebeu o aviso.', notificationError);
-              showToast('Registro rejeitado, mas não foi possível avisar o aparelho de origem.');
+              showToast(`Registro rejeitado, mas o aviso falhou: ${notificationError?.message || 'erro desconhecido'}`);
             }
           } catch (error) {
             showToast(error?.message || 'Não foi possível rejeitar o registro.');

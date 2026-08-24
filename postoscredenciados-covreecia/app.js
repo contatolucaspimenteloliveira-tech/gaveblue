@@ -73,6 +73,7 @@ let selectedDirectoryVehicles = [];
 let selectedDirectoryVehicleIndex = 0;
 let centralSubmissionHistory = [];
 let centralSubmissionHistoryLoaded = false;
+let centralSubmissionHistoryRefreshFailed = false;
 let driverDirectoryLoadPromise = null;
 let driverDirectorySearchTimer = null;
 let driverDirectorySearchSequence = 0;
@@ -610,6 +611,7 @@ async function enableCentralPushNotifications() {
     const result = await executeCentralPushFunction({
       action: 'subscribe',
       subscription: subscription.toJSON(),
+      deviceId: getCentralDeviceId(),
       userAgent: navigator.userAgent
     });
 
@@ -628,6 +630,7 @@ async function enableCentralPushNotifications() {
 }
 
 function setupCentralPushExperience() {
+  const setupDelay = 'Notification' in window && Notification.permission === 'granted' ? 0 : 1800;
   window.setTimeout(async () => {
     if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
       return;
@@ -656,6 +659,7 @@ function setupCentralPushExperience() {
           const result = await executeCentralPushFunction({
             action: 'subscribe',
             subscription: subscription.toJSON(),
+            deviceId: getCentralDeviceId(),
             userAgent: navigator.userAgent
           });
           saveCentralPushSubscriptionId(result.subscriptionId);
@@ -677,7 +681,7 @@ function setupCentralPushExperience() {
     }
     if (shouldShowCentralPushPrompt()) renderCentralPushPrompt();
     refreshCentralNotificationSetting();
-  }, 1800);
+  }, setupDelay);
 }
 
 async function getCentralPushSubscription() {
@@ -931,15 +935,27 @@ function getCentralLastSentRecord() {
   }
 }
 
-function saveCentralLastSentRecord(record) {
+function cacheCentralLastSentRecord(record) {
   try {
-    localStorage.setItem(CENTRAL_LAST_SENT_STORAGE_KEY, JSON.stringify(record));
-    centralSubmissionHistory = [record, ...centralSubmissionHistory.filter((item) => String(item?.id || '') !== String(record?.id || ''))];
-    centralSubmissionHistoryLoaded = true;
-    renderHomeDriverArea();
+    if (!record) {
+      localStorage.removeItem(CENTRAL_LAST_SENT_STORAGE_KEY);
+      return;
+    }
+    const serialized = JSON.stringify(record);
+    if (localStorage.getItem(CENTRAL_LAST_SENT_STORAGE_KEY) !== serialized) {
+      localStorage.setItem(CENTRAL_LAST_SENT_STORAGE_KEY, serialized);
+    }
   } catch (error) {
-    console.warn('N\u00e3o foi poss\u00edvel atualizar o resumo do \u00faltimo envio.', error);
+    console.warn('N\u00e3o foi poss\u00edvel atualizar o cache do \u00faltimo envio.', error);
   }
+}
+
+function saveCentralLastSentRecord(record) {
+  cacheCentralLastSentRecord(record);
+  centralSubmissionHistory = [record, ...centralSubmissionHistory.filter((item) => String(item?.id || '') !== String(record?.id || ''))];
+  centralSubmissionHistoryLoaded = true;
+  centralSubmissionHistoryRefreshFailed = false;
+  renderHomeDriverArea();
 }
 
 function formatHomeSentDate(record) {
@@ -1052,7 +1068,13 @@ function renderHomeDriverArea() {
     const type = document.getElementById('home-last-send-type');
     const date = document.getElementById('home-last-send-date');
     const status = document.getElementById('home-last-send-status');
-    const statusInfo = getSubmissionStatus(lastSent);
+    const cachedStatusInfo = getSubmissionStatus(lastSent);
+    const statusInfo = !centralSubmissionHistoryLoaded && cachedStatusInfo.className === 'pending'
+      ? {
+          label: centralSubmissionHistoryRefreshFailed ? 'Sem conex\u00e3o' : 'Atualizando...',
+          className: 'syncing'
+        }
+      : cachedStatusInfo;
     if (type) type.textContent = getSubmissionType(lastSent);
     if (date) date.textContent = formatHomeSentDate(lastSent);
     if (status) {
@@ -1324,6 +1346,7 @@ async function refreshMySubmissions(options = {}) {
   const { silent = false } = options;
   const list = document.getElementById('my-submissions-list');
   if (!silent && list) list.innerHTML = '<div class="driver-directory-message">Buscando seus envios...</div>';
+  centralSubmissionHistoryRefreshFailed = false;
   try {
     const result = await executeCentralPushFunction({
       action: 'history',
@@ -1332,9 +1355,12 @@ async function refreshMySubmissions(options = {}) {
     });
     centralSubmissionHistory = Array.isArray(result?.records) ? result.records : [];
     centralSubmissionHistoryLoaded = true;
+    cacheCentralLastSentRecord(centralSubmissionHistory[0] || null);
     renderHomeDriverArea();
     renderMySubmissions();
   } catch (error) {
+    centralSubmissionHistoryRefreshFailed = true;
+    renderHomeDriverArea();
     if (!silent && list) list.innerHTML = `<div class="driver-directory-message is-error">${escapeCentralHtml(error?.message || 'Não foi possível consultar seus envios.')}</div>`;
   }
 }
@@ -4157,4 +4183,3 @@ window.addEventListener('DOMContentLoaded', async () => {
   await loadManagedHomeBanners();
   initHomeHeroCarousel();
 });
-

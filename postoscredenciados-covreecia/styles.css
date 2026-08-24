@@ -1602,6 +1602,11 @@ body.driver-profile-open .mobile-bottom-nav {
   background: #fee4e2;
 }
 
+.home-last-send-footer > span.syncing {
+  color: #475569;
+  background: #e2e8f0;
+}
+
 .home-shell {
   width: 100%;
   min-width: 0;
@@ -3020,4 +3025,3 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
   .central-push-prompt-copy span { display: none; }
   .central-push-prompt-action { grid-column: auto; min-height: 2.35rem; padding: 0 0.75rem; }
 }
-

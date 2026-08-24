@@ -198,6 +198,34 @@ async function listHistoryByField(databases, field, value) {
   return page.documents;
 }
 
+async function linkDeviceSubscription(databases, deviceId, subscriptionId, log) {
+  if (!isValidDeviceId(deviceId) || !isValidSubscriptionId(subscriptionId)) return 0;
+  try {
+    const records = await listHistoryByField(databases, 'deviceId', String(deviceId).trim());
+    const outdatedRecords = records.filter((record) => String(record.pushSubscriptionId || '').trim() !== subscriptionId);
+    let linked = 0;
+    for (let index = 0; index < outdatedRecords.length; index += 20) {
+      const batch = outdatedRecords.slice(index, index + 20);
+      const results = await Promise.allSettled(batch.map((record) => databases.updateDocument({
+        databaseId: DATABASE_ID,
+        collectionId: CENTRAL_RECORDS_COLLECTION_ID,
+        documentId: record.$id,
+        data: { pushSubscriptionId: subscriptionId }
+      })));
+      linked += results.filter((result) => result.status === 'fulfilled').length;
+      results.forEach((result, resultIndex) => {
+        if (result.status === 'rejected') {
+          log('Falha ao renovar vínculo push do registro ' + batch[resultIndex].$id + ': ' + (result.reason?.message || result.reason));
+        }
+      });
+    }
+    return linked;
+  } catch (caught) {
+    log('Falha ao renovar vínculos push do aparelho: ' + (caught?.message || caught));
+    return 0;
+  }
+}
+
 async function listDeviceHistory(databases, payload) {
   const deviceId = String(payload.deviceId || '').trim();
   const subscriptionId = String(payload.subscriptionId || '').trim();
@@ -258,6 +286,19 @@ function getNotificationContent(payload) {
   return { title, body, url };
 }
 
+function getPushStatusCode(error) {
+  return Number(error?.statusCode || error?.status || 0);
+}
+
+function isRetryablePushError(error) {
+  const statusCode = getPushStatusCode(error);
+  return statusCode === 0 || statusCode === 408 || statusCode === 429 || statusCode >= 500;
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 async function sendToSubscription(databases, document, payload, log, tagPrefix = 'central-comunicado') {
   const { title, body, url } = getNotificationContent(payload);
   if (document.active === false) {
@@ -269,48 +310,88 @@ async function sendToSubscription(databases, document, payload, log, tagPrefix =
     endpoint: document.endpoint,
     keys: { p256dh: document.p256dh, auth: document.auth }
   };
-  try {
-    await webpush.sendNotification(
-      subscription,
-      JSON.stringify({ title, body, url, tag: tagPrefix + '-' + Date.now() }),
-      { TTL: 86400, urgency: 'normal' }
-    );
-    return { sent: 1, failed: 0 };
-  } catch (error) {
-    const statusCode = Number(error?.statusCode || 0);
-    if (statusCode === 404 || statusCode === 410) {
-      await markInactive(databases, document.$id);
+  const requestedNotificationId = String(payload.notificationId || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 96);
+  const notificationId = requestedNotificationId || crypto.randomUUID();
+  const tag = `${tagPrefix}-${notificationId}`;
+  const notificationBody = JSON.stringify({ title, body, url, tag, notificationId });
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await webpush.sendNotification(
+        subscription,
+        notificationBody,
+        { TTL: 86400, urgency: tagPrefix === 'central-retorno' ? 'high' : 'normal' }
+      );
+      return { sent: 1, failed: 0, attempts: attempt };
+    } catch (caught) {
+      const statusCode = getPushStatusCode(caught);
+      if (statusCode === 404 || statusCode === 410) {
+        await markInactive(databases, document.$id);
+      }
+      if (attempt < maxAttempts && isRetryablePushError(caught)) {
+        log('Tentativa ' + attempt + ' de push falhou para ' + document.$id + ': ' + (caught?.message || statusCode));
+        await wait(attempt * 400);
+        continue;
+      }
+      log('Falha de push ' + document.$id + ': ' + (caught?.message || statusCode));
+      throw caught;
     }
-    log('Falha de push ' + document.$id + ': ' + (error?.message || statusCode));
-    throw error;
   }
+
+  throw new Error('O serviço de push não confirmou o envio.');
 }
 
 async function notifySubscription(databases, payload, log) {
   assertPushConfigured();
   const subscriptionId = String(payload.subscriptionId || '').trim();
-  if (!/^[a-f0-9]{36}$/i.test(subscriptionId)) {
+  const deviceId = String(payload.deviceId || '').trim();
+  if (!isValidSubscriptionId(subscriptionId) && !isValidDeviceId(deviceId)) {
     const error = new Error('O registro não possui um aparelho de origem válido.');
     error.status = 400;
     throw error;
   }
-  let document;
-  try {
-    document = await databases.getDocument({
-      databaseId: DATABASE_ID,
-      collectionId: COLLECTION_ID,
-      documentId: subscriptionId
+
+  const candidateIds = [];
+  if (isValidDeviceId(deviceId)) {
+    const records = await listHistoryByField(databases, 'deviceId', deviceId);
+    records.forEach((record) => {
+      const candidateId = String(record.pushSubscriptionId || '').trim();
+      if (isValidSubscriptionId(candidateId) && !candidateIds.includes(candidateId)) candidateIds.push(candidateId);
     });
-  } catch (error) {
-    if (Number(error?.code) === 404) {
-      const notFound = new Error('O aparelho de origem não está mais inscrito.');
-      notFound.status = 404;
-      throw notFound;
-    }
-    throw error;
   }
-  const result = await sendToSubscription(databases, document, payload, log, 'central-retorno');
-  return { subscribers: 1, ...result };
+  if (isValidSubscriptionId(subscriptionId) && !candidateIds.includes(subscriptionId)) candidateIds.push(subscriptionId);
+
+  let lastError = null;
+  let attempted = 0;
+  for (const candidateId of candidateIds) {
+    let document;
+    try {
+      document = await databases.getDocument({
+        databaseId: DATABASE_ID,
+        collectionId: COLLECTION_ID,
+        documentId: candidateId
+      });
+    } catch (caught) {
+      if (Number(caught?.code) === 404) {
+        lastError = caught;
+        continue;
+      }
+      throw caught;
+    }
+    if (document.active === false) continue;
+    attempted += 1;
+    try {
+      const result = await sendToSubscription(databases, document, payload, log, 'central-retorno');
+      return { subscribers: candidateIds.length, attempted, ...result };
+    } catch (caught) {
+      lastError = caught;
+    }
+  }
+
+  const notFound = new Error(lastError?.message || 'O aparelho de origem não possui uma inscrição ativa.');
+  notFound.status = Number(lastError?.statusCode || lastError?.status || lastError?.code || 404);
+  throw notFound;
 }
 
 async function broadcast(databases, payload, log) {
@@ -363,7 +444,8 @@ export default async ({ req, res, log, error }) => {
       assertPushConfigured();
       const databases = createDatabaseClient(req);
       const subscriptionId = await saveSubscription(databases, payload);
-      return json(res, 200, { ok: true, subscriptionId });
+      const linkedRecords = await linkDeviceSubscription(databases, payload.deviceId, subscriptionId, log);
+      return json(res, 200, { ok: true, subscriptionId, linkedRecords });
     }
 
     if (action === 'unsubscribe') {
@@ -422,5 +504,3 @@ export default async ({ req, res, log, error }) => {
     });
   }
 };
-
-
