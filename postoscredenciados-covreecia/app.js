@@ -42,9 +42,12 @@ const CENTRAL_PUSH_FUNCTION_ID = 'central-push';
 const CENTRAL_PUSH_PUBLIC_KEY = 'BK6Dhnrl6Wr4nO4PtE-ZlnW7ttRe0vtA3b7ssZsa7S9bGdR8gcBBu9SNuNBoMntUkcMBkAOAcgvhMJalNysihgw';
 const CENTRAL_PUSH_PROMPT_DISMISSED_KEY = 'central-push-prompt-dismissed';
 const CENTRAL_PUSH_SUBSCRIPTION_ID_KEY = 'central-push-subscription-id';
+const CENTRAL_PUSH_DISABLED_KEY = 'central-push-disabled';
 const CENTRAL_NOTIFICATIONS_DB = 'central-registros-notifications-v1';
 const CENTRAL_NOTIFICATIONS_STORE = 'notifications';
-const REMOVED_DRIVER_NAMES = ['ELOIS DOS SANTOS'];
+const DRIVER_NAME_ALIASES = Object.freeze({
+  'ELOIS DOS SANTOS': 'ELOI DOS SANTOS'
+});
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
 let fuelReceiptUploadPromise = null;
@@ -548,6 +551,43 @@ function getCentralPushSubscriptionId() {
   return String(localStorage.getItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY) || '').trim();
 }
 
+async function syncCentralPushSubscription({ createIfMissing = false } = {}) {
+  if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
+    return '';
+  }
+  if (Notification.permission !== 'granted') return '';
+
+  const registration = await navigator.serviceWorker.ready;
+  let subscription = await registration.pushManager.getSubscription();
+  if (!subscription && createIfMissing) {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(CENTRAL_PUSH_PUBLIC_KEY)
+    });
+  }
+  if (!subscription) return '';
+
+  const result = await executeCentralPushFunction({
+    action: 'subscribe',
+    subscription: subscription.toJSON(),
+    userAgent: navigator.userAgent
+  });
+  const subscriptionId = String(result?.subscriptionId || '').trim();
+  saveCentralPushSubscriptionId(subscriptionId);
+  return subscriptionId;
+}
+
+async function prepareCentralRecordDelivery() {
+  try {
+    // A inscrição é renovada imediatamente antes do envio. Assim, o registro
+    // sempre carrega o aparelho de origem, inclusive após atualização do PWA.
+    await syncCentralPushSubscription({ createIfMissing: true });
+  } catch (error) {
+    // O registro não pode deixar de ser enviado por uma indisponibilidade de push.
+    console.warn('Não foi possível confirmar a inscrição de notificações antes do envio.', error);
+  }
+}
+
 function getCentralDeviceId() {
   let deviceId = String(localStorage.getItem(CENTRAL_DEVICE_ID_KEY) || '').trim();
   if (/^[a-f0-9-]{32,64}$/i.test(deviceId)) return deviceId;
@@ -598,22 +638,8 @@ async function enableCentralPushNotifications() {
       throw new Error('A permissão de notificações não foi autorizada.');
     }
 
-    const registration = await navigator.serviceWorker.ready;
-    let subscription = await registration.pushManager.getSubscription();
-    if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(CENTRAL_PUSH_PUBLIC_KEY)
-      });
-    }
-
-    const result = await executeCentralPushFunction({
-      action: 'subscribe',
-      subscription: subscription.toJSON(),
-      userAgent: navigator.userAgent
-    });
-
-    saveCentralPushSubscriptionId(result.subscriptionId);
+    await syncCentralPushSubscription({ createIfMissing: true });
+    localStorage.removeItem(CENTRAL_PUSH_DISABLED_KEY);
     localStorage.removeItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY);
     document.getElementById('central-push-prompt')?.remove();
     showSuccessMessage('Notificações ativadas neste celular.');
@@ -639,26 +665,11 @@ function setupCentralPushExperience() {
 
     const permissionAlreadyGranted = Notification.permission === 'granted';
     try {
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = permissionAlreadyGranted
-        ? await registration.pushManager.getSubscription()
-        : null;
-      if (permissionAlreadyGranted && !subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(CENTRAL_PUSH_PUBLIC_KEY)
-        });
-      }
-      if (subscription) {
+      if (permissionAlreadyGranted && !localStorage.getItem(CENTRAL_PUSH_DISABLED_KEY)) {
         document.getElementById('central-push-prompt')?.remove();
         refreshCentralNotificationSetting();
         try {
-          const result = await executeCentralPushFunction({
-            action: 'subscribe',
-            subscription: subscription.toJSON(),
-            userAgent: navigator.userAgent
-          });
-          saveCentralPushSubscriptionId(result.subscriptionId);
+          await syncCentralPushSubscription({ createIfMissing: true });
         } catch (error) {
           // A inscrição local continua válida. Uma falha temporária ao renovar
           // o cadastro no servidor não deve pedir autorização novamente.
@@ -730,6 +741,7 @@ async function disableCentralPushNotifications() {
     await subscription.unsubscribe();
   }
   saveCentralPushSubscriptionId('');
+  localStorage.setItem(CENTRAL_PUSH_DISABLED_KEY, '1');
   localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
   showSuccessMessage('Notificações desativadas neste celular.');
 }
@@ -813,11 +825,37 @@ function getStoredDriverNames() {
     const storedNames = localStorage.getItem(DRIVER_NAMES_STORAGE_KEY);
     const parsedNames = storedNames ? JSON.parse(storedNames) : [];
     const validStoredNames = Array.isArray(parsedNames) ? parsedNames : [];
-    return Array.from(new Set([...DEFAULT_DRIVER_NAMES, ...validStoredNames]))
-      .filter((name) => !REMOVED_DRIVER_NAMES.includes(String(name || '').trim().toUpperCase()));
+    return Array.from(new Set([...DEFAULT_DRIVER_NAMES, ...validStoredNames]
+      .map((name) => String(name || '').trim())
+      .filter(Boolean)
+      .map((name) => DRIVER_NAME_ALIASES[name.toUpperCase()] || name)));
   } catch (error) {
     return [...DEFAULT_DRIVER_NAMES];
   }
+}
+
+async function refreshCentralApplication() {
+  const button = document.getElementById('home-refresh-button');
+  if (button) {
+    button.disabled = true;
+    button.classList.add('is-refreshing');
+  }
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    await registration?.update();
+    registration?.waiting?.postMessage('SKIP_WAITING');
+    window.setTimeout(() => window.location.reload(), 240);
+  } catch (error) {
+    console.warn('Não foi possível procurar atualização do aplicativo.', error);
+    window.location.reload();
+  }
+}
+
+function getAvailableDriverNames() {
+  const directoryNames = getDirectoryDrivers()
+    .map((driver) => String(driver?.name || '').trim())
+    .filter(Boolean);
+  return directoryNames.length ? directoryNames : getStoredDriverNames();
 }
 
 function populateDriverOptions() {
@@ -830,7 +868,7 @@ function populateDriverOptions() {
     return;
   }
 
-  const driverNames = getStoredDriverNames();
+  const driverNames = getAvailableDriverNames();
 
   driverSelects.forEach((driverSelect) => {
     const currentValue = driverSelect.value;
@@ -2803,6 +2841,7 @@ async function submitFuelForm(e) {
   mensagemLines.push(`\ud83e\uddfe *Comprovante:* ${uploadedFuelReceipt.result.secure_url}`);
   const mensagem = mensagemLines.join('\n');
 
+  await prepareCentralRecordDelivery();
   const appwritePayload = buildCentralRegistroPayload({
     type: isComplete ? 'abastecimento' : 'abastecimento_rapido',
     formData,
@@ -2883,6 +2922,7 @@ async function submitLooseNoteForm(e) {
     `\ud83e\uddfe *Comprovante:* ${uploadedLooseNoteReceipt.result.secure_url}`
   ].join('\n');
 
+  await prepareCentralRecordDelivery();
   const appwritePayload = buildCentralRegistroPayload({
     type: 'servico',
     formData,
@@ -3765,6 +3805,9 @@ window.addEventListener('DOMContentLoaded', function() {
   }
   setMobileNavActive('home');
   populateDriverOptions();
+  ensureDriverDirectoryLoaded()
+    .then(() => populateDriverOptions())
+    .catch(() => undefined);
 });
 
 async function onConfigChange(newConfig) {
@@ -4157,4 +4200,5 @@ window.addEventListener('DOMContentLoaded', async () => {
   await loadManagedHomeBanners();
   initHomeHeroCarousel();
 });
+
 
