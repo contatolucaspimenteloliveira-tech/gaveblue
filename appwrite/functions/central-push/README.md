@@ -40,14 +40,13 @@ A tabela `central_registros_pendentes` possui as colunas opcionais `pushSubscrip
 
 As ações públicas da Function são:
 
-- `subscribe` e `unsubscribe`: administram somente a inscrição técnica do próprio aparelho;
+- `subscribe` e `unsubscribe`: administram somente a inscrição técnica do próprio aparelho; quando `subscribe` recebe o `deviceId`, ele renova o vínculo dos registros desse aparelho com a inscrição atual;
 - `directory`: retorna apenas os vínculos ativos mínimos de motorista e veículo publicados pelo WeFrotas;
 - `history`: retorna os registros vinculados ao `deviceId` ou à inscrição técnica informada.
 
-As ações `stats`, `broadcast` e `notify` continuam administrativas. `stats` retorna somente a identificação técnica, o tipo de navegador e a última atualização dos aparelhos ativos; endpoint e chaves Web Push nunca são enviados ao frontend. Ao aprovar ou rejeitar um registro, o WeFrotas usa `notify` para devolver o resultado exclusivamente ao aparelho de origem, quando houver uma inscrição ativa.
+As ações `stats`, `broadcast` e `notify` continuam administrativas. `stats` retorna somente a identificação técnica, o tipo de navegador e a última atualização dos aparelhos ativos; endpoint e chaves Web Push nunca são enviados ao frontend. Ao aprovar ou rejeitar um registro, o WeFrotas usa `notify` para devolver o resultado exclusivamente ao aparelho de origem. A Function tenta primeiro a inscrição mais recente vinculada ao `deviceId`, usa o identificador salvo no registro como alternativa e repete falhas temporárias do provedor de push sem duplicar o aviso no aparelho.
 
 ## Diretório da Central
 
 A tabela `central_driver_directory` não tem permissão pública e é mantida pelo usuário autenticado no WeFrotas. Ela contém somente `driverId`, `driverName`, `vehicleId`, `vehicleName`, `vehicleImageUrl`, `plate`, `fleetNumber`, `active` e `updatedAt`. `vehicleImageUrl` é uma string opcional de até 2048 caracteres. A Central consulta uma versão saneada pela Function, sem acesso direto ao restante do snapshot administrativo.
-
 
