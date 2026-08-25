@@ -1362,8 +1362,21 @@ body.driver-profile-open .mobile-bottom-nav {
   padding-bottom: 1rem;
 }
 
-.driver-profile-overlay[data-guided="true"] #driver-onboarding-driver-step {
+.driver-profile-overlay[data-guided="true"] #driver-onboarding-driver-step,
+.driver-profile-overlay[data-guided="true"] #driver-onboarding-vehicle-search-step {
   align-content: start;
+}
+
+.driver-profile-overlay[data-guided="true"] #driver-onboarding-vehicle-search-step {
+  grid-template-rows: auto auto minmax(0, auto) auto;
+}
+
+.driver-profile-overlay[data-guided="true"] #driver-onboarding-vehicle-search-step .driver-profile-results {
+  margin-top: 0.15rem;
+}
+
+.driver-profile-overlay[data-guided="true"] #driver-onboarding-vehicle-search-step .driver-profile-skip {
+  margin-top: 0.55rem;
 }
 
 .driver-profile-overlay[data-guided="true"] .driver-search-label {
@@ -1420,6 +1433,62 @@ body.driver-profile-open .mobile-bottom-nav {
 
 .driver-profile-overlay[data-guided="true"] .onboarding-permission-step > p {
   font-size: 0.86rem;
+}
+
+.driver-profile-overlay[data-guided="true"] .onboarding-permission-step > p b {
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.vehicle-permission-alert {
+  position: relative;
+  margin-top: 0.2rem;
+  border: 1px solid #fecaca;
+  border-left: 0.3rem solid #ef4444;
+  padding: 0.85rem 0.95rem 0.85rem 2.65rem;
+  color: #991b1b !important;
+  background: #fff7f7 !important;
+  text-align: left;
+  font-size: 0.74rem;
+  font-weight: 750;
+  line-height: 1.5;
+  box-shadow: 0 8px 22px rgba(239, 68, 68, 0.08);
+}
+
+.vehicle-permission-alert::before {
+  content: "!";
+  position: absolute;
+  top: 0.85rem;
+  left: 0.85rem;
+  display: grid;
+  width: 1.15rem;
+  height: 1.15rem;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #ef4444;
+  font-size: 0.7rem;
+  font-weight: 950;
+}
+
+.onboarding-camera-guidance {
+  width: 100%;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.85rem;
+  padding: 0.7rem 0.8rem;
+  color: #1e40af;
+  background: #eff6ff;
+}
+
+.onboarding-camera-later {
+  margin-top: -0.05rem;
+  color: #475569;
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.onboarding-camera-later:hover {
+  color: #2563eb;
 }
 
 @media (max-width: 480px) {
