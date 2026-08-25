@@ -2364,6 +2364,18 @@ body.driver-profile-open .mobile-bottom-nav {
 .profile-page-settings .about-action-panel { width: 100%; margin: 0.85rem 0 0; }
 .profile-page-about-heading { margin-top: 0.2rem; padding: 0 0.15rem; }
 
+.profile-page-about-card {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.profile-page-about-card > div:first-child {
+  padding-inline: 0.5rem;
+}
+
 #profile-section[data-profile-view="profile"] .profile-page-settings,
 #profile-section[data-profile-view="profile"] .profile-page-about-heading,
 #profile-section[data-profile-view="profile"] .profile-page-about-card {
