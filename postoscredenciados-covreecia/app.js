@@ -54,6 +54,8 @@ let currentFuelFormMode = 'rapido';
 let receiptValidationType = 'fuel';
 let deferredPwaPrompt = null;
 let pwaInstallModalMode = 'android';
+let pwaInstallProgressTimer = null;
+let pwaInstallWaitingForApp = false;
 let uploadedLooseNoteReceipt = null;
 let looseNoteReceiptUploadPromise = null;
 let selectedLooseNoteReceiptFile = null;
@@ -330,6 +332,53 @@ function updatePwaInstallStatus(text, percent) {
   }
 }
 
+function setPwaInstallPhase(phase) {
+  document.querySelectorAll('[data-pwa-install-phase]').forEach((item) => {
+    item.classList.toggle('is-active', item.dataset.pwaInstallPhase === String(phase));
+    item.classList.toggle('is-complete', Number(item.dataset.pwaInstallPhase) < Number(phase));
+  });
+}
+
+function setPwaInstallBusy(isBusy) {
+  const primary = document.getElementById('pwa-install-primary');
+  const dismiss = document.getElementById('pwa-install-dismiss');
+  const backdrop = document.querySelector('#pwa-install-modal .pwa-install-backdrop');
+  primary?.toggleAttribute('disabled', isBusy);
+  dismiss?.classList.toggle('hidden', isBusy);
+  backdrop?.classList.toggle('pwa-install-backdrop--locked', isBusy);
+}
+
+function clearPwaInstallProgress() {
+  if (pwaInstallProgressTimer) window.clearInterval(pwaInstallProgressTimer);
+  pwaInstallProgressTimer = null;
+  pwaInstallWaitingForApp = false;
+  setPwaInstallBusy(false);
+}
+
+function startPwaInstallProgress() {
+  const phases = [
+    { text: 'Preparando o aplicativo', percent: 28, phase: 1 },
+    { text: 'Verificando permissões e segurança', percent: 46, phase: 2 },
+    { text: 'Empacotando recursos para uso offline', percent: 64, phase: 3 },
+    { text: 'Aguardando o Chrome concluir a instalação', percent: 82, phase: 4 }
+  ];
+  let current = 0;
+  pwaInstallWaitingForApp = true;
+  setPwaInstallBusy(true);
+  updatePwaInstallStatus(phases[current].text, phases[current].percent);
+  setPwaInstallPhase(phases[current].phase);
+  pwaInstallProgressTimer = window.setInterval(() => {
+    if (!pwaInstallWaitingForApp) return;
+    current = Math.min(current + 1, phases.length - 1);
+    updatePwaInstallStatus(phases[current].text, phases[current].percent);
+    setPwaInstallPhase(phases[current].phase);
+  }, 1800);
+  window.setTimeout(() => {
+    if (!pwaInstallWaitingForApp) return;
+    updatePwaInstallStatus('O Chrome ainda está finalizando. Mantenha esta tela aberta.', 86);
+  }, 9000);
+}
+
 function setPwaManualInstallFallback() {
   const steps = document.getElementById('pwa-install-steps');
   const primary = document.getElementById('pwa-install-primary');
@@ -428,6 +477,7 @@ function openPwaInstallFromMenu() {
 }
 
 function hidePwaInstallModal() {
+  clearPwaInstallProgress();
   const modal = document.getElementById('pwa-install-modal');
   if (modal) {
     modal.classList.add('hidden');
@@ -442,7 +492,7 @@ function dismissPwaInstallModal() {
 
 async function handlePwaInstallClick() {
   if (pwaInstallModalMode === 'ios') {
-    updatePwaInstallStatus('Siga as instru\u00e7\u00f5es no Safari', 40);
+    updatePwaInstallStatus('Siga as instruções no Safari', 40);
     dismissPwaInstallModal();
     return;
   }
@@ -452,19 +502,19 @@ async function handlePwaInstallClick() {
     return;
   }
 
-  updatePwaInstallStatus('Aguardando confirma\u00e7\u00e3o do navegador', 55);
+  updatePwaInstallStatus('Aguardando confirmação do navegador', 20);
   deferredPwaPrompt.prompt();
   const result = await deferredPwaPrompt.userChoice;
   deferredPwaPrompt = null;
 
   if (result?.outcome !== 'accepted') {
     localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, String(Date.now()));
-    updatePwaInstallStatus('Instala\u00e7\u00e3o cancelada', 0);
-  } else {
-    updatePwaInstallStatus('Concluindo instala\u00e7\u00e3o', 85);
+    updatePwaInstallStatus('Instalação cancelada', 0);
+    setPwaInstallPhase(0);
+    return;
   }
 
-  hidePwaInstallModal();
+  startPwaInstallProgress();
 }
 
 function setupPwaInstallExperience() {
@@ -839,10 +889,17 @@ window.addEventListener('beforeinstallprompt', (event) => {
 window.addEventListener('appinstalled', () => {
   deferredPwaPrompt = null;
   localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
-  updatePwaInstallStatus('Instala\u00e7\u00e3o conclu\u00edda', 100);
+  if (pwaInstallProgressTimer) window.clearInterval(pwaInstallProgressTimer);
+  pwaInstallProgressTimer = null;
+  pwaInstallWaitingForApp = false;
+  updatePwaInstallStatus('Aplicativo instalado com sucesso', 100);
+  setPwaInstallPhase(5);
+  setPwaInstallBusy(true);
   showSuccessMessage('Central de Registros instalada com sucesso.');
-  hidePwaInstallModal();
-  syncPwaInstallEntries();
+  window.setTimeout(() => {
+    hidePwaInstallModal();
+    syncPwaInstallEntries();
+  }, 1500);
 });
 
 function getTodayLocalDateString() {
