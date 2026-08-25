@@ -34,7 +34,7 @@ const DRIVER_PROFILE_STORAGE_KEY = 'postoscredenciados-covreecia:driver-profile-
 const CENTRAL_LAST_SENT_STORAGE_KEY = 'postoscredenciados-covreecia:last-sent-record-v1';
 const CENTRAL_DEVICE_ID_KEY = 'postoscredenciados-covreecia:device-id-v1';
 const DRIVER_ONBOARDING_VERSION_KEY = 'postoscredenciados-covreecia:driver-onboarding-version';
-const DRIVER_ONBOARDING_VERSION = '2026-08-required-profile-v2';
+const DRIVER_ONBOARDING_VERSION = '2026-08-guided-permissions-v1';
 const DRIVER_PROFILE_PERMISSION_ERROR = 'ESTE MOTORISTA NÃO TEM PERMISSÃO PARA REALIZAR REGISTROS NESTE VEÍCULO. SE VOCÊ ENTENDE ISSO COMO UM ERRO, CONTATE A ADMINISTRAÇÃO.';
 const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
@@ -654,6 +654,8 @@ function getCentralDeviceId() {
 }
 
 function shouldShowCentralPushPrompt() {
+  // No primeiro acesso, as permissões são explicadas no fluxo guiado.
+  if (shouldOpenDriverOnboarding()) return false;
   if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
     return false;
   }
@@ -715,6 +717,7 @@ async function enableCentralPushNotifications() {
     localStorage.removeItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY);
     document.getElementById('central-push-prompt')?.remove();
     showSuccessMessage('Notificações ativadas neste celular.');
+    return true;
   } catch (error) {
     console.error('Falha ao ativar push:', error);
     if (button) {
@@ -722,6 +725,7 @@ async function enableCentralPushNotifications() {
       button.textContent = 'Tentar novamente';
     }
     showErrorMessage(error?.message || 'Não foi possível ativar as notificações.');
+    return false;
   }
 }
 
@@ -1342,9 +1346,25 @@ function showVehicleChangeSearch() {
   renderVehicleDirectoryResults('');
 }
 
+function setDriverOnboardingStep(stepId) {
+  [
+    'driver-onboarding-driver-step',
+    'driver-onboarding-vehicle-step',
+    'driver-onboarding-vehicle-search-step',
+    'driver-onboarding-permissions-step',
+    'driver-onboarding-camera-step',
+    'driver-onboarding-location-step',
+    'driver-onboarding-notifications-step',
+    'driver-onboarding-ready-step'
+  ].forEach((id) => document.getElementById(id)?.classList.toggle('hidden', id !== stepId));
+}
+
+function isGuidedDriverOnboarding() {
+  return document.getElementById('driver-profile-modal')?.dataset.guided === 'true';
+}
+
 function returnToSuggestedVehicle() {
-  document.getElementById('driver-onboarding-vehicle-search-step')?.classList.add('hidden');
-  document.getElementById('driver-onboarding-vehicle-step')?.classList.remove('hidden');
+  setDriverOnboardingStep('driver-onboarding-vehicle-step');
 }
 
 function selectAlternativeVehicle(vehicleId) {
@@ -1429,9 +1449,7 @@ function selectDirectoryDriver(driverId) {
     showErrorMessage('Este motorista ainda não possui um veículo ativo vinculado no WeFrotas.');
     return;
   }
-  document.getElementById('driver-onboarding-driver-step')?.classList.add('hidden');
-  document.getElementById('driver-onboarding-vehicle-search-step')?.classList.add('hidden');
-  document.getElementById('driver-onboarding-vehicle-step')?.classList.remove('hidden');
+  setDriverOnboardingStep('driver-onboarding-vehicle-step');
   renderSuggestedDriverVehicle();
 }
 
@@ -1475,9 +1493,7 @@ function cycleSuggestedVehicle() {
 function returnToDriverSelection() {
   selectedDirectoryDriver = null;
   selectedDirectoryVehicles = [];
-  document.getElementById('driver-onboarding-vehicle-step')?.classList.add('hidden');
-  document.getElementById('driver-onboarding-vehicle-search-step')?.classList.add('hidden');
-  document.getElementById('driver-onboarding-driver-step')?.classList.remove('hidden');
+  setDriverOnboardingStep('driver-onboarding-driver-step');
   document.getElementById('driver-profile-search')?.focus();
 }
 
@@ -1493,19 +1509,61 @@ function confirmSuggestedDriverVehicle() {
       driverId: selectedDirectoryDriver.id,
       vehicleId: vehicle.vehicleId
     }));
-    localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, DRIVER_ONBOARDING_VERSION);
   } catch (error) {
     showErrorMessage('Não foi possível salvar o perfil neste aparelho.');
     return;
   }
   saveDriverNameSuggestion(selectedDirectoryDriver.name);
   renderHomeDriverArea();
+  if (isGuidedDriverOnboarding()) {
+    openOnboardingPermissionsStep();
+    return;
+  }
+  localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, DRIVER_ONBOARDING_VERSION);
   closeDriverProfile();
   showSuccessMessage('Motorista e veículo confirmados.');
 }
 
+function openOnboardingPermissionsStep() {
+  const title = document.getElementById('driver-profile-title');
+  const kicker = document.getElementById('driver-profile-kicker');
+  if (kicker) kicker.textContent = 'PERMISSÕES DO APLICATIVO';
+  if (title) title.textContent = 'Vamos preparar seu app';
+  document.getElementById('driver-profile-skip')?.classList.add('hidden');
+  setDriverOnboardingStep('driver-onboarding-permissions-step');
+}
+function openOnboardingCameraStep() { setDriverOnboardingStep('driver-onboarding-camera-step'); }
+function openOnboardingLocationStep() { setDriverOnboardingStep('driver-onboarding-location-step'); }
+function openOnboardingNotificationsStep() { setDriverOnboardingStep('driver-onboarding-notifications-step'); }
+
+async function activateOnboardingNotifications() {
+  const status = document.getElementById('driver-onboarding-notification-status');
+  const button = document.getElementById('driver-onboarding-notification-enable');
+  if (button) { button.disabled = true; button.textContent = 'Ativando...'; }
+  if (status) status.textContent = 'Aguardando a confirmação do navegador...';
+  const activated = await enableCentralPushNotifications();
+  if (activated) return finishGuidedOnboarding();
+  if (button) { button.disabled = false; button.textContent = 'Tentar ativar notificações'; }
+  if (status) status.textContent = 'Você poderá ativar depois em Sobre > Notificações.';
+}
+
+function finishGuidedOnboarding(options = {}) {
+  if (options.notificationsSkipped) localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
+  localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, DRIVER_ONBOARDING_VERSION);
+  const title = document.getElementById('driver-profile-title');
+  const kicker = document.getElementById('driver-profile-kicker');
+  if (kicker) kicker.textContent = 'TUDO CERTO';
+  if (title) title.textContent = 'Seu app está pronto!';
+  setDriverOnboardingStep('driver-onboarding-ready-step');
+}
+function finishGuidedOnboardingAndClose() {
+  closeDriverProfile();
+  showSuccessMessage('Perfil configurado. Bom trabalho!');
+}
+
 function skipDriverOnboarding() {
   localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, DRIVER_ONBOARDING_VERSION);
+  localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
   closeDriverProfile();
 }
 
@@ -1515,11 +1573,11 @@ function openDriverProfile(mode = 'profile') {
   document.getElementById('driver-profile-overview')?.classList.add('hidden');
   document.getElementById('driver-directory-loading')?.classList.add('hidden');
   document.getElementById('driver-directory-error')?.classList.add('hidden');
-  document.getElementById('driver-onboarding-vehicle-step')?.classList.add('hidden');
-  document.getElementById('driver-onboarding-driver-step')?.classList.add('hidden');
+  setDriverOnboardingStep('');
   const search = document.getElementById('driver-profile-search');
   modal?.classList.remove('hidden');
   modal?.setAttribute('aria-hidden', 'false');
+  if (modal) modal.dataset.guided = String(!profile && shouldOpenDriverOnboarding());
   document.body.classList.add('driver-profile-open');
   if (profile && mode !== 'edit') {
     setDriverProfileDismissibility(false);
@@ -1542,10 +1600,9 @@ function setDriverProfileDismissibility(isOnboarding) {
 }
 
 function startDriverProfileEditing() {
-  setDriverProfileDismissibility(true);
+  setDriverProfileDismissibility(isGuidedDriverOnboarding());
   document.getElementById('driver-profile-overview')?.classList.add('hidden');
-  document.getElementById('driver-onboarding-vehicle-step')?.classList.add('hidden');
-  document.getElementById('driver-onboarding-vehicle-search-step')?.classList.add('hidden');
+  setDriverOnboardingStep('');
   const title = document.getElementById('driver-profile-title');
   if (title) title.textContent = 'Vamos deixar seus abastecimentos mais rápidos?';
   document.getElementById('driver-profile-skip')?.classList.remove('hidden');
@@ -1561,7 +1618,7 @@ function startDriverProfileEditing() {
   if (results) results.innerHTML = '';
   document.getElementById('driver-directory-loading')?.classList.add('hidden');
   document.getElementById('driver-directory-error')?.classList.add('hidden');
-  document.getElementById('driver-onboarding-driver-step')?.classList.remove('hidden');
+  setDriverOnboardingStep('driver-onboarding-driver-step');
   window.setTimeout(() => search?.focus(), 80);
 }
 
@@ -4287,9 +4344,16 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 window.addEventListener('keydown', (event) => {
-  const onboardingOpen = !document.getElementById('driver-onboarding-driver-step')?.classList.contains('hidden') ||
-    !document.getElementById('driver-onboarding-vehicle-step')?.classList.contains('hidden') ||
-    !document.getElementById('driver-onboarding-vehicle-search-step')?.classList.contains('hidden');
+  const onboardingOpen = [
+    'driver-onboarding-driver-step',
+    'driver-onboarding-vehicle-step',
+    'driver-onboarding-vehicle-search-step',
+    'driver-onboarding-permissions-step',
+    'driver-onboarding-camera-step',
+    'driver-onboarding-location-step',
+    'driver-onboarding-notifications-step',
+    'driver-onboarding-ready-step'
+  ].some((id) => !document.getElementById(id)?.classList.contains('hidden'));
 
   if (event.key === 'Escape' && !document.getElementById('driver-profile-modal')?.classList.contains('hidden') && !onboardingOpen) {
     closeDriverProfile();
