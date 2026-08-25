@@ -3041,3 +3041,25 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
   .central-push-prompt-copy span { display: none; }
   .central-push-prompt-action { grid-column: auto; min-height: 2.35rem; padding: 0 0.75rem; }
 }
+
+
+/* Perfil obrigatório e troca segura de veículo */
+.driver-profile-backdrop--locked { pointer-events: none; }
+.driver-profile-change-vehicle {
+  width: 100%;
+  margin-top: 0.6rem;
+  border: 0;
+  padding: 0.15rem 0;
+  color: #1769e0;
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 0.18rem;
+}
+.driver-profile-change-vehicle:hover { color: #0f55ba; }
+.driver-vehicle-result strong { display: block; color: #0f172a; font-size: 0.8rem; letter-spacing: 0.08em; }
+.driver-vehicle-result-mark::before { content: '🚗'; font-size: 0.85rem; }
+.driver-vehicle-result-mark { font-size: 0; }
+#driver-vehicle-permission-error { margin-top: 0.7rem; text-align: left; line-height: 1.45; }
