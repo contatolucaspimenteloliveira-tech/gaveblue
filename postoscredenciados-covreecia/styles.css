@@ -47,11 +47,11 @@ button {
 .pwa-install-overlay {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 1000;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding: 0.85rem;
+  padding: max(1rem, env(safe-area-inset-top)) 0.85rem max(1rem, env(safe-area-inset-bottom));
 }
 
 .pwa-install-overlay.hidden {
@@ -67,6 +67,10 @@ button {
 
 .pwa-install-card {
   position: relative;
+  z-index: 1;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   width: min(100%, 430px);
   margin: 0 auto;
   border-radius: 1.35rem;
@@ -202,6 +206,12 @@ button {
 
 .pwa-install-secondary:hover {
   background: #f8fafc;
+}
+
+.pwa-install-manual-help {
+  color: #9a3412;
+  border-color: #fdba74;
+  background: #fff7ed;
 }
 
 .pwa-install-footnote {
