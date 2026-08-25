@@ -787,6 +787,12 @@
                   <article><strong>Appwrite</strong><span>Registros, aparelhos, banners e funções utilizadas pela Central.</span><em>Conectado</em></article>
                   <article><strong>Notificações push</strong><span>Estado do serviço responsável por avisos gerais e individuais.</span><em>Monitoramento futuro</em></article>
                   <article><strong>Armazenamento</strong><span>Arquivos públicos dos banners e comprovantes enviados pelos motoristas.</span><em>Monitoramento futuro</em></article>
+                  <article>
+                    <strong>Postos credenciados</strong>
+                    <span>Importe a lista atual da Central para Fornecedores com cidade, endereço e rota do mapa.</span>
+                    <button id="central-station-migration-button" type="button" class="settings-action-btn" onclick="migrateCentralStationsToWefrotas()">Importar lista atual da Central</button>
+                    <small id="central-station-migration-feedback" class="settings-description !mb-0" role="status" aria-live="polite"></small>
+                  </article>
                 </div>
               </div>
             </div>
