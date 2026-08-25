@@ -26,6 +26,7 @@ const CENTRAL_APPWRITE_RETRY_KEY = 'postoscredenciados-covreecia:appwrite-pendin
 const CENTRAL_DRIVER_DIRECTORY_CACHE_KEY = 'postoscredenciados-covreecia:driver-directory-cache-v1';
 const CENTRAL_DEVICE_STATE_DB = 'central-registros-device-state-v1';
 const CENTRAL_DEVICE_STATE_STORE = 'state';
+const CENTRAL_PENDING_UPLOADS_STORE = 'pendingUploads';
 const CENTRAL_DEVICE_STATE_RECORD_KEY = 'current-device';
 const CENTRAL_DIRECTORY_CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
 const MAX_RECEIPT_IMAGE_BYTES = 900 * 1024;
@@ -55,6 +56,9 @@ let centralRequiredOnboardingVersion = DRIVER_ONBOARDING_VERSION;
 let centralOnboardingConfigResolved = false;
 let centralRetryInProgress = false;
 let centralDeviceStateReadyPromise = null;
+let centralOfflineSyncInProgress = false;
+let centralConnectionDegraded = false;
+let centralReconnectTimer = null;
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
 let fuelReceiptUploadPromise = null;
@@ -527,6 +531,37 @@ function waitForCentralRetry(delay) {
   return new Promise((resolve) => window.setTimeout(resolve, delay));
 }
 
+function updateCentralConnectivityStatus(options = {}) {
+  const online = navigator.onLine && !centralConnectionDegraded;
+  let status = document.getElementById('central-connectivity-status');
+  if (online && !options.syncing) {
+    status?.remove();
+    return;
+  }
+  if (!status) {
+    status = document.createElement('div');
+    status.id = 'central-connectivity-status';
+    status.className = 'central-connectivity-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    document.body.appendChild(status);
+  }
+  status.classList.toggle('is-online', online);
+  status.innerHTML = online
+    ? '<span></span><strong>Conexão restabelecida</strong><small>Sincronizando registros salvos...</small>'
+    : '<span></span><strong>Modo offline</strong><small>Você pode continuar. Os registros serão enviados quando a internet voltar.</small>';
+}
+
+function scheduleCentralReconnect() {
+  if (centralReconnectTimer) return;
+  centralReconnectTimer = window.setTimeout(() => {
+    centralReconnectTimer = null;
+    retryPendingCentralRegistro();
+    processCentralOfflineSubmissions();
+    loadCentralOnboardingConfig();
+  }, 20000);
+}
+
 async function fetchCentralWithRetry(url, options = {}, retryOptions = {}) {
   const attempts = Math.max(1, Number(retryOptions.attempts || 3));
   const timeoutMs = Math.max(1500, Number(retryOptions.timeoutMs || 12000));
@@ -537,7 +572,21 @@ async function fetchCentralWithRetry(url, options = {}, retryOptions = {}) {
     const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(url, { ...options, signal: controller.signal });
-      if (response.status < 500 || attempt === attempts) return response;
+      if (response.status < 500) {
+        centralConnectionDegraded = false;
+        if (centralReconnectTimer) {
+          window.clearTimeout(centralReconnectTimer);
+          centralReconnectTimer = null;
+        }
+        updateCentralConnectivityStatus();
+        return response;
+      }
+      if (attempt === attempts) {
+        centralConnectionDegraded = true;
+        updateCentralConnectivityStatus();
+        scheduleCentralReconnect();
+        return response;
+      }
       lastError = new Error(`Serviço temporariamente indisponível (${response.status}).`);
     } catch (error) {
       lastError = error;
@@ -551,6 +600,9 @@ async function fetchCentralWithRetry(url, options = {}, retryOptions = {}) {
   const unavailable = new Error('Sem conexão com a Central no momento. A nova tentativa será automática.');
   unavailable.cause = lastError;
   unavailable.isNetworkError = true;
+  centralConnectionDegraded = true;
+  updateCentralConnectivityStatus();
+  scheduleCentralReconnect();
   throw unavailable;
 }
 
@@ -1111,11 +1163,14 @@ function openCentralDeviceStateDb() {
       reject(new Error('Armazenamento persistente indisponível.'));
       return;
     }
-    const request = indexedDB.open(CENTRAL_DEVICE_STATE_DB, 1);
+    const request = indexedDB.open(CENTRAL_DEVICE_STATE_DB, 2);
     request.onupgradeneeded = () => {
       const database = request.result;
       if (!database.objectStoreNames.contains(CENTRAL_DEVICE_STATE_STORE)) {
         database.createObjectStore(CENTRAL_DEVICE_STATE_STORE, { keyPath: 'key' });
+      }
+      if (!database.objectStoreNames.contains(CENTRAL_PENDING_UPLOADS_STORE)) {
+        database.createObjectStore(CENTRAL_PENDING_UPLOADS_STORE, { keyPath: 'id' });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -1188,6 +1243,44 @@ function ensureCentralDeviceStateRestored() {
   return centralDeviceStateReadyPromise;
 }
 
+async function saveCentralOfflineSubmission(submission) {
+  const existingSubmissions = await getCentralOfflineSubmissions();
+  if (existingSubmissions.length >= 20 && !existingSubmissions.some((item) => item.id === submission.id)) {
+    throw new Error('Limite de 20 registros offline atingido. Conecte o aparelho para sincronizar.');
+  }
+  const database = await openCentralDeviceStateDb();
+  await new Promise((resolve, reject) => {
+    const transaction = database.transaction(CENTRAL_PENDING_UPLOADS_STORE, 'readwrite');
+    transaction.objectStore(CENTRAL_PENDING_UPLOADS_STORE).put(submission);
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error || new Error('Falha ao guardar o registro offline.'));
+  });
+  database.close();
+}
+
+async function getCentralOfflineSubmissions() {
+  const database = await openCentralDeviceStateDb();
+  const submissions = await new Promise((resolve, reject) => {
+    const transaction = database.transaction(CENTRAL_PENDING_UPLOADS_STORE, 'readonly');
+    const request = transaction.objectStore(CENTRAL_PENDING_UPLOADS_STORE).getAll();
+    request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : []);
+    request.onerror = () => reject(request.error);
+  });
+  database.close();
+  return submissions;
+}
+
+async function deleteCentralOfflineSubmission(id) {
+  const database = await openCentralDeviceStateDb();
+  await new Promise((resolve, reject) => {
+    const transaction = database.transaction(CENTRAL_PENDING_UPLOADS_STORE, 'readwrite');
+    transaction.objectStore(CENTRAL_PENDING_UPLOADS_STORE).delete(id);
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+  });
+  database.close();
+}
+
 function getDriverProfile() {
   try {
     const storedProfile = localStorage.getItem(DRIVER_PROFILE_STORAGE_KEY);
@@ -1226,9 +1319,14 @@ async function requireAuthorizedDriverProfile() {
     return null;
   }
 
+  // O vínculo já foi validado quando o perfil foi salvo. Sem conexão, mantemos
+  // o uso do aparelho e repetimos a validação antes da próxima sincronização.
+  if (!navigator.onLine) return profile;
+
   try {
     await ensureDriverDirectoryLoaded();
   } catch (error) {
+    if (!navigator.onLine || centralConnectionDegraded) return profile;
     showErrorMessage('Não foi possível validar seu perfil agora. Tente novamente.');
     return null;
   }
@@ -2076,6 +2174,14 @@ async function refreshMySubmissions(options = {}) {
   const list = document.getElementById('my-submissions-list');
   if (!silent && list) list.innerHTML = '<div class="driver-directory-message">Buscando seus envios...</div>';
   centralSubmissionHistoryRefreshFailed = false;
+  if (!navigator.onLine || centralConnectionDegraded) {
+    centralSubmissionHistory = [getCentralLastSentRecord()].filter(Boolean);
+    centralSubmissionHistoryLoaded = true;
+    centralSubmissionHistoryRefreshFailed = true;
+    renderHomeDriverArea();
+    renderMySubmissions();
+    return;
+  }
   try {
     const result = await executeCentralPushFunction({
       action: 'history',
@@ -3313,10 +3419,21 @@ async function saveLooseNoteReceiptUpload(options = {}) {
 
   setSaveLooseReceiptButtonLoading(true);
   updateLooseReceiptUploadStatus('Comprimindo e salvando comprovante na nuvem...', 'progress');
+  let preparedOfflineFile = null;
 
   looseNoteReceiptUploadPromise = (async () => {
     const compressedFile = await compressFuelReceiptIfNeeded(formData.file);
     const renamedFile = createRenamedLooseNoteReceiptFile(compressedFile, formData.fornecedor);
+    preparedOfflineFile = renamedFile;
+    if (!navigator.onLine) {
+      const result = { offline: true, secure_url: '' };
+      uploadedLooseNoteReceipt = { key: uploadKey, result, offlineFile: renamedFile };
+      updateLooseReceiptUploadStatus('Comprovante guardado neste aparelho. Será enviado quando a conexão voltar.', 'success');
+      setSaveLooseReceiptButtonVisible(false);
+      setLooseActionButtonsVisible(true);
+      if (!silent) openReceiptValidationModal('loose');
+      return result;
+    }
     const result = await uploadLooseNoteReceiptToCloudinary(renamedFile, {
       motorista: formData.motorista,
       fornecedor: formData.fornecedor,
@@ -3343,6 +3460,15 @@ async function saveLooseNoteReceiptUpload(options = {}) {
   try {
     return await looseNoteReceiptUploadPromise;
   } catch (error) {
+    if (preparedOfflineFile && (!navigator.onLine || error instanceof TypeError)) {
+      const result = { offline: true, secure_url: '' };
+      uploadedLooseNoteReceipt = { key: uploadKey, result, offlineFile: preparedOfflineFile };
+      updateLooseReceiptUploadStatus('A conexão caiu, mas o comprovante ficou guardado neste aparelho.', 'success');
+      setSaveLooseReceiptButtonVisible(false);
+      setLooseActionButtonsVisible(true);
+      if (!silent) openReceiptValidationModal('loose');
+      return result;
+    }
     uploadedLooseNoteReceipt = null;
     updateLooseReceiptUploadStatus('N\u00e3o foi poss\u00edvel salvar. Tente novamente antes de enviar.', 'error');
     if (!silent) {
@@ -3378,10 +3504,21 @@ async function saveFuelReceiptUpload(options = {}) {
 
   setSaveReceiptButtonLoading(true);
   updateReceiptUploadStatus('Comprimindo e salvando comprovante na nuvem...', 'progress');
+  let preparedOfflineFile = null;
 
   fuelReceiptUploadPromise = (async () => {
     const compressedFile = await compressFuelReceiptIfNeeded(formData.file);
     const renamedFile = createRenamedFuelReceiptFile(compressedFile, formData.motorista, formData.data);
+    preparedOfflineFile = renamedFile;
+    if (!navigator.onLine) {
+      const result = { offline: true, secure_url: '' };
+      uploadedFuelReceipt = { key: uploadKey, result, offlineFile: renamedFile };
+      updateReceiptUploadStatus('Comprovante guardado neste aparelho. Será enviado quando a conexão voltar.', 'success');
+      setSaveReceiptButtonVisible(false);
+      setFuelActionButtonsVisible(true);
+      if (!silent) openReceiptValidationModal();
+      return result;
+    }
     const result = await uploadFuelReceiptToCloudinary(renamedFile, {
       motorista: formData.motorista,
       cidade: formData.cidade,
@@ -3411,6 +3548,15 @@ async function saveFuelReceiptUpload(options = {}) {
   try {
     return await fuelReceiptUploadPromise;
   } catch (error) {
+    if (preparedOfflineFile && (!navigator.onLine || error instanceof TypeError)) {
+      const result = { offline: true, secure_url: '' };
+      uploadedFuelReceipt = { key: uploadKey, result, offlineFile: preparedOfflineFile };
+      updateReceiptUploadStatus('A conexão caiu, mas o comprovante ficou guardado neste aparelho.', 'success');
+      setSaveReceiptButtonVisible(false);
+      setFuelActionButtonsVisible(true);
+      if (!silent) openReceiptValidationModal();
+      return result;
+    }
     uploadedFuelReceipt = null;
     updateReceiptUploadStatus('N\u00e3o foi poss\u00edvel salvar. Tente novamente antes de enviar.', 'error');
     if (!silent) {
@@ -3532,6 +3678,134 @@ function resetProgressState() {
   hideWhatsAppSendButton();
 }
 
+function buildFuelWhatsAppMessage(formData, isComplete, receiptUrl) {
+  const details = [
+    `> *Motorista:* ${formData.motorista}`,
+    `> *Cidade:* ${formData.cidade}`,
+    `> *Posto:* ${formData.posto}`,
+    `> *Data/Hora:* ${formData.dataFormatada} às ${formData.horaFormatada}`,
+    isComplete ? `> *Valor:* ${formData.valor}` : '',
+    isComplete ? `> *Litros:* ${formData.litros}` : '',
+    isComplete ? `> *Combustível:* ${formData.tipoCombustivel}` : '',
+    `> *KM:* ${formData.km || 'Não informado'}`
+  ].filter(Boolean);
+  const lines = ['⛽ *COMPROVANTE DE ABASTECIMENTO*', '', ...details, ''];
+  const revisionWarning = getRevisionWarningMessage(formData.km);
+  if (revisionWarning) lines.push(revisionWarning, '', '');
+  lines.push(`🧾 *Comprovante:* ${receiptUrl}`);
+  return lines.join('\n');
+}
+
+function buildLooseWhatsAppMessage(formData, receiptUrl) {
+  const details = [
+    `> *Motorista:* ${formData.motorista}`,
+    `> *Fornecedor:* ${formData.fornecedor}`,
+    `> *Tipo do serviço:* ${formData.tipoServico}`,
+    `> *Valor:* ${formData.valor}`,
+    `> *Data/Hora:* ${formData.dataFormatada} às ${formData.horaFormatada}`,
+    formData.km ? `> *KM:* ${formData.km}` : '',
+    formData.observacoes ? `> *Observações:* ${formData.observacoes}` : ''
+  ].filter(Boolean);
+  return ['🔧 *REGISTRO DE SERVIÇOS*', '', ...details, '', `🧾 *Comprovante:* ${receiptUrl}`].join('\n');
+}
+
+async function queueCentralOfflineSubmission({ kind, formData, receiptFile, payload, offlineRecord }) {
+  if (!receiptFile) throw new Error('O comprovante não está disponível para salvar no aparelho.');
+  const serializableFormData = { ...formData };
+  delete serializableFormData.file;
+  await saveCentralOfflineSubmission({
+    id: payload.rowId,
+    kind,
+    formData: serializableFormData,
+    receiptBlob: receiptFile,
+    fileName: receiptFile.name || `comprovante-${payload.rowId}.jpg`,
+    fileType: receiptFile.type || 'image/jpeg',
+    lastModified: receiptFile.lastModified || Date.now(),
+    payload,
+    offlineRecord,
+    createdAt: new Date().toISOString()
+  });
+  saveCentralLastSentRecord(offlineRecord);
+  navigator.serviceWorker?.ready
+    .then((registration) => registration.sync?.register?.('central-offline-submissions'))
+    .catch(() => null);
+  updateCentralConnectivityStatus();
+}
+
+async function processCentralOfflineSubmissions() {
+  if (centralOfflineSyncInProgress || !navigator.onLine) return;
+  centralOfflineSyncInProgress = true;
+  updateCentralConnectivityStatus({ syncing: true });
+  let synchronized = 0;
+  try {
+    const submissions = await getCentralOfflineSubmissions();
+    for (const submission of submissions) {
+      try {
+        const formData = submission.formData || {};
+        let receiptUrl = String(submission.receiptUrl || '');
+        if (!receiptUrl) {
+          const receiptFile = submission.receiptBlob instanceof File
+            ? submission.receiptBlob
+            : new File([submission.receiptBlob], submission.fileName, {
+              type: submission.fileType || 'image/jpeg',
+              lastModified: submission.lastModified || Date.now()
+            });
+          const upload = submission.kind === 'loose'
+            ? await uploadLooseNoteReceiptToCloudinary(receiptFile, {
+              motorista: formData.motorista,
+              fornecedor: formData.fornecedor,
+              tipoServico: formData.tipoServico,
+              valor: formData.valor,
+              data: formData.dataFormatada,
+              km: formData.km
+            })
+            : await uploadFuelReceiptToCloudinary(receiptFile, {
+              motorista: formData.motorista,
+              cidade: formData.cidade,
+              posto: formData.posto,
+              data: formData.dataFormatada,
+              km: formData.km,
+              valor: formData.valor,
+              litros: formData.litros,
+              tipoCombustivel: formData.tipoCombustivel,
+              modo: submission.payload?.data?.tipo === 'abastecimento' ? 'completo' : 'rapido'
+            });
+          receiptUrl = String(upload?.secure_url || '');
+          if (!receiptUrl) throw new Error('O servidor não retornou o link do comprovante.');
+          submission.receiptUrl = receiptUrl;
+          await saveCentralOfflineSubmission(submission);
+        }
+
+        const isComplete = submission.payload?.data?.tipo === 'abastecimento';
+        const mensagem = submission.kind === 'loose'
+          ? buildLooseWhatsAppMessage(formData, receiptUrl)
+          : buildFuelWhatsAppMessage(formData, isComplete, receiptUrl);
+        submission.payload.data.comprovanteUrl = receiptUrl;
+        submission.payload.data.mensagemWhatsapp = mensagem;
+        await saveCentralRegistroWithRetry(submission.payload);
+        await deleteCentralOfflineSubmission(submission.id);
+        saveCentralLastSentRecord({ ...submission.offlineRecord, receiptUrl });
+        synchronized += 1;
+      } catch (error) {
+        console.warn('O registro offline continuará guardado para a próxima tentativa.', error);
+        if (!navigator.onLine) break;
+      }
+    }
+  } catch (error) {
+    console.warn('Não foi possível consultar os registros offline.', error);
+  } finally {
+    centralOfflineSyncInProgress = false;
+    if (navigator.onLine) {
+      if (synchronized && document.visibilityState === 'visible') {
+        showSuccessMessage(`${synchronized} registro(s) offline sincronizado(s).`);
+      }
+      window.setTimeout(() => updateCentralConnectivityStatus(), 2200);
+    } else {
+      updateCentralConnectivityStatus();
+    }
+  }
+}
+
 async function submitFuelForm(e) {
   e.preventDefault();
 
@@ -3545,7 +3819,6 @@ async function submitFuelForm(e) {
   }
   const uploadKey = getFuelReceiptUploadKey(formData);
   const isComplete = currentFuelFormMode === 'completo';
-  const revisionWarning = getRevisionWarningMessage(formData.km);
 
   if (!formData.file) {
     showErrorMessage('Por favor, selecione uma foto do comprovante');
@@ -3557,30 +3830,49 @@ async function submitFuelForm(e) {
     return;
   }
 
-  const fuelMessageDetails = [
-    `> *Motorista:* ${formData.motorista}`,
-    `> *Cidade:* ${formData.cidade}`,
-    `> *Posto:* ${formData.posto}`,
-    `> *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
-    isComplete ? `> *Valor:* ${formData.valor}` : '',
-    isComplete ? `> *Litros:* ${formData.litros}` : '',
-    isComplete ? `> *Combust\u00edvel:* ${formData.tipoCombustivel}` : '',
-    `> *KM:* ${formData.km || 'N\u00e3o informado'}`
-  ].filter(Boolean);
-
-  const mensagemLines = [
-    '\u26fd *COMPROVANTE DE ABASTECIMENTO*',
-    '',
-    ...fuelMessageDetails,
-    ''
-  ];
-
-  if (revisionWarning) {
-    mensagemLines.push(revisionWarning, '', '');
+  if (uploadedFuelReceipt.result.offline) {
+    const appwritePayload = buildCentralRegistroPayload({
+      type: isComplete ? 'abastecimento' : 'abastecimento_rapido',
+      formData,
+      receiptUrl: '',
+      mensagem: ''
+    });
+    const offlineRecord = {
+      id: appwritePayload.rowId,
+      protocol: appwritePayload.data.protocolo,
+      type: appwritePayload.data.tipo,
+      date: formData.data,
+      time: formData.horaFormatada,
+      value: isComplete && formData.valor ? formData.valor : '',
+      numericValue: isComplete ? (parseCentralMoney(formData.valor) || 0) : 0,
+      supplier: formData.posto,
+      receiptUrl: '',
+      status: 'pendente',
+      offline: true
+    };
+    try {
+      await queueCentralOfflineSubmission({
+        kind: 'fuel',
+        formData,
+        receiptFile: uploadedFuelReceipt.offlineFile || formData.file,
+        payload: appwritePayload,
+        offlineRecord
+      });
+    } catch (error) {
+      showErrorMessage(error?.message || 'Não foi possível guardar este registro no aparelho. Mantenha a tela aberta e tente novamente.');
+      return;
+    }
+    document.getElementById('fuel-form').reset();
+    document.getElementById('fuel-form-modal').classList.add('hidden');
+    resetFuelPhotoState();
+    setFuelDateToToday();
+    applyFuelFormMode('rapido');
+    populateDriverOptions();
+    showSuccessMessage('Registro salvo no aparelho. O envio será automático quando a internet voltar.');
+    return;
   }
 
-  mensagemLines.push(`\ud83e\uddfe *Comprovante:* ${uploadedFuelReceipt.result.secure_url}`);
-  const mensagem = mensagemLines.join('\n');
+  const mensagem = buildFuelWhatsAppMessage(formData, isComplete, uploadedFuelReceipt.result.secure_url);
 
   const appwritePayload = buildCentralRegistroPayload({
     type: isComplete ? 'abastecimento' : 'abastecimento_rapido',
@@ -3590,14 +3882,19 @@ async function submitFuelForm(e) {
   });
 
   const centralSavePromise = saveCentralRegistroWithRetry(appwritePayload);
-  openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
+  const shouldOpenWhatsApp = navigator.onLine;
+  if (shouldOpenWhatsApp) openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
+  let queuedAfterUpload = false;
 
   try {
     await centralSavePromise;
   } catch (error) {
     console.error('Erro ao registrar abastecimento no Appwrite:', error);
-    showErrorMessage(getCentralAppwriteErrorMessage(error));
-    return;
+    if (error?.isNetworkError || !navigator.onLine) queuedAfterUpload = true;
+    else {
+      showErrorMessage(getCentralAppwriteErrorMessage(error));
+      return;
+    }
   }
 
   saveDriverNameSuggestion(formData.motorista);
@@ -3620,7 +3917,9 @@ async function submitFuelForm(e) {
   setFuelDateToToday();
   applyFuelFormMode('rapido');
   populateDriverOptions();
-  showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar o abastecimento.');
+  showSuccessMessage(queuedAfterUpload
+    ? 'Registro guardado. A Central concluirá o envio quando a internet voltar.'
+    : 'WhatsApp aberto. Envie a mensagem para validar o abastecimento.');
 }
 
 async function submitLooseNoteForm(e) {
@@ -3651,23 +3950,44 @@ async function submitLooseNoteForm(e) {
     return;
   }
 
-  const looseNoteMessageDetails = [
-    `> *Motorista:* ${formData.motorista}`,
-    `> *Fornecedor:* ${formData.fornecedor}`,
-    `> *Tipo do servi\u00e7o:* ${formData.tipoServico}`,
-    `> *Valor:* ${formData.valor}`,
-    `> *Data/Hora:* ${formData.dataFormatada} \u00e0s ${formData.horaFormatada}`,
-    formData.km ? `> *KM:* ${formData.km}` : '',
-    formData.observacoes ? `> *Observa\u00e7\u00f5es:* ${formData.observacoes}` : ''
-  ].filter(Boolean);
+  if (uploadedLooseNoteReceipt.result.offline) {
+    const appwritePayload = buildCentralRegistroPayload({
+      type: 'servico',
+      formData,
+      receiptUrl: '',
+      mensagem: ''
+    });
+    const offlineRecord = {
+      id: appwritePayload.rowId,
+      protocol: appwritePayload.data.protocolo,
+      type: appwritePayload.data.tipo,
+      date: formData.data,
+      time: formData.horaFormatada,
+      value: formData.valor || '',
+      numericValue: parseCentralMoney(formData.valor) || 0,
+      supplier: formData.fornecedor,
+      receiptUrl: '',
+      status: 'pendente',
+      offline: true
+    };
+    try {
+      await queueCentralOfflineSubmission({
+        kind: 'loose',
+        formData,
+        receiptFile: uploadedLooseNoteReceipt.offlineFile || formData.file,
+        payload: appwritePayload,
+        offlineRecord
+      });
+    } catch (error) {
+      showErrorMessage(error?.message || 'Não foi possível guardar este registro no aparelho. Mantenha a tela aberta e tente novamente.');
+      return;
+    }
+    closeLooseNoteForm();
+    showSuccessMessage('Registro salvo no aparelho. O envio será automático quando a internet voltar.');
+    return;
+  }
 
-  const mensagem = [
-    '\ud83d\udd27 *REGISTRO DE SERVI\u00c7OS*',
-    '',
-    ...looseNoteMessageDetails,
-    '',
-    `\ud83e\uddfe *Comprovante:* ${uploadedLooseNoteReceipt.result.secure_url}`
-  ].join('\n');
+  const mensagem = buildLooseWhatsAppMessage(formData, uploadedLooseNoteReceipt.result.secure_url);
 
   const appwritePayload = buildCentralRegistroPayload({
     type: 'servico',
@@ -3677,14 +3997,19 @@ async function submitLooseNoteForm(e) {
   });
 
   const centralSavePromise = saveCentralRegistroWithRetry(appwritePayload);
-  openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
+  const shouldOpenWhatsApp = navigator.onLine;
+  if (shouldOpenWhatsApp) openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
+  let queuedAfterUpload = false;
 
   try {
     await centralSavePromise;
   } catch (error) {
     console.error('Erro ao registrar servi\u00e7o no Appwrite:', error);
-    showErrorMessage(getCentralAppwriteErrorMessage(error));
-    return;
+    if (error?.isNetworkError || !navigator.onLine) queuedAfterUpload = true;
+    else {
+      showErrorMessage(getCentralAppwriteErrorMessage(error));
+      return;
+    }
   }
 
   saveDriverNameSuggestion(formData.motorista);
@@ -3701,7 +4026,9 @@ async function submitLooseNoteForm(e) {
     status: 'pendente'
   });
   closeLooseNoteForm();
-  showSuccessMessage('WhatsApp aberto. Envie a mensagem para validar o registro de servi\u00e7os.');
+  showSuccessMessage(queuedAfterUpload
+    ? 'Registro guardado. A Central concluirá o envio quando a internet voltar.'
+    : 'WhatsApp aberto. Envie a mensagem para validar o registro de serviços.');
 }
 
 function showSuccessMessage(message) {
@@ -4693,6 +5020,10 @@ window.addEventListener('DOMContentLoaded', async function() {
   refreshCentralNotificationBadge();
 
   navigator.serviceWorker?.addEventListener('message', (event) => {
+    if (event.data?.type === 'CENTRAL_SYNC_OFFLINE_SUBMISSIONS') {
+      processCentralOfflineSubmissions();
+      return;
+    }
     if (event.data?.type !== 'CENTRAL_NOTIFICATION_RECEIVED') return;
     refreshCentralNotificationBadge();
     const modal = document.getElementById('central-notifications-modal');
@@ -4784,12 +5115,14 @@ function renderCityImageCards() {
 
 window.addEventListener('DOMContentLoaded', async () => {
   await ensureCentralDeviceStateRestored();
+  updateCentralConnectivityStatus();
   renderCityImageCards();
   loadManagedCentralStations();
   ensureDriverDirectoryLoaded().catch((error) => {
     console.warn('O diretório será carregado novamente quando necessário.', error);
   });
   retryPendingCentralRegistro();
+  processCentralOfflineSubmissions();
   getCentralDeviceId();
   renderHomeDriverArea();
   refreshMySubmissions({ silent: true });
@@ -4823,13 +5156,22 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     refreshMySubmissions({ silent: true });
     retryPendingCentralRegistro();
+    processCentralOfflineSubmissions();
   }
 });
 
 window.addEventListener('online', () => {
+  centralConnectionDegraded = false;
+  updateCentralConnectivityStatus({ syncing: true });
   retryPendingCentralRegistro();
+  processCentralOfflineSubmissions();
   loadManagedCentralStations();
   setupCentralPushExperience();
+});
+
+window.addEventListener('offline', () => {
+  centralConnectionDegraded = true;
+  updateCentralConnectivityStatus();
 });
 
 const CENTRAL_BANNERS_CONFIG = Object.freeze({

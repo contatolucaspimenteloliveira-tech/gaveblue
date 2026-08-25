@@ -1,4 +1,4 @@
-const CENTRAL_RELEASE = '20260825-browser-registration-1';
+const CENTRAL_RELEASE = '20260825-offline-first-2';
 const CACHE_NAME = `central-registros-static-v${CENTRAL_RELEASE}`;
 const APPWRITE_AUTH_CACHE = 'central-registros-appwrite-auth-v1';
 const APPWRITE_ENDPOINT_ORIGIN = 'https://nyc.cloud.appwrite.io';
@@ -8,8 +8,8 @@ const APPWRITE_FALLBACK_CACHE_KEY = new URL('./__central_appwrite_fallback_cooki
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=20260825-browser-registration-1',
-  './app.js?v=20260825-browser-registration-1',
+  './styles.css?v=20260825-offline-first-2',
+  './app.js?v=20260825-offline-first-2',
   './manifest.webmanifest',
   './assets/brand/covre-e-cia.png',
   './assets/home/hero-posto.png',
@@ -27,13 +27,42 @@ const STATIC_ASSETS = [
   './assets/home/buscar-postos.jpeg',
   './assets/home/registro-rapido.jpeg',
   './assets/home/registro-completo.jpeg',
+  './assets/cidades/boa-esperanca.jpeg',
+  './assets/cidades/montanha.jpeg',
+  './assets/cidades/nova-venecia.jpeg',
+  './assets/cidades/pedro-canario.jpeg',
+  './assets/cidades/pinheiros.jpeg',
+  './assets/cidades/sao-mateus.jpeg',
   './assets/pwa/icon-192.png',
   './assets/pwa/icon-512.png',
-  './assets/pwa/icon-maskable-512.png'
+  './assets/pwa/icon-maskable-512.png',
+  './assets/pwa/icon-central-192.png',
+  './assets/pwa/icon-central-512.png',
+  './assets/pwa/icon-central-maskable-512.png'
+];
+
+const OPTIONAL_REMOTE_ASSETS = [
+  'https://cdn.tailwindcss.com/3.4.17',
+  'https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js',
+  'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
 ];
 
 const CENTRAL_NOTIFICATIONS_DB = 'central-registros-notifications-v1';
 const CENTRAL_NOTIFICATIONS_STORE = 'notifications';
+
+async function cacheOptionalRemoteAsset(cache, asset) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 4500);
+  try {
+    const response = await fetch(asset, { signal: controller.signal });
+    if (response.ok || response.type === 'opaque') await cache.put(asset, response);
+  } catch (error) {
+    // Recursos externos melhoram o visual, mas nunca podem bloquear a instalação.
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 function openCentralNotificationsDb() {
   return new Promise((resolve, reject) => {
@@ -80,7 +109,10 @@ async function markCentralNotificationRead(id) {
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then(async (cache) => {
+        await cache.addAll(STATIC_ASSETS);
+        await Promise.allSettled(OPTIONAL_REMOTE_ASSETS.map((asset) => cacheOptionalRemoteAsset(cache, asset)));
+      })
       .then(() => self.skipWaiting())
   );
 });
@@ -98,6 +130,10 @@ self.addEventListener('activate', (event) => {
       .then((clients) => Promise.all(clients.map((client) => {
         const clientUrl = new URL(client.url);
         if (!clientUrl.href.startsWith(self.registration.scope)) {
+          return null;
+        }
+
+        if (clientUrl.searchParams.get('central-release') === CENTRAL_RELEASE) {
           return null;
         }
 
@@ -155,6 +191,16 @@ self.addEventListener('push', (event) => {
     persistAndNotifyClients,
     self.registration.showNotification(title, options)
   ]));
+});
+
+self.addEventListener('sync', (event) => {
+  if (event.tag !== 'central-offline-submissions') return;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clients) => clients.forEach((client) => {
+        client.postMessage({ type: 'CENTRAL_SYNC_OFFLINE_SUBMISSIONS' });
+      }))
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {
@@ -318,6 +364,22 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (requestUrl.origin !== self.location.origin) {
+    if (!['image', 'script', 'style', 'font'].includes(request.destination)) return;
+    event.respondWith(
+      caches.match(request).then((cachedResponse) => {
+        const networkResponse = fetch(request).then((response) => {
+          if (response.ok || response.type === 'opaque') {
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+          }
+          return response;
+        });
+        if (cachedResponse) {
+          event.waitUntil(networkResponse.catch(() => null));
+          return cachedResponse;
+        }
+        return networkResponse;
+      })
+    );
     return;
   }
 
@@ -326,14 +388,33 @@ self.addEventListener('fetch', (event) => {
     ? new Request(request, { cache: 'no-store' })
     : request;
 
+  if (isNavigation) {
+    event.respondWith(
+      fetch(networkRequest)
+        .then((response) => {
+          caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', response.clone()));
+          return response;
+        })
+        .catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+
   event.respondWith(
-    fetch(networkRequest)
-      .then((response) => {
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(isNavigation ? './index.html' : request, responseClone));
+    caches.match(request).then((cachedResponse) => {
+      const networkResponse = fetch(networkRequest).then((response) => {
+        if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
         return response;
-      })
-      .catch(() => caches.match(request).then((cachedResponse) => cachedResponse || caches.match('./index.html')))
+      });
+      if (cachedResponse) {
+        event.waitUntil(networkResponse.catch(() => null));
+        return cachedResponse;
+      }
+      return networkResponse.catch(() => new Response('', {
+        status: 503,
+        statusText: 'Offline resource unavailable'
+      }));
+    })
   );
 });
 

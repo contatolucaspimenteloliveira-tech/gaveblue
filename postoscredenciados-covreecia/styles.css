@@ -3561,3 +3561,50 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
 .pwa-install-phase-list li.is-complete::before { border-color: #22c55e; background: #22c55e; }
 .pwa-install-backdrop--locked { pointer-events: none; }
 .pwa-install-primary:disabled { opacity: .72; cursor: wait; }
+.central-connectivity-status {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 76px);
+  left: 50%;
+  z-index: 120;
+  display: grid;
+  grid-template-columns: 10px auto;
+  column-gap: 9px;
+  align-items: center;
+  width: min(calc(100% - 28px), 460px);
+  padding: 10px 14px;
+  color: #713f12;
+  background: rgba(255, 251, 235, 0.97);
+  border: 1px solid #fde68a;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+  transform: translateX(-50%);
+  backdrop-filter: blur(12px);
+}
+
+.central-connectivity-status > span {
+  grid-row: 1 / 3;
+  width: 9px;
+  height: 9px;
+  background: #f59e0b;
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
+}
+
+.central-connectivity-status strong,
+.central-connectivity-status small {
+  line-height: 1.25;
+}
+
+.central-connectivity-status strong { font-size: 13px; }
+.central-connectivity-status small { font-size: 11px; opacity: 0.82; }
+
+.central-connectivity-status.is-online {
+  color: #065f46;
+  background: rgba(236, 253, 245, 0.97);
+  border-color: #a7f3d0;
+}
+
+.central-connectivity-status.is-online > span {
+  background: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
+}
