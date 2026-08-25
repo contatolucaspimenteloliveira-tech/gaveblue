@@ -1224,7 +1224,20 @@ body.driver-profile-open .mobile-bottom-nav {
 .driver-found-note svg { flex: 0 0 1.25rem; width: 1.25rem; color: #1769e0; }
 .driver-profile-secondary { min-height: 2.8rem; border: 1px solid #1769e0; border-radius: 0.75rem; color: #1769e0; background: #fff; font-size: 0.78rem; font-weight: 850; }
 .driver-profile-secondary:disabled { opacity: .45; }
+
 .driver-profile-skip { min-height: 1.8rem; margin-top: 0.45rem; border: 0; padding: 0; color: #1769e0; background: transparent; font-size: 0.72rem; font-weight: 850; }
+.onboarding-permission-step { justify-items: center; min-height: 16.5rem; align-content: center; border: 1px solid #e2e8f0; border-radius: 1.05rem; padding: 1.15rem; background: linear-gradient(145deg, #ffffff, #f8fbff); text-align: center; }
+.onboarding-permission-step > strong { color: #0f172a; font-size: 1rem; font-weight: 900; }
+.onboarding-permission-step > p { max-width: 23rem; color: #64748b; font-size: 0.78rem; font-weight: 650; line-height: 1.48; }
+.onboarding-permission-step .driver-profile-save { width: 100%; margin-top: 0.35rem; }
+.onboarding-permission-icon { display: grid; width: 3.3rem; height: 3.3rem; place-items: center; border-radius: 1.05rem; color: #2563eb; background: #dbeafe; box-shadow: 0 12px 24px rgba(37,99,235,.14); }
+.onboarding-permission-icon svg { width: 1.65rem; height: 1.65rem; }
+.onboarding-permission-icon--intro { color: #16a34a; background: #dcfce7; box-shadow: 0 12px 24px rgba(22,163,74,.14); }
+.onboarding-permission-icon--location { color: #9333ea; background: #f3e8ff; box-shadow: 0 12px 24px rgba(147,51,234,.12); }
+.onboarding-permission-icon--notification { color: #d97706; background: #fef3c7; box-shadow: 0 12px 24px rgba(217,119,6,.13); }
+.onboarding-permission-icon--ready { color: #ffffff; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 12px 24px rgba(22,163,74,.24); }
+.onboarding-permission-note { max-width: 23rem; color: #64748b; font-size: 0.66rem; font-weight: 750; line-height: 1.4; }
+.onboarding-ready-step { border-color: #bbf7d0; background: linear-gradient(145deg, #ffffff, #f0fdf4); }
 
 .submissions-dialog { align-self: stretch; }
 .submissions-summary { display: flex; gap: 0.45rem; margin-top: 0.8rem; }
