@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { gunzipSync } from 'node:zlib';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { Account, Client, Databases, Query } from 'node-appwrite';
 import webpush from 'web-push';
 
@@ -10,6 +10,7 @@ const DRIVER_DIRECTORY_COLLECTION_ID = process.env.DRIVER_DIRECTORY_COLLECTION_I
 const APPROVAL_LOCKS_COLLECTION_ID = process.env.APPROVAL_LOCKS_COLLECTION_ID || 'central_approval_locks';
 const WEFROTAS_TABLE_ID = process.env.WEFROTAS_TABLE_ID || 'gaveblue_wefrotas';
 const WEFROTAS_COMPANY_ID = process.env.WEFROTAS_COMPANY_ID || 'covre-e-cia';
+const WEFROTAS_SNAPSHOT_CHUNK_SIZE = 600 * 1024;
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:adm01@covreecia.com.br';
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
@@ -19,6 +20,21 @@ const ADMIN_USER_IDS = new Set(
     .map((value) => value.trim())
     .filter(Boolean)
 );
+
+// Diretório que já é exibido na Central. Ele é usado apenas para a migração
+// inicial para o cadastro de fornecedores do WeFrotas; depois a gestão passa a
+// acontecer exclusivamente no WeFrotas.
+const CENTRAL_STATION_DIRECTORY = Object.freeze([
+  { name: 'Auto Posto 4 Rodas', city: 'Boa Esperança', address: 'Boa Esperança, ES', mapsUrl: 'https://www.google.com/maps/place/Auto+Posto+4+Rodas/@-18.5404958,-40.2937824,826m/data=!3m2!1e3!4b1!4m6!3m5!1s0xb5956c7feac48d:0xc15be322b9fed420!8m2!3d-18.5404958!4d-40.2912075!16s%2Fg%2F1tfp3pxm' },
+  { name: 'Posto Nater Coop - Shell', city: 'Pinheiros', address: 'Pinheiros, ES', mapsUrl: 'https://www.google.com/maps/place/Posto+Rede+Nater+(Shell)+em+Pinheiros/@-18.4168459,-40.2107607,153m/data=!3m1!1e3!4m6!3m5!1s0xb59b33d7ff34b9:0x82053208dc2a16f8!8m2!3d-18.4163054!4d-40.2110065!16s%2Fg%2F11qpbrwj22' },
+  { name: 'Posto Pinheiros - Ipiranga', city: 'Pinheiros', address: 'Pinheiros, ES', mapsUrl: 'https://www.google.com/maps/place/Posto+Pinheiros/@-18.413462,-40.2128249,156m/data=!3m1!1e3!4m6!3m5!1s0xb59a1481427d61:0xeba41bb1a2b24a1e!8m2!3d-18.4135384!4d-40.2127649!16s%2Fg%2F1tj7xmm_' },
+  { name: 'Posto Nortão - Ale', city: 'Pinheiros', address: 'Pinheiros, ES', mapsUrl: 'https://www.google.com/maps/place/Posto+Nort%C3%A3o/@-18.4045169,-40.2319949,1969m/data=!3m1!1e3!4m6!3m5!1s0xb59a201628e4ab:0xcd6c4ad08d8fb206!8m2!3d-18.4045175!4d-40.2258587!16s%2Fg%2F11b6yqny3l?entry=ttu&g_ep=EgoyMDI2MDEyNi4wIKXMDSoKLDEwMDc5MjA2OUgBUAM%3D' },
+  { name: 'Posto Cidade Alta', city: 'Nova Venécia', address: 'Nova Venécia, ES', mapsUrl: 'https://www.google.com/maps/place/Posto+Cidade+Alta/@-18.693836,-40.4136076,2405m/data=!3m1!1e3!4m10!1m2!2m1!1sposto!3m6!1s0xb5db2293e5e22b:0xeb619e2ab30e53b2!8m2!3d-18.693836!4d-40.3997215!15sCgVwb3N0b1oHIgVwb3N0b5IBC2dhc19zdGF0aW9u4AEA!16s%2Fg%2F11k62_1v8g' },
+  { name: 'Auto Posto Servicentro Oliveira Rios - Atlântico', city: 'Montanha', address: 'Montanha, ES', mapsUrl: 'https://www.google.com/maps/place/Posto+Atlantico+Servicentro/@-18.1277285,-40.3620985,1655m/data=!3m1!1e3!4m10!1m2!2m1!1sauto+posto+servicentro+motanha!3m6!1s0xb50c56fe1af699:0xdce102eb786d422d!8m2!3d-18.1277285!4d-40.3525713!15sCh9hdXRvIHBvc3RvIHNlcnZpY2VudHJvIG1vbnRhbmhhkgELZ2FzX3N0YXRpb27gAQA!16s%2Fg%2F11hblk2rbr' },
+  { name: 'Posto Canário', city: 'Pedro Canário', address: 'ES-209, 10 - Centro, Pedro Canário - ES', mapsUrl: 'https://www.google.com/maps/place/ES-209,+10+-+Centro,+Pedro+Can%C3%A1rio+-+ES,+29970-000/@-18.2990761,-39.9587556,19z/data=!4m6!3m5!1s0xca804b02de6b95:0x50166aeec8735e0f!8m2!3d-18.2991215!4d-39.9579864!16s%2Fg%2F11f613rqzg?hl=pt-BR&entry=ttu&g_ep=EgoyMDI2MDIwMS4wIKXMDSoASAFQAw%3D%3D' },
+  { name: 'Posto Diamante Negro', city: 'São Mateus', address: 'São Mateus, ES', mapsUrl: 'https://maps.app.goo.gl/caunq78awoUE6Nf96' },
+  { name: 'Posto Damiani', city: 'São Mateus', address: 'São Mateus, ES', mapsUrl: 'https://maps.app.goo.gl/LiyUgK2LJwUFPsjm8' }
+]);
 
 function parseBody(req) {
   if (req.bodyJson && typeof req.bodyJson === 'object') return req.bodyJson;
@@ -216,37 +232,6 @@ async function listHistoryByField(databases, field, value) {
   return page.documents;
 }
 
-// Quando o navegador renova a inscrição Web Push (algo comum no iPhone), os
-// registros antigos continuam apontando para o ID anterior. Reata-os ao
-// aparelho atual sem guardar qualquer dado pessoal adicional.
-async function linkDeviceSubscription(databases, deviceId, subscriptionId, log) {
-  if (!isValidDeviceId(deviceId) || !isValidSubscriptionId(subscriptionId)) return 0;
-  try {
-    const records = await listHistoryByField(databases, 'deviceId', String(deviceId).trim());
-    const outdated = records.filter((record) => String(record.pushSubscriptionId || '').trim() !== subscriptionId);
-    let linked = 0;
-    for (let index = 0; index < outdated.length; index += 20) {
-      const batch = outdated.slice(index, index + 20);
-      const results = await Promise.allSettled(batch.map((record) => databases.updateDocument({
-        databaseId: DATABASE_ID,
-        collectionId: CENTRAL_RECORDS_COLLECTION_ID,
-        documentId: record.$id,
-        data: { pushSubscriptionId: subscriptionId }
-      })));
-      linked += results.filter((result) => result.status === 'fulfilled').length;
-      results.forEach((result, resultIndex) => {
-        if (result.status === 'rejected') {
-          log('Falha ao renovar vínculo push do registro ' + batch[resultIndex].$id + ': ' + (result.reason?.message || result.reason));
-        }
-      });
-    }
-    return linked;
-  } catch (caught) {
-    log('Falha ao renovar vínculos push do aparelho: ' + (caught?.message || caught));
-    return 0;
-  }
-}
-
 function wefrotasSnapshotDocumentId() {
   return crypto.createHash('sha256').update(WEFROTAS_COMPANY_ID).digest('hex').slice(0, 36);
 }
@@ -301,6 +286,172 @@ async function listCentralStations(databases) {
     .filter((station) => station.name && station.city && station.address)
     .map((station) => ({ ...station, mapsUrl: /^https:\/\//i.test(station.mapsUrl) ? station.mapsUrl : '' }))
     .sort((a, b) => a.city.localeCompare(b.city, 'pt-BR') || a.name.localeCompare(b.name, 'pt-BR'));
+}
+
+function normalizeStationName(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('pt-BR')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function centralStationSupplierId(name) {
+  return crypto.createHash('sha256').update(`central-station:${normalizeStationName(name)}`).digest('hex').slice(0, 36);
+}
+
+function stationFieldsDiffer(supplier, station) {
+  return String(supplier?.cidade || supplier?.cidadePosto || '').trim() !== station.city
+    || String(supplier?.endereco || supplier?.address || '').trim() !== station.address
+    || String(supplier?.mapaUrl || supplier?.linkMapa || supplier?.mapLink || '').trim() !== station.mapsUrl;
+}
+
+async function updateOrCreateWefrotasRow(databases, documentId, data) {
+  try {
+    await databases.updateDocument({
+      databaseId: DATABASE_ID,
+      collectionId: WEFROTAS_TABLE_ID,
+      documentId,
+      data
+    });
+  } catch (caught) {
+    if (Number(caught?.code) !== 404) throw caught;
+    await databases.createDocument({
+      databaseId: DATABASE_ID,
+      collectionId: WEFROTAS_TABLE_ID,
+      documentId,
+      data
+    });
+  }
+}
+
+async function persistWefrotasSnapshot(databases, snapshot, senderId) {
+  const serialized = JSON.stringify(snapshot);
+  const compressed = `gzip-base64:${gzipSync(Buffer.from(serialized, 'utf8')).toString('base64')}`;
+  const storedSnapshot = compressed.length < serialized.length ? compressed : serialized;
+  const rowId = wefrotasSnapshotDocumentId();
+  const updatedAt = new Date().toISOString();
+  const chunks = [];
+  for (let offset = 0; offset < storedSnapshot.length; offset += WEFROTAS_SNAPSHOT_CHUNK_SIZE) {
+    chunks.push(storedSnapshot.slice(offset, offset + WEFROTAS_SNAPSHOT_CHUNK_SIZE));
+  }
+
+  let primarySnapshot = storedSnapshot;
+  if (chunks.length > 1) {
+    const generation = `${Date.now().toString(36)}-${crypto.randomBytes(5).toString('hex')}`;
+    for (let start = 0; start < chunks.length; start += 4) {
+      await Promise.all(chunks.slice(start, start + 4).map((chunk, index) => (
+        updateOrCreateWefrotasRow(databases, wefrotasSnapshotChunkDocumentId(generation, start + index), {
+          workspaceId: WEFROTAS_COMPANY_ID,
+          snapshot: chunk,
+          updatedAt,
+          updatedBy: senderId
+        })
+      )));
+    }
+    primarySnapshot = `chunked-v1:${JSON.stringify({ generation, count: chunks.length, length: storedSnapshot.length })}`;
+  }
+
+  await updateOrCreateWefrotasRow(databases, rowId, {
+    workspaceId: WEFROTAS_COMPANY_ID,
+    snapshot: primarySnapshot,
+    updatedAt,
+    updatedBy: senderId
+  });
+}
+
+async function migrateCentralStationsToWefrotas(databases, senderId) {
+  const row = await databases.getDocument({
+    databaseId: DATABASE_ID,
+    collectionId: WEFROTAS_TABLE_ID,
+    documentId: wefrotasSnapshotDocumentId()
+  });
+  const snapshot = await decodeWefrotasSnapshot(databases, row?.snapshot);
+  const suppliers = Array.isArray(snapshot?.suppliers) ? [...snapshot.suppliers] : [];
+  const indexedSuppliers = new Map();
+  suppliers.forEach((supplier, index) => {
+    if (String(supplier?.tipo || '') !== 'posto') return;
+    const key = normalizeStationName(supplier?.nome);
+    if (key && !indexedSuppliers.has(key)) indexedSuppliers.set(key, index);
+  });
+
+  let created = 0;
+  let updated = 0;
+  let unchanged = 0;
+  CENTRAL_STATION_DIRECTORY.forEach((station) => {
+    const index = indexedSuppliers.get(normalizeStationName(station.name));
+    if (Number.isInteger(index)) {
+      const current = suppliers[index];
+      if (stationFieldsDiffer(current, station)) {
+        suppliers[index] = {
+          ...current,
+          tipo: 'posto',
+          tipoLabel: current.tipoLabel || 'Posto de combustível',
+          cidade: station.city,
+          endereco: station.address,
+          mapaUrl: station.mapsUrl
+        };
+        updated += 1;
+      } else {
+        unchanged += 1;
+      }
+      return;
+    }
+
+    suppliers.push({
+      id: centralStationSupplierId(station.name),
+      nome: station.name,
+      tipo: 'posto',
+      tipoLabel: 'Posto de combustível',
+      documento: '',
+      telefone: '',
+      cidade: station.city,
+      endereco: station.address,
+      mapaUrl: station.mapsUrl,
+      email: '',
+      observacoes: 'Importado da lista original da Central de Registros.',
+      ativo: true
+    });
+    created += 1;
+  });
+
+  if (created || updated) {
+    snapshot.suppliers = suppliers;
+    await persistWefrotasSnapshot(databases, snapshot, senderId);
+  }
+  return { total: CENTRAL_STATION_DIRECTORY.length, created, updated, unchanged };
+}
+
+// Quando o navegador renova a inscrição Web Push (algo comum no iPhone), os
+// registros antigos continuam apontando para o ID anterior. Reata-os ao
+// aparelho atual sem guardar qualquer dado pessoal adicional.
+async function linkDeviceSubscription(databases, deviceId, subscriptionId, log) {
+  if (!isValidDeviceId(deviceId) || !isValidSubscriptionId(subscriptionId)) return 0;
+  try {
+    const records = await listHistoryByField(databases, 'deviceId', String(deviceId).trim());
+    const outdated = records.filter((record) => String(record.pushSubscriptionId || '').trim() !== subscriptionId);
+    let linked = 0;
+    for (let index = 0; index < outdated.length; index += 20) {
+      const batch = outdated.slice(index, index + 20);
+      const results = await Promise.allSettled(batch.map((record) => databases.updateDocument({
+        databaseId: DATABASE_ID,
+        collectionId: CENTRAL_RECORDS_COLLECTION_ID,
+        documentId: record.$id,
+        data: { pushSubscriptionId: subscriptionId }
+      })));
+      linked += results.filter((result) => result.status === 'fulfilled').length;
+      results.forEach((result, resultIndex) => {
+        if (result.status === 'rejected') {
+          log('Falha ao renovar vínculo push do registro ' + batch[resultIndex].$id + ': ' + (result.reason?.message || result.reason));
+        }
+      });
+    }
+    return linked;
+  } catch (caught) {
+    log('Falha ao renovar vínculos push do aparelho: ' + (caught?.message || caught));
+    return 0;
+  }
 }
 
 async function listDeviceHistory(databases, payload) {
@@ -632,6 +783,14 @@ export default async ({ req, res, log, error }) => {
       const databases = createDatabaseClient(req);
       const stations = await listCentralStations(databases);
       return json(res, 200, { ok: true, stations, updatedAt: new Date().toISOString() });
+    }
+
+    if (action === 'migrate-central-stations') {
+      const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const result = await migrateCentralStationsToWefrotas(databases, senderId);
+      log('Postos da lista original da Central migrados por ' + senderId + ': ' + JSON.stringify(result));
+      return json(res, 200, { ok: true, ...result });
     }
 
     if (action === 'directory') {
