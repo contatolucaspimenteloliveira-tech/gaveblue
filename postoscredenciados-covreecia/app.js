@@ -34,7 +34,8 @@ const DRIVER_PROFILE_STORAGE_KEY = 'postoscredenciados-covreecia:driver-profile-
 const CENTRAL_LAST_SENT_STORAGE_KEY = 'postoscredenciados-covreecia:last-sent-record-v1';
 const CENTRAL_DEVICE_ID_KEY = 'postoscredenciados-covreecia:device-id-v1';
 const DRIVER_ONBOARDING_VERSION_KEY = 'postoscredenciados-covreecia:driver-onboarding-version';
-const DRIVER_ONBOARDING_VERSION = '2026-08-directory-v1';
+const DRIVER_ONBOARDING_VERSION = '2026-08-required-profile-v2';
+const DRIVER_PROFILE_PERMISSION_ERROR = 'ESTE MOTORISTA NÃO TEM PERMISSÃO PARA REALIZAR REGISTROS NESTE VEÍCULO. SE VOCÊ ENTENDE ISSO COMO UM ERRO, CONTATE A ADMINISTRAÇÃO.';
 const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
 const PWA_DISMISS_DAYS = 7;
@@ -987,6 +988,44 @@ function getDriverProfile() {
   }
 }
 
+function normalizeDirectoryValue(value) {
+  return String(value || '').trim().toLocaleUpperCase('pt-BR');
+}
+
+function isStoredDriverProfileComplete(profile = getDriverProfile()) {
+  return Boolean(profile?.driverId && profile?.vehicleId && profile?.name && profile?.vehicle && profile?.plate);
+}
+
+async function requireAuthorizedDriverProfile() {
+  const profile = getDriverProfile();
+  if (!isStoredDriverProfileComplete(profile)) {
+    showErrorMessage('Para enviar um registro, vincule seu perfil e veículo.');
+    openDriverProfile('edit');
+    return null;
+  }
+
+  try {
+    await ensureDriverDirectoryLoaded();
+  } catch (error) {
+    showErrorMessage('Não foi possível validar seu perfil agora. Tente novamente.');
+    return null;
+  }
+
+  const isAuthorized = centralDriverDirectory.some((row) =>
+    String(row?.driverId || '') === profile.driverId &&
+    String(row?.vehicleId || '') === profile.vehicleId &&
+    normalizeDirectoryValue(row?.plate) === normalizeDirectoryValue(profile.plate)
+  );
+
+  if (!isAuthorized) {
+    showErrorMessage(DRIVER_PROFILE_PERMISSION_ERROR);
+    openDriverProfile('edit');
+    return null;
+  }
+
+  return profile;
+}
+
 function getCentralLastSentRecord() {
   try {
     const storedRecord = localStorage.getItem(CENTRAL_LAST_SENT_STORAGE_KEY);
@@ -1177,6 +1216,101 @@ async function ensureDriverDirectoryLoaded() {
   return driverDirectoryLoadPromise;
 }
 
+function getDirectoryVehicles() {
+  const vehicles = new Map();
+  centralDriverDirectory.forEach((row) => {
+    if (!row?.vehicleId || !row?.plate) return;
+    if (!vehicles.has(row.vehicleId)) vehicles.set(row.vehicleId, row);
+  });
+  return [...vehicles.values()].sort((a, b) =>
+    String(a.plate || '').localeCompare(String(b.plate || ''), 'pt-BR')
+  );
+}
+
+function renderVehicleDirectoryResults(queryValue) {
+  const results = document.getElementById('driver-vehicle-results');
+  if (!results) return;
+  const query = String(queryValue ?? document.getElementById('driver-vehicle-search')?.value ?? '')
+    .trim()
+    .toLocaleLowerCase('pt-BR');
+
+  if (!query) {
+    results.innerHTML = '<div class="driver-directory-message">Digite a placa do veículo para pesquisar.</div>';
+    return;
+  }
+
+  const vehicles = getDirectoryVehicles().filter((vehicle) => [
+    vehicle.plate,
+    vehicle.vehicleName,
+    vehicle.fleetNumber
+  ].some((value) => String(value || '').toLocaleLowerCase('pt-BR').includes(query)));
+
+  results.innerHTML = vehicles.length ? vehicles.map((vehicle) => `
+    <button type="button" class="driver-profile-result driver-vehicle-result" data-vehicle-id="${escapeCentralHtml(vehicle.vehicleId)}">
+      <span class="driver-profile-result-mark driver-vehicle-result-mark" aria-hidden="true"></span>
+      <span><strong>${escapeCentralHtml(vehicle.plate)}</strong><small>${escapeCentralHtml(vehicle.vehicleName || 'Veículo cadastrado')}${vehicle.fleetNumber ? ` • Frota ${escapeCentralHtml(vehicle.fleetNumber)}` : ''}</small></span>
+    </button>
+  `).join('') : '<div class="driver-directory-message">Nenhum veículo encontrado para esta placa.</div>';
+
+  results.querySelectorAll('[data-vehicle-id]').forEach((button) => button.addEventListener('click', () => selectAlternativeVehicle(button.dataset.vehicleId)));
+}
+
+async function filterVehicleDirectory() {
+  const results = document.getElementById('driver-vehicle-results');
+  const query = String(document.getElementById('driver-vehicle-search')?.value || '').trim();
+  if (!query) {
+    renderVehicleDirectoryResults('');
+    return;
+  }
+  if (results) results.innerHTML = '<div class="driver-search-loading" role="status"><span class="driver-search-spinner" aria-hidden="true"></span><span>Buscando veículos...</span></div>';
+  try {
+    await ensureDriverDirectoryLoaded();
+    renderVehicleDirectoryResults(query);
+  } catch (error) {
+    if (results) results.innerHTML = '<div class="driver-directory-message is-error">Não foi possível consultar os veículos agora.</div>';
+  }
+}
+
+function showVehicleChangeSearch() {
+  if (!selectedDirectoryDriver) return;
+  document.getElementById('driver-onboarding-vehicle-step')?.classList.add('hidden');
+  document.getElementById('driver-onboarding-vehicle-search-step')?.classList.remove('hidden');
+  const error = document.getElementById('driver-vehicle-permission-error');
+  error?.classList.add('hidden');
+  const search = document.getElementById('driver-vehicle-search');
+  if (search) {
+    search.value = '';
+    window.setTimeout(() => search.focus(), 80);
+  }
+  renderVehicleDirectoryResults('');
+}
+
+function returnToSuggestedVehicle() {
+  document.getElementById('driver-onboarding-vehicle-search-step')?.classList.add('hidden');
+  document.getElementById('driver-onboarding-vehicle-step')?.classList.remove('hidden');
+}
+
+function selectAlternativeVehicle(vehicleId) {
+  const candidate = getDirectoryVehicles().find((vehicle) => String(vehicle.vehicleId) === String(vehicleId));
+  const permittedIndex = selectedDirectoryVehicles.findIndex((vehicle) =>
+    String(vehicle.vehicleId) === String(vehicleId) &&
+    normalizeDirectoryValue(vehicle.plate) === normalizeDirectoryValue(candidate?.plate)
+  );
+  const error = document.getElementById('driver-vehicle-permission-error');
+
+  if (!candidate || permittedIndex < 0) {
+    if (error) {
+      error.textContent = DRIVER_PROFILE_PERMISSION_ERROR;
+      error.classList.remove('hidden');
+    }
+    return;
+  }
+
+  selectedDirectoryVehicleIndex = permittedIndex;
+  returnToSuggestedVehicle();
+  renderSuggestedDriverVehicle();
+}
+
 function renderDriverDirectoryResults(queryValue) {
   const results = document.getElementById('driver-profile-results');
   if (!results) return;
@@ -1239,6 +1373,7 @@ function selectDirectoryDriver(driverId) {
     return;
   }
   document.getElementById('driver-onboarding-driver-step')?.classList.add('hidden');
+  document.getElementById('driver-onboarding-vehicle-search-step')?.classList.add('hidden');
   document.getElementById('driver-onboarding-vehicle-step')?.classList.remove('hidden');
   renderSuggestedDriverVehicle();
 }
@@ -1284,6 +1419,7 @@ function returnToDriverSelection() {
   selectedDirectoryDriver = null;
   selectedDirectoryVehicles = [];
   document.getElementById('driver-onboarding-vehicle-step')?.classList.add('hidden');
+  document.getElementById('driver-onboarding-vehicle-search-step')?.classList.add('hidden');
   document.getElementById('driver-onboarding-driver-step')?.classList.remove('hidden');
   document.getElementById('driver-profile-search')?.focus();
 }
@@ -1329,6 +1465,7 @@ function openDriverProfile(mode = 'profile') {
   modal?.setAttribute('aria-hidden', 'false');
   document.body.classList.add('driver-profile-open');
   if (profile && mode !== 'edit') {
+    setDriverProfileDismissibility(false);
     const title = document.getElementById('driver-profile-title');
     if (title) title.textContent = 'Meu perfil';
     if (search) search.value = '';
@@ -1342,9 +1479,16 @@ function openDriverProfile(mode = 'profile') {
   startDriverProfileEditing();
 }
 
+function setDriverProfileDismissibility(isOnboarding) {
+  document.getElementById('driver-profile-close')?.classList.toggle('hidden', isOnboarding);
+  document.getElementById('driver-profile-backdrop')?.classList.toggle('driver-profile-backdrop--locked', isOnboarding);
+}
+
 function startDriverProfileEditing() {
+  setDriverProfileDismissibility(true);
   document.getElementById('driver-profile-overview')?.classList.add('hidden');
   document.getElementById('driver-onboarding-vehicle-step')?.classList.add('hidden');
+  document.getElementById('driver-onboarding-vehicle-search-step')?.classList.add('hidden');
   const title = document.getElementById('driver-profile-title');
   if (title) title.textContent = 'Vamos deixar seus abastecimentos mais rápidos?';
   document.getElementById('driver-profile-skip')?.classList.remove('hidden');
@@ -1993,6 +2137,11 @@ function prepareFuelForm(options = {}) {
 }
 
 function openFuelFormMenu(mode = 'rapido') {
+  if (!isStoredDriverProfileComplete()) {
+    showErrorMessage('Para enviar um registro, vincule seu perfil e veículo.');
+    openDriverProfile('edit');
+    return;
+  }
   closeOpenFormsSilently();
   setMobileNavActive(mode === 'completo' ? 'complete' : 'fast');
   document.getElementById('fuel-form-modal').classList.remove('hidden');
@@ -2040,6 +2189,11 @@ function prepareLooseNoteForm() {
 }
 
 function openLooseNoteForm() {
+  if (!isStoredDriverProfileComplete()) {
+    showErrorMessage('Para enviar um registro, vincule seu perfil e veículo.');
+    openDriverProfile('edit');
+    return;
+  }
   closeOpenFormsSilently();
   setMobileNavActive('services');
   document.getElementById('loose-note-modal')?.classList.remove('hidden');
@@ -2851,7 +3005,14 @@ function resetProgressState() {
 async function submitFuelForm(e) {
   e.preventDefault();
 
+  const profile = await requireAuthorizedDriverProfile();
+  if (!profile) return;
+
   const formData = getFuelFormData();
+  if (normalizeDirectoryValue(formData.motorista) !== normalizeDirectoryValue(profile.name)) {
+    showErrorMessage(DRIVER_PROFILE_PERMISSION_ERROR);
+    return;
+  }
   const uploadKey = getFuelReceiptUploadKey(formData);
   const isComplete = currentFuelFormMode === 'completo';
   const revisionWarning = getRevisionWarningMessage(formData.km);
@@ -2935,7 +3096,14 @@ async function submitFuelForm(e) {
 async function submitLooseNoteForm(e) {
   e.preventDefault();
 
+  const profile = await requireAuthorizedDriverProfile();
+  if (!profile) return;
+
   const formData = getLooseNoteFormData();
+  if (normalizeDirectoryValue(formData.motorista) !== normalizeDirectoryValue(profile.name)) {
+    showErrorMessage(DRIVER_PROFILE_PERMISSION_ERROR);
+    return;
+  }
   const uploadKey = getLooseNoteReceiptUploadKey(formData);
 
   if (!formData.motorista || !formData.fornecedor || !formData.tipoServico || !formData.valor || !formData.data) {
@@ -3027,6 +3195,11 @@ function openMap(link) {
 }
 
 function openFuelForm(postoNome, cidadeNome) {
+  if (!isStoredDriverProfileComplete()) {
+    showErrorMessage('Para enviar um registro, vincule seu perfil e veículo.');
+    openDriverProfile('edit');
+    return;
+  }
   document.getElementById('fuel-form-modal').classList.remove('hidden');
   prepareFuelForm({ cidade: cidadeNome, posto: postoNome, mode: 'rapido' });
 }
