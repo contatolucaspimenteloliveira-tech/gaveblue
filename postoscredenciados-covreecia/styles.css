@@ -3063,3 +3063,14 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
 .driver-vehicle-result-mark::before { content: '🚗'; font-size: 0.85rem; }
 .driver-vehicle-result-mark { font-size: 0; }
 #driver-vehicle-permission-error { margin-top: 0.7rem; text-align: left; line-height: 1.45; }
+
+/* Progresso de instalação: o Chrome ainda decide a conclusão real. */
+.pwa-install-phase-list { display: grid; gap: 0.28rem; margin: 0.72rem 0 0; padding: 0; list-style: none; color: #64748b; font-size: 0.67rem; font-weight: 700; }
+.pwa-install-phase-list li { display: flex; align-items: center; gap: 0.42rem; }
+.pwa-install-phase-list li::before { content: ''; width: 0.52rem; height: 0.52rem; flex: 0 0 auto; border: 1.5px solid #cbd5e1; border-radius: 50%; background: #fff; }
+.pwa-install-phase-list li.is-active { color: #9a3412; }
+.pwa-install-phase-list li.is-active::before { border-color: #f97316; background: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,.15); }
+.pwa-install-phase-list li.is-complete { color: #15803d; }
+.pwa-install-phase-list li.is-complete::before { border-color: #22c55e; background: #22c55e; }
+.pwa-install-backdrop--locked { pointer-events: none; }
+.pwa-install-primary:disabled { opacity: .72; cursor: wait; }
