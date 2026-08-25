@@ -20,7 +20,7 @@
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css">
-  <link rel="stylesheet" href="./styles.css?v=20260825-resilient-profile-sync-1">
+  <link rel="stylesheet" href="./styles.css?v=20260825-browser-registration-1">
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full flex flex-col">
@@ -59,12 +59,12 @@
     <div class="pwa-install-header">
      <img src="./assets/pwa/icon-central-192.png" alt="Central de Registros" class="pwa-install-logo">
      <div>
-      <p class="pwa-install-kicker">ACESSO MOBILE</p>
-      <h2 id="pwa-install-title" class="pwa-install-title">Instale Central de Registros</h2>
+      <p class="pwa-install-kicker">INSTALA&Ccedil;&Atilde;O OPCIONAL</p>
+      <h2 id="pwa-install-title" class="pwa-install-title">Quer instalar a Central?</h2>
      </div>
     </div>
     <p id="pwa-install-description" class="pwa-install-description">
-     Para continuar pelo celular, instale a Central de Registros na tela inicial.
+     Voc&ecirc; pode fazer seus registros normalmente pelo navegador. Instalar o aplicativo &eacute; apenas uma sugest&atilde;o para facilitar os pr&oacute;ximos acessos.
     </p>
     <div class="pwa-install-info">
      <p id="pwa-install-platform" class="pwa-install-platform">Android</p>
@@ -98,7 +98,7 @@
     <button id="pwa-install-dismiss" type="button" class="pwa-install-secondary">Agora não</button>
     <button id="pwa-install-manual-help" type="button" class="pwa-install-secondary pwa-install-manual-help hidden">Não apareceu? Ver instruções pelo navegador</button>
     <p id="pwa-install-footnote" class="pwa-install-footnote">
-     Se o prompt não aparecer, abra o menu do navegador e toque em Instalar app ou Adicionar à tela inicial.
+     Toque em <strong>Agora n&atilde;o</strong> para continuar online pelo navegador.
     </p>
    </section>
   </div>
@@ -589,7 +589,7 @@
      </div>
      <div id="driver-onboarding-progress" class="driver-onboarding-progress" role="progressbar" aria-label="Progresso da configuração inicial" aria-valuemin="1" aria-valuemax="6" aria-valuenow="1">
       <div class="driver-onboarding-progress-copy">
-       <span>Configurando este aparelho</span>
+       <span>Configurando seu acesso</span>
        <strong id="driver-onboarding-progress-text">Passo 1 de 6</strong>
       </div>
       <div class="driver-onboarding-progress-track"><span id="driver-onboarding-progress-bar"></span></div>
@@ -651,7 +651,7 @@
      </div>
      <div id="driver-onboarding-permissions-step" class="driver-onboarding-step onboarding-permission-step hidden">
       <span class="onboarding-permission-icon onboarding-permission-icon--intro" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3 7 3v5c0 4.7-2.8 8-7 10-4.2-2-7-5.3-7-10V6l7-3Z" stroke-width="2"/><path d="m9 12 2 2 4-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <strong>Para funcionar 100%, precisamos de algumas permissões.</strong>
+      <strong>Algumas permiss&otilde;es podem facilitar o uso da Central.</strong>
       <p>Vamos explicar cada uma antes de pedir qualquer confirmação no seu celular.</p>
       <button type="button" class="driver-profile-save" onclick="openOnboardingCameraStep()">Continuar</button>
      </div>
@@ -680,8 +680,8 @@
      </div>
      <div id="driver-onboarding-ready-step" class="driver-onboarding-step onboarding-permission-step onboarding-ready-step hidden">
       <span class="onboarding-permission-icon onboarding-permission-icon--ready" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m5 12 4 4L19 6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <strong>Seu app está pronto.</strong>
-      <p>Seu perfil e veículo já estão vinculados a este aparelho. Agora é só registrar e acompanhar seus envios.</p>
+      <strong>Seu acesso est&aacute; pronto.</strong>
+      <p>Seu perfil e ve&iacute;culo j&aacute; est&atilde;o vinculados a este aparelho. Voc&ecirc; pode registrar pelo navegador ou pelo aplicativo.</p>
       <button type="button" class="driver-profile-save" onclick="finishGuidedOnboardingAndClose()">Começar a usar</button>
      </div>
      <button id="driver-profile-skip" type="button" class="driver-profile-skip" onclick="skipDriverOnboarding()">Pular por enquanto</button>
@@ -1119,6 +1119,6 @@
     <span>Configura&ccedil;&otilde;es</span>
    </button>
   </nav>
-  <script src="./app.js?v=20260825-resilient-profile-sync-1"></script>
+  <script src="./app.js?v=20260825-browser-registration-1"></script>
  </body>
 </html>
