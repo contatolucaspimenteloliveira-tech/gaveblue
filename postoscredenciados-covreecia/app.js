@@ -23,6 +23,11 @@ const CENTRAL_APPWRITE_TABLE_ID = 'central_registros_pendentes';
 const CENTRAL_APPWRITE_WORKSPACE_ID = 'covre-e-cia';
 const CENTRAL_APPWRITE_ORIGIN = 'postoscredenciados-covreecia';
 const CENTRAL_APPWRITE_RETRY_KEY = 'postoscredenciados-covreecia:appwrite-pending-record';
+const CENTRAL_DRIVER_DIRECTORY_CACHE_KEY = 'postoscredenciados-covreecia:driver-directory-cache-v1';
+const CENTRAL_DEVICE_STATE_DB = 'central-registros-device-state-v1';
+const CENTRAL_DEVICE_STATE_STORE = 'state';
+const CENTRAL_DEVICE_STATE_RECORD_KEY = 'current-device';
+const CENTRAL_DIRECTORY_CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
 const MAX_RECEIPT_IMAGE_BYTES = 900 * 1024;
 const MAX_RECEIPT_SOURCE_BYTES = 10 * 1024 * 1024;
 const COMPRESSED_RECEIPT_MAX_SIZE = 1280;
@@ -47,6 +52,9 @@ const CENTRAL_NOTIFICATIONS_DB = 'central-registros-notifications-v1';
 const CENTRAL_NOTIFICATIONS_STORE = 'notifications';
 const REMOVED_DRIVER_NAMES = ['ELOIS DOS SANTOS'];
 let centralRequiredOnboardingVersion = DRIVER_ONBOARDING_VERSION;
+let centralOnboardingConfigResolved = false;
+let centralRetryInProgress = false;
+let centralDeviceStateReadyPromise = null;
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
 let fuelReceiptUploadPromise = null;
@@ -512,9 +520,40 @@ function urlBase64ToUint8Array(value) {
   return Uint8Array.from([...raw].map((character) => character.charCodeAt(0)));
 }
 
-async function executeCentralPushFunction(payload) {
+function waitForCentralRetry(delay) {
+  return new Promise((resolve) => window.setTimeout(resolve, delay));
+}
+
+async function fetchCentralWithRetry(url, options = {}, retryOptions = {}) {
+  const attempts = Math.max(1, Number(retryOptions.attempts || 3));
+  const timeoutMs = Math.max(1500, Number(retryOptions.timeoutMs || 12000));
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      if (response.status < 500 || attempt === attempts) return response;
+      lastError = new Error(`Serviço temporariamente indisponível (${response.status}).`);
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) break;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+    await waitForCentralRetry(350 * attempt);
+  }
+
+  const unavailable = new Error('Sem conexão com a Central no momento. A nova tentativa será automática.');
+  unavailable.cause = lastError;
+  unavailable.isNetworkError = true;
+  throw unavailable;
+}
+
+async function executeCentralPushFunction(payload, retryOptions = {}) {
   const endpoint = CENTRAL_APPWRITE_ENDPOINT + '/functions/' + CENTRAL_PUSH_FUNCTION_ID + '/executions';
-  const response = await fetch(endpoint, {
+  const response = await fetchCentralWithRetry(endpoint, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -528,7 +567,7 @@ async function executeCentralPushFunction(payload) {
       path: '/',
       headers: { 'content-type': 'application/json' }
     })
-  });
+  }, retryOptions);
 
   const execution = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -604,6 +643,7 @@ function saveCentralPushSubscriptionId(subscriptionId) {
   } else {
     localStorage.removeItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY);
   }
+  persistCentralDeviceState();
 }
 
 function getCentralPushSubscriptionId() {
@@ -615,6 +655,7 @@ function getCentralDeviceId() {
   if (/^[a-f0-9-]{32,64}$/i.test(deviceId)) return deviceId;
   deviceId = globalThis.crypto?.randomUUID?.() || `${Date.now().toString(16)}-${Array.from(globalThis.crypto?.getRandomValues?.(new Uint8Array(16)) || []).map((value) => value.toString(16).padStart(2, '0')).join('')}`;
   localStorage.setItem(CENTRAL_DEVICE_ID_KEY, deviceId);
+  persistCentralDeviceState();
   return deviceId;
 }
 
@@ -1056,6 +1097,89 @@ function saveLastFuelEntry(entry) {
   }
 }
 
+function openCentralDeviceStateDb() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) {
+      reject(new Error('Armazenamento persistente indisponível.'));
+      return;
+    }
+    const request = indexedDB.open(CENTRAL_DEVICE_STATE_DB, 1);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(CENTRAL_DEVICE_STATE_STORE)) {
+        database.createObjectStore(CENTRAL_DEVICE_STATE_STORE, { keyPath: 'key' });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error('Falha ao abrir o armazenamento persistente.'));
+  });
+}
+
+async function persistCentralDeviceState() {
+  try {
+    const database = await openCentralDeviceStateDb();
+    const state = {
+      key: CENTRAL_DEVICE_STATE_RECORD_KEY,
+      profile: localStorage.getItem(DRIVER_PROFILE_STORAGE_KEY) || '',
+      onboardingVersion: localStorage.getItem(DRIVER_ONBOARDING_VERSION_KEY) || '',
+      deviceId: localStorage.getItem(CENTRAL_DEVICE_ID_KEY) || '',
+      subscriptionId: localStorage.getItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY) || '',
+      pendingRecords: localStorage.getItem(CENTRAL_APPWRITE_RETRY_KEY) || '',
+      updatedAt: new Date().toISOString()
+    };
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction(CENTRAL_DEVICE_STATE_STORE, 'readwrite');
+      transaction.objectStore(CENTRAL_DEVICE_STATE_STORE).put(state);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
+  } catch (error) {
+    console.warn('Não foi possível criar a cópia de segurança do perfil neste aparelho.', error);
+  }
+}
+
+async function restoreCentralDeviceState() {
+  try {
+    const database = await openCentralDeviceStateDb();
+    const state = await new Promise((resolve, reject) => {
+      const transaction = database.transaction(CENTRAL_DEVICE_STATE_STORE, 'readonly');
+      const request = transaction.objectStore(CENTRAL_DEVICE_STATE_STORE).get(CENTRAL_DEVICE_STATE_RECORD_KEY);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+    database.close();
+    if (!state) return false;
+
+    const recover = (storageKey, storedValue) => {
+      if (!localStorage.getItem(storageKey) && String(storedValue || '').trim()) {
+        localStorage.setItem(storageKey, String(storedValue));
+      }
+    };
+    if (!getDriverProfile() && String(state.profile || '').trim()) {
+      localStorage.setItem(DRIVER_PROFILE_STORAGE_KEY, String(state.profile));
+    }
+    recover(DRIVER_ONBOARDING_VERSION_KEY, state.onboardingVersion);
+    recover(CENTRAL_DEVICE_ID_KEY, state.deviceId);
+    recover(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY, state.subscriptionId);
+    recover(CENTRAL_APPWRITE_RETRY_KEY, state.pendingRecords);
+    return true;
+  } catch (error) {
+    console.warn('Não foi possível recuperar a cópia de segurança do perfil.', error);
+    return false;
+  }
+}
+
+function ensureCentralDeviceStateRestored() {
+  if (!centralDeviceStateReadyPromise) {
+    centralDeviceStateReadyPromise = Promise.race([
+      restoreCentralDeviceState(),
+      waitForCentralRetry(1500)
+    ]);
+  }
+  return centralDeviceStateReadyPromise;
+}
+
 function getDriverProfile() {
   try {
     const storedProfile = localStorage.getItem(DRIVER_PROFILE_STORAGE_KEY);
@@ -1344,17 +1468,25 @@ function renderProfilePage() {
 }
 
 function shouldOpenDriverOnboarding() {
-  return localStorage.getItem(DRIVER_ONBOARDING_VERSION_KEY) !== centralRequiredOnboardingVersion;
+  const completedVersion = String(localStorage.getItem(DRIVER_ONBOARDING_VERSION_KEY) || '').trim();
+  if (!completedVersion) return true;
+  // Uma queda na Function não pode invalidar um perfil já concluído. A versão
+  // obrigatória só é comparada quando foi realmente recebida do servidor.
+  if (!centralOnboardingConfigResolved) return false;
+  return completedVersion !== centralRequiredOnboardingVersion;
 }
 
 async function loadCentralOnboardingConfig() {
   try {
     const result = await Promise.race([
-      executeCentralPushFunction({ action: 'onboarding-config' }),
+      executeCentralPushFunction({ action: 'onboarding-config' }, { attempts: 1, timeoutMs: 3000 }),
       new Promise((resolve) => window.setTimeout(() => resolve(null), 3500))
     ]);
     const version = String(result?.version || '').trim();
-    if (/^[a-zA-Z0-9._:-]{1,120}$/.test(version)) centralRequiredOnboardingVersion = version;
+    if (/^[a-zA-Z0-9._:-]{1,120}$/.test(version)) {
+      centralRequiredOnboardingVersion = version;
+      centralOnboardingConfigResolved = true;
+    }
   } catch (error) {
     console.warn('Não foi possível consultar a versão obrigatória do onboarding.', error);
   }
@@ -1373,13 +1505,38 @@ function getDirectoryDrivers() {
 async function ensureDriverDirectoryLoaded() {
   if (centralDriverDirectory.length) return centralDriverDirectory;
   if (!driverDirectoryLoadPromise) {
-    driverDirectoryLoadPromise = executeCentralPushFunction({ action: 'directory' })
+    driverDirectoryLoadPromise = executeCentralPushFunction(
+      { action: 'directory' },
+      { attempts: 1, timeoutMs: 4500 }
+    )
       .then((result) => {
         centralDriverDirectory = Array.isArray(result?.directory) ? result.directory : [];
         if (!centralDriverDirectory.length) {
           throw new Error('O diretório ainda está vazio. Abra o WeFrotas e sincronize os dados para publicar os vínculos ativos.');
         }
+        try {
+          localStorage.setItem(CENTRAL_DRIVER_DIRECTORY_CACHE_KEY, JSON.stringify({
+            savedAt: Date.now(),
+            directory: centralDriverDirectory
+          }));
+        } catch (error) {
+          console.warn('Não foi possível guardar o diretório validado neste aparelho.', error);
+        }
         return centralDriverDirectory;
+      })
+      .catch((error) => {
+        try {
+          const cached = JSON.parse(localStorage.getItem(CENTRAL_DRIVER_DIRECTORY_CACHE_KEY) || 'null');
+          const cacheAge = Date.now() - Number(cached?.savedAt || 0);
+          if (Array.isArray(cached?.directory) && cached.directory.length && cacheAge >= 0 && cacheAge <= CENTRAL_DIRECTORY_CACHE_MAX_AGE) {
+            centralDriverDirectory = cached.directory;
+            console.warn('Usando o último diretório validado enquanto a conexão se recupera.');
+            return centralDriverDirectory;
+          }
+        } catch (cacheError) {
+          console.warn('Não foi possível recuperar o diretório validado.', cacheError);
+        }
+        throw error;
       })
       .finally(() => {
         driverDirectoryLoadPromise = null;
@@ -1673,6 +1830,7 @@ function confirmSuggestedDriverVehicle() {
     showErrorMessage('Não foi possível salvar o perfil neste aparelho.');
     return;
   }
+  persistCentralDeviceState();
   saveDriverNameSuggestion(selectedDirectoryDriver.name);
   renderHomeDriverArea();
   if (isGuidedDriverOnboarding()) {
@@ -1680,6 +1838,7 @@ function confirmSuggestedDriverVehicle() {
     return;
   }
   localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
+  persistCentralDeviceState();
   closeDriverProfile();
   showSuccessMessage('Motorista e veículo confirmados.');
 }
@@ -1751,6 +1910,7 @@ async function activateOnboardingNotifications() {
 function finishGuidedOnboarding(options = {}) {
   if (options.notificationsSkipped) localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
   localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
+  persistCentralDeviceState();
   const title = document.getElementById('driver-profile-title');
   const kicker = document.getElementById('driver-profile-kicker');
   if (kicker) kicker.textContent = 'TUDO CERTO';
@@ -1765,6 +1925,7 @@ function finishGuidedOnboardingAndClose() {
 function skipDriverOnboarding() {
   localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
   localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
+  persistCentralDeviceState();
   closeDriverProfile();
 }
 
@@ -2861,7 +3022,7 @@ async function saveCentralRegistroToAppwrite(payload) {
   }
 
   const url = `${CENTRAL_APPWRITE_ENDPOINT}/tablesdb/${encodeURIComponent(CENTRAL_APPWRITE_DATABASE_ID)}/tables/${encodeURIComponent(CENTRAL_APPWRITE_TABLE_ID)}/rows`;
-  const response = await fetch(url, {
+  const response = await fetchCentralWithRetry(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -2872,7 +3033,7 @@ async function saveCentralRegistroToAppwrite(payload) {
       rowId: payload.rowId,
       data: payload.data
     })
-  });
+  }, { attempts: 3, timeoutMs: 10000 });
 
   if (response.status === 409) {
     return { alreadyExists: true };
@@ -2894,48 +3055,74 @@ async function saveCentralRegistroToAppwrite(payload) {
 
 function saveCentralRetryPayload(payload) {
   try {
-    localStorage.setItem(CENTRAL_APPWRITE_RETRY_KEY, JSON.stringify(payload));
+    const stored = JSON.parse(localStorage.getItem(CENTRAL_APPWRITE_RETRY_KEY) || '[]');
+    const queue = Array.isArray(stored) ? stored : (stored && typeof stored === 'object' ? [stored] : []);
+    const nextQueue = queue.filter((item) => String(item?.rowId || '') !== String(payload?.rowId || ''));
+    nextQueue.push(payload);
+    localStorage.setItem(CENTRAL_APPWRITE_RETRY_KEY, JSON.stringify(nextQueue.slice(-20)));
+    persistCentralDeviceState();
   } catch (error) {
-    console.warn('NÃ£o foi possÃ­vel guardar o registro pendente para nova tentativa.', error);
+    console.warn('Não foi possível guardar o registro pendente para nova tentativa.', error);
   }
 }
 
-function clearCentralRetryPayload() {
+function getCentralRetryPayloads() {
   try {
-    localStorage.removeItem(CENTRAL_APPWRITE_RETRY_KEY);
+    const stored = JSON.parse(localStorage.getItem(CENTRAL_APPWRITE_RETRY_KEY) || '[]');
+    return Array.isArray(stored) ? stored : (stored && typeof stored === 'object' ? [stored] : []);
   } catch (error) {
-    console.warn('NÃ£o foi possÃ­vel limpar o registro pendente da Central.', error);
+    return [];
+  }
+}
+
+function clearCentralRetryPayload(rowId = '') {
+  try {
+    if (!rowId) {
+      localStorage.removeItem(CENTRAL_APPWRITE_RETRY_KEY);
+      return;
+    }
+    const nextQueue = getCentralRetryPayloads().filter((item) => String(item?.rowId || '') !== String(rowId));
+    if (nextQueue.length) localStorage.setItem(CENTRAL_APPWRITE_RETRY_KEY, JSON.stringify(nextQueue));
+    else localStorage.removeItem(CENTRAL_APPWRITE_RETRY_KEY);
+    persistCentralDeviceState();
+  } catch (error) {
+    console.warn('Não foi possível limpar o registro pendente da Central.', error);
   }
 }
 
 async function saveCentralRegistroWithRetry(payload) {
   saveCentralRetryPayload(payload);
   const result = await saveCentralRegistroToAppwrite(payload);
-  clearCentralRetryPayload();
+  clearCentralRetryPayload(payload.rowId);
   return result;
 }
 
 async function retryPendingCentralRegistro() {
-  let rawPayload = '';
+  if (centralRetryInProgress || !navigator.onLine) return;
+  const queue = getCentralRetryPayloads();
+  if (!queue.length) return;
+  centralRetryInProgress = true;
   try {
-    rawPayload = localStorage.getItem(CENTRAL_APPWRITE_RETRY_KEY) || '';
-  } catch (error) {
-    return;
-  }
-  if (!rawPayload) return;
-
-  try {
-    await saveCentralRegistroToAppwrite(JSON.parse(rawPayload));
-    clearCentralRetryPayload();
-    console.info('Registro pendente da Central foi salvo no Appwrite.');
-  } catch (error) {
-    console.warn('Ainda nÃ£o foi possÃ­vel reenviar o registro pendente da Central.', error);
+    for (const payload of queue) {
+      try {
+        await saveCentralRegistroToAppwrite(payload);
+        clearCentralRetryPayload(payload.rowId);
+        console.info('Registro pendente da Central foi salvo no Appwrite.');
+      } catch (error) {
+        console.warn('Ainda não foi possível reenviar um registro pendente da Central.', error);
+      }
+    }
+  } finally {
+    centralRetryInProgress = false;
   }
 }
 
 function getCentralAppwriteErrorMessage(error) {
-  const message = String(error?.message || 'Erro desconhecido ao gravar no Appwrite.');
-  return `O comprovante foi enviado, mas a Central nÃ£o conseguiu salvar o registro online: ${message}`;
+  if (error?.isNetworkError || /failed to fetch|network|sem conexão/i.test(String(error?.message || ''))) {
+    return 'A conexão oscilou. O registro ficou salvo neste aparelho e será enviado automaticamente quando a Central reconectar.';
+  }
+  const message = String(error?.message || 'Erro desconhecido ao gravar na Central.');
+  return `O comprovante foi enviado, mas a Central ainda não confirmou o registro: ${message}`;
 }
 
 function updateReceiptUploadStatus(message, tone = 'neutral') {
@@ -4489,7 +4676,8 @@ if (window.elementSdk) {
   });
 }
 
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', async function() {
+  await ensureCentralDeviceStateRestored();
   if (window.lucide) {
     lucide.createIcons();
   }
@@ -4590,8 +4778,12 @@ function renderCityImageCards() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  await ensureCentralDeviceStateRestored();
   renderCityImageCards();
   loadManagedCentralStations();
+  ensureDriverDirectoryLoaded().catch((error) => {
+    console.warn('O diretório será carregado novamente quando necessário.', error);
+  });
   retryPendingCentralRegistro();
   getCentralDeviceId();
   renderHomeDriverArea();
@@ -4623,7 +4815,16 @@ window.addEventListener('keydown', (event) => {
 });
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') refreshMySubmissions({ silent: true });
+  if (document.visibilityState === 'visible') {
+    refreshMySubmissions({ silent: true });
+    retryPendingCentralRegistro();
+  }
+});
+
+window.addEventListener('online', () => {
+  retryPendingCentralRegistro();
+  loadManagedCentralStations();
+  setupCentralPushExperience();
 });
 
 const CENTRAL_BANNERS_CONFIG = Object.freeze({

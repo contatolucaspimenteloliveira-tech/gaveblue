@@ -1,4 +1,4 @@
-const CENTRAL_RELEASE = '20260825-locked-driver-compact-receipt-1';
+const CENTRAL_RELEASE = '20260825-resilient-profile-sync-1';
 const CACHE_NAME = `central-registros-static-v${CENTRAL_RELEASE}`;
 const APPWRITE_AUTH_CACHE = 'central-registros-appwrite-auth-v1';
 const APPWRITE_ENDPOINT_ORIGIN = 'https://nyc.cloud.appwrite.io';
@@ -8,8 +8,8 @@ const APPWRITE_FALLBACK_CACHE_KEY = new URL('./__central_appwrite_fallback_cooki
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=20260825-locked-driver-compact-receipt-1',
-  './app.js?v=20260825-locked-driver-compact-receipt-1',
+  './styles.css?v=20260825-resilient-profile-sync-1',
+  './app.js?v=20260825-resilient-profile-sync-1',
   './manifest.webmanifest',
   './assets/brand/covre-e-cia.png',
   './assets/home/hero-posto.png',
@@ -263,20 +263,30 @@ function isAppwriteAuthError(response) {
 
 async function handleCentralAppwriteWrite(request) {
   // 1) Mantém compatibilidade com a permissão antiga de visitante (Role.guests/any).
-  const guestResponse = await fetch(buildAppwriteRequest(request.clone()));
-  if (!isAppwriteAuthError(guestResponse)) {
+  let guestResponse = null;
+  let guestError = null;
+  try {
+    guestResponse = await fetch(buildAppwriteRequest(request.clone()));
+  } catch (error) {
+    guestError = error;
+  }
+  if (guestResponse && !isAppwriteAuthError(guestResponse)) {
     return guestResponse;
   }
 
   // 2) Se já há sessão anônima salva, tenta como Role.users antes de criar outra.
   let fallbackCookie = await readAppwriteFallbackCookie();
   if (fallbackCookie) {
-    const authenticatedResponse = await fetch(buildAppwriteRequest(request.clone(), fallbackCookie));
-    if (!isAppwriteAuthError(authenticatedResponse)) {
-      return authenticatedResponse;
+    try {
+      const authenticatedResponse = await fetch(buildAppwriteRequest(request.clone(), fallbackCookie));
+      if (!isAppwriteAuthError(authenticatedResponse)) {
+        return authenticatedResponse;
+      }
+      await clearAppwriteFallbackCookie();
+      fallbackCookie = '';
+    } catch (error) {
+      guestError = guestError || error;
     }
-    await clearAppwriteFallbackCookie();
-    fallbackCookie = '';
   }
 
   // 3) Cria uma sessão anônima e repete a gravação. Role.users() no Appwrite
@@ -286,7 +296,7 @@ async function handleCentralAppwriteWrite(request) {
     return await fetch(buildAppwriteRequest(request.clone(), fallbackCookie));
   } catch (error) {
     console.error('Central: falha no fallback de autenticação do Appwrite.', error);
-    return guestResponse;
+    throw guestError || error;
   }
 }
 
