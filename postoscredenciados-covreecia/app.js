@@ -66,6 +66,7 @@ let pwaInstallModalMode = 'android';
 let pwaInstallProgressTimer = null;
 let pwaManualFallbackTimer = null;
 let pwaInstallWaitingForApp = false;
+let pwaInstallDismissedThisSession = false;
 let uploadedLooseNoteReceipt = null;
 let looseNoteReceiptUploadPromise = null;
 let selectedLooseNoteReceiptFile = null;
@@ -287,25 +288,10 @@ function isIosDevice() {
   return /iphone|ipad|ipod/i.test(window.navigator.userAgent || '');
 }
 
-function isAndroidDevice() {
-  return /android/i.test(window.navigator.userAgent || '');
-}
-
 function isRunningStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches
     || window.navigator.standalone === true
     || document.referrer.startsWith('android-app://');
-}
-
-function requiresInstalledCentralApp() {
-  return isAndroidDevice() && isMobileViewport() && !isRunningStandalone();
-}
-
-function ensureCentralAppReadyForRecords() {
-  if (!requiresInstalledCentralApp()) return true;
-  showErrorMessage('Instale a Central de Registros para enviar comprovantes neste aparelho.');
-  showPwaInstallModal('android', true);
-  return false;
 }
 
 function syncPwaInstallEntries() {
@@ -319,8 +305,13 @@ function syncPwaInstallEntries() {
 }
 
 function wasPwaPromptRecentlyDismissed() {
-  const dismissedAt = Number(localStorage.getItem(PWA_INSTALL_DISMISSED_KEY) || 0);
-  return Boolean(dismissedAt && Date.now() - dismissedAt < PWA_DISMISS_DAYS * 24 * 60 * 60 * 1000);
+  if (pwaInstallDismissedThisSession) return true;
+  try {
+    const dismissedAt = Number(localStorage.getItem(PWA_INSTALL_DISMISSED_KEY) || 0);
+    return Boolean(dismissedAt && Date.now() - dismissedAt < PWA_DISMISS_DAYS * 24 * 60 * 60 * 1000);
+  } catch (error) {
+    return false;
+  }
 }
 
 function shouldOfferPwaInstall(force = false) {
@@ -349,8 +340,9 @@ function setPwaInstallBusy(isBusy) {
   const dismiss = document.getElementById('pwa-install-dismiss');
   const backdrop = document.querySelector('#pwa-install-modal .pwa-install-backdrop');
   primary?.toggleAttribute('disabled', isBusy);
-  dismiss?.classList.toggle('hidden', isBusy);
-  backdrop?.classList.toggle('pwa-install-backdrop--locked', isBusy);
+  // A instalação é opcional: "Agora não" deve permanecer disponível sempre.
+  dismiss?.classList.remove('hidden');
+  backdrop?.classList.remove('pwa-install-backdrop--locked');
 }
 
 function clearPwaInstallProgress() {
@@ -374,7 +366,7 @@ function revealPwaManualInstallHelp() {
   const primary = document.getElementById('pwa-install-primary');
   if (primary) primary.querySelector('span').textContent = 'Tentar instalar novamente';
   const footnote = document.getElementById('pwa-install-footnote');
-  if (footnote) footnote.textContent = 'Se o Chrome não concluir, use as instruções pelo menu do navegador.';
+  if (footnote) footnote.textContent = 'Se preferir, toque em Agora não e continue normalmente pelo navegador.';
 }
 
 function startPwaInstallProgress() {
@@ -412,7 +404,7 @@ function setPwaManualInstallFallback() {
       <li>Escolha Instalar app ou Adicionar à tela inicial.</li>
       <li>Confirme e abra pelo novo ícone do celular.</li>`;
   }
-  if (footnote) footnote.textContent = 'Depois de confirmar no navegador, abra a Central pelo ícone criado na tela inicial.';
+  if (footnote) footnote.textContent = 'A instalação é opcional. Toque em Agora não para continuar pelo navegador.';
 }
 
 function setPwaInstallModalContent(mode) {
@@ -428,14 +420,14 @@ function setPwaInstallModalContent(mode) {
     platform.textContent = 'iPhone / iPad';
     steps.innerHTML = `<li>Toque em Compartilhar no Safari.</li><li>Escolha Adicionar à Tela de Início.</li><li>Abra pelo novo ícone do celular.</li>`;
     primary.querySelector('span').textContent = 'Entendi';
-    footnote.textContent = 'No iPhone, a instalação é feita pelo menu Compartilhar do Safari.';
+    footnote.textContent = 'A instalação é opcional. Toque em Agora não para continuar pelo Safari.';
     return;
   }
   platform.textContent = 'Android';
   steps.innerHTML = `<li>Toque em Instalar aplicativo.</li><li>Confirme quando o Chrome solicitar.</li><li>Abra pelo novo ícone na tela inicial.</li>`;
   primary.querySelector('span').textContent = 'Instalar aplicativo';
   primary.removeAttribute('aria-disabled');
-  footnote.textContent = 'A confirmação final é feita pelo Chrome. Aguarde até ele concluir a instalação.';
+  footnote.textContent = 'A instalação é opcional. Toque em Agora não para continuar pelo navegador.';
 }
 
 function showPwaInstallModal(mode = 'android', force = false) {
@@ -458,7 +450,12 @@ function openPwaInstallFromMenu() {
     showErrorMessage('A instalação do app deve ser feita pelo navegador do celular.');
     return;
   }
-  localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
+  pwaInstallDismissedThisSession = false;
+  try {
+    localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
+  } catch (error) {
+    // A sugestão continua funcionando mesmo sem armazenamento local.
+  }
   showPwaInstallModal(isIosDevice() ? 'ios' : 'android', true);
 }
 
@@ -472,13 +469,19 @@ function hidePwaInstallModal() {
 }
 
 function dismissPwaInstallModal() {
-  localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, String(Date.now()));
+  pwaInstallDismissedThisSession = true;
+  try {
+    localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, String(Date.now()));
+  } catch (error) {
+    // Fechar a sugestão nunca deve bloquear o uso pelo navegador.
+  }
   hidePwaInstallModal();
 }
 
 async function handlePwaInstallClick() {
   if (pwaInstallModalMode === 'ios') {
     updatePwaInstallStatus('Siga as instruções no Safari', 40);
+    dismissPwaInstallModal();
     return;
   }
   startPwaInstallProgress();
@@ -942,7 +945,12 @@ window.addEventListener('beforeinstallprompt', (event) => {
 
 window.addEventListener('appinstalled', () => {
   deferredPwaPrompt = null;
-  localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
+  pwaInstallDismissedThisSession = false;
+  try {
+    localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
+  } catch (error) {
+    // A confirmação da instalação não depende do armazenamento local.
+  }
   if (pwaInstallProgressTimer) window.clearInterval(pwaInstallProgressTimer);
   pwaInstallProgressTimer = null;
   pwaInstallWaitingForApp = false;
@@ -1655,11 +1663,11 @@ function setDriverOnboardingStep(stepId) {
     'driver-onboarding-driver-step': { current: 1, kicker: 'CONFIGURAÇÃO INICIAL', title: 'Quem é você?' },
     'driver-onboarding-vehicle-step': { current: 2, kicker: 'SEU VEÍCULO', title: 'Este é o veículo que você dirige?' },
     'driver-onboarding-vehicle-search-step': { current: 2, kicker: 'SEU VEÍCULO', title: 'Escolha o veículo correto' },
-    'driver-onboarding-permissions-step': { current: 3, kicker: 'PERMISSÕES DO APP', title: 'Vamos preparar a Central' },
+    'driver-onboarding-permissions-step': { current: 3, kicker: 'PERMISSÕES DA CENTRAL', title: 'Vamos preparar seu acesso' },
     'driver-onboarding-camera-step': { current: 3, kicker: 'CÂMERA', title: 'Permissão da câmera' },
     'driver-onboarding-location-step': { current: 4, kicker: 'LOCALIZAÇÃO', title: 'Encontre postos próximos' },
     'driver-onboarding-notifications-step': { current: 5, kicker: 'NOTIFICAÇÕES', title: 'Acompanhe seus envios' },
-    'driver-onboarding-ready-step': { current: 6, kicker: 'TUDO CERTO', title: 'Seu app está pronto!' }
+    'driver-onboarding-ready-step': { current: 6, kicker: 'TUDO CERTO', title: 'Seu acesso está pronto!' }
   };
   const config = stepConfig[stepId];
   if (!config || !isGuidedDriverOnboarding()) return;
@@ -1844,14 +1852,10 @@ function confirmSuggestedDriverVehicle() {
 }
 
 function openOnboardingPermissionsStep() {
-  if (requiresInstalledCentralApp()) {
-    showPwaInstallModal('android', true);
-    return;
-  }
   const title = document.getElementById('driver-profile-title');
   const kicker = document.getElementById('driver-profile-kicker');
-  if (kicker) kicker.textContent = 'PERMISSÕES DO APLICATIVO';
-  if (title) title.textContent = 'Vamos preparar seu app';
+  if (kicker) kicker.textContent = 'PERMISSÕES DA CENTRAL';
+  if (title) title.textContent = 'Vamos preparar seu acesso';
   document.getElementById('driver-profile-skip')?.classList.add('hidden');
   setDriverOnboardingStep('driver-onboarding-permissions-step');
 }
@@ -1914,7 +1918,7 @@ function finishGuidedOnboarding(options = {}) {
   const title = document.getElementById('driver-profile-title');
   const kicker = document.getElementById('driver-profile-kicker');
   if (kicker) kicker.textContent = 'TUDO CERTO';
-  if (title) title.textContent = 'Seu app está pronto!';
+  if (title) title.textContent = 'Seu acesso está pronto!';
   setDriverOnboardingStep('driver-onboarding-ready-step');
 }
 function finishGuidedOnboardingAndClose() {
@@ -1923,6 +1927,10 @@ function finishGuidedOnboardingAndClose() {
 }
 
 function skipDriverOnboarding() {
+  if (!isStoredDriverProfileComplete()) {
+    showErrorMessage('Identifique o motorista e o veículo para continuar.');
+    return;
+  }
   localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
   localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
   persistCentralDeviceState();
@@ -2003,8 +2011,8 @@ function startDriverProfileEditing() {
   const title = document.getElementById('driver-profile-title');
   if (title) title.textContent = 'Vamos deixar seus abastecimentos mais rápidos?';
   document.getElementById('driver-profile-skip')?.classList.toggle('hidden', isGuidedDriverOnboarding());
-  if (isGuidedDriverOnboarding() && requiresInstalledCentralApp()) {
-    window.setTimeout(() => showPwaInstallModal('android', true), 80);
+  if (isGuidedDriverOnboarding() && shouldOfferPwaInstall()) {
+    window.setTimeout(() => showPwaInstallModal(isIosDevice() ? 'ios' : 'android'), 80);
   }
   selectedDirectoryDriver = null;
   selectedDirectoryVehicles = [];
@@ -2023,6 +2031,7 @@ function startDriverProfileEditing() {
 }
 
 function closeDriverProfile() {
+  if (isGuidedDriverOnboarding() && !isStoredDriverProfileComplete()) return;
   const modal = document.getElementById('driver-profile-modal');
   modal?.classList.add('hidden');
   modal?.setAttribute('aria-hidden', 'true');
@@ -2643,7 +2652,6 @@ function prepareFuelForm(options = {}) {
 }
 
 function openFuelFormMenu(mode = 'rapido') {
-  if (!ensureCentralAppReadyForRecords()) return;
   if (!isStoredDriverProfileComplete()) {
     showErrorMessage('Para enviar um registro, vincule seu perfil e veículo.');
     openDriverProfile('edit');
@@ -2685,7 +2693,6 @@ function prepareLooseNoteForm() {
 }
 
 function openLooseNoteForm() {
-  if (!ensureCentralAppReadyForRecords()) return;
   if (!isStoredDriverProfileComplete()) {
     showErrorMessage('Para enviar um registro, vincule seu perfil e veículo.');
     openDriverProfile('edit');
@@ -3527,7 +3534,6 @@ function resetProgressState() {
 
 async function submitFuelForm(e) {
   e.preventDefault();
-  if (!ensureCentralAppReadyForRecords()) return;
 
   const profile = await requireAuthorizedDriverProfile();
   if (!profile) return;
@@ -3619,7 +3625,6 @@ async function submitFuelForm(e) {
 
 async function submitLooseNoteForm(e) {
   e.preventDefault();
-  if (!ensureCentralAppReadyForRecords()) return;
 
   const profile = await requireAuthorizedDriverProfile();
   if (!profile) return;
