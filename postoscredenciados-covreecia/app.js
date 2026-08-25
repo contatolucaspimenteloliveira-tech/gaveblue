@@ -34,7 +34,7 @@ const DRIVER_PROFILE_STORAGE_KEY = 'postoscredenciados-covreecia:driver-profile-
 const CENTRAL_LAST_SENT_STORAGE_KEY = 'postoscredenciados-covreecia:last-sent-record-v1';
 const CENTRAL_DEVICE_ID_KEY = 'postoscredenciados-covreecia:device-id-v1';
 const DRIVER_ONBOARDING_VERSION_KEY = 'postoscredenciados-covreecia:driver-onboarding-version';
-const DRIVER_ONBOARDING_VERSION = '2026-08-guided-permissions-v1';
+const DRIVER_ONBOARDING_VERSION = '2026-08-fullscreen-onboarding-v2';
 const DRIVER_PROFILE_PERMISSION_ERROR = 'ESTE MOTORISTA NÃO TEM PERMISSÃO PARA REALIZAR REGISTROS NESTE VEÍCULO. SE VOCÊ ENTENDE ISSO COMO UM ERRO, CONTATE A ADMINISTRAÇÃO.';
 const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
@@ -616,15 +616,9 @@ function getCentralDeviceId() {
 }
 
 function shouldShowCentralPushPrompt() {
-  // No primeiro acesso, as permissões são explicadas no fluxo guiado.
-  if (shouldOpenDriverOnboarding() || requiresInstalledCentralApp()) return false;
-  if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
-    return false;
-  }
-  if (Notification.permission !== 'default') {
-    return false;
-  }
-  return !localStorage.getItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY);
+  // A autorização de notificações pertence ao onboarding e à tela Sobre.
+  // Não exibir convites soltos durante o uso normal do aplicativo.
+  return false;
 }
 
 function renderCentralPushPrompt() {
@@ -1308,7 +1302,7 @@ function showVehicleChangeSearch() {
 }
 
 function setDriverOnboardingStep(stepId) {
-  [
+  const stepIds = [
     'driver-onboarding-driver-step',
     'driver-onboarding-vehicle-step',
     'driver-onboarding-vehicle-search-step',
@@ -1317,7 +1311,32 @@ function setDriverOnboardingStep(stepId) {
     'driver-onboarding-location-step',
     'driver-onboarding-notifications-step',
     'driver-onboarding-ready-step'
-  ].forEach((id) => document.getElementById(id)?.classList.toggle('hidden', id !== stepId));
+  ];
+  stepIds.forEach((id) => document.getElementById(id)?.classList.toggle('hidden', id !== stepId));
+
+  const stepConfig = {
+    'driver-onboarding-driver-step': { current: 1, kicker: 'CONFIGURAÇÃO INICIAL', title: 'Quem é você?' },
+    'driver-onboarding-vehicle-step': { current: 2, kicker: 'SEU VEÍCULO', title: 'Este é o veículo que você dirige?' },
+    'driver-onboarding-vehicle-search-step': { current: 2, kicker: 'SEU VEÍCULO', title: 'Escolha o veículo correto' },
+    'driver-onboarding-permissions-step': { current: 3, kicker: 'PERMISSÕES DO APP', title: 'Vamos preparar a Central' },
+    'driver-onboarding-camera-step': { current: 3, kicker: 'CÂMERA', title: 'Fotografe seus comprovantes' },
+    'driver-onboarding-location-step': { current: 4, kicker: 'LOCALIZAÇÃO', title: 'Encontre postos próximos' },
+    'driver-onboarding-notifications-step': { current: 5, kicker: 'NOTIFICAÇÕES', title: 'Acompanhe seus envios' },
+    'driver-onboarding-ready-step': { current: 6, kicker: 'TUDO CERTO', title: 'Seu app está pronto!' }
+  };
+  const config = stepConfig[stepId];
+  if (!config || !isGuidedDriverOnboarding()) return;
+
+  const kicker = document.getElementById('driver-profile-kicker');
+  const title = document.getElementById('driver-profile-title');
+  const progressText = document.getElementById('driver-onboarding-progress-text');
+  const progressBar = document.getElementById('driver-onboarding-progress-bar');
+  const progress = document.getElementById('driver-onboarding-progress');
+  if (kicker) kicker.textContent = config.kicker;
+  if (title) title.textContent = config.title;
+  if (progressText) progressText.textContent = `Passo ${config.current} de 6`;
+  if (progressBar) progressBar.style.width = `${(config.current / 6) * 100}%`;
+  progress?.setAttribute('aria-valuenow', String(config.current));
 }
 
 function isGuidedDriverOnboarding() {
@@ -1561,6 +1580,7 @@ function skipDriverOnboarding() {
 function openDriverProfile(mode = 'profile') {
   const modal = document.getElementById('driver-profile-modal');
   const profile = getDriverProfile();
+  const guided = shouldOpenDriverOnboarding();
   document.getElementById('driver-profile-overview')?.classList.add('hidden');
   document.getElementById('driver-directory-loading')?.classList.add('hidden');
   document.getElementById('driver-directory-error')?.classList.add('hidden');
@@ -1568,9 +1588,9 @@ function openDriverProfile(mode = 'profile') {
   const search = document.getElementById('driver-profile-search');
   modal?.classList.remove('hidden');
   modal?.setAttribute('aria-hidden', 'false');
-  if (modal) modal.dataset.guided = String(!profile && shouldOpenDriverOnboarding());
+  if (modal) modal.dataset.guided = String(guided);
   document.body.classList.add('driver-profile-open');
-  if (profile && mode !== 'edit') {
+  if (profile && mode !== 'edit' && !guided) {
     setDriverProfileDismissibility(false);
     const title = document.getElementById('driver-profile-title');
     if (title) title.textContent = 'Meu perfil';
@@ -1596,7 +1616,7 @@ function startDriverProfileEditing() {
   setDriverOnboardingStep('');
   const title = document.getElementById('driver-profile-title');
   if (title) title.textContent = 'Vamos deixar seus abastecimentos mais rápidos?';
-  document.getElementById('driver-profile-skip')?.classList.remove('hidden');
+  document.getElementById('driver-profile-skip')?.classList.toggle('hidden', isGuidedDriverOnboarding());
   if (isGuidedDriverOnboarding() && requiresInstalledCentralApp()) {
     window.setTimeout(() => showPwaInstallModal('android', true), 80);
   }
