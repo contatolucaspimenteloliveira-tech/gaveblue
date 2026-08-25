@@ -2355,7 +2355,24 @@ body.driver-profile-open .mobile-bottom-nav {
 .profile-page-settings .about-action-panel { width: 100%; margin: 0.85rem 0 0; }
 .profile-page-about-heading { margin-top: 0.2rem; padding: 0 0.15rem; }
 
-body[data-mobile-nav="profile"] .mobile-bottom-nav { display: none !important; }
+#profile-section[data-profile-view="profile"] .profile-page-settings,
+#profile-section[data-profile-view="profile"] .profile-page-about-heading,
+#profile-section[data-profile-view="profile"] .profile-page-about-card {
+  display: none;
+}
+
+#profile-section[data-profile-view="settings"] .profile-page-overview,
+#profile-section[data-profile-view="settings"] .profile-page-submissions {
+  display: none;
+}
+
+.profile-page-about-actions {
+  padding: 0 1rem;
+  margin: 1rem auto 0;
+}
+
+body[data-mobile-nav="profile"] .mobile-bottom-nav,
+body[data-mobile-nav="settings"] .mobile-bottom-nav { display: none !important; }
 
 @media (max-width: 560px) {
   .profile-page { padding-right: 0.75rem; padding-left: 0.75rem; }

@@ -1776,6 +1776,40 @@ function openDriverProfile(mode = 'profile') {
   startDriverProfileEditing();
 }
 
+async function openDriverVehicleEditor() {
+  const profile = getDriverProfile();
+  if (!profile?.driverId) {
+    openDriverProfile('edit');
+    return;
+  }
+  openDriverProfile('edit');
+  const modal = document.getElementById('driver-profile-modal');
+  if (modal) modal.dataset.guided = 'false';
+  setDriverProfileDismissibility(false);
+  document.getElementById('driver-profile-skip')?.classList.add('hidden');
+  const title = document.getElementById('driver-profile-title');
+  const kicker = document.getElementById('driver-profile-kicker');
+  if (title) title.textContent = 'Alterar veículo';
+  if (kicker) kicker.textContent = 'VEÍCULO DESTE APARELHO';
+  try {
+    await ensureDriverDirectoryLoaded();
+    selectedDirectoryDriver = getDirectoryDrivers().find((driver) => String(driver.id) === String(profile.driverId)) || null;
+    selectedDirectoryVehicles = selectedDirectoryDriver?.vehicles || [];
+    selectedDirectoryVehicleIndex = Math.max(0, selectedDirectoryVehicles.findIndex((vehicle) => String(vehicle.vehicleId) === String(profile.vehicleId)));
+    if (!selectedDirectoryDriver || !selectedDirectoryVehicles.length) throw new Error('Vínculo do motorista não encontrado.');
+    setDriverOnboardingStep('driver-onboarding-vehicle-search-step');
+    const search = document.getElementById('driver-vehicle-search');
+    const results = document.getElementById('driver-vehicle-results');
+    document.getElementById('driver-vehicle-permission-error')?.classList.add('hidden');
+    if (search) search.value = '';
+    if (results) results.innerHTML = '<div class="driver-search-waiting">Digite a placa do veículo para pesquisar.</div>';
+    window.setTimeout(() => search?.focus(), 80);
+  } catch (error) {
+    closeDriverProfile();
+    showErrorMessage(error?.message || 'Não foi possível abrir a alteração de veículo.');
+  }
+}
+
 function setDriverProfileDismissibility(isOnboarding) {
   document.getElementById('driver-profile-close')?.classList.toggle('hidden', isOnboarding);
   document.getElementById('driver-profile-backdrop')?.classList.toggle('driver-profile-backdrop--locked', isOnboarding);
@@ -3649,30 +3683,56 @@ function restoreMobileNavForCurrentView() {
     setMobileNavActive('profile');
     return;
   }
+  if (currentView === 'settings') {
+    setMobileNavActive('settings');
+    return;
+  }
   setMobileNavActive(currentView === 'welcome' ? 'home' : 'postos');
 }
 
-function showProfileSection() {
+function openProfilePage(view = 'profile') {
   closeOpenFormsSilently();
   document.getElementById('welcome-screen').classList.add('hidden');
   document.getElementById('postos-display').classList.add('hidden');
   document.getElementById('dashboard').classList.add('hidden');
-  document.getElementById('profile-section')?.classList.remove('hidden');
-  currentView = 'profile';
-  setMobileNavActive('profile');
+  const section = document.getElementById('profile-section');
+  section?.classList.remove('hidden');
+  if (section) section.dataset.profileView = view;
+  const settingsView = view === 'settings';
+  const kicker = document.getElementById('profile-page-kicker');
+  const title = document.getElementById('profile-page-title');
+  const description = document.getElementById('profile-page-description');
+  if (kicker) kicker.textContent = settingsView ? 'PREFERÊNCIAS DO APP' : 'PERFIL DESTE APARELHO';
+  if (title) title.textContent = settingsView ? 'Configurações' : 'Meu perfil';
+  if (description) description.textContent = settingsView
+    ? 'Permissões, instalação e informações do aplicativo.'
+    : 'Seus dados, veículo e envios.';
+  currentView = view;
+  setMobileNavActive(view);
   updateBackButtonVisibility();
-  renderProfilePage();
-  refreshCentralNotificationSetting();
-  refreshCentralCameraSetting();
-  if (!centralSubmissionHistoryLoaded) refreshMySubmissions({ silent: true });
+  if (settingsView) {
+    refreshCentralNotificationSetting();
+    refreshCentralCameraSetting();
+  } else {
+    renderProfilePage();
+    if (!centralSubmissionHistoryLoaded) refreshMySubmissions({ silent: true });
+  }
+}
+
+function showProfileSection() {
+  openProfilePage('profile');
+}
+
+function showSettingsSection() {
+  openProfilePage('settings');
 }
 
 function showAboutSection() {
-  showProfileSection();
+  showSettingsSection();
 }
 
 function openCentralNotificationSettings() {
-  showProfileSection();
+  showSettingsSection();
   window.setTimeout(() => {
     const setting = document.getElementById('central-notification-toggle')?.closest('.about-notification-setting');
     setting?.scrollIntoView({ behavior: 'smooth', block: 'center' });
