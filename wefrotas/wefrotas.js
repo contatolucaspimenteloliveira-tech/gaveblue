@@ -3411,6 +3411,35 @@
       return result;
     }
 
+    async function migrateCentralStationsToWefrotas() {
+      const feedback = document.getElementById('central-station-migration-feedback');
+      const button = document.getElementById('central-station-migration-button');
+      const confirmed = window.confirm(
+        'Importar os postos da lista antiga da Central para Fornecedores? Os cadastros existentes receberão cidade, endereço e link do mapa; postos ausentes serão criados.'
+      );
+      if (!confirmed) return;
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Importando postos...';
+      }
+      if (feedback) feedback.textContent = 'Atualizando o cadastro de fornecedores...';
+      try {
+        const result = await executeCentralPushAdmin({ action: 'migrate-central-stations' });
+        if (feedback) {
+          feedback.textContent = `${result.created || 0} novo(s), ${result.updated || 0} atualizado(s) e ${result.unchanged || 0} já completo(s). Atualize a página para ver a lista em Fornecedores.`;
+        }
+      } catch (caught) {
+        if (feedback) feedback.textContent = caught?.message || 'Não foi possível importar os postos.';
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = 'Importar lista atual da Central';
+        }
+      }
+    }
+
+    window.migrateCentralStationsToWefrotas = migrateCentralStationsToWefrotas;
+
     function updatePushBroadcastPreview() {
       const title = document.getElementById('push-broadcast-title')?.value.trim() || '';
       const body = document.getElementById('push-broadcast-body')?.value.trim() || '';
