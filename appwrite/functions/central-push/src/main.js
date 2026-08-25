@@ -423,6 +423,30 @@ async function migrateCentralStationsToWefrotas(databases, senderId) {
   return { total: CENTRAL_STATION_DIRECTORY.length, created, updated, unchanged };
 }
 
+async function revertImportedCentralStations(databases, senderId) {
+  const row = await databases.getDocument({
+    databaseId: DATABASE_ID,
+    collectionId: WEFROTAS_TABLE_ID,
+    documentId: wefrotasSnapshotDocumentId()
+  });
+  const snapshot = await decodeWefrotasSnapshot(databases, row?.snapshot);
+  const suppliers = Array.isArray(snapshot?.suppliers) ? snapshot.suppliers : [];
+  const importedIds = new Set(CENTRAL_STATION_DIRECTORY.map((station) => centralStationSupplierId(station.name)));
+  const importedMarker = 'Importado da lista original da Central de Registros.';
+  const removed = suppliers.filter((supplier) =>
+    importedIds.has(String(supplier?.id || '')) &&
+    String(supplier?.observacoes || '').trim() === importedMarker
+  );
+  if (removed.length) {
+    snapshot.suppliers = suppliers.filter((supplier) => !removed.includes(supplier));
+    await persistWefrotasSnapshot(databases, snapshot, senderId);
+  }
+  return {
+    removed: removed.length,
+    stations: removed.map((supplier) => String(supplier?.nome || '')).filter(Boolean)
+  };
+}
+
 // Quando o navegador renova a inscrição Web Push (algo comum no iPhone), os
 // registros antigos continuam apontando para o ID anterior. Reata-os ao
 // aparelho atual sem guardar qualquer dado pessoal adicional.
@@ -790,6 +814,14 @@ export default async ({ req, res, log, error }) => {
       const databases = createDatabaseClient(req);
       const result = await migrateCentralStationsToWefrotas(databases, senderId);
       log('Postos da lista original da Central migrados por ' + senderId + ': ' + JSON.stringify(result));
+      return json(res, 200, { ok: true, ...result });
+    }
+
+    if (action === 'revert-imported-central-stations') {
+      const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const result = await revertImportedCentralStations(databases, senderId);
+      log('Importação de postos da Central revertida por ' + senderId + ': ' + JSON.stringify(result));
       return json(res, 200, { ok: true, ...result });
     }
 
