@@ -2196,6 +2196,15 @@ body.driver-profile-open .mobile-bottom-nav {
   margin: 0.25rem auto 1rem;
 }
 
+.home-greeting-wave {
+  display: inline-block;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0;
+  transform: translateY(0.04em);
+}
+
 .profile-page {
   min-height: 100%;
   color: #0f172a;
