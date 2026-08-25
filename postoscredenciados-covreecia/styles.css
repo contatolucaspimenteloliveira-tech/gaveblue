@@ -2529,24 +2529,6 @@ body[data-mobile-nav="settings"] .mobile-bottom-nav { display: none !important; 
   }
 }
 
-.home-action-arrow {
-  position: absolute;
-  right: 0.95rem;
-  top: 50%;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 999px;
-  color: #0f172a;
-  background: rgba(255, 255, 255, 0.96);
-  font-size: 2rem;
-  line-height: 1;
-  transform: translateY(-50%);
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
-}
-
 .home-action-badge {
   position: absolute;
   right: 0.9rem;
@@ -2798,7 +2780,7 @@ body[data-mobile-nav="settings"] .mobile-bottom-nav { display: none !important; 
     min-height: 86px;
     display: flex;
     align-items: center;
-    padding: 0.88rem 3rem 0.88rem 4.75rem;
+    padding: 0.88rem 0.95rem 0.88rem 4.75rem;
   }
 
   .home-action-copy {
