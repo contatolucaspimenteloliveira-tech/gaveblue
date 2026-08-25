@@ -651,7 +651,7 @@
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke-width="2" stroke-linecap="round"/></svg>
        <input id="driver-vehicle-search" type="search" autocomplete="off" placeholder="Digite a placa" oninput="filterVehicleDirectory()">
       </div>
-      <div id="driver-vehicle-permission-error" class="driver-directory-message is-error hidden"></div>
+      <div id="driver-vehicle-permission-error" class="driver-directory-message vehicle-permission-alert is-error hidden" role="alert"></div>
       <div id="driver-vehicle-results" class="driver-profile-results" aria-live="polite"></div>
       <button type="button" class="driver-profile-skip" onclick="returnToSuggestedVehicle()">Voltar para o veículo encontrado</button>
      </div>
@@ -663,10 +663,11 @@
      </div>
      <div id="driver-onboarding-camera-step" class="driver-onboarding-step onboarding-permission-step hidden">
       <span class="onboarding-permission-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h3l1.3-2h7.4L17 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" stroke-width="2"/></svg></span>
-      <strong>Fotos dos comprovantes</strong>
-      <p>Para fotografar comprovantes com a câmera nativa do celular, precisamos autorizar a câmera agora.</p>
-      <span id="driver-onboarding-camera-status" class="onboarding-permission-note">O navegador pedirá sua confirmação na próxima etapa.</span>
+      <strong>Isso vai servir para fotografar seus comprovantes.</strong>
+      <p>Quando o navegador perguntar, escolha <b>“Permitir durante o uso do app”</b>.</p>
+      <span id="driver-onboarding-camera-status" class="onboarding-permission-note onboarding-camera-guidance">Toque no botão abaixo para abrir a permissão real da câmera.</span>
       <button id="driver-onboarding-camera-enable" type="button" class="driver-profile-save" onclick="requestOnboardingCameraPermission()">Permitir câmera</button>
+      <button id="driver-onboarding-camera-later" type="button" class="driver-profile-skip onboarding-camera-later" onclick="openOnboardingLocationStep()">Permitir depois</button>
      </div>
      <div id="driver-onboarding-location-step" class="driver-onboarding-step onboarding-permission-step hidden">
       <span class="onboarding-permission-icon onboarding-permission-icon--location" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" stroke-width="2"/><circle cx="12" cy="10" r="2.5" stroke-width="2"/></svg></span>
