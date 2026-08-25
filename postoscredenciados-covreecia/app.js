@@ -968,8 +968,28 @@ function populateDriverOptions() {
   }
 
   const driverNames = getStoredDriverNames();
+  const profileDriverName = String(getDriverProfile()?.name || '').trim();
 
   driverSelects.forEach((driverSelect) => {
+    const shell = driverSelect.closest('.form-control-shell');
+    if (profileDriverName) {
+      driverSelect.innerHTML = '';
+      const profileOption = document.createElement('option');
+      profileOption.value = profileDriverName;
+      profileOption.textContent = profileDriverName;
+      profileOption.selected = true;
+      driverSelect.appendChild(profileOption);
+      driverSelect.disabled = true;
+      driverSelect.setAttribute('aria-disabled', 'true');
+      driverSelect.setAttribute('title', 'Altere o motorista somente em Meu perfil.');
+      shell?.classList.add('is-profile-locked');
+      return;
+    }
+
+    driverSelect.disabled = false;
+    driverSelect.removeAttribute('aria-disabled');
+    driverSelect.removeAttribute('title');
+    shell?.classList.remove('is-profile-locked');
     const currentValue = driverSelect.value;
     driverSelect.innerHTML = '<option value="">Selecione um motorista</option>';
 
@@ -2434,22 +2454,14 @@ function prepareFuelForm(options = {}) {
   const { cidade = '', posto = '', useLastEntry = false, mode = 'rapido' } = options;
   const citySelect = document.getElementById('fuel-city');
   const stationSelect = document.getElementById('fuel-station');
-  const driverInput = document.getElementById('driver-name');
   const lastFuelEntry = useLastEntry ? getLastFuelEntry() : null;
   const selectedCity = cidade || lastFuelEntry?.cidade || '';
   const selectedPosto = posto || lastFuelEntry?.posto || '';
-  const selectedDriver = getDriverProfile()?.name || lastFuelEntry?.motorista || '';
 
   document.getElementById('fuel-form').reset();
   applyFuelFormMode(mode);
   citySelect.value = selectedCity;
   populateDriverOptions();
-  if (selectedDriver && getStoredDriverNames().includes(selectedDriver)) {
-    driverInput.value = selectedDriver;
-  } else if (selectedDriver) {
-    driverInput.value = OTHER_DRIVER_OPTION;
-    document.getElementById('custom-driver-name').value = selectedDriver;
-  }
   toggleCustomDriverField();
 
   if (selectedCity && postosPorCidade[selectedCity]) {
@@ -2506,17 +2518,6 @@ function prepareLooseNoteForm() {
     form.reset();
   }
   populateDriverOptions();
-  const profileDriver = getDriverProfile()?.name || '';
-  const driverSelect = document.getElementById('loose-driver-name');
-  if (profileDriver && driverSelect) {
-    if (getStoredDriverNames().includes(profileDriver)) {
-      driverSelect.value = profileDriver;
-    } else {
-      driverSelect.value = OTHER_DRIVER_OPTION;
-      const customInput = document.getElementById('loose-custom-driver-name');
-      if (customInput) customInput.value = profileDriver;
-    }
-  }
   setLooseDateToToday();
   resetLoosePhotoState();
   toggleLooseCustomDriverField();

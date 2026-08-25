@@ -510,15 +510,15 @@ button {
   border: 1.5px dashed #fecdd3;
   border-radius: 0.95rem;
   background: linear-gradient(180deg, #fffafa 0%, #fff 100%);
-  padding: 1.05rem;
+  padding: 0.75rem;
 }
 
 .receipt-empty-state {
   display: grid;
-  grid-template-columns: 4.2rem minmax(0, 1fr);
-  column-gap: 1rem;
-  row-gap: 0.85rem;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0.55rem;
   align-items: center;
+  text-align: center;
 }
 
 .receipt-camera-icon {
@@ -553,11 +553,26 @@ button {
 }
 
 .receipt-actions {
-  grid-column: 2;
+  grid-column: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.65rem;
   max-width: 16.5rem;
+  justify-self: center;
+  width: min(100%, 16.5rem);
+}
+
+.form-control-shell.is-profile-locked .select-field:disabled {
+  color: #0f172a;
+  opacity: 1;
+  cursor: default;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  -webkit-text-fill-color: #0f172a;
+}
+
+.form-control-shell.is-profile-locked .select-icon {
+  display: none;
 }
 
 .receipt-btn {
@@ -2850,13 +2865,13 @@ body[data-mobile-nav="settings"] .mobile-bottom-nav { display: none !important; 
   }
 
   .receipt-dropzone {
-    padding: 0.9rem;
+    padding: 0.65rem;
   }
 
   .receipt-empty-state {
     grid-template-columns: 1fr;
     justify-items: stretch;
-    row-gap: 0.7rem;
+    row-gap: 0.5rem;
     text-align: center;
   }
 
