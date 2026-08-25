@@ -1533,6 +1533,32 @@ function openOnboardingPermissionsStep() {
   setDriverOnboardingStep('driver-onboarding-permissions-step');
 }
 function openOnboardingCameraStep() { setDriverOnboardingStep('driver-onboarding-camera-step'); }
+
+async function requestOnboardingCameraPermission() {
+  const status = document.getElementById('driver-onboarding-camera-status');
+  const button = document.getElementById('driver-onboarding-camera-enable');
+  if (!navigator.mediaDevices?.getUserMedia) {
+    if (status) status.textContent = 'Este navegador não permite solicitar a câmera agora. Você poderá autorizar ao fotografar o comprovante.';
+    if (button) { button.textContent = 'Continuar'; button.onclick = openOnboardingLocationStep; }
+    return;
+  }
+  if (button) { button.disabled = true; button.textContent = 'Solicitando acesso...'; }
+  if (status) status.textContent = 'Confirme o acesso à câmera quando o navegador solicitar.';
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: { ideal: 'environment' } }
+    });
+    stream.getTracks().forEach((track) => track.stop());
+    if (status) status.textContent = 'Câmera autorizada neste aparelho.';
+    if (button) { button.disabled = false; button.textContent = 'Continuar'; button.onclick = openOnboardingLocationStep; }
+  } catch (error) {
+    console.warn('A câmera não foi autorizada no onboarding.', error);
+    if (status) status.textContent = 'A câmera não foi autorizada. Você poderá permitir ao fotografar um comprovante.';
+    if (button) { button.disabled = false; button.textContent = 'Tentar permitir câmera'; }
+  }
+}
+
 function openOnboardingLocationStep() { setDriverOnboardingStep('driver-onboarding-location-step'); }
 function openOnboardingNotificationsStep() { setDriverOnboardingStep('driver-onboarding-notifications-step'); }
 
