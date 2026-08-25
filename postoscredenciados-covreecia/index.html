@@ -647,6 +647,40 @@
       <div id="driver-vehicle-results" class="driver-profile-results" aria-live="polite"></div>
       <button type="button" class="driver-profile-skip" onclick="returnToSuggestedVehicle()">Voltar para o veículo encontrado</button>
      </div>
+     <div id="driver-onboarding-permissions-step" class="driver-onboarding-step onboarding-permission-step hidden">
+      <span class="onboarding-permission-icon onboarding-permission-icon--intro" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3 7 3v5c0 4.7-2.8 8-7 10-4.2-2-7-5.3-7-10V6l7-3Z" stroke-width="2"/><path d="m9 12 2 2 4-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <strong>Para funcionar 100%, precisamos de algumas permissões.</strong>
+      <p>Vamos explicar cada uma antes de pedir qualquer confirmação no seu celular.</p>
+      <button type="button" class="driver-profile-save" onclick="openOnboardingCameraStep()">Continuar</button>
+     </div>
+     <div id="driver-onboarding-camera-step" class="driver-onboarding-step onboarding-permission-step hidden">
+      <span class="onboarding-permission-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h3l1.3-2h7.4L17 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" stroke-width="2"/></svg></span>
+      <strong>Fotos dos comprovantes</strong>
+      <p>Quando você for fotografar um comprovante, o app pedirá acesso à câmera para abrir a câmera nativa do celular.</p>
+      <span class="onboarding-permission-note">Nada é ativado agora.</span>
+      <button type="button" class="driver-profile-save" onclick="openOnboardingLocationStep()">Entendi, continuar</button>
+     </div>
+     <div id="driver-onboarding-location-step" class="driver-onboarding-step onboarding-permission-step hidden">
+      <span class="onboarding-permission-icon onboarding-permission-icon--location" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" stroke-width="2"/><circle cx="12" cy="10" r="2.5" stroke-width="2"/></svg></span>
+      <strong>Postos próximos de você</strong>
+      <p>Quando quiser localizar postos credenciados na sua região, permita o acesso à localização.</p>
+      <span class="onboarding-permission-note">Esta etapa é apenas uma explicação: a localização não será solicitada agora.</span>
+      <button type="button" class="driver-profile-save" onclick="openOnboardingNotificationsStep()">Entendi, continuar</button>
+     </div>
+     <div id="driver-onboarding-notifications-step" class="driver-onboarding-step onboarding-permission-step hidden">
+      <span class="onboarding-permission-icon onboarding-permission-icon--notification" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" stroke-width="2" stroke-linecap="round"/><path d="M10 21h4" stroke-width="2" stroke-linecap="round"/></svg></span>
+      <strong>Acompanhe seus envios</strong>
+      <p>Ative as notificações para receber o retorno do WeFrotas, como aprovações e recusas dos seus comprovantes.</p>
+      <span id="driver-onboarding-notification-status" class="onboarding-permission-note">Esta é a única permissão solicitada agora.</span>
+      <button id="driver-onboarding-notification-enable" type="button" class="driver-profile-save" onclick="activateOnboardingNotifications()">Ativar notificações</button>
+      <button type="button" class="driver-profile-skip" onclick="finishGuidedOnboarding({ notificationsSkipped: true })">Ativar depois</button>
+     </div>
+     <div id="driver-onboarding-ready-step" class="driver-onboarding-step onboarding-permission-step onboarding-ready-step hidden">
+      <span class="onboarding-permission-icon onboarding-permission-icon--ready" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m5 12 4 4L19 6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <strong>Seu app está pronto.</strong>
+      <p>Seu perfil e veículo já estão vinculados a este aparelho. Agora é só registrar e acompanhar seus envios.</p>
+      <button type="button" class="driver-profile-save" onclick="finishGuidedOnboardingAndClose()">Começar a usar</button>
+     </div>
      <button id="driver-profile-skip" type="button" class="driver-profile-skip" onclick="skipDriverOnboarding()">Pular por enquanto</button>
     </section>
    </div>
