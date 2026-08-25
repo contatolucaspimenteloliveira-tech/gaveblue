@@ -35,7 +35,7 @@ const CENTRAL_LAST_SENT_STORAGE_KEY = 'postoscredenciados-covreecia:last-sent-re
 const CENTRAL_DEVICE_ID_KEY = 'postoscredenciados-covreecia:device-id-v1';
 const DRIVER_ONBOARDING_VERSION_KEY = 'postoscredenciados-covreecia:driver-onboarding-version';
 const DRIVER_ONBOARDING_VERSION = '2026-08-fullscreen-onboarding-v2';
-const DRIVER_PROFILE_PERMISSION_ERROR = 'ESTE MOTORISTA NÃO TEM PERMISSÃO PARA REALIZAR REGISTROS NESTE VEÍCULO. SE VOCÊ ENTENDE ISSO COMO UM ERRO, CONTATE A ADMINISTRAÇÃO.';
+const DRIVER_PROFILE_PERMISSION_ERROR = 'Este motorista não tem permissão para realizar registros com este veículo. Se você acredita que isso é um erro, entre em contato com a administração.';
 const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
 const PWA_DISMISS_DAYS = 7;
@@ -81,6 +81,8 @@ let centralSubmissionHistoryRefreshFailed = false;
 let driverDirectoryLoadPromise = null;
 let driverDirectorySearchTimer = null;
 let driverDirectorySearchSequence = 0;
+let vehicleDirectorySearchTimer = null;
+let vehicleDirectorySearchSequence = 0;
 const optimizedReceiptFiles = new WeakSet();
 const DEFAULT_DRIVER_NAMES = [
   'AMANDA P. BONATTO',
@@ -1251,7 +1253,7 @@ function renderVehicleDirectoryResults(queryValue) {
     .toLocaleLowerCase('pt-BR');
 
   if (!query) {
-    results.innerHTML = '<div class="driver-directory-message">Digite a placa do veículo para pesquisar.</div>';
+    results.innerHTML = '';
     return;
   }
 
@@ -1271,20 +1273,41 @@ function renderVehicleDirectoryResults(queryValue) {
   results.querySelectorAll('[data-vehicle-id]').forEach((button) => button.addEventListener('click', () => selectAlternativeVehicle(button.dataset.vehicleId)));
 }
 
-async function filterVehicleDirectory() {
+async function runVehicleDirectorySearch(query, sequence) {
   const results = document.getElementById('driver-vehicle-results');
-  const query = String(document.getElementById('driver-vehicle-search')?.value || '').trim();
-  if (!query) {
-    renderVehicleDirectoryResults('');
-    return;
-  }
-  if (results) results.innerHTML = '<div class="driver-search-loading" role="status"><span class="driver-search-spinner" aria-hidden="true"></span><span>Buscando veículos...</span></div>';
+  if (!results) return;
+  results.innerHTML = '<div class="driver-search-loading" role="status"><span class="driver-search-spinner" aria-hidden="true"></span><span>Buscando veículos...</span></div>';
   try {
-    await ensureDriverDirectoryLoaded();
+    await Promise.all([
+      ensureDriverDirectoryLoaded(),
+      new Promise((resolve) => window.setTimeout(resolve, 180))
+    ]);
+    const currentQuery = String(document.getElementById('driver-vehicle-search')?.value || '').trim().toLocaleLowerCase('pt-BR');
+    if (sequence !== vehicleDirectorySearchSequence || currentQuery !== query) return;
     renderVehicleDirectoryResults(query);
   } catch (error) {
-    if (results) results.innerHTML = '<div class="driver-directory-message is-error">Não foi possível consultar os veículos agora.</div>';
+    if (sequence !== vehicleDirectorySearchSequence) return;
+    results.innerHTML = '<div class="driver-directory-message is-error">Não foi possível consultar os veículos agora.</div>';
   }
+}
+
+function filterVehicleDirectory() {
+  const results = document.getElementById('driver-vehicle-results');
+  const error = document.getElementById('driver-vehicle-permission-error');
+  const query = String(document.getElementById('driver-vehicle-search')?.value || '').trim().toLocaleLowerCase('pt-BR');
+  window.clearTimeout(vehicleDirectorySearchTimer);
+  vehicleDirectorySearchTimer = null;
+  const sequence = ++vehicleDirectorySearchSequence;
+  error?.classList.add('hidden');
+  if (!query) {
+    if (results) results.innerHTML = '';
+    return;
+  }
+  const delay = query.length >= 4 ? 0 : 1500;
+  if (delay && results) {
+    results.innerHTML = '<div class="driver-search-waiting">Continue digitando ou aguarde a busca...</div>';
+  }
+  vehicleDirectorySearchTimer = window.setTimeout(() => runVehicleDirectorySearch(query, sequence), delay);
 }
 
 function showVehicleChangeSearch() {
@@ -1298,6 +1321,9 @@ function showVehicleChangeSearch() {
     search.value = '';
     window.setTimeout(() => search.focus(), 80);
   }
+  window.clearTimeout(vehicleDirectorySearchTimer);
+  vehicleDirectorySearchTimer = null;
+  vehicleDirectorySearchSequence += 1;
   renderVehicleDirectoryResults('');
 }
 
@@ -1319,7 +1345,7 @@ function setDriverOnboardingStep(stepId) {
     'driver-onboarding-vehicle-step': { current: 2, kicker: 'SEU VEÍCULO', title: 'Este é o veículo que você dirige?' },
     'driver-onboarding-vehicle-search-step': { current: 2, kicker: 'SEU VEÍCULO', title: 'Escolha o veículo correto' },
     'driver-onboarding-permissions-step': { current: 3, kicker: 'PERMISSÕES DO APP', title: 'Vamos preparar a Central' },
-    'driver-onboarding-camera-step': { current: 3, kicker: 'CÂMERA', title: 'Fotografe seus comprovantes' },
+    'driver-onboarding-camera-step': { current: 3, kicker: 'CÂMERA', title: 'Permissão da câmera' },
     'driver-onboarding-location-step': { current: 4, kicker: 'LOCALIZAÇÃO', title: 'Encontre postos próximos' },
     'driver-onboarding-notifications-step': { current: 5, kicker: 'NOTIFICAÇÕES', title: 'Acompanhe seus envios' },
     'driver-onboarding-ready-step': { current: 6, kicker: 'TUDO CERTO', title: 'Seu app está pronto!' }
@@ -1522,12 +1548,12 @@ async function requestOnboardingCameraPermission() {
   const status = document.getElementById('driver-onboarding-camera-status');
   const button = document.getElementById('driver-onboarding-camera-enable');
   if (!navigator.mediaDevices?.getUserMedia) {
-    if (status) status.textContent = 'Este navegador não permite solicitar a câmera agora. Você poderá autorizar ao fotografar o comprovante.';
-    if (button) { button.textContent = 'Continuar'; button.onclick = openOnboardingLocationStep; }
+    if (status) status.textContent = 'Este navegador não consegue abrir a solicitação agora. Você pode continuar e autorizar a câmera ao fotografar.';
+    if (button) { button.disabled = false; button.textContent = 'Tentar permitir câmera'; button.onclick = requestOnboardingCameraPermission; }
     return;
   }
-  if (button) { button.disabled = true; button.textContent = 'Solicitando acesso...'; }
-  if (status) status.textContent = 'Confirme o acesso à câmera quando o navegador solicitar.';
+  if (button) { button.disabled = true; button.textContent = 'Abrindo permissão...'; }
+  if (status) status.textContent = 'Quando aparecer a mensagem do navegador, toque em “Permitir durante o uso do app”.';
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
@@ -1538,8 +1564,19 @@ async function requestOnboardingCameraPermission() {
     if (button) { button.disabled = false; button.textContent = 'Continuar'; button.onclick = openOnboardingLocationStep; }
   } catch (error) {
     console.warn('A câmera não foi autorizada no onboarding.', error);
-    if (status) status.textContent = 'A câmera não foi autorizada. Você poderá permitir ao fotografar um comprovante.';
-    if (button) { button.disabled = false; button.textContent = 'Tentar permitir câmera'; }
+    let permissionBlocked = false;
+    try {
+      const permission = await navigator.permissions?.query?.({ name: 'camera' });
+      permissionBlocked = permission?.state === 'denied';
+    } catch (permissionError) {
+      permissionBlocked = error?.name === 'NotAllowedError';
+    }
+    if (status) {
+      status.textContent = permissionBlocked
+        ? 'A câmera está bloqueada nas configurações do navegador. Libere o acesso à câmera para este app ou toque em “Permitir depois” para continuar.'
+        : 'A permissão não foi concluída. Toque novamente e escolha “Permitir durante o uso do app”.';
+    }
+    if (button) { button.disabled = false; button.textContent = 'Tentar permitir câmera'; button.onclick = requestOnboardingCameraPermission; }
   }
 }
 
