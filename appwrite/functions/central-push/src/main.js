@@ -187,6 +187,25 @@ async function listSubscriptions(databases) {
   return documents;
 }
 
+async function deleteSubscription(databases, subscriptionId) {
+  const documentId = String(subscriptionId || '').trim();
+  if (!isValidSubscriptionId(documentId)) {
+    const error = new Error('Identificador do aparelho inválido.');
+    error.status = 400;
+    throw error;
+  }
+  try {
+    await databases.deleteDocument({
+      databaseId: DATABASE_ID,
+      collectionId: COLLECTION_ID,
+      documentId
+    });
+  } catch (error) {
+    if (Number(error?.code) !== 404) throw error;
+  }
+  return documentId;
+}
+
 async function listDriverDirectory(databases) {
   const rows = [];
   let offset = 0;
@@ -238,6 +257,46 @@ function wefrotasSnapshotDocumentId() {
 
 function wefrotasSnapshotChunkDocumentId(generation, index) {
   return crypto.createHash('sha256').update(`${WEFROTAS_COMPANY_ID}:snapshot:${generation}:${index}`).digest('hex').slice(0, 36);
+}
+
+const CENTRAL_ONBOARDING_FALLBACK_VERSION = '2026-08-managed-onboarding-v3';
+
+function centralOnboardingConfigDocumentId() {
+  return crypto.createHash('sha256').update(`${WEFROTAS_COMPANY_ID}:central-onboarding-config`).digest('hex').slice(0, 36);
+}
+
+function normalizeOnboardingVersion(value) {
+  return String(value || '').trim().replace(/[^a-zA-Z0-9._:-]/g, '').slice(0, 120);
+}
+
+async function getCentralOnboardingConfig(databases) {
+  try {
+    const row = await databases.getDocument({
+      databaseId: DATABASE_ID,
+      collectionId: WEFROTAS_TABLE_ID,
+      documentId: centralOnboardingConfigDocumentId()
+    });
+    const parsed = JSON.parse(String(row?.snapshot || '{}'));
+    return {
+      version: normalizeOnboardingVersion(parsed?.version) || CENTRAL_ONBOARDING_FALLBACK_VERSION,
+      updatedAt: String(parsed?.updatedAt || row?.updatedAt || row?.$updatedAt || '')
+    };
+  } catch (error) {
+    if (Number(error?.code) !== 404) throw error;
+    return { version: CENTRAL_ONBOARDING_FALLBACK_VERSION, updatedAt: '' };
+  }
+}
+
+async function resetCentralOnboarding(databases, senderId) {
+  const updatedAt = new Date().toISOString();
+  const version = `central-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`;
+  await updateOrCreateWefrotasRow(databases, centralOnboardingConfigDocumentId(), {
+    workspaceId: WEFROTAS_COMPANY_ID,
+    snapshot: JSON.stringify({ version, updatedAt }),
+    updatedAt,
+    updatedBy: senderId
+  });
+  return { version, updatedAt };
 }
 
 async function decodeWefrotasSnapshot(databases, storedValue) {
@@ -803,6 +862,12 @@ export default async ({ req, res, log, error }) => {
       return json(res, 200, { ok: true, subscriptionId });
     }
 
+    if (action === 'onboarding-config') {
+      const databases = createDatabaseClient(req);
+      const config = await getCentralOnboardingConfig(databases);
+      return json(res, 200, { ok: true, ...config });
+    }
+
     if (action === 'stations') {
       const databases = createDatabaseClient(req);
       const stations = await listCentralStations(databases);
@@ -848,6 +913,22 @@ export default async ({ req, res, log, error }) => {
         updatedAt: String(document.updatedAt || document.$updatedAt || '')
       }));
       return json(res, 200, { ok: true, subscribers: subscriptions.length, devices });
+    }
+
+    if (action === 'delete-subscription') {
+      const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const subscriptionId = await deleteSubscription(databases, payload.subscriptionId);
+      log('Inscrição de aparelho removida por ' + senderId + ': ' + subscriptionId);
+      return json(res, 200, { ok: true, subscriptionId });
+    }
+
+    if (action === 'reset-onboarding') {
+      const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const config = await resetCentralOnboarding(databases, senderId);
+      log('Nova configuração obrigatória da Central criada por ' + senderId + ': ' + config.version);
+      return json(res, 200, { ok: true, ...config });
     }
 
     if (action === 'broadcast') {

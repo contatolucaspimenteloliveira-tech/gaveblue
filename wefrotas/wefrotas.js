@@ -3576,9 +3576,7 @@
       const list = document.getElementById('central-devices-list');
       const count = document.getElementById('central-devices-count');
       if (!list) return;
-      const merged = new Map(getCentralDevicesFromRecords().map(device => [device.id, device]));
-      centralPushDevices.forEach(device => merged.set(device.id, { ...(merged.get(device.id) || {}), ...device }));
-      const devices = [...merged.values()].sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+      const devices = [...centralPushDevices].sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
       if (count) count.textContent = String(centralPushSubscriberTotal || devices.length || 0);
       if (centralDevicesLoading) {
         list.innerHTML = '<div class="central-devices-empty"><span class="central-devices-spinner"></span>Atualizando aparelhos inscritos…</div>';
@@ -3613,7 +3611,12 @@
                 <option value="">Selecione um motorista</option>
                 ${getSortedDrivers().map(driver => `<option value="${escapeHtml(driver.id)}" ${linkedDriver?.id === driver.id ? 'selected' : ''}>${escapeHtml(driver.nome)}${isEntityActive(driver) ? '' : ' (inativo)'}</option>`).join('')}
               </select>
-              <button type="button" onclick="saveCentralDeviceLink('${escapeHtml(device.id)}')">${linkedDriver ? 'Atualizar vínculo' : 'Vincular motorista'}</button>
+              <div class="central-device-actions">
+                <button type="button" onclick="saveCentralDeviceLink('${escapeHtml(device.id)}')">${linkedDriver ? 'Atualizar vínculo' : 'Vincular motorista'}</button>
+                <button type="button" class="central-device-delete" onclick="confirmCentralDeviceDeletion('${escapeHtml(device.id)}', '${escapeHtml(shortId)}')" title="Excluir aparelho" aria-label="Excluir aparelho ID ${escapeHtml(shortId)}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
             </div>
           </article>
         `;
@@ -3651,8 +3654,60 @@
       showToast(`Aparelho vinculado a ${driver.nome}.`);
     }
 
+    function confirmCentralDeviceDeletion(deviceId, shortId) {
+      openPromptModal({
+        title: 'Excluir este aparelho?',
+        text: `A inscrição ${shortId} será removida e deixará de receber notificações. Um novo acesso poderá criar outra inscrição.`,
+        mode: 'confirm',
+        confirmLabel: 'Excluir aparelho',
+        cancelLabel: 'Cancelar',
+        onConfirm: () => deleteCentralDevice(deviceId)
+      });
+    }
+
+    async function deleteCentralDevice(deviceId) {
+      try {
+        await executeCentralPushAdmin({ action: 'delete-subscription', subscriptionId: deviceId });
+        centralPushDevices = centralPushDevices.filter(device => device.id !== deviceId);
+        centralPushSubscriberTotal = centralPushDevices.length;
+        delete centralDeviceLinks[deviceId];
+        await saveToLocalStorage();
+        renderCentralDevices();
+        await refreshPushSubscriberStats();
+        showToast('Aparelho excluído da Central.');
+      } catch (error) {
+        showToast(error?.message || 'Não foi possível excluir o aparelho.');
+      }
+    }
+
+    function confirmCentralOnboardingReset() {
+      openPromptModal({
+        title: 'Exigir nova configuração em todos os aparelhos?',
+        text: 'Na próxima abertura da Central, todos precisarão refazer o fluxo de motorista, veículo e permissões. Os registros já enviados não serão apagados.',
+        mode: 'confirm',
+        confirmLabel: 'Resetar configuração',
+        cancelLabel: 'Cancelar',
+        onConfirm: resetCentralOnboarding
+      });
+    }
+
+    async function resetCentralOnboarding() {
+      const button = document.getElementById('central-onboarding-reset-button');
+      if (button) { button.disabled = true; button.classList.add('is-loading'); }
+      try {
+        await executeCentralPushAdmin({ action: 'reset-onboarding' });
+        showToast('Nova configuração obrigatória publicada para todos os aparelhos.');
+      } catch (error) {
+        showToast(error?.message || 'Não foi possível publicar a nova configuração.');
+      } finally {
+        if (button) { button.disabled = false; button.classList.remove('is-loading'); }
+      }
+    }
+
     window.refreshCentralDevices = refreshCentralDevices;
     window.saveCentralDeviceLink = saveCentralDeviceLink;
+    window.confirmCentralDeviceDeletion = confirmCentralDeviceDeletion;
+    window.confirmCentralOnboardingReset = confirmCentralOnboardingReset;
 
     function confirmPushBroadcast() {
       if (centralPushSending) return;

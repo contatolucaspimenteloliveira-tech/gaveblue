@@ -34,7 +34,7 @@ const DRIVER_PROFILE_STORAGE_KEY = 'postoscredenciados-covreecia:driver-profile-
 const CENTRAL_LAST_SENT_STORAGE_KEY = 'postoscredenciados-covreecia:last-sent-record-v1';
 const CENTRAL_DEVICE_ID_KEY = 'postoscredenciados-covreecia:device-id-v1';
 const DRIVER_ONBOARDING_VERSION_KEY = 'postoscredenciados-covreecia:driver-onboarding-version';
-const DRIVER_ONBOARDING_VERSION = '2026-08-fullscreen-onboarding-v2';
+const DRIVER_ONBOARDING_VERSION = '2026-08-managed-onboarding-v3';
 const DRIVER_PROFILE_PERMISSION_ERROR = 'Este motorista não tem permissão para realizar registros com este veículo. Se você acredita que isso é um erro, entre em contato com a administração.';
 const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
@@ -46,6 +46,7 @@ const CENTRAL_PUSH_SUBSCRIPTION_ID_KEY = 'central-push-subscription-id';
 const CENTRAL_NOTIFICATIONS_DB = 'central-registros-notifications-v1';
 const CENTRAL_NOTIFICATIONS_STORE = 'notifications';
 const REMOVED_DRIVER_NAMES = ['ELOIS DOS SANTOS'];
+let centralRequiredOnboardingVersion = DRIVER_ONBOARDING_VERSION;
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
 let fuelReceiptUploadPromise = null;
@@ -1204,7 +1205,21 @@ function renderHomeDriverArea() {
 }
 
 function shouldOpenDriverOnboarding() {
-  return localStorage.getItem(DRIVER_ONBOARDING_VERSION_KEY) !== DRIVER_ONBOARDING_VERSION;
+  return localStorage.getItem(DRIVER_ONBOARDING_VERSION_KEY) !== centralRequiredOnboardingVersion;
+}
+
+async function loadCentralOnboardingConfig() {
+  try {
+    const result = await Promise.race([
+      executeCentralPushFunction({ action: 'onboarding-config' }),
+      new Promise((resolve) => window.setTimeout(() => resolve(null), 3500))
+    ]);
+    const version = String(result?.version || '').trim();
+    if (/^[a-zA-Z0-9._:-]{1,120}$/.test(version)) centralRequiredOnboardingVersion = version;
+  } catch (error) {
+    console.warn('Não foi possível consultar a versão obrigatória do onboarding.', error);
+  }
+  return centralRequiredOnboardingVersion;
 }
 
 function getDirectoryDrivers() {
@@ -1525,7 +1540,7 @@ function confirmSuggestedDriverVehicle() {
     openOnboardingPermissionsStep();
     return;
   }
-  localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, DRIVER_ONBOARDING_VERSION);
+  localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
   closeDriverProfile();
   showSuccessMessage('Motorista e veículo confirmados.');
 }
@@ -1596,7 +1611,7 @@ async function activateOnboardingNotifications() {
 
 function finishGuidedOnboarding(options = {}) {
   if (options.notificationsSkipped) localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
-  localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, DRIVER_ONBOARDING_VERSION);
+  localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
   const title = document.getElementById('driver-profile-title');
   const kicker = document.getElementById('driver-profile-kicker');
   if (kicker) kicker.textContent = 'TUDO CERTO';
@@ -1609,7 +1624,7 @@ function finishGuidedOnboardingAndClose() {
 }
 
 function skipDriverOnboarding() {
-  localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, DRIVER_ONBOARDING_VERSION);
+  localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
   localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
   closeDriverProfile();
 }
@@ -4387,13 +4402,14 @@ function renderCityImageCards() {
   });
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   renderCityImageCards();
   loadManagedCentralStations();
   retryPendingCentralRegistro();
   getCentralDeviceId();
   renderHomeDriverArea();
   refreshMySubmissions({ silent: true });
+  await loadCentralOnboardingConfig();
   if (window.location.hash === '#meus-envios') window.setTimeout(() => openMySubmissions(), 350);
   else if (shouldOpenDriverOnboarding()) window.setTimeout(() => openDriverProfile(), 450);
 });

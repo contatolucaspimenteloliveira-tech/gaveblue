@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260823-home-cards-balanced-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260824-device-admin-reset-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -719,6 +719,16 @@
               <div class="central-devices-summary">
                 <div><strong id="central-devices-count">—</strong><span>Aparelhos inscritos</span></div>
                 <p>O vínculo usa somente o identificador técnico da inscrição push. Nenhum IP ou localização é armazenado.</p>
+              </div>
+              <div class="central-onboarding-reset">
+                <div>
+                  <strong>Configuração inicial dos aparelhos</strong>
+                  <span>Crie uma nova versão obrigatória para que todos refaçam a escolha do motorista, do veículo e das permissões ao abrir a Central.</span>
+                </div>
+                <button id="central-onboarding-reset-button" type="button" onclick="confirmCentralOnboardingReset()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Exigir nova configuração
+                </button>
               </div>
               <div id="central-devices-list" class="central-devices-list"><div class="central-devices-empty">Carregando aparelhos vinculados…</div></div>
             </div>
@@ -1611,7 +1621,7 @@
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260823-vehicle-photo-1"></script>
-  <script src="./wefrotas.js?v=20260824-central-notify-recovery-1"></script>
+  <script src="./wefrotas.js?v=20260824-device-admin-reset-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
