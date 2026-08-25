@@ -4230,7 +4230,11 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 window.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !document.getElementById('driver-profile-modal')?.classList.contains('hidden')) {
+  const onboardingOpen = !document.getElementById('driver-onboarding-driver-step')?.classList.contains('hidden') ||
+    !document.getElementById('driver-onboarding-vehicle-step')?.classList.contains('hidden') ||
+    !document.getElementById('driver-onboarding-vehicle-search-step')?.classList.contains('hidden');
+
+  if (event.key === 'Escape' && !document.getElementById('driver-profile-modal')?.classList.contains('hidden') && !onboardingOpen) {
     closeDriverProfile();
   } else if (event.key === 'Escape' && !document.getElementById('my-submissions-modal')?.classList.contains('hidden')) {
     closeMySubmissions();
