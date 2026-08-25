@@ -20,7 +20,7 @@
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css">
-  <link rel="stylesheet" href="./styles.css?v=20260824-required-profile-1">
+  <link rel="stylesheet" href="./styles.css?v=20260824-install-progress-1">
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full flex flex-col">
@@ -82,6 +82,12 @@
      <div class="pwa-install-progress-track">
       <div id="pwa-install-progress-bar" class="pwa-install-progress-bar"></div>
      </div>
+     <ul class="pwa-install-phase-list" aria-live="polite">
+      <li data-pwa-install-phase="1">Preparando o aplicativo</li>
+      <li data-pwa-install-phase="2">Verificando segurança</li>
+      <li data-pwa-install-phase="3">Organizando uso offline</li>
+      <li data-pwa-install-phase="4">Finalizando no Chrome</li>
+     </ul>
     </div>
     <button id="pwa-install-primary" type="button" class="pwa-install-primary">
      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -1059,6 +1065,6 @@
     <span>Sobre</span>
    </button>
   </nav>
-  <script src="./app.js?v=20260824-required-profile-1"></script>
+  <script src="./app.js?v=20260824-install-progress-1"></script>
  </body>
 </html>
