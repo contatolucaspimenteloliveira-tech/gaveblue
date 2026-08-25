@@ -619,7 +619,7 @@ function getCentralDeviceId() {
 }
 
 function shouldShowCentralPushPrompt() {
-  // A autorização de notificações pertence ao onboarding e à tela Sobre.
+  // A autorização de notificações pertence ao onboarding e à tela de Configurações.
   // Não exibir convites soltos durante o uso normal do aplicativo.
   return false;
 }
@@ -812,6 +812,57 @@ async function toggleCentralPushNotifications() {
     showErrorMessage(error?.message || 'Não foi possível alterar as notificações.');
   } finally {
     await refreshCentralNotificationSetting();
+  }
+}
+
+async function getCentralCameraPermissionState() {
+  if (!navigator.mediaDevices?.getUserMedia) return 'unsupported';
+  if (!navigator.permissions?.query) return 'prompt';
+  try {
+    const permission = await navigator.permissions.query({ name: 'camera' });
+    return permission.state;
+  } catch (error) {
+    return 'prompt';
+  }
+}
+
+async function refreshCentralCameraSetting() {
+  const toggle = document.getElementById('central-camera-toggle');
+  const status = document.getElementById('central-camera-status');
+  if (!toggle || !status) return;
+  const state = await getCentralCameraPermissionState();
+  const enabled = state === 'granted';
+  toggle.disabled = state === 'unsupported';
+  toggle.setAttribute('aria-checked', String(enabled));
+  toggle.classList.toggle('is-active', enabled);
+  if (state === 'granted') status.textContent = 'Autorizada neste aparelho.';
+  else if (state === 'denied') status.textContent = 'Bloqueada nas configurações do navegador.';
+  else if (state === 'unsupported') status.textContent = 'Este navegador não oferece acesso à câmera.';
+  else status.textContent = 'Toque para autorizar a câmera.';
+}
+
+async function toggleCentralCameraPermission() {
+  const toggle = document.getElementById('central-camera-toggle');
+  if (!toggle || toggle.disabled) return;
+  const state = await getCentralCameraPermissionState();
+  if (state === 'granted') {
+    showSuccessMessage('A câmera está ativa. Para bloquear, altere a permissão nas configurações do navegador.');
+    return;
+  }
+  if (state === 'denied') {
+    showErrorMessage('A câmera está bloqueada. Libere a permissão nas configurações do navegador e tente novamente.');
+    return;
+  }
+  toggle.disabled = true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    stream.getTracks().forEach((track) => track.stop());
+    showSuccessMessage('Câmera autorizada neste aparelho.');
+  } catch (error) {
+    showErrorMessage('Não foi possível autorizar a câmera. Selecione “Permitir durante o uso do app”.');
+  } finally {
+    toggle.disabled = false;
+    await refreshCentralCameraSetting();
   }
 }
 
@@ -1202,6 +1253,74 @@ function renderHomeDriverArea() {
       status.className = statusInfo.className;
     }
   }
+  renderProfilePage();
+}
+
+function renderProfilePageVehicleImage(imageUrl) {
+  const image = document.getElementById('profile-page-vehicle-image');
+  const fallback = document.getElementById('profile-page-vehicle-fallback');
+  if (!image || !fallback) return;
+  const url = String(imageUrl || '').trim();
+  const showFallback = () => {
+    image.classList.add('hidden');
+    fallback.classList.remove('hidden');
+  };
+  if (!url) {
+    image.removeAttribute('src');
+    showFallback();
+    return;
+  }
+  image.onload = () => {
+    image.classList.remove('hidden');
+    fallback.classList.add('hidden');
+  };
+  image.onerror = showFallback;
+  image.src = url;
+}
+
+function renderProfilePage() {
+  const profile = getDriverProfile();
+  const driverName = document.getElementById('profile-page-driver-name');
+  const driverDetail = document.getElementById('profile-page-driver-detail');
+  const vehicleName = document.getElementById('profile-page-vehicle-name');
+  const vehiclePlate = document.getElementById('profile-page-vehicle-plate');
+  if (profile) {
+    if (driverName) driverName.textContent = profile.name;
+    if (driverDetail) driverDetail.textContent = `Perfil vinculado a este aparelho • ${profile.plate}`;
+    if (vehicleName) vehicleName.textContent = profile.vehicle;
+    if (vehiclePlate) {
+      vehiclePlate.textContent = profile.plate;
+      vehiclePlate.classList.remove('is-empty');
+    }
+    renderProfilePageVehicleImage(profile.vehicleImageUrl);
+  } else {
+    if (driverName) driverName.textContent = 'Perfil não configurado';
+    if (driverDetail) driverDetail.textContent = 'Vincule seus dados para realizar registros.';
+    if (vehicleName) vehicleName.textContent = 'Nenhum veículo';
+    if (vehiclePlate) {
+      vehiclePlate.textContent = 'SEM PLACA';
+      vehiclePlate.classList.add('is-empty');
+    }
+    renderProfilePageVehicleImage('');
+  }
+
+  const list = document.getElementById('profile-page-submissions-list');
+  if (!list) return;
+  const records = centralSubmissionHistoryLoaded
+    ? centralSubmissionHistory.slice(0, 3)
+    : [getCentralLastSentRecord()].filter(Boolean);
+  if (!records.length) {
+    list.innerHTML = '<div class="profile-page-empty">Nenhum envio encontrado neste aparelho.</div>';
+    return;
+  }
+  list.innerHTML = records.map((record) => {
+    const status = getSubmissionStatus(record);
+    return `<article class="profile-page-submission-item">
+      <span class="profile-page-submission-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 22h12M4 9h10M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9.8L18 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span><strong>${escapeCentralHtml(getSubmissionType(record))}</strong><small>${escapeCentralHtml(formatHistoryDate(record))}</small></span>
+      <span class="submission-status ${status.className}">${escapeCentralHtml(status.label)}</span>
+    </article>`;
+  }).join('');
 }
 
 function shouldOpenDriverOnboarding() {
@@ -1606,7 +1725,7 @@ async function activateOnboardingNotifications() {
   const activated = await enableCentralPushNotifications();
   if (activated) return finishGuidedOnboarding();
   if (button) { button.disabled = false; button.textContent = 'Tentar ativar notificações'; }
-  if (status) status.textContent = 'Você poderá ativar depois em Sobre > Notificações.';
+  if (status) status.textContent = 'Você poderá ativar depois em Configurações.';
 }
 
 function finishGuidedOnboarding(options = {}) {
@@ -3408,7 +3527,7 @@ function goToWelcome() {
   document.getElementById('welcome-screen').classList.remove('hidden');
   document.getElementById('postos-display').classList.add('hidden');
   document.getElementById('dashboard').classList.add('hidden');
-  document.getElementById('about-section')?.classList.add('hidden');
+  document.getElementById('profile-section')?.classList.add('hidden');
   currentView = 'welcome';
   setMobileNavActive('home');
   renderHomeDriverArea();
@@ -3420,7 +3539,7 @@ function showDashboard() {
   document.getElementById('welcome-screen').classList.add('hidden');
   document.getElementById('postos-display').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
-  document.getElementById('about-section')?.classList.add('hidden');
+  document.getElementById('profile-section')?.classList.add('hidden');
   currentView = 'dashboard';
   setMobileNavActive('postos');
   updateBackButtonVisibility();
@@ -3502,7 +3621,7 @@ function selectCity(cityName) {
 
   welcomeScreen.classList.add('hidden');
   dashboard.classList.add('hidden');
-  document.getElementById('about-section')?.classList.add('hidden');
+  document.getElementById('profile-section')?.classList.add('hidden');
   postosDisplay.classList.remove('hidden');
   currentView = 'postos';
   setMobileNavActive('postos');
@@ -3511,7 +3630,7 @@ function selectCity(cityName) {
 
 function backToSearch() {
   document.getElementById('postos-display').classList.add('hidden');
-  document.getElementById('about-section')?.classList.add('hidden');
+  document.getElementById('profile-section')?.classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   currentView = 'dashboard';
   setMobileNavActive('postos');
@@ -3526,27 +3645,34 @@ function setMobileNavActive(target) {
 }
 
 function restoreMobileNavForCurrentView() {
-  if (currentView === 'about') {
-    setMobileNavActive('about');
+  if (currentView === 'profile') {
+    setMobileNavActive('profile');
     return;
   }
   setMobileNavActive(currentView === 'welcome' ? 'home' : 'postos');
 }
 
-function showAboutSection() {
+function showProfileSection() {
   closeOpenFormsSilently();
   document.getElementById('welcome-screen').classList.add('hidden');
   document.getElementById('postos-display').classList.add('hidden');
   document.getElementById('dashboard').classList.add('hidden');
-  document.getElementById('about-section')?.classList.remove('hidden');
-  currentView = 'about';
-  setMobileNavActive('about');
+  document.getElementById('profile-section')?.classList.remove('hidden');
+  currentView = 'profile';
+  setMobileNavActive('profile');
   updateBackButtonVisibility();
+  renderProfilePage();
   refreshCentralNotificationSetting();
+  refreshCentralCameraSetting();
+  if (!centralSubmissionHistoryLoaded) refreshMySubmissions({ silent: true });
+}
+
+function showAboutSection() {
+  showProfileSection();
 }
 
 function openCentralNotificationSettings() {
-  showAboutSection();
+  showProfileSection();
   window.setTimeout(() => {
     const setting = document.getElementById('central-notification-toggle')?.closest('.about-notification-setting');
     setting?.scrollIntoView({ behavior: 'smooth', block: 'center' });

@@ -2196,6 +2196,175 @@ body.driver-profile-open .mobile-bottom-nav {
   margin: 0.25rem auto 1rem;
 }
 
+.profile-page {
+  min-height: 100%;
+  color: #0f172a;
+  background: linear-gradient(180deg, #f8fbff 0%, #f3f6fb 100%);
+}
+
+.profile-page-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.profile-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0.15rem 0.15rem;
+}
+
+.profile-page-header > div > span,
+.profile-page-section-heading > div > span {
+  color: #2563eb;
+  font-size: 0.66rem;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.profile-page-header h1 {
+  margin: 0.32rem 0 0;
+  color: #0f172a;
+  font-size: clamp(1.75rem, 7vw, 2.35rem);
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: -0.045em;
+}
+
+.profile-page-header p {
+  margin-top: 0.45rem;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.profile-page-close {
+  display: grid;
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 1px solid #dbe4f0;
+  border-radius: 999px;
+  color: #475569;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.profile-page-close svg { width: 1.15rem; height: 1.15rem; }
+
+.profile-page-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.profile-page-card,
+.profile-page-submissions,
+.profile-page-settings {
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.07);
+}
+
+.profile-page-card { padding: 0.9rem; }
+.profile-page-submissions,
+.profile-page-settings { padding: 1rem; }
+
+.profile-page-card-heading,
+.profile-page-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.profile-page-card-heading > span { color: #64748b; font-size: 0.72rem; font-weight: 850; }
+.profile-page-card-heading button,
+.profile-page-section-heading > button {
+  color: #2563eb;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.profile-page-driver-content,
+.profile-page-vehicle-content {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.75rem;
+  min-width: 0;
+}
+
+.profile-page-driver-content > span:last-child,
+.profile-page-vehicle-content > span:last-child { display: grid; gap: 0.28rem; min-width: 0; }
+.profile-page-driver-content strong,
+.profile-page-vehicle-content strong { color: #0f172a; font-size: 0.9rem; line-height: 1.2; font-weight: 900; }
+.profile-page-driver-content small { color: #64748b; font-size: 0.68rem; line-height: 1.3; }
+
+.profile-page-avatar,
+.profile-page-vehicle-media,
+.profile-page-submission-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 3.25rem;
+  width: 3.25rem;
+  height: 3.25rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.profile-page-avatar svg { width: 1.55rem; height: 1.55rem; }
+.profile-page-vehicle-media img { width: 100%; height: 100%; object-fit: contain; }
+.profile-page-vehicle-media > span { display: grid; place-items: center; width: 100%; height: 100%; }
+.profile-page-vehicle-media svg { width: 2.25rem; height: 2.25rem; }
+.mercosur-plate--profile { width: 7.25rem; }
+
+.profile-page-section-heading h2 {
+  margin-top: 0.28rem;
+  color: #0f172a;
+  font-size: 1.05rem;
+  line-height: 1.1;
+  font-weight: 900;
+}
+
+.profile-page-submissions-list { display: grid; gap: 0.55rem; margin-top: 0.85rem; }
+.profile-page-submission-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 3.6rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #e7edf5;
+  border-radius: 1rem;
+  background: #f8fafc;
+}
+.profile-page-submission-icon { width: 2.45rem; height: 2.45rem; flex-basis: 2.45rem; border-radius: 0.8rem; }
+.profile-page-submission-icon svg { width: 1.2rem; height: 1.2rem; }
+.profile-page-submission-item > span:nth-child(2) { display: grid; gap: 0.15rem; min-width: 0; }
+.profile-page-submission-item strong { overflow: hidden; color: #0f172a; font-size: 0.78rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+.profile-page-submission-item small { color: #64748b; font-size: 0.65rem; }
+.profile-page-empty { padding: 1rem; border-radius: 1rem; color: #64748b; background: #f8fafc; font-size: 0.76rem; text-align: center; }
+
+.profile-page-settings .about-action-panel { width: 100%; margin: 0.85rem 0 0; }
+.profile-page-about-heading { margin-top: 0.2rem; padding: 0 0.15rem; }
+
+body[data-mobile-nav="profile"] .mobile-bottom-nav { display: none !important; }
+
+@media (max-width: 560px) {
+  .profile-page { padding-right: 0.75rem; padding-left: 0.75rem; }
+  .profile-page-overview { grid-template-columns: 1fr; }
+  .profile-page-card { padding: 0.8rem; }
+  .profile-page-header p { max-width: 16rem; }
+  .profile-page-submission-item .submission-status { font-size: 0.6rem; }
+}
+
 .about-notification-setting {
   display: flex;
   grid-column: 1 / -1;
