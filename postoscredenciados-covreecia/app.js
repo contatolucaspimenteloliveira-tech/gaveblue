@@ -532,24 +532,28 @@ function waitForCentralRetry(delay) {
 }
 
 function updateCentralConnectivityStatus(options = {}) {
-  const online = navigator.onLine && !centralConnectionDegraded;
+  const state = !navigator.onLine
+    ? 'offline'
+    : (centralConnectionDegraded || options.syncing ? 'unstable' : 'online');
+  const statusCopy = {
+    online: { label: 'Online', description: 'Conexão online' },
+    unstable: { label: 'Conexão instável', description: 'Conexão instável. Tentando sincronizar.' },
+    offline: { label: 'Offline', description: 'Modo offline. Os registros serão enviados quando a internet voltar.' }
+  }[state];
   let status = document.getElementById('central-connectivity-status');
-  if (online && !options.syncing) {
-    status?.remove();
-    return;
-  }
   if (!status) {
     status = document.createElement('div');
     status.id = 'central-connectivity-status';
     status.className = 'central-connectivity-status';
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
-    document.body.appendChild(status);
+    document.querySelector('.home-header-actions')?.prepend(status);
   }
-  status.classList.toggle('is-online', online);
-  status.innerHTML = online
-    ? '<span></span><strong>Conexão restabelecida</strong><small>Sincronizando registros salvos...</small>'
-    : '<span></span><strong>Modo offline</strong><small>Você pode continuar. Os registros serão enviados quando a internet voltar.</small>';
+  if (!status) return;
+  status.dataset.state = state;
+  status.setAttribute('aria-label', statusCopy.description);
+  status.setAttribute('title', statusCopy.description);
+  status.innerHTML = `<span class="central-connectivity-dot" aria-hidden="true"></span><span class="central-connectivity-label">${statusCopy.label}</span>`;
 }
 
 function scheduleCentralReconnect() {

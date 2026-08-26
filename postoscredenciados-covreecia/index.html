@@ -20,7 +20,7 @@
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css">
-  <link rel="stylesheet" href="./styles.css?v=20260825-offline-first-2">
+  <link rel="stylesheet" href="./styles.css?v=20260825-connectivity-indicator-1">
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full flex flex-col">
@@ -722,6 +722,10 @@
     <div class="home-app-header-inner">
      <img src="./assets/brand/covre-e-cia.png" alt="Covre &amp; Cia" loading="eager" decoding="async" fetchpriority="high" class="home-brand-logo">
      <div class="home-header-actions">
+      <div id="central-connectivity-status" class="central-connectivity-status" role="status" aria-live="polite" aria-label="Conex&atilde;o online" title="Conex&atilde;o online" data-state="online">
+       <span class="central-connectivity-dot" aria-hidden="true"></span>
+       <span class="central-connectivity-label">Online</span>
+      </div>
       <button id="home-refresh-button" type="button" class="home-profile-button home-refresh-button" onclick="refreshCentralApplication()" aria-label="Atualizar aplicativo" title="Buscar atualização do aplicativo">
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><g transform="translate(24 0) scale(-1 1)"><path d="M3.8 10.1A8.7 8.7 0 1 1 5.7 17" stroke-width="2.15" stroke-linecap="round"/><path d="M3.8 4.8v5.3h5.3" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
       </button>
@@ -1119,6 +1123,6 @@
     <span>Configura&ccedil;&otilde;es</span>
    </button>
   </nav>
-  <script src="./app.js?v=20260825-offline-first-2"></script>
+  <script src="./app.js?v=20260825-connectivity-indicator-1"></script>
  </body>
 </html>

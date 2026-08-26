@@ -3562,49 +3562,44 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
 .pwa-install-backdrop--locked { pointer-events: none; }
 .pwa-install-primary:disabled { opacity: .72; cursor: wait; }
 .central-connectivity-status {
-  position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 76px);
-  left: 50%;
-  z-index: 120;
-  display: grid;
-  grid-template-columns: 10px auto;
-  column-gap: 9px;
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
-  width: min(calc(100% - 28px), 460px);
-  padding: 10px 14px;
-  color: #713f12;
-  background: rgba(255, 251, 235, 0.97);
-  border: 1px solid #fde68a;
-  border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
-  transform: translateX(-50%);
-  backdrop-filter: blur(12px);
-}
-
-.central-connectivity-status > span {
-  grid-row: 1 / 3;
-  width: 9px;
-  height: 9px;
-  background: #f59e0b;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
   border-radius: 999px;
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
+  cursor: help;
 }
 
-.central-connectivity-status strong,
-.central-connectivity-status small {
-  line-height: 1.25;
+.central-connectivity-dot {
+  width: 0.62rem;
+  height: 0.62rem;
+  background: #22c55e;
+  border-radius: 999px;
+  box-shadow: 0 0 0 0.22rem rgba(34, 197, 94, 0.14);
+  transition: background-color 180ms ease, box-shadow 180ms ease;
 }
 
-.central-connectivity-status strong { font-size: 13px; }
-.central-connectivity-status small { font-size: 11px; opacity: 0.82; }
-
-.central-connectivity-status.is-online {
-  color: #065f46;
-  background: rgba(236, 253, 245, 0.97);
-  border-color: #a7f3d0;
+.central-connectivity-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.central-connectivity-status.is-online > span {
-  background: #10b981;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
+.central-connectivity-status[data-state="unstable"] .central-connectivity-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 0 0.22rem rgba(245, 158, 11, 0.16);
+}
+
+.central-connectivity-status[data-state="offline"] .central-connectivity-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 0.22rem rgba(239, 68, 68, 0.16);
 }
