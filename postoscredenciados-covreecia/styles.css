@@ -3567,10 +3567,19 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 1.35rem;
-  height: 1.35rem;
+  gap: 0.42rem;
+  min-height: 2rem;
+  padding: 0.35rem 0.68rem;
+  border: 1px solid #bbf7d0;
   border-radius: 999px;
+  color: #166534;
+  background: #f0fdf4;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
   cursor: help;
+  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease;
 }
 
 .central-connectivity-dot {
@@ -3583,15 +3592,13 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
 }
 
 .central-connectivity-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  display: inline-block;
+}
+
+.central-connectivity-status[data-state="unstable"] {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
 }
 
 .central-connectivity-status[data-state="unstable"] .central-connectivity-dot {
@@ -3599,7 +3606,49 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
   box-shadow: 0 0 0 0.22rem rgba(245, 158, 11, 0.16);
 }
 
+.central-connectivity-status[data-state="offline"] {
+  color: #991b1b;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
 .central-connectivity-status[data-state="offline"] .central-connectivity-dot {
   background: #ef4444;
   box-shadow: 0 0 0 0.22rem rgba(239, 68, 68, 0.16);
+}
+
+@media (max-width: 430px) {
+  .home-app-header-inner {
+    gap: 0.35rem;
+    padding-right: 0.55rem;
+    padding-left: 0.55rem;
+  }
+
+  .home-brand-logo {
+    max-width: 6.5rem;
+    height: 2.35rem;
+  }
+
+  .home-header-actions {
+    gap: 0.3rem;
+  }
+
+  .home-profile-button {
+    flex-basis: 2.25rem;
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .central-connectivity-status {
+    gap: 0.3rem;
+    min-height: 1.8rem;
+    padding: 0.3rem 0.46rem;
+    font-size: 0.58rem;
+  }
+
+  .central-connectivity-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    box-shadow: 0 0 0 0.17rem rgba(34, 197, 94, 0.14);
+  }
 }

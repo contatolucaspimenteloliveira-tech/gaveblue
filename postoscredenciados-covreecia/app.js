@@ -536,7 +536,7 @@ function updateCentralConnectivityStatus(options = {}) {
     ? 'offline'
     : (centralConnectionDegraded || options.syncing ? 'unstable' : 'online');
   const statusCopy = {
-    online: { label: 'Online', description: 'Conexão online' },
+    online: { label: 'Conectado', description: 'Conexão online' },
     unstable: { label: 'Conexão instável', description: 'Conexão instável. Tentando sincronizar.' },
     offline: { label: 'Offline', description: 'Modo offline. Os registros serão enviados quando a internet voltar.' }
   }[state];
