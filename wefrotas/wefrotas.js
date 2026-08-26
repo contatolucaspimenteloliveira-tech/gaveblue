@@ -49,6 +49,7 @@
     let centralPendingNfFilter = '';
     let centralPendingDueStart = '';
     let centralPendingDueEnd = '';
+    let centralPendingSortState = { key: 'date', direction: 'desc' };
     let centralPendingFiltersLoaded = false;
     let selectedCentralPending = new Set();
     const centralApprovalInProgress = new Set();
@@ -8660,7 +8661,7 @@
 
     function getCentralPendingSortedRows() {
       loadCentralPendingFilters();
-      return [...centralPendingRecords]
+      const rows = [...centralPendingRecords]
         .filter(record => normalizeComparableText(record?.workspaceId || '') === normalizeComparableText(window.WeFrotasBackend?.config?.companyId || 'covre-e-cia'))
         .filter(record => {
           const className = getCentralPendingStatus(record).className;
@@ -8731,8 +8732,33 @@
           if ((centralPendingDueStart || centralPendingDueEnd) && !dueDate) return false;
           return (!centralPendingDueStart || dueDate >= centralPendingDueStart)
             && (!centralPendingDueEnd || dueDate <= centralPendingDueEnd);
-        })
-        .sort((a, b) => `${getCentralRecordIsoDate(b)} ${b?.hora || ''}`.localeCompare(`${getCentralRecordIsoDate(a)} ${a?.hora || ''}`));
+        });
+      const direction = centralPendingSortState.direction === 'asc' ? 1 : -1;
+      return rows.sort((a, b) => {
+        const getValue = (record) => {
+          switch (centralPendingSortState.key) {
+            case 'type': return getCentralPendingRecordType(record);
+            case 'driver': return record?.motorista || '';
+            case 'supplier': return getCentralPendingSupplier(record);
+            case 'km': {
+              const rawKm = String(record?.km || '').trim();
+              if (/^\d{1,3}(\.\d{3})+$/.test(rawKm)) return Number(rawKm.replace(/\./g, '')) || 0;
+              return parseDecimalInputValue(rawKm);
+            }
+            case 'value': return getCentralRecordTotal(record);
+            case 'status': return getCentralPendingStatus(record).label;
+            case 'date':
+            default: return `${getCentralRecordIsoDate(record)} ${record?.hora || ''}`;
+          }
+        };
+        const aValue = getValue(a);
+        const bValue = getValue(b);
+        const comparison = typeof aValue === 'number' || typeof bValue === 'number'
+          ? Number(aValue || 0) - Number(bValue || 0)
+          : String(aValue || '').localeCompare(String(bValue || ''), 'pt-BR', { numeric: true, sensitivity: 'base' });
+        if (comparison !== 0) return comparison * direction;
+        return `${getCentralRecordIsoDate(b)} ${b?.hora || ''}`.localeCompare(`${getCentralRecordIsoDate(a)} ${a?.hora || ''}`);
+      });
     }
 
     function loadCentralPendingFilters() {
@@ -8751,6 +8777,9 @@
         centralPendingNfFilter = normalizeSearchText(saved.nf || '');
         centralPendingDueStart = saved.dueStart || '';
         centralPendingDueEnd = saved.dueEnd || '';
+        if (['date', 'type', 'driver', 'supplier', 'km', 'value', 'status'].includes(saved.sortKey)) {
+          centralPendingSortState = { key: saved.sortKey, direction: saved.sortDirection === 'asc' ? 'asc' : 'desc' };
+        }
       } catch (error) {}
       const values = {
         'central-pending-status-filter': centralPendingStatusFilter,
@@ -8784,7 +8813,9 @@
           order: centralPendingOrderFilter,
           nf: centralPendingNfFilter,
           dueStart: centralPendingDueStart,
-          dueEnd: centralPendingDueEnd
+          dueEnd: centralPendingDueEnd,
+          sortKey: centralPendingSortState.key,
+          sortDirection: centralPendingSortState.direction
         }));
       } catch (error) {}
     }
@@ -8817,9 +8848,33 @@
       centralPendingNfFilter = '';
       centralPendingDueStart = '';
       centralPendingDueEnd = '';
+      centralPendingSortState = { key: 'date', direction: 'desc' };
       centralPendingFiltersLoaded = false;
       try { localStorage.removeItem(CENTRAL_PENDING_FILTERS_KEY); } catch (error) {}
       loadCentralPendingFilters();
+      renderCentralPendingRecords();
+    }
+
+    function updateCentralPendingSortIndicators() {
+      document.querySelectorAll('[data-central-sort-indicator]').forEach((node) => {
+        const key = node.getAttribute('data-central-sort-indicator');
+        node.textContent = centralPendingSortState.key === key
+          ? (centralPendingSortState.direction === 'asc' ? '↑' : '↓')
+          : '';
+      });
+      document.querySelectorAll('.central-pending-sort-head').forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.sortKey === centralPendingSortState.key);
+      });
+    }
+
+    function toggleCentralPendingSort(key) {
+      if (!['date', 'type', 'driver', 'supplier', 'km', 'value', 'status'].includes(key)) return;
+      if (centralPendingSortState.key === key) {
+        centralPendingSortState.direction = centralPendingSortState.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        centralPendingSortState = { key, direction: key === 'date' || key === 'value' || key === 'km' ? 'desc' : 'asc' };
+      }
+      saveCentralPendingFilters();
       renderCentralPendingRecords();
     }
 
@@ -8846,6 +8901,7 @@
       const visibleIds = new Set(rows.map(record => getCentralPendingRecordId(record)));
       selectedCentralPending = new Set(Array.from(selectedCentralPending).filter(id => visibleIds.has(id)));
       renderCentralPendingSummary(rows);
+      updateCentralPendingSortIndicators();
 
       if (centralPendingLoading) {
         list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Buscando registros enviados pela Central...</td></tr>';
@@ -9244,6 +9300,7 @@
     }
 
     window.refreshCentralPendingRecords = refreshCentralPendingRecords;
+    window.toggleCentralPendingSort = toggleCentralPendingSort;
     window.setCentralPendingStatusFilter = (value) => { centralPendingStatusFilter = value || 'pendente'; saveCentralPendingFilters(); renderCentralPendingRecords(); };
     window.setCentralPendingDateFilter = () => {
       centralPendingDateStart = document.getElementById('central-pending-date-start')?.value || '';

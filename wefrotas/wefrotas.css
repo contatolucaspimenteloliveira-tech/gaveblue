@@ -4702,6 +4702,34 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
   background: #fbfdff;
 }
 
+.central-pending-sort-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.central-pending-sort-head:hover,
+.central-pending-sort-head.is-active {
+  color: #3157df;
+}
+
+.central-pending-sort-head span {
+  min-width: 10px;
+  color: #3157df;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
 .central-pending-table tbody tr:hover {
   background: #f8fbff;
 }

@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260826-record-filters-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260826-record-filters-2">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -979,13 +979,13 @@
                 <table class="central-pending-table">
                   <thead>
                     <tr>
-                      <th>Data</th>
-                      <th>Tipo</th>
-                      <th>Motorista</th>
-                      <th>Fornecedor/Posto</th>
-                      <th>KM</th>
-                      <th>Valor</th>
-                      <th>Status</th>
+                      <th><button type="button" class="central-pending-sort-head is-active" data-sort-key="date" onclick="toggleCentralPendingSort('date')">Data <span data-central-sort-indicator="date">↓</span></button></th>
+                      <th><button type="button" class="central-pending-sort-head" data-sort-key="type" onclick="toggleCentralPendingSort('type')">Tipo <span data-central-sort-indicator="type"></span></button></th>
+                      <th><button type="button" class="central-pending-sort-head" data-sort-key="driver" onclick="toggleCentralPendingSort('driver')">Motorista <span data-central-sort-indicator="driver"></span></button></th>
+                      <th><button type="button" class="central-pending-sort-head" data-sort-key="supplier" onclick="toggleCentralPendingSort('supplier')">Fornecedor/Posto <span data-central-sort-indicator="supplier"></span></button></th>
+                      <th><button type="button" class="central-pending-sort-head" data-sort-key="km" onclick="toggleCentralPendingSort('km')">KM <span data-central-sort-indicator="km"></span></button></th>
+                      <th><button type="button" class="central-pending-sort-head" data-sort-key="value" onclick="toggleCentralPendingSort('value')">Valor <span data-central-sort-indicator="value"></span></button></th>
+                      <th><button type="button" class="central-pending-sort-head" data-sort-key="status" onclick="toggleCentralPendingSort('status')">Status <span data-central-sort-indicator="status"></span></button></th>
                       <th>Comprovante</th>
                     </tr>
                   </thead>
@@ -1630,7 +1630,7 @@
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260823-vehicle-photo-1"></script>
-  <script src="./wefrotas.js?v=20260826-record-filters-1"></script>
+  <script src="./wefrotas.js?v=20260826-record-filters-2"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
