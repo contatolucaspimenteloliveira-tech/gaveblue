@@ -739,6 +739,7 @@ body.driver-profile-open .mobile-bottom-nav {
 }
 
 .home-app-header-inner {
+  position: relative;
   display: flex;
   width: min(100%, 80rem);
   max-width: 100%;
@@ -3562,7 +3563,10 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
 .pwa-install-backdrop--locked { pointer-events: none; }
 .pwa-install-primary:disabled { opacity: .72; cursor: wait; }
 .central-connectivity-status {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -3579,6 +3583,7 @@ body.receipt-camera-open .mobile-bottom-nav { display: none !important; }
   line-height: 1;
   white-space: nowrap;
   cursor: help;
+  transform: translate(-50%, -50%);
   transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease;
 }
 
