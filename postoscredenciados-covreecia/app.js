@@ -2276,6 +2276,32 @@ async function markAllCentralNotificationsRead() {
   }
 }
 
+async function deleteAllCentralNotifications() {
+  const database = await openCentralNotificationsDb();
+  try {
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction(CENTRAL_NOTIFICATIONS_STORE, 'readwrite');
+      transaction.objectStore(CENTRAL_NOTIFICATIONS_STORE).clear();
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error('Não foi possível limpar as notificações.'));
+      transaction.onabort = () => reject(transaction.error || new Error('A limpeza das notificações foi interrompida.'));
+    });
+  } finally {
+    database.close();
+  }
+}
+
+async function closeCentralSystemNotifications() {
+  if (!navigator.serviceWorker) return;
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const notifications = await registration.getNotifications();
+    notifications.forEach((notification) => notification.close());
+  } catch (error) {
+    console.warn('Central: não foi possível fechar os avisos visíveis do sistema.', error);
+  }
+}
+
 async function markCentralNotificationRead(id) {
   if (!id) return;
   const database = await openCentralNotificationsDb();
@@ -2309,6 +2335,8 @@ function formatCentralNotificationDate(value) {
 
 function renderCentralNotifications(records) {
   const list = document.getElementById('central-notifications-list');
+  const clearButton = document.getElementById('central-notifications-clear');
+  if (clearButton) clearButton.disabled = !records.length;
   if (!list) return;
   if (!records.length) {
     list.innerHTML = `<div class="notification-center-empty">
@@ -2326,6 +2354,23 @@ function renderCentralNotifications(records) {
   list.querySelectorAll('[data-notification-id]').forEach((button) => {
     button.addEventListener('click', () => openCentralNotificationItem(button.dataset.notificationId));
   });
+}
+
+async function clearCentralNotifications() {
+  const records = await getCentralNotifications().catch(() => []);
+  if (!records.length) return;
+  if (!window.confirm('Limpar todas as notificações deste aparelho?')) return;
+  const button = document.getElementById('central-notifications-clear');
+  if (button) button.disabled = true;
+  try {
+    await Promise.all([deleteAllCentralNotifications(), closeCentralSystemNotifications()]);
+    renderCentralNotifications([]);
+    await refreshCentralNotificationBadge();
+    showSuccessMessage('Notificações removidas deste aparelho.');
+  } catch (error) {
+    if (button) button.disabled = false;
+    showErrorMessage(error?.message || 'Não foi possível limpar as notificações.');
+  }
 }
 
 async function refreshCentralNotificationBadge() {
