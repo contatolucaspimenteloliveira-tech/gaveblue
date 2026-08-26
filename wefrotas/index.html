@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260824-device-admin-reset-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260826-record-filters-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -932,23 +932,14 @@
                 <span>Serviços</span>
                 <strong id="central-pending-service-count">0</strong>
               </div>
-              <label class="central-pending-filter">
-                <span>Status</span>
-                <select id="central-pending-status-filter" onchange="setCentralPendingStatusFilter(this.value)">
-                  <option value="todos">Todos</option>
-                  <option value="pendente" selected>Pendentes</option>
-                  <option value="aprovado">Aprovados</option>
-                  <option value="rejeitado">Rejeitados</option>
-                </select>
-              </label>
-              <label class="central-pending-filter">
-                <span>De</span>
-                <input id="central-pending-date-start" type="date" onchange="setCentralPendingDateFilter()">
-              </label>
-              <label class="central-pending-filter">
-                <span>Até</span>
-                <input id="central-pending-date-end" type="date" onchange="setCentralPendingDateFilter()">
-              </label>
+              <div class="module-filter-controls central-pending-filter-controls" data-module="documentos">
+                <button class="module-filter-icon" type="button" title="Filtros" aria-label="Filtros" onclick="openModuleFilters('documentos')">
+                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5"/></svg>
+                </button>
+                <button class="filter-action-btn" type="button" title="Limpar filtros" aria-label="Limpar filtros" onclick="clearModuleFilters('documentos')">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4 11-11 4 4L7 21Z" stroke-width="1.9" stroke-linejoin="round"/><path d="m12 8 4 4M3 17h8" stroke-width="1.9" stroke-linecap="round"/></svg>
+                </button>
+              </div>
               <span id="central-pending-loading-indicator" class="central-pending-loading-indicator hidden" role="status">
                 <span aria-hidden="true"></span> Recebendo registros da Central
               </span>
@@ -962,6 +953,24 @@
                 <button type="button" title="Auditar" aria-label="Auditar" onclick="auditSelectedCentralPendingRecords()">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7l7-4zM9 12l2 2 4-4"/></svg>
                 </button>
+              </div>
+            </div>
+
+            <div class="orders-filter-shell module-filters-modal" data-filter-module="documentos">
+              <div class="orders-filter-grid finance-filter-grid">
+                <button class="module-filter-close" type="button" title="Fechar" aria-label="Fechar filtros" onclick="closeModuleFilters('documentos')"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6 6 18"/></svg></button>
+                <div class="orders-filter-field"><label>Pesquisa rápida</label><input id="central-pending-search-filter" class="soft-input w-full" placeholder="Motorista, fornecedor, placa, KM ou protocolo"></div>
+                <div class="orders-filter-field"><label>Status</label><select id="central-pending-status-filter" class="soft-input w-full"><option value="todos">Todos</option><option value="pendente" selected>Pendentes</option><option value="aprovado">Aprovados</option><option value="rejeitado">Rejeitados</option></select></div>
+                <div class="orders-filter-field"><label>Data inicial</label><input id="central-pending-date-start" type="date" class="soft-input w-full"></div>
+                <div class="orders-filter-field"><label>Data final</label><input id="central-pending-date-end" type="date" class="soft-input w-full"></div>
+                <div class="orders-filter-field"><label>Valor</label><input id="central-pending-value-filter" class="soft-input w-full" placeholder="Ex: 1500,00"></div>
+                <div class="orders-filter-field"><label>Veículo</label><input id="central-pending-vehicle-filter" class="soft-input w-full" placeholder="Placa, frota ou modelo"></div>
+                <div class="orders-filter-field"><label>Fornecedor</label><input id="central-pending-supplier-filter" class="soft-input w-full" placeholder="Fornecedor ou posto"></div>
+                <div class="orders-filter-field"><label>OS</label><input id="central-pending-order-filter" class="soft-input w-full" placeholder="Nº da OS"></div>
+                <div class="orders-filter-field"><label>Nota fiscal</label><input id="central-pending-nf-filter" class="soft-input w-full" placeholder="Número da nota"></div>
+                <div class="orders-filter-field"><label>Vencimento de</label><input id="central-pending-due-start" type="date" class="soft-input w-full"></div>
+                <div class="orders-filter-field"><label>Vencimento até</label><input id="central-pending-due-end" type="date" class="soft-input w-full"></div>
+                <div class="module-filter-apply-row"><button type="button" onclick="applyModuleFilters('documentos')">Aplicar</button></div>
               </div>
             </div>
 
@@ -1621,7 +1630,7 @@
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260823-vehicle-photo-1"></script>
-  <script src="./wefrotas.js?v=20260824-device-admin-reset-1"></script>
+  <script src="./wefrotas.js?v=20260826-record-filters-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

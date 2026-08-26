@@ -4623,6 +4623,12 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
 
 .central-pending-filter input { padding-right: 8px; }
 
+.central-pending-filter-controls {
+  flex: 0 0 auto;
+  order: 0;
+  margin: 0;
+}
+
 .central-pending-bulk-actions { display: inline-flex; gap: 6px; }
 .central-pending-bulk-actions { margin-left: auto; }
 .central-pending-loading-indicator {
@@ -6409,6 +6415,11 @@ svg.h-8 { height: 2rem; }
 
   .central-pending-loading-indicator {
     grid-column: 1 / -1;
+  }
+
+  .central-pending-filter-controls {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
   }
 
   .central-pending-bulk-actions {

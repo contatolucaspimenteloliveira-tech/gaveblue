@@ -41,6 +41,14 @@
     let centralPendingStatusFilter = 'pendente';
     let centralPendingDateStart = '';
     let centralPendingDateEnd = '';
+    let centralPendingSearchFilter = '';
+    let centralPendingValueFilter = '';
+    let centralPendingVehicleFilter = '';
+    let centralPendingSupplierFilter = '';
+    let centralPendingOrderFilter = '';
+    let centralPendingNfFilter = '';
+    let centralPendingDueStart = '';
+    let centralPendingDueEnd = '';
     let centralPendingFiltersLoaded = false;
     let selectedCentralPending = new Set();
     const centralApprovalInProgress = new Set();
@@ -7191,10 +7199,23 @@
       if (endFilter) visibleEntries = visibleEntries.filter(entry => getFinanceEntryDate(entry) <= endFilter);
       if (dueStart) visibleEntries = visibleEntries.filter(entry => String(entry.dataVencimento || '') >= dueStart);
       if (dueEnd) visibleEntries = visibleEntries.filter(entry => String(entry.dataVencimento || '') <= dueEnd);
-      if (vehicleFilter) visibleEntries = visibleEntries.filter(entry => normalizeSearchText(buildVehicleSearchValue(allVehicles.find(item => item.id === getEntryVehicleId(entry)) || {})).includes(vehicleFilter));
-      if (supplierFilter) visibleEntries = visibleEntries.filter(entry => normalizeSearchText(entry.fornecedor || '').includes(supplierFilter));
-      if (orderFilter) visibleEntries = visibleEntries.filter(entry => normalizeSearchText(getOrderNumberLabel(allOrders.find(order => order.id === entry.orderId) || {})).includes(orderFilter));
-      if (nfFilter) visibleEntries = visibleEntries.filter(entry => normalizeSearchText(entry.nf || '').includes(nfFilter));
+      if (vehicleFilter) visibleEntries = visibleEntries.filter(entry => {
+        const vehicle = allVehicles.find(item => item.id === getEntryVehicleId(entry));
+        return normalizeSearchText([
+          vehicle ? buildVehicleSearchValue(vehicle) : '',
+          entry.veiculo,
+          entry.vehicle,
+          entry.placa,
+          entry.modelo,
+          entry.frota
+        ].join(' ')).includes(vehicleFilter);
+      });
+      if (supplierFilter) visibleEntries = visibleEntries.filter(entry => normalizeSearchText([entry.fornecedor, entry.posto, entry.supplier].join(' ')).includes(supplierFilter));
+      if (orderFilter) visibleEntries = visibleEntries.filter(entry => {
+        const order = allOrders.find(item => item.id === entry.orderId);
+        return normalizeSearchText([entry.orderId, entry.os, entry.numeroOs, getOrderNumberLabel(order || {})].join(' ')).includes(orderFilter);
+      });
+      if (nfFilter) visibleEntries = visibleEntries.filter(entry => normalizeSearchText([entry.nf, entry.notaFiscal, entry.numeroNota].join(' ')).includes(nfFilter));
       if (quickSearch) {
         visibleEntries = visibleEntries.filter(entry => {
           const order = allOrders.find(item => item.id === entry.orderId);
@@ -7215,7 +7236,7 @@
       if (valueFilter) {
         const normalizedValue = valueFilter.replace(/[^\d,.-]/g, '').replace(',', '.');
         visibleEntries = visibleEntries.filter(entry => {
-          const total = Number(entry.total || 0);
+          const total = getFinanceTotal(entry);
           return String(total).includes(normalizedValue) || formatCurrency(total).toLowerCase().includes(valueFilter);
         });
       }
@@ -8647,10 +8668,71 @@
           return centralPendingStatusFilter === 'todos' || className === statusMap[centralPendingStatusFilter];
         })
         .filter(record => {
-          const date = String(record?.data || record?.criadoEm || '').slice(0, 10);
+          const date = getCentralRecordIsoDate(record);
           return (!centralPendingDateStart || date >= centralPendingDateStart) && (!centralPendingDateEnd || date <= centralPendingDateEnd);
         })
-        .sort((a, b) => String(b?.criadoEm || b?.data || '').localeCompare(String(a?.criadoEm || a?.data || '')));
+        .filter(record => {
+          if (!centralPendingSearchFilter) return true;
+          const haystack = normalizeSearchText([
+            getCentralPendingRecordId(record),
+            record?.protocolo,
+            record?.motorista,
+            record?.posto,
+            record?.fornecedor,
+            record?.cidade,
+            record?.tipo,
+            record?.tipoServico,
+            record?.tipoCombustivel,
+            record?.veiculo,
+            record?.modelo,
+            record?.placa,
+            record?.frota,
+            record?.km,
+            record?.nf,
+            record?.notaFiscal,
+            record?.os,
+            record?.numeroOs
+          ].join(' '));
+          return haystack.includes(centralPendingSearchFilter);
+        })
+        .filter(record => {
+          if (!centralPendingValueFilter) return true;
+          const expected = parseCurrencyInputValue(centralPendingValueFilter);
+          const total = getCentralRecordTotal(record);
+          return expected > 0
+            ? String(total).includes(String(expected)) || Math.abs(total - expected) < 0.01
+            : normalizeSearchText(record?.valor || total).includes(normalizeSearchText(centralPendingValueFilter));
+        })
+        .filter(record => !centralPendingVehicleFilter || normalizeSearchText([
+          record?.veiculo,
+          record?.modelo,
+          record?.placa,
+          record?.frota,
+          record?.vehicle
+        ].join(' ')).includes(centralPendingVehicleFilter))
+        .filter(record => !centralPendingSupplierFilter || normalizeSearchText([
+          record?.posto,
+          record?.fornecedor,
+          record?.supplier
+        ].join(' ')).includes(centralPendingSupplierFilter))
+        .filter(record => !centralPendingOrderFilter || normalizeSearchText([
+          record?.os,
+          record?.numeroOs,
+          record?.orderNumber,
+          record?.ordemServico
+        ].join(' ')).includes(centralPendingOrderFilter))
+        .filter(record => !centralPendingNfFilter || normalizeSearchText([
+          record?.nf,
+          record?.notaFiscal,
+          record?.numeroNota
+        ].join(' ')).includes(centralPendingNfFilter))
+        .filter(record => {
+          const dueDate = String(record?.dataVencimento || record?.vencimento || '').slice(0, 10);
+          if ((centralPendingDueStart || centralPendingDueEnd) && !dueDate) return false;
+          return (!centralPendingDueStart || dueDate >= centralPendingDueStart)
+            && (!centralPendingDueEnd || dueDate <= centralPendingDueEnd);
+        })
+        .sort((a, b) => `${getCentralRecordIsoDate(b)} ${b?.hora || ''}`.localeCompare(`${getCentralRecordIsoDate(a)} ${a?.hora || ''}`));
     }
 
     function loadCentralPendingFilters() {
@@ -8661,17 +8743,84 @@
         centralPendingStatusFilter = saved.status || 'pendente';
         centralPendingDateStart = saved.start || '';
         centralPendingDateEnd = saved.end || '';
+        centralPendingSearchFilter = normalizeSearchText(saved.search || '');
+        centralPendingValueFilter = String(saved.value || '').trim();
+        centralPendingVehicleFilter = normalizeSearchText(saved.vehicle || '');
+        centralPendingSupplierFilter = normalizeSearchText(saved.supplier || '');
+        centralPendingOrderFilter = normalizeSearchText(saved.order || '');
+        centralPendingNfFilter = normalizeSearchText(saved.nf || '');
+        centralPendingDueStart = saved.dueStart || '';
+        centralPendingDueEnd = saved.dueEnd || '';
       } catch (error) {}
-      const statusNode = document.getElementById('central-pending-status-filter');
-      const startNode = document.getElementById('central-pending-date-start');
-      const endNode = document.getElementById('central-pending-date-end');
-      if (statusNode) statusNode.value = centralPendingStatusFilter;
-      if (startNode) startNode.value = centralPendingDateStart;
-      if (endNode) endNode.value = centralPendingDateEnd;
+      const values = {
+        'central-pending-status-filter': centralPendingStatusFilter,
+        'central-pending-date-start': centralPendingDateStart,
+        'central-pending-date-end': centralPendingDateEnd,
+        'central-pending-search-filter': centralPendingSearchFilter,
+        'central-pending-value-filter': centralPendingValueFilter,
+        'central-pending-vehicle-filter': centralPendingVehicleFilter,
+        'central-pending-supplier-filter': centralPendingSupplierFilter,
+        'central-pending-order-filter': centralPendingOrderFilter,
+        'central-pending-nf-filter': centralPendingNfFilter,
+        'central-pending-due-start': centralPendingDueStart,
+        'central-pending-due-end': centralPendingDueEnd
+      };
+      Object.entries(values).forEach(([id, value]) => {
+        const node = document.getElementById(id);
+        if (node) node.value = value;
+      });
     }
 
     function saveCentralPendingFilters() {
-      try { localStorage.setItem(CENTRAL_PENDING_FILTERS_KEY, JSON.stringify({ status: centralPendingStatusFilter, start: centralPendingDateStart, end: centralPendingDateEnd })); } catch (error) {}
+      try {
+        localStorage.setItem(CENTRAL_PENDING_FILTERS_KEY, JSON.stringify({
+          status: centralPendingStatusFilter,
+          start: centralPendingDateStart,
+          end: centralPendingDateEnd,
+          search: centralPendingSearchFilter,
+          value: centralPendingValueFilter,
+          vehicle: centralPendingVehicleFilter,
+          supplier: centralPendingSupplierFilter,
+          order: centralPendingOrderFilter,
+          nf: centralPendingNfFilter,
+          dueStart: centralPendingDueStart,
+          dueEnd: centralPendingDueEnd
+        }));
+      } catch (error) {}
+    }
+
+    function applyCentralPendingFilters() {
+      centralPendingStatusFilter = document.getElementById('central-pending-status-filter')?.value || 'pendente';
+      centralPendingDateStart = document.getElementById('central-pending-date-start')?.value || '';
+      centralPendingDateEnd = document.getElementById('central-pending-date-end')?.value || '';
+      centralPendingSearchFilter = normalizeSearchText(document.getElementById('central-pending-search-filter')?.value || '');
+      centralPendingValueFilter = String(document.getElementById('central-pending-value-filter')?.value || '').trim();
+      centralPendingVehicleFilter = normalizeSearchText(document.getElementById('central-pending-vehicle-filter')?.value || '');
+      centralPendingSupplierFilter = normalizeSearchText(document.getElementById('central-pending-supplier-filter')?.value || '');
+      centralPendingOrderFilter = normalizeSearchText(document.getElementById('central-pending-order-filter')?.value || '');
+      centralPendingNfFilter = normalizeSearchText(document.getElementById('central-pending-nf-filter')?.value || '');
+      centralPendingDueStart = document.getElementById('central-pending-due-start')?.value || '';
+      centralPendingDueEnd = document.getElementById('central-pending-due-end')?.value || '';
+      saveCentralPendingFilters();
+      renderCentralPendingRecords();
+    }
+
+    function clearCentralPendingFilters() {
+      centralPendingStatusFilter = 'pendente';
+      centralPendingDateStart = '';
+      centralPendingDateEnd = '';
+      centralPendingSearchFilter = '';
+      centralPendingValueFilter = '';
+      centralPendingVehicleFilter = '';
+      centralPendingSupplierFilter = '';
+      centralPendingOrderFilter = '';
+      centralPendingNfFilter = '';
+      centralPendingDueStart = '';
+      centralPendingDueEnd = '';
+      centralPendingFiltersLoaded = false;
+      try { localStorage.removeItem(CENTRAL_PENDING_FILTERS_KEY); } catch (error) {}
+      loadCentralPendingFilters();
+      renderCentralPendingRecords();
     }
 
     function renderCentralPendingSummary(rows) {
@@ -10955,7 +11104,8 @@
       financeiro: clearFinanceFilters,
       veiculos: clearVehicleFilters,
       motoristas: clearDriverFilters,
-      fornecedores: clearSupplierFilters
+      fornecedores: clearSupplierFilters,
+      documentos: clearCentralPendingFilters
     };
     const moduleFilterRenderActions = {
       orders: renderOrders,
@@ -10963,6 +11113,9 @@
       veiculos: renderVehicles,
       motoristas: renderDrivers,
       fornecedores: renderSuppliers
+    };
+    const moduleFilterApplyActions = {
+      documentos: applyCentralPendingFilters
     };
     function getModuleFiltersModal(module) {
       return document.querySelector(`.module-filters-modal[data-filter-module="${module}"]`) || document.querySelector(`#panel-${module} .module-filters-modal`);
@@ -10980,7 +11133,8 @@
     }
     function applyModuleFilters(module) {
       closeModuleFilters(module);
-      moduleFilterRenderActions[module]?.();
+      if (moduleFilterApplyActions[module]) moduleFilterApplyActions[module]();
+      else moduleFilterRenderActions[module]?.();
     }
     function clearModuleFilters(module) { moduleFilterClearActions[module]?.(); }
     window.openModuleFilters = openModuleFilters;
@@ -13124,9 +13278,16 @@
     }
 
     document.addEventListener('keydown', (event) => {
-      if (event.key !== 'Escape') return;
       const openModal = document.querySelector('.module-filters-modal.is-open');
-      if (openModal?.dataset.filterModule) closeModuleFilters(openModal.dataset.filterModule);
+      if (!openModal?.dataset.filterModule) return;
+      if (event.key === 'Escape') {
+        closeModuleFilters(openModal.dataset.filterModule);
+        return;
+      }
+      if (event.key === 'Enter' && event.target?.closest?.('.orders-filter-field')) {
+        event.preventDefault();
+        applyModuleFilters(openModal.dataset.filterModule);
+      }
     });
 
     registerOnlineIdleListeners();
@@ -13152,15 +13313,8 @@
       const node = document.getElementById(id);
       if (node) node.addEventListener('change', renderOrders);
     });
-    ['finance-filter-search', 'finance-filter-value', 'finance-filter-vehicle', 'finance-filter-supplier', 'finance-filter-order', 'finance-filter-nf'].forEach(id => {
-      const node = document.getElementById(id);
-      if (node) node.addEventListener('input', renderFinance);
-    });
     applyCurrencyMaskToInput(document.getElementById('finance-filter-value'));
-    ['finance-filter-status', 'finance-filter-start', 'finance-filter-end', 'finance-filter-due-start', 'finance-filter-due-end'].forEach(id => {
-      const node = document.getElementById(id);
-      if (node) node.addEventListener('change', renderFinance);
-    });
+    applyCurrencyMaskToInput(document.getElementById('central-pending-value-filter'));
     ['vehicle-filter-search'].forEach(id => {
       const node = document.getElementById(id);
       if (node) node.addEventListener('input', renderVehicles);
