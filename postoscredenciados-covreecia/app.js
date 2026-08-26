@@ -56,6 +56,7 @@ let centralRequiredOnboardingVersion = DRIVER_ONBOARDING_VERSION;
 let centralOnboardingConfigResolved = false;
 let centralRetryInProgress = false;
 let centralDeviceStateReadyPromise = null;
+let centralDeviceStateWritePromise = Promise.resolve();
 let centralOfflineSyncInProgress = false;
 let centralConnectionDegraded = false;
 let centralReconnectTimer = null;
@@ -1168,6 +1169,12 @@ function openCentralDeviceStateDb() {
       return;
     }
     const request = indexedDB.open(CENTRAL_DEVICE_STATE_DB, 2);
+    let settled = false;
+    const timeout = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error('O armazenamento persistente demorou para responder.'));
+    }, 5000);
     request.onupgradeneeded = () => {
       const database = request.result;
       if (!database.objectStoreNames.contains(CENTRAL_DEVICE_STATE_STORE)) {
@@ -1177,45 +1184,99 @@ function openCentralDeviceStateDb() {
         database.createObjectStore(CENTRAL_PENDING_UPLOADS_STORE, { keyPath: 'id' });
       }
     };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error('Falha ao abrir o armazenamento persistente.'));
+    request.onsuccess = () => {
+      if (settled) {
+        request.result.close();
+        return;
+      }
+      settled = true;
+      window.clearTimeout(timeout);
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      reject(request.error || new Error('Falha ao abrir o armazenamento persistente.'));
+    };
+    request.onblocked = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      reject(new Error('O armazenamento persistente está bloqueado por outra versão do aplicativo.'));
+    };
   });
 }
 
-async function persistCentralDeviceState() {
+function getCentralDeviceStateSnapshot() {
+  return {
+    key: CENTRAL_DEVICE_STATE_RECORD_KEY,
+    profile: localStorage.getItem(DRIVER_PROFILE_STORAGE_KEY) || '',
+    onboardingVersion: localStorage.getItem(DRIVER_ONBOARDING_VERSION_KEY) || '',
+    deviceId: localStorage.getItem(CENTRAL_DEVICE_ID_KEY) || '',
+    subscriptionId: localStorage.getItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY) || '',
+    pendingRecords: localStorage.getItem(CENTRAL_APPWRITE_RETRY_KEY) || '',
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function persistCentralDeviceState() {
+  const snapshot = getCentralDeviceStateSnapshot();
+  centralDeviceStateWritePromise = centralDeviceStateWritePromise.catch(() => false).then(async () => {
+    let database;
+    try {
+      database = await openCentralDeviceStateDb();
+      await new Promise((resolve, reject) => {
+        const transaction = database.transaction(CENTRAL_DEVICE_STATE_STORE, 'readwrite');
+        const store = transaction.objectStore(CENTRAL_DEVICE_STATE_STORE);
+        const request = store.get(CENTRAL_DEVICE_STATE_RECORD_KEY);
+        request.onsuccess = () => {
+          const previous = request.result || {};
+          // Perfil, onboarding e identificador nunca devem ser apagados por uma
+          // inicialização parcial. Assinatura e fila podem ser limpas de propósito.
+          store.put({
+            ...snapshot,
+            profile: snapshot.profile || previous.profile || '',
+            onboardingVersion: snapshot.onboardingVersion || previous.onboardingVersion || '',
+            deviceId: snapshot.deviceId || previous.deviceId || ''
+          });
+        };
+        request.onerror = () => reject(request.error);
+        transaction.oncomplete = resolve;
+        transaction.onerror = () => reject(transaction.error);
+      });
+      return true;
+    } catch (error) {
+      console.warn('Não foi possível criar a cópia de segurança do perfil neste aparelho.', error);
+      return false;
+    } finally {
+      database?.close();
+    }
+  });
+  return centralDeviceStateWritePromise;
+}
+
+async function requestCentralPersistentStorage() {
   try {
-    const database = await openCentralDeviceStateDb();
-    const state = {
-      key: CENTRAL_DEVICE_STATE_RECORD_KEY,
-      profile: localStorage.getItem(DRIVER_PROFILE_STORAGE_KEY) || '',
-      onboardingVersion: localStorage.getItem(DRIVER_ONBOARDING_VERSION_KEY) || '',
-      deviceId: localStorage.getItem(CENTRAL_DEVICE_ID_KEY) || '',
-      subscriptionId: localStorage.getItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY) || '',
-      pendingRecords: localStorage.getItem(CENTRAL_APPWRITE_RETRY_KEY) || '',
-      updatedAt: new Date().toISOString()
-    };
-    await new Promise((resolve, reject) => {
-      const transaction = database.transaction(CENTRAL_DEVICE_STATE_STORE, 'readwrite');
-      transaction.objectStore(CENTRAL_DEVICE_STATE_STORE).put(state);
-      transaction.oncomplete = resolve;
-      transaction.onerror = () => reject(transaction.error);
-    });
-    database.close();
+    if (!navigator.storage?.persist) return false;
+    if (await navigator.storage.persisted?.()) return true;
+    return Boolean(await navigator.storage.persist());
   } catch (error) {
-    console.warn('Não foi possível criar a cópia de segurança do perfil neste aparelho.', error);
+    console.warn('O navegador não confirmou armazenamento persistente.', error);
+    return false;
   }
 }
 
 async function restoreCentralDeviceState() {
+  let database;
   try {
-    const database = await openCentralDeviceStateDb();
+    database = await openCentralDeviceStateDb();
     const state = await new Promise((resolve, reject) => {
       const transaction = database.transaction(CENTRAL_DEVICE_STATE_STORE, 'readonly');
       const request = transaction.objectStore(CENTRAL_DEVICE_STATE_STORE).get(CENTRAL_DEVICE_STATE_RECORD_KEY);
       request.onsuccess = () => resolve(request.result || null);
       request.onerror = () => reject(request.error);
     });
-    database.close();
     if (!state) return false;
 
     const recover = (storageKey, storedValue) => {
@@ -1234,15 +1295,16 @@ async function restoreCentralDeviceState() {
   } catch (error) {
     console.warn('Não foi possível recuperar a cópia de segurança do perfil.', error);
     return false;
+  } finally {
+    database?.close();
   }
 }
 
 function ensureCentralDeviceStateRestored() {
   if (!centralDeviceStateReadyPromise) {
-    centralDeviceStateReadyPromise = Promise.race([
-      restoreCentralDeviceState(),
-      waitForCentralRetry(1500)
-    ]);
+    // Não avance para a criação de um novo deviceId enquanto a cópia anterior
+    // ainda está sendo recuperada. O próprio acesso ao IndexedDB possui timeout.
+    centralDeviceStateReadyPromise = restoreCentralDeviceState();
   }
   return centralDeviceStateReadyPromise;
 }
@@ -1924,7 +1986,7 @@ function returnToDriverSelection() {
   document.getElementById('driver-profile-search')?.focus();
 }
 
-function confirmSuggestedDriverVehicle() {
+async function confirmSuggestedDriverVehicle() {
   const vehicle = selectedDirectoryVehicles[selectedDirectoryVehicleIndex];
   if (!selectedDirectoryDriver || !vehicle) return;
   try {
@@ -1940,7 +2002,8 @@ function confirmSuggestedDriverVehicle() {
     showErrorMessage('Não foi possível salvar o perfil neste aparelho.');
     return;
   }
-  persistCentralDeviceState();
+  await persistCentralDeviceState();
+  requestCentralPersistentStorage();
   saveDriverNameSuggestion(selectedDirectoryDriver.name);
   renderHomeDriverArea();
   if (isGuidedDriverOnboarding()) {
@@ -1948,7 +2011,7 @@ function confirmSuggestedDriverVehicle() {
     return;
   }
   localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
-  persistCentralDeviceState();
+  await persistCentralDeviceState();
   closeDriverProfile();
   showSuccessMessage('Motorista e veículo confirmados.');
 }
@@ -2013,10 +2076,11 @@ async function activateOnboardingNotifications() {
   if (status) status.textContent = 'Você poderá ativar depois em Configurações.';
 }
 
-function finishGuidedOnboarding(options = {}) {
+async function finishGuidedOnboarding(options = {}) {
   if (options.notificationsSkipped) localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
   localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
-  persistCentralDeviceState();
+  await persistCentralDeviceState();
+  requestCentralPersistentStorage();
   const title = document.getElementById('driver-profile-title');
   const kicker = document.getElementById('driver-profile-kicker');
   if (kicker) kicker.textContent = 'TUDO CERTO';
@@ -2028,14 +2092,15 @@ function finishGuidedOnboardingAndClose() {
   showSuccessMessage('Perfil configurado. Bom trabalho!');
 }
 
-function skipDriverOnboarding() {
+async function skipDriverOnboarding() {
   if (!isStoredDriverProfileComplete()) {
     showErrorMessage('Identifique o motorista e o veículo para continuar.');
     return;
   }
   localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
   localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
-  persistCentralDeviceState();
+  await persistCentralDeviceState();
+  requestCentralPersistentStorage();
   closeDriverProfile();
 }
 
@@ -3215,16 +3280,18 @@ async function saveCentralRegistroToAppwrite(payload) {
   return response.json();
 }
 
-function saveCentralRetryPayload(payload) {
+async function saveCentralRetryPayload(payload) {
   try {
     const stored = JSON.parse(localStorage.getItem(CENTRAL_APPWRITE_RETRY_KEY) || '[]');
     const queue = Array.isArray(stored) ? stored : (stored && typeof stored === 'object' ? [stored] : []);
     const nextQueue = queue.filter((item) => String(item?.rowId || '') !== String(payload?.rowId || ''));
     nextQueue.push(payload);
     localStorage.setItem(CENTRAL_APPWRITE_RETRY_KEY, JSON.stringify(nextQueue.slice(-20)));
-    persistCentralDeviceState();
+    await persistCentralDeviceState();
+    return true;
   } catch (error) {
     console.warn('Não foi possível guardar o registro pendente para nova tentativa.', error);
+    return false;
   }
 }
 
@@ -3237,25 +3304,29 @@ function getCentralRetryPayloads() {
   }
 }
 
-function clearCentralRetryPayload(rowId = '') {
+async function clearCentralRetryPayload(rowId = '') {
   try {
     if (!rowId) {
       localStorage.removeItem(CENTRAL_APPWRITE_RETRY_KEY);
-      return;
+      await persistCentralDeviceState();
+      return true;
     }
     const nextQueue = getCentralRetryPayloads().filter((item) => String(item?.rowId || '') !== String(rowId));
     if (nextQueue.length) localStorage.setItem(CENTRAL_APPWRITE_RETRY_KEY, JSON.stringify(nextQueue));
     else localStorage.removeItem(CENTRAL_APPWRITE_RETRY_KEY);
-    persistCentralDeviceState();
+    await persistCentralDeviceState();
+    return true;
   } catch (error) {
     console.warn('Não foi possível limpar o registro pendente da Central.', error);
+    return false;
   }
 }
 
 async function saveCentralRegistroWithRetry(payload) {
-  saveCentralRetryPayload(payload);
+  const queued = await saveCentralRetryPayload(payload);
+  if (!queued) throw new Error('Não foi possível guardar este registro no aparelho antes do envio.');
   const result = await saveCentralRegistroToAppwrite(payload);
-  clearCentralRetryPayload(payload.rowId);
+  await clearCentralRetryPayload(payload.rowId);
   return result;
 }
 
@@ -3268,7 +3339,7 @@ async function retryPendingCentralRegistro() {
     for (const payload of queue) {
       try {
         await saveCentralRegistroToAppwrite(payload);
-        clearCentralRetryPayload(payload.rowId);
+        await clearCentralRetryPayload(payload.rowId);
         console.info('Registro pendente da Central foi salvo no Appwrite.');
       } catch (error) {
         console.warn('Ainda não foi possível reenviar um registro pendente da Central.', error);
@@ -5206,7 +5277,13 @@ document.addEventListener('visibilitychange', () => {
     refreshMySubmissions({ silent: true });
     retryPendingCentralRegistro();
     processCentralOfflineSubmissions();
+  } else {
+    persistCentralDeviceState();
   }
+});
+
+window.addEventListener('pagehide', () => {
+  persistCentralDeviceState();
 });
 
 window.addEventListener('online', () => {
