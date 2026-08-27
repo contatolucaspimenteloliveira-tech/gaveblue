@@ -124,3 +124,33 @@ Para cada perfil, validar:
 ## Estratégia de implementação
 
 Manter inicialmente uma API administrativa na Function `central-push`, separando internamente autenticação, autorização, usuários e auditoria. Se o módulo crescer, essas responsabilidades podem ser distribuídas entre Functions específicas sem alterar o contrato usado pelo frontend.
+
+## Estado implementado em 27/08/2026
+
+- Labels desconhecidas passaram a assumir `consulta`, nunca `admin`.
+- A Function valida sessão + JWT do Appwrite em todas as ações administrativas.
+- Usuários, senhas, perfis e status continuam restritos ao Administrador.
+- Envio geral, dispositivos e exclusão definitiva de registros são exclusivos do Administrador.
+- Gestor mantém operação, cadastros, configurações operacionais e tratamento da Central.
+- Aprovador fica restrito à Central de Registros e não grava o snapshot operacional completo.
+- O lançamento financeiro originado por uma aprovação usa `central-finance-append`, com validação, idempotência, bloqueio contra concorrência e auditoria.
+- Mudanças de status da Central usam `central-record-update`, com campos permitidos, motivo obrigatório na rejeição e auditoria.
+- Documentos existentes podem receber novamente a política atual pelo comando administrativo `harden-permissions` ou pelo botão **Aplicar segurança** na tela de usuários.
+- Novos snapshots, registros da Central, diretório, banners e arquivos são criados com permissões coerentes com os perfis.
+- A interface oculta áreas não autorizadas e mantém travas locais, mas a Function e as permissões do Appwrite continuam sendo a autoridade final.
+
+## Ações efetivamente expostas pela Function
+
+- `my-access`
+- `wefrotas-users-list`
+- `wefrotas-user-create`
+- `wefrotas-user-update`
+- `harden-permissions`
+- `central-finance-append`
+- `central-record-update`
+- `stats`, `delete-subscription`, `reset-onboarding`, `broadcast` e `notify`
+- `claim-approval`, `complete-approval` e `release-approval`
+
+## Validação operacional pendente por conta de teste
+
+O teste final de negação direta deve ser repetido com uma sessão real de cada perfil (`gestor`, `aprovador` e `consulta`). O Administrador não deve trocar temporariamente o próprio perfil para executar esse teste, pois a API impede a autodesativação e o autorrebaixamento como proteção contra perda de acesso.

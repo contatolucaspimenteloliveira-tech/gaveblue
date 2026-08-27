@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260827-user-password-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260827-access-policy-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -714,7 +714,13 @@
               <div class="central-prepared-heading">
                 <span class="central-prepared-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6m3-3h-6" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                 <div><p>ACESSO E SEGURANÇA</p><h2>Usuários do WeFrotas</h2><span>Cadastre a equipe, defina o perfil de acesso e desative contas sem apagar o histórico.</span></div>
-                <button class="central-users-add" type="button" onclick="openWefrotasUserModal()"><span>+</span> Novo usuário</button>
+                <div class="central-users-heading-actions">
+                  <button class="central-users-security" type="button" onclick="hardenWefrotasPermissionsFromUi()" title="Reaplicar as regras de segurança nos dados existentes">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 3 4.5 6v5.2c0 4.6 3.1 7.8 7.5 9.8 4.4-2 7.5-5.2 7.5-9.8V6L12 3Z" stroke-width="1.8" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Aplicar segurança
+                  </button>
+                  <button class="central-users-add" type="button" onclick="openWefrotasUserModal()"><span>+</span> Novo usuário</button>
+                </div>
               </div>
               <div class="central-user-role-guide">
                 <article><strong>Administrador</strong><span>Acesso total, usuários e configurações.</span></article>
@@ -1668,8 +1674,8 @@
 
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
-  <script src="./wefrotas-backend.js?v=20260827-user-password-1"></script>
-  <script src="./wefrotas.js?v=20260827-user-password-1"></script>
+  <script src="./wefrotas-backend.js?v=20260827-access-policy-1"></script>
+  <script src="./wefrotas.js?v=20260827-access-policy-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

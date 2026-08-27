@@ -25,6 +25,13 @@
   const CHUNK_REQUEST_BATCH_SIZE = 4;
   let primaryRowId = '';
 
+  const ACCESS_ROLE_PERMISSIONS = Object.freeze({
+    'wefrotas-admin': new Set(['read', 'syncSnapshot', 'manageOperations', 'approveRecords', 'manageSettings', 'manageUsers', 'manageDevices', 'sendNotifications', 'deleteRecords']),
+    'wefrotas-gestor': new Set(['read', 'syncSnapshot', 'manageOperations', 'approveRecords', 'manageSettings']),
+    'wefrotas-aprovador': new Set(['read', 'approveRecords']),
+    'wefrotas-consulta': new Set(['read'])
+  });
+
   function hasPendingLogout() {
     try { return localStorage.getItem(LOGOUT_PENDING_KEY) === '1'; } catch (error) { return false; }
   }
@@ -69,15 +76,23 @@
       'wefrotas-aprovador': 'wefrotas-aprovador',
       'wefrotas-consulta': 'wefrotas-consulta'
     };
-    return labels.map((label) => roleByLabel[label]).find(Boolean) || 'wefrotas-admin';
+    return labels.map((label) => roleByLabel[label]).find(Boolean) || 'wefrotas-consulta';
   }
 
-  function assertCanWrite() {
-    if (getCurrentAccessRole() === 'wefrotas-consulta') {
-      const error = new Error('Seu perfil é somente consulta e não permite alterações.');
+  function hasCurrentPermission(permission) {
+    return ACCESS_ROLE_PERMISSIONS[getCurrentAccessRole()]?.has(permission) === true;
+  }
+
+  function assertPermission(permission, message = 'Seu perfil não possui permissão para esta ação.') {
+    if (!hasCurrentPermission(permission)) {
+      const error = new Error(message);
       error.code = 403;
       throw error;
     }
+  }
+
+  function assertCanWrite() {
+    assertPermission('syncSnapshot', 'Seu perfil não permite sincronizar alterações operacionais.');
   }
 
   async function clearPendingRemoteSession() {
@@ -169,8 +184,13 @@
 
   function getPermissions() {
     const { Permission, Role } = global.Appwrite;
-    const role = config.teamId ? Role.team(config.teamId) : Role.users();
-    return [Permission.read(role), Permission.update(role), Permission.delete(role)];
+    const readableRoles = ['admin', 'gestor', 'aprovador', 'consulta'].map((label) => Role.label(label));
+    const writableRoles = ['admin', 'gestor'].map((label) => Role.label(label));
+    return [
+      ...readableRoles.map((role) => Permission.read(role)),
+      ...writableRoles.map((role) => Permission.update(role)),
+      Permission.delete(Role.label('admin'))
+    ];
   }
 
   async function getPrimaryRowId() {
@@ -198,7 +218,7 @@
 
   async function updateOrCreateRow(rowId, data, permissionsOnCreate = getPermissions()) {
     try {
-      return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.tableId, rowId, data });
+      return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.tableId, rowId, data, permissions: permissionsOnCreate });
     } catch (error) {
       if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
       return tablesDB.createRow({ databaseId: config.databaseId, tableId: config.tableId, rowId, data, permissions: permissionsOnCreate });
@@ -305,7 +325,7 @@
 
   function queueSnapshot(snapshot, delay = 1200) {
     if (!currentUser || !snapshot) return;
-    if (getCurrentAccessRole() === 'wefrotas-consulta') return;
+    if (!hasCurrentPermission('syncSnapshot')) return;
     setPendingSync(true);
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => {
@@ -422,7 +442,7 @@
 
   async function uploadReceipt(file) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online antes de enviar arquivos.');
-    assertCanWrite();
+    assertPermission('manageOperations', 'Seu perfil não permite enviar comprovantes pelo WeFrotas.');
     if (!file) throw new Error('Selecione um comprovante.');
     const uploaded = await storage.createFile({ bucketId: config.bucketId, fileId: global.Appwrite.ID.unique(), file, permissions: getPermissions() });
     return String(storage.getFileView({ bucketId: config.bucketId, fileId: uploaded.$id }));
@@ -430,7 +450,7 @@
 
   async function uploadVehicleImage(file) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online antes de enviar a foto do veículo.');
-    assertCanWrite();
+    assertPermission('manageOperations', 'Seu perfil não permite alterar fotos de veículos.');
     if (!file) throw new Error('Selecione uma foto do veículo.');
     if (!String(file.type || '').startsWith('image/')) throw new Error('O arquivo selecionado precisa ser uma imagem.');
     if (Number(file.size || 0) > 8 * 1024 * 1024) throw new Error('A foto do veículo deve ter no máximo 8 MB.');
@@ -479,6 +499,7 @@
 
   async function syncCentralDriverDirectory(snapshot = {}) {
     if (!currentUser || !config.centralDriverDirectoryTableId) return;
+    assertPermission('manageOperations', 'Seu perfil não permite atualizar o diretório de motoristas.');
     const desiredRows = buildCentralDriverDirectoryRows(snapshot);
     const queries = global.Appwrite?.Query?.limit ? [global.Appwrite.Query.limit(500)] : [];
     const existingResult = await tablesDB.listRows({
@@ -504,36 +525,57 @@
 
   async function updateOrCreateDirectoryRow(rowId, data) {
     try {
-      return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralDriverDirectoryTableId, rowId, data });
+      return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralDriverDirectoryTableId, rowId, data, permissions: getPublicDirectoryPermissions() });
     } catch (error) {
       if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
-      return tablesDB.createRow({ databaseId: config.databaseId, tableId: config.centralDriverDirectoryTableId, rowId, data });
+      return tablesDB.createRow({ databaseId: config.databaseId, tableId: config.centralDriverDirectoryTableId, rowId, data, permissions: getPublicDirectoryPermissions() });
     }
   }
 
   function getPublicBannerFilePermissions() {
     const { Permission, Role } = global.Appwrite;
-    const managerRole = config.teamId ? Role.team(config.teamId) : Role.users();
+    const managerRoles = ['admin', 'gestor'].map((label) => Role.label(label));
     return [
       Permission.read(Role.any()),
-      Permission.update(managerRole),
-      Permission.delete(managerRole)
+      ...managerRoles.map((role) => Permission.update(role)),
+      ...managerRoles.map((role) => Permission.delete(role))
+    ];
+  }
+
+  function getCentralRecordPermissions() {
+    const { Permission, Role } = global.Appwrite;
+    const readableRoles = ['admin', 'gestor', 'aprovador', 'consulta'].map((label) => Role.label(label));
+    const approverRoles = ['admin', 'gestor', 'aprovador'].map((label) => Role.label(label));
+    return [
+      ...readableRoles.map((role) => Permission.read(role)),
+      ...approverRoles.map((role) => Permission.update(role)),
+      Permission.delete(Role.label('admin'))
+    ];
+  }
+
+  function getPublicDirectoryPermissions() {
+    const { Permission, Role } = global.Appwrite;
+    const managerRoles = ['admin', 'gestor'].map((label) => Role.label(label));
+    return [
+      Permission.read(Role.any()),
+      ...managerRoles.map((role) => Permission.update(role)),
+      ...managerRoles.map((role) => Permission.delete(role))
     ];
   }
 
   function getPublicVehicleFilePermissions() {
     const { Permission, Role } = global.Appwrite;
-    const ownerRole = currentUser?.$id && Role.user ? Role.user(currentUser.$id) : (config.teamId ? Role.team(config.teamId) : Role.users());
+    const managerRoles = ['admin', 'gestor'].map((label) => Role.label(label));
     return [
       Permission.read(Role.any()),
-      Permission.update(ownerRole),
-      Permission.delete(ownerRole)
+      ...managerRoles.map((role) => Permission.update(role)),
+      ...managerRoles.map((role) => Permission.delete(role))
     ];
   }
 
   async function uploadCentralBanner(file) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online antes de enviar banners.');
-    assertCanWrite();
+    assertPermission('manageSettings', 'Seu perfil não permite alterar a comunicação da Central.');
     if (!file) throw new Error('Selecione uma imagem para o banner.');
     if (!String(file.type || '').startsWith('image/')) throw new Error('O arquivo selecionado precisa ser uma imagem.');
     const uploaded = await storage.createFile({
@@ -550,7 +592,7 @@
 
   async function deleteCentralBannerFile(fileId) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir banners.');
-    assertCanWrite();
+    assertPermission('manageSettings', 'Seu perfil não permite excluir banners.');
     if (!fileId || String(fileId).startsWith('builtin:')) return;
     return storage.deleteFile({ bucketId: config.bucketId, fileId });
   }
@@ -566,35 +608,36 @@
 
   async function createCentralHomeBanner(data) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para cadastrar banners.');
-    assertCanWrite();
+    assertPermission('manageSettings', 'Seu perfil não permite cadastrar banners.');
     return tablesDB.createRow({
       databaseId: config.databaseId,
       tableId: config.centralBannersTableId,
       rowId: global.Appwrite.ID.unique(),
-      data
+      data,
+      permissions: getPublicBannerFilePermissions()
     });
   }
 
   async function upsertCentralHomeBanner(rowId, data) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para cadastrar banners.');
-    assertCanWrite();
+    assertPermission('manageSettings', 'Seu perfil não permite alterar banners.');
     try {
-      return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data });
+      return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data, permissions: getPublicBannerFilePermissions() });
     } catch (error) {
       if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
-      return tablesDB.createRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data });
+      return tablesDB.createRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data, permissions: getPublicBannerFilePermissions() });
     }
   }
 
   async function updateCentralHomeBanner(rowId, data) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para alterar banners.');
-    assertCanWrite();
-    return tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data });
+    assertPermission('manageSettings', 'Seu perfil não permite alterar banners.');
+    return tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data, permissions: getPublicBannerFilePermissions() });
   }
 
   async function deleteCentralHomeBanner(rowId) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir banners.');
-    assertCanWrite();
+    assertPermission('manageSettings', 'Seu perfil não permite excluir banners.');
     return tablesDB.deleteRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId });
   }
 
@@ -622,20 +665,21 @@
 
   async function updateCentralPendingRecord(rowId, data = {}) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para atualizar registros da Central.');
-    assertCanWrite();
+    assertPermission('approveRecords', 'Seu perfil não permite tratar registros da Central.');
     if (!tablesDB) throw new Error('Banco de dados do Appwrite não está conectado.');
     if (!config.centralTableId) throw new Error('Tabela da Central de Registros não configurada.');
     return tablesDB.updateRow({
       databaseId: config.databaseId,
       tableId: config.centralTableId,
       rowId,
-      data
+      data,
+      permissions: getCentralRecordPermissions()
     });
   }
 
   async function deleteCentralPendingRecord(rowId) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir registros da Central.');
-    assertCanWrite();
+    assertPermission('deleteRecords', 'Somente administradores podem excluir registros da Central.');
     if (!tablesDB || !config.centralTableId) throw new Error('Tabela da Central de Registros não está disponível.');
     return tablesDB.deleteRow({ databaseId: config.databaseId, tableId: config.centralTableId, rowId });
   }
@@ -682,6 +726,8 @@
   global.WeFrotasBackend = Object.freeze({
     config, isConfigured, initialize, signIn, signOut,
     getUser: () => currentUser,
+    getAccessRole: getCurrentAccessRole,
+    hasPermission: hasCurrentPermission,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
     syncNow,
     uploadReceipt, uploadVehicleImage, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord,

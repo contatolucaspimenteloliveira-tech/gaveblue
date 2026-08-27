@@ -94,7 +94,7 @@
     let activeModule = 'home';
     let activeCentralSection = 'registros';
     let activeCentralConfigSection = 'comunicacao';
-    let currentWefrotasRoleLabel = 'Administrador';
+    let currentWefrotasRoleLabel = 'Consulta';
     let centralManagerUsers = [];
     let centralManagerUsersLoading = false;
     let wefrotasUsersSearchTimer = null;
@@ -251,7 +251,24 @@
       if (labels.includes('wefrotas-gestor') || labels.includes('gestor')) return 'Gestor';
       if (labels.includes('wefrotas-aprovador') || labels.includes('aprovador')) return 'Aprovador';
       if (labels.includes('wefrotas-consulta') || labels.includes('consulta')) return 'Consulta';
-      return 'Administrador';
+      return 'Consulta';
+    }
+
+    const wefrotasUiPermissionMatrix = Object.freeze({
+      Administrador: new Set(['read', 'editOperations', 'approveRecords', 'manageSettings', 'manageUsers', 'manageDevices', 'sendNotifications', 'deleteRecords']),
+      Gestor: new Set(['read', 'editOperations', 'approveRecords', 'manageSettings']),
+      Aprovador: new Set(['read', 'approveRecords']),
+      Consulta: new Set(['read'])
+    });
+
+    function hasWefrotasPermission(permission) {
+      return wefrotasUiPermissionMatrix[currentWefrotasRoleLabel]?.has(permission) === true;
+    }
+
+    function requireWefrotasPermission(permission, message = 'Seu perfil não possui permissão para esta ação.') {
+      if (hasWefrotasPermission(permission)) return true;
+      showToast(message);
+      return false;
     }
 
     function applyAuthenticatedAccessUi(user) {
@@ -262,12 +279,13 @@
       document.querySelectorAll('[data-central-section="usuarios"]').forEach((node) => node.classList.toggle('hidden', !isAdmin));
       document.querySelectorAll('[data-central-section="notificacoes"]').forEach((node) => node.classList.toggle('hidden', !isAdmin));
       document.querySelectorAll('[data-central-section="configuracoes"]').forEach((node) => node.classList.toggle('hidden', !canManageSettings));
-      const approverHiddenModules = new Set(['orders', 'veiculos', 'motoristas', 'fornecedores']);
+      const approverHiddenModules = new Set(['orders', 'financeiro', 'veiculos', 'motoristas', 'fornecedores']);
       document.querySelectorAll('#app-sidebar button[onclick*="showModule("]').forEach((button) => {
         const module = button.getAttribute('onclick')?.match(/showModule\('([^']+)'/)?.[1] || '';
         button.classList.toggle('permission-hidden', roleLabel === 'Aprovador' && approverHiddenModules.has(module));
       });
       document.body.classList.toggle('wefrotas-readonly', roleLabel === 'Consulta');
+      document.body.dataset.accessRole = roleLabel.toLocaleLowerCase('pt-BR');
       document.querySelectorAll('.app-main-shell button, #app-sidebar button').forEach((button) => {
         if (!button.dataset.permissionOriginalTitle) button.dataset.permissionOriginalTitle = button.title || '';
         if (roleLabel !== 'Consulta') {
@@ -3535,6 +3553,7 @@
     }
 
     function openWefrotasUserModal(userId = '') {
+      if (!requireWefrotasPermission('manageUsers', 'Somente administradores podem gerenciar usuários.')) return;
       const user = centralManagerUsers.find((item) => item.id === userId) || null;
       document.getElementById('wefrotas-user-id').value = user?.id || '';
       document.getElementById('wefrotas-user-name').value = user?.name || '';
@@ -3571,6 +3590,7 @@
 
     async function saveWefrotasUser(event) {
       event?.preventDefault();
+      if (!requireWefrotasPermission('manageUsers', 'Somente administradores podem gerenciar usuários.')) return;
       const userId = document.getElementById('wefrotas-user-id')?.value || '';
       const password = document.getElementById('wefrotas-user-password')?.value || '';
       const payload = {
@@ -3602,6 +3622,7 @@
     }
 
     function toggleWefrotasUserStatus(userId) {
+      if (!requireWefrotasPermission('manageUsers', 'Somente administradores podem gerenciar usuários.')) return;
       const user = centralManagerUsers.find((item) => item.id === userId);
       if (!user) return;
       const activating = user.status === false;
@@ -3621,6 +3642,22 @@
       });
     }
 
+    async function hardenWefrotasPermissionsFromUi() {
+      if (!requireWefrotasPermission('manageUsers', 'Somente administradores podem aplicar as regras de segurança.')) return;
+      const button = document.querySelector('.central-users-security');
+      if (button?.disabled) return;
+      if (button) button.disabled = true;
+      try {
+        const result = await executeCentralPushAdmin({ action: 'harden-permissions' });
+        const total = Object.values(result?.hardened || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+        showToast(`Segurança aplicada em ${total} registro(s).`);
+      } catch (error) {
+        showToast(error?.message || 'Não foi possível aplicar as regras de segurança.');
+      } finally {
+        if (button) button.disabled = false;
+      }
+    }
+
     window.refreshWefrotasUsers = refreshWefrotasUsers;
     window.scheduleWefrotasUsersRefresh = scheduleWefrotasUsersRefresh;
     window.openWefrotasUserModal = openWefrotasUserModal;
@@ -3628,6 +3665,7 @@
     window.handleWefrotasUserModalBackdrop = handleWefrotasUserModalBackdrop;
     window.saveWefrotasUser = saveWefrotasUser;
     window.toggleWefrotasUserStatus = toggleWefrotasUserStatus;
+    window.hardenWefrotasPermissionsFromUi = hardenWefrotasPermissionsFromUi;
     document.getElementById('wefrotas-user-role')?.addEventListener('change', updateWefrotasUserPermissionSummary);
 
     async function migrateCentralStationsToWefrotas() {
@@ -3856,6 +3894,7 @@
     }
 
     async function saveCentralDeviceLink(deviceId) {
+      if (!requireWefrotasPermission('manageDevices', 'Somente administradores podem gerenciar aparelhos.')) return;
       const select = document.getElementById(`central-device-driver-${deviceId}`);
       const driverId = String(select?.value || '').trim();
       if (!driverId) {
@@ -3874,6 +3913,7 @@
     }
 
     function confirmCentralDeviceDeletion(deviceId, shortId) {
+      if (!requireWefrotasPermission('manageDevices', 'Somente administradores podem excluir aparelhos.')) return;
       openPromptModal({
         title: 'Excluir este aparelho?',
         text: `A inscrição ${shortId} será removida e deixará de receber notificações. Um novo acesso poderá criar outra inscrição.`,
@@ -3900,6 +3940,7 @@
     }
 
     function confirmCentralOnboardingReset() {
+      if (!requireWefrotasPermission('manageDevices', 'Somente administradores podem exigir uma nova configuração.')) return;
       openPromptModal({
         title: 'Exigir nova configuração em todos os aparelhos?',
         text: 'Na próxima abertura da Central, todos precisarão refazer o fluxo de motorista, veículo e permissões. Os registros já enviados não serão apagados.',
@@ -3957,6 +3998,7 @@
     }
 
     async function sendPushBroadcast() {
+      if (!requireWefrotasPermission('sendNotifications', 'Somente administradores podem enviar notificações.')) return;
       if (centralPushSending) return;
       const titleInput = document.getElementById('push-broadcast-title');
       const bodyInput = document.getElementById('push-broadcast-body');
@@ -4084,7 +4126,19 @@
 
     function showCentralSection(section = 'registros', button = null) {
       const allowedSections = new Set(['registros', 'notificacoes', 'usuarios', 'configuracoes']);
-      activeCentralSection = allowedSections.has(section) ? section : 'registros';
+      const requestedSection = allowedSections.has(section) ? section : 'registros';
+      const requiredPermission = {
+        notificacoes: 'sendNotifications',
+        usuarios: 'manageUsers',
+        configuracoes: 'manageSettings'
+      }[requestedSection];
+      if (requiredPermission && !hasWefrotasPermission(requiredPermission)) {
+        showToast('Seu perfil não possui acesso a esta área da Central.');
+        section = 'registros';
+      } else {
+        section = requestedSection;
+      }
+      activeCentralSection = section;
       document.querySelectorAll('.central-management-view').forEach((view) => {
         view.classList.toggle('active', view.id === `central-view-${activeCentralSection}`);
       });
@@ -4119,8 +4173,12 @@
     window.openCentralCommunicationFromSettings = openCentralCommunicationFromSettings;
 
     function showModule(module, button) {
-      if (currentWefrotasRoleLabel === 'Aprovador' && ['orders', 'veiculos', 'motoristas', 'fornecedores'].includes(module)) {
-        showToast('Seu perfil de aprovador não possui acesso a este módulo.');
+      if (!hasWefrotasPermission('read')) {
+        showToast('Seu acesso ainda não foi validado. Entre novamente.');
+        return;
+      }
+      if (currentWefrotasRoleLabel === 'Aprovador' && ['orders', 'financeiro', 'veiculos', 'motoristas', 'fornecedores'].includes(module)) {
+        showToast('O perfil Aprovador atua somente na Central de Registros e em consultas autorizadas.');
         return;
       }
       const legacyCentralSection = module === 'documentos'
@@ -9236,25 +9294,9 @@
 
     async function setCentralPendingRecordStatus(record, data) {
       const rowId = getCentralPendingRecordId(record);
-      if (!rowId || !window.WeFrotasBackend?.updateCentralPendingRecord) throw new Error('Não foi possível atualizar o status do registro na Central.');
-      const atualizadoEm = new Date().toISOString();
-      const { importadoEm, lancamentoFinanceiroId, ...statusData } = data;
-      let updated = await window.WeFrotasBackend.updateCentralPendingRecord(rowId, {
-        ...statusData,
-        atualizadoEm
-      });
-
-      const metadataData = {};
-      if (importadoEm !== undefined) metadataData.importadoEm = importadoEm || null;
-      if (lancamentoFinanceiroId !== undefined) metadataData.lancamentoFinanceiroId = lancamentoFinanceiroId || null;
-      if (Object.keys(metadataData).length) {
-        try {
-          const metadataUpdated = await window.WeFrotasBackend.updateCentralPendingRecord(rowId, metadataData);
-          updated = { ...updated, ...metadataUpdated };
-        } catch (metadataError) {
-          console.warn('Status atualizado, mas os metadados complementares da Central não foram gravados.', metadataError);
-        }
-      }
+      if (!rowId) throw new Error('Não foi possível atualizar o status do registro na Central.');
+      const result = await executeCentralPushAdmin({ action: 'central-record-update', recordId: rowId, ...data });
+      const updated = result?.record || {};
       centralPendingRecords = centralPendingRecords.map(item => getCentralPendingRecordId(item) === rowId ? { ...item, ...updated, ...data } : item);
       if (getCentralPendingStatus({ ...record, ...updated, ...data }).className !== 'pending') selectedCentralPending.delete(rowId);
       renderCentralPendingRecords();
@@ -9310,7 +9352,18 @@
       });
     }
 
+    async function persistApprovedCentralFinance(record, entry) {
+      const result = await executeCentralPushAdmin({
+        action: 'central-finance-append',
+        centralRecordId: getCentralPendingRecordId(record),
+        entry
+      });
+      await saveToLocalStorage();
+      return result;
+    }
+
     async function approveCentralPendingRecord(rowId) {
+      if (!requireWefrotasPermission('approveRecords', 'Seu perfil não permite aprovar registros.')) return;
       const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
       if (!record) return showToast('Registro da Central não encontrado.');
       if (centralApprovalInProgress.has(rowId)) return showToast('Este registro já está sendo aprovado. Aguarde a conclusão.');
@@ -9325,7 +9378,7 @@
           resolucao: 'Aprovado e lançado no financeiro.'
         };
         try {
-          await persistFinanceImmediately();
+          await persistApprovedCentralFinance(record, existingEntry);
           await setCentralPendingRecordStatus(record, approvalData);
           setCentralPendingRecordStatusLocally(record, approvalData);
           notifyCentralRecordApproval(record).catch((error) => console.warn('Registro aprovado, mas o aparelho não recebeu o aviso.', error));
@@ -9382,7 +9435,7 @@
         // O Financeiro é persistido e confirmado no Appwrite antes de a Central
         // receber o status aprovado. Assim o lançamento aparece imediatamente e
         // nunca fica uma aprovação remota sem o respectivo registro financeiro.
-        await persistFinanceImmediately();
+        await persistApprovedCentralFinance(record, entry);
         await setCentralPendingRecordStatus(record, approvalData);
         setCentralPendingRecordStatusLocally(record, approvalData);
         notifyCentralRecordApproval(record).catch((error) => console.warn('Registro aprovado, mas o aparelho não recebeu o aviso.', error));
@@ -9412,6 +9465,7 @@
     }
 
     function rejectCentralPendingRecord(rowId) {
+      if (!requireWefrotasPermission('approveRecords', 'Seu perfil não permite rejeitar registros.')) return;
       const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
       if (!record) return showToast('Registro da Central não encontrado.');
       openPromptModal({
@@ -9475,6 +9529,7 @@
     }
 
     async function auditSelectedCentralPendingRecords() {
+      if (!requireWefrotasPermission('approveRecords', 'Seu perfil não permite auditar registros.')) return;
       const records = centralPendingRecords.filter(record => selectedCentralPending.has(getCentralPendingRecordId(record)));
       if (!records.length) return showToast('Selecione ao menos um registro para auditar.');
       try {
@@ -9488,6 +9543,7 @@
     }
 
     function deleteSelectedCentralPendingRecords() {
+      if (!requireWefrotasPermission('deleteRecords', 'Somente administradores podem excluir registros da Central.')) return;
       const records = centralPendingRecords.filter(record => selectedCentralPending.has(getCentralPendingRecordId(record)));
       if (!records.length) return showToast('Selecione ao menos um registro para excluir.');
       openPromptModal({
