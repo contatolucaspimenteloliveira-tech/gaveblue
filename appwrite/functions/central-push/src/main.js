@@ -223,11 +223,21 @@ async function updateWefrotasUser(req, payload) {
   if (userId === managerId && (payload.status === false || (payload.role && payload.role !== 'wefrotas-admin'))) {
     throw Object.assign(new Error('Você não pode desativar ou remover o próprio acesso administrativo.'), { status: 400 });
   }
+  const password = payload.password !== undefined ? String(payload.password || '') : '';
+  if (password && password.length < 8) {
+    throw Object.assign(new Error('A nova senha deve ter pelo menos 8 caracteres.'), { status: 400 });
+  }
+  if (password.length > 256) {
+    throw Object.assign(new Error('A nova senha deve ter no máximo 256 caracteres.'), { status: 400 });
+  }
   const users = new Users(createServerClient(req));
   if (payload.name !== undefined) {
     const name = String(payload.name || '').trim().slice(0, 128);
     if (name.length < 2) throw Object.assign(new Error('Informe o nome do usuário.'), { status: 400 });
     await users.updateName({ userId, name });
+  }
+  if (password) {
+    await users.updatePassword({ userId, password });
   }
   if (payload.role !== undefined) {
     const existing = await users.get({ userId });

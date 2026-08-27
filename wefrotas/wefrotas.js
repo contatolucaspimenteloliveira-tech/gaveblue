@@ -3543,9 +3543,15 @@
       emailInput.disabled = Boolean(user);
       const passwordField = document.getElementById('wefrotas-user-password-field');
       const passwordInput = document.getElementById('wefrotas-user-password');
+      const passwordLabel = document.getElementById('wefrotas-user-password-label');
+      const passwordHint = document.getElementById('wefrotas-user-password-hint');
       passwordInput.value = '';
       passwordInput.required = !user;
-      passwordField.classList.toggle('hidden', Boolean(user));
+      passwordField.classList.remove('hidden');
+      passwordLabel.textContent = user ? 'Nova senha (opcional)' : 'Senha temporária';
+      passwordHint.textContent = user
+        ? 'Deixe em branco para manter a senha atual. A nova senha deve ter pelo menos 8 caracteres.'
+        : 'Mínimo de 8 caracteres. A senha não será exibida novamente.';
       document.getElementById('wefrotas-user-role').value = user?.role || 'wefrotas-consulta';
       document.getElementById('wefrotas-user-modal-title').textContent = user ? 'Editar usuário' : 'Novo usuário';
       document.getElementById('wefrotas-user-submit').textContent = user ? 'Salvar alterações' : 'Criar usuário';
@@ -3566,6 +3572,7 @@
     async function saveWefrotasUser(event) {
       event?.preventDefault();
       const userId = document.getElementById('wefrotas-user-id')?.value || '';
+      const password = document.getElementById('wefrotas-user-password')?.value || '';
       const payload = {
         action: userId ? 'wefrotas-user-update' : 'wefrotas-user-create',
         userId,
@@ -3574,7 +3581,9 @@
       };
       if (!userId) {
         payload.email = document.getElementById('wefrotas-user-email')?.value.trim() || '';
-        payload.password = document.getElementById('wefrotas-user-password')?.value || '';
+        payload.password = password;
+      } else if (password) {
+        payload.password = password;
       }
       const button = document.getElementById('wefrotas-user-submit');
       const feedback = document.getElementById('wefrotas-user-feedback');

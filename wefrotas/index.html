@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260827-user-labels-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260827-user-password-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -1395,7 +1395,7 @@
         <input id="wefrotas-user-id" type="hidden">
         <label><span>Nome completo</span><input id="wefrotas-user-name" type="text" maxlength="128" autocomplete="name" required></label>
         <label><span>E-mail de acesso</span><input id="wefrotas-user-email" type="email" maxlength="320" autocomplete="email" required></label>
-        <label id="wefrotas-user-password-field"><span>Senha temporária</span><input id="wefrotas-user-password" type="password" minlength="8" autocomplete="new-password"><small>Mínimo de 8 caracteres. A senha não será exibida novamente.</small></label>
+        <label id="wefrotas-user-password-field"><span id="wefrotas-user-password-label">Senha temporária</span><input id="wefrotas-user-password" type="password" minlength="8" maxlength="256" autocomplete="new-password"><small id="wefrotas-user-password-hint">Mínimo de 8 caracteres. A senha não será exibida novamente.</small></label>
         <label><span>Perfil de acesso</span><select id="wefrotas-user-role" required><option value="wefrotas-admin">Administrador</option><option value="wefrotas-gestor">Gestor</option><option value="wefrotas-aprovador">Aprovador</option><option value="wefrotas-consulta">Consulta</option></select></label>
         <div id="wefrotas-user-permission-summary" class="wefrotas-user-permission-summary"></div>
         <p id="wefrotas-user-feedback" class="wefrotas-user-feedback" role="alert"></p>
@@ -1668,8 +1668,8 @@
 
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
-  <script src="./wefrotas-backend.js?v=20260827-user-labels-1"></script>
-  <script src="./wefrotas.js?v=20260827-user-labels-1"></script>
+  <script src="./wefrotas-backend.js?v=20260827-user-password-1"></script>
+  <script src="./wefrotas.js?v=20260827-user-password-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
