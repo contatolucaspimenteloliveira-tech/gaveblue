@@ -184,11 +184,9 @@
 
   function getPermissions() {
     const { Permission, Role } = global.Appwrite;
-    const readableRoles = ['admin', 'gestor', 'aprovador', 'consulta'].map((label) => Role.label(label));
-    const writableRoles = ['admin', 'gestor'].map((label) => Role.label(label));
     return [
-      ...readableRoles.map((role) => Permission.read(role)),
-      ...writableRoles.map((role) => Permission.update(role)),
+      Permission.read(Role.users()),
+      Permission.update(Role.label('admin')),
       Permission.delete(Role.label('admin'))
     ];
   }
@@ -534,42 +532,37 @@
 
   function getPublicBannerFilePermissions() {
     const { Permission, Role } = global.Appwrite;
-    const managerRoles = ['admin', 'gestor'].map((label) => Role.label(label));
     return [
       Permission.read(Role.any()),
-      ...managerRoles.map((role) => Permission.update(role)),
-      ...managerRoles.map((role) => Permission.delete(role))
+      Permission.update(Role.label('admin')),
+      Permission.delete(Role.label('admin'))
     ];
   }
 
   function getCentralRecordPermissions() {
     const { Permission, Role } = global.Appwrite;
-    const readableRoles = ['admin', 'gestor', 'aprovador', 'consulta'].map((label) => Role.label(label));
-    const approverRoles = ['admin', 'gestor', 'aprovador'].map((label) => Role.label(label));
     return [
-      ...readableRoles.map((role) => Permission.read(role)),
-      ...approverRoles.map((role) => Permission.update(role)),
+      Permission.read(Role.users()),
+      Permission.update(Role.label('admin')),
       Permission.delete(Role.label('admin'))
     ];
   }
 
   function getPublicDirectoryPermissions() {
     const { Permission, Role } = global.Appwrite;
-    const managerRoles = ['admin', 'gestor'].map((label) => Role.label(label));
     return [
       Permission.read(Role.any()),
-      ...managerRoles.map((role) => Permission.update(role)),
-      ...managerRoles.map((role) => Permission.delete(role))
+      Permission.update(Role.label('admin')),
+      Permission.delete(Role.label('admin'))
     ];
   }
 
   function getPublicVehicleFilePermissions() {
     const { Permission, Role } = global.Appwrite;
-    const managerRoles = ['admin', 'gestor'].map((label) => Role.label(label));
     return [
       Permission.read(Role.any()),
-      ...managerRoles.map((role) => Permission.update(role)),
-      ...managerRoles.map((role) => Permission.delete(role))
+      Permission.update(Role.label('admin')),
+      Permission.delete(Role.label('admin'))
     ];
   }
 

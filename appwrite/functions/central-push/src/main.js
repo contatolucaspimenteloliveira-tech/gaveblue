@@ -164,34 +164,39 @@ const assertOperationalManager = (req) => assertAccessRole(req, ['wefrotas-admin
 const assertCentralApprover = (req) => assertAccessRole(req, ['wefrotas-admin', 'wefrotas-gestor', 'wefrotas-aprovador']);
 
 const ROLE_PERMISSION_LABELS = Object.freeze({
-  all: ['admin', 'gestor', 'aprovador', 'consulta'],
-  operational: ['admin', 'gestor', 'aprovador'],
-  management: ['admin', 'gestor'],
+  // Appwrite rejeita uma permissão label:<papel> enquanto nenhum usuário do
+  // projeto possuir aquela label. A autorização fina continua sendo aplicada
+  // pela Function (assertAccessRole); nos documentos usamos apenas papéis que
+  // são invariavelmente válidos no projeto.
   admin: ['admin']
 });
 
-function buildDocumentPermissions({ publicRead = false, read = [], update = [], remove = [] } = {}) {
+function buildDocumentPermissions({ publicRead = false, authenticatedRead = false, read = [], update = [], remove = [] } = {}) {
   return [
-    ...(publicRead ? [Permission.read(Role.any())] : read.map((label) => Permission.read(Role.label(label)))),
+    ...(publicRead
+      ? [Permission.read(Role.any())]
+      : authenticatedRead
+        ? [Permission.read(Role.users())]
+        : read.map((label) => Permission.read(Role.label(label)))),
     ...update.map((label) => Permission.update(Role.label(label))),
     ...remove.map((label) => Permission.delete(Role.label(label)))
   ];
 }
 
 const WEFROTAS_SNAPSHOT_PERMISSIONS = buildDocumentPermissions({
-  read: ROLE_PERMISSION_LABELS.all,
-  update: ROLE_PERMISSION_LABELS.management,
+  authenticatedRead: true,
+  update: ROLE_PERMISSION_LABELS.admin,
   remove: ROLE_PERMISSION_LABELS.admin
 });
 const CENTRAL_RECORD_PERMISSIONS = buildDocumentPermissions({
-  read: ROLE_PERMISSION_LABELS.all,
-  update: ROLE_PERMISSION_LABELS.operational,
+  authenticatedRead: true,
+  update: ROLE_PERMISSION_LABELS.admin,
   remove: ROLE_PERMISSION_LABELS.admin
 });
 const CENTRAL_PUBLIC_MANAGEMENT_PERMISSIONS = buildDocumentPermissions({
   publicRead: true,
-  update: ROLE_PERMISSION_LABELS.management,
-  remove: ROLE_PERMISSION_LABELS.management
+  update: ROLE_PERMISSION_LABELS.admin,
+  remove: ROLE_PERMISSION_LABELS.admin
 });
 const ADMIN_READ_PERMISSIONS = buildDocumentPermissions({ read: ROLE_PERMISSION_LABELS.admin });
 
