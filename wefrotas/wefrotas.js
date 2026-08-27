@@ -247,11 +247,11 @@
       const labels = Array.isArray(user?.labels)
         ? user.labels.map((label) => String(label).trim().toLowerCase())
         : [];
-      if (labels.includes('wefrotas-admin') || labels.includes('admin') || labels.includes('administrador') || !labels.some(label => label.startsWith('wefrotas-'))) return 'Administrador';
+      if (labels.includes('wefrotas-admin') || labels.includes('admin') || labels.includes('administrador')) return 'Administrador';
       if (labels.includes('wefrotas-gestor') || labels.includes('gestor')) return 'Gestor';
-      if (labels.includes('wefrotas-aprovador')) return 'Aprovador';
-      if (labels.includes('wefrotas-consulta')) return 'Consulta';
-      return 'Consulta';
+      if (labels.includes('wefrotas-aprovador') || labels.includes('aprovador')) return 'Aprovador';
+      if (labels.includes('wefrotas-consulta') || labels.includes('consulta')) return 'Consulta';
+      return 'Administrador';
     }
 
     function applyAuthenticatedAccessUi(user) {
@@ -3460,10 +3460,10 @@
     }
 
     const wefrotasRoleDefinitions = Object.freeze({
-      'wefrotas-admin': { label: 'Administrador', description: 'Acesso total, inclusive usuários, configurações e ações críticas.' },
-      'wefrotas-gestor': { label: 'Gestor', description: 'Gerencia a operação e os cadastros, mas não administra contas de acesso.' },
-      'wefrotas-aprovador': { label: 'Aprovador', description: 'Analisa, aprova, rejeita e audita registros da Central.' },
-      'wefrotas-consulta': { label: 'Consulta', description: 'Acesso de leitura, sem alterações operacionais.' }
+      'wefrotas-admin': { label: 'Administrador', appwriteLabel: 'admin', description: 'Acesso total, inclusive usuários, configurações e ações críticas.' },
+      'wefrotas-gestor': { label: 'Gestor', appwriteLabel: 'gestor', description: 'Gerencia a operação e os cadastros, mas não administra contas de acesso.' },
+      'wefrotas-aprovador': { label: 'Aprovador', appwriteLabel: 'aprovador', description: 'Analisa, aprova, rejeita e audita registros da Central.' },
+      'wefrotas-consulta': { label: 'Consulta', appwriteLabel: 'consulta', description: 'Acesso de leitura, sem alterações operacionais.' }
     });
 
     function getWefrotasRoleDefinition(role) {

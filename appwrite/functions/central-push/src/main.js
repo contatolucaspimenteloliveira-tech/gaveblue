@@ -88,13 +88,31 @@ function assertPushConfigured() {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
-const WEFROTAS_ACCESS_ROLES = new Set(['wefrotas-admin', 'wefrotas-gestor', 'wefrotas-aprovador', 'wefrotas-consulta']);
+const WEFROTAS_ROLE_LABELS = Object.freeze({
+  'wefrotas-admin': 'admin',
+  'wefrotas-gestor': 'gestor',
+  'wefrotas-aprovador': 'aprovador',
+  'wefrotas-consulta': 'consulta'
+});
+const WEFROTAS_ACCESS_ROLES = new Set(Object.keys(WEFROTAS_ROLE_LABELS));
+const WEFROTAS_APPWRITE_LABELS = new Set(Object.values(WEFROTAS_ROLE_LABELS));
+
+function normalizeAppwriteLabels(values) {
+  return [...new Set((Array.isArray(values) ? values : [])
+    .map((value) => String(value || '').trim().toLowerCase())
+    .filter((value) => /^[a-z0-9]{1,36}$/.test(value)))];
+}
+
+function getAppwriteRoleLabel(role) {
+  return WEFROTAS_ROLE_LABELS[assertManagedRole(role)];
+}
 
 function getWefrotasRole(user, userId = '') {
   if (ADMIN_USER_IDS.has(String(userId || user?.$id || ''))) return 'wefrotas-admin';
   const labels = Array.isArray(user?.labels) ? user.labels.map((label) => String(label).trim().toLowerCase()) : [];
-  if (labels.includes('wefrotas-admin') || labels.includes('admin') || labels.includes('administrador')) return 'wefrotas-admin';
-  return labels.find((label) => WEFROTAS_ACCESS_ROLES.has(label)) || 'wefrotas-consulta';
+  if (labels.includes('admin') || labels.includes('administrador') || labels.includes('wefrotas-admin')) return 'wefrotas-admin';
+  const matchedRole = Object.entries(WEFROTAS_ROLE_LABELS).find(([role, label]) => labels.includes(label) || labels.includes(role));
+  return matchedRole?.[0] || 'wefrotas-consulta';
 }
 
 async function authenticateManager(req) {
@@ -190,7 +208,7 @@ async function createWefrotasUser(req, payload) {
   const created = await users.create({ userId: ID.unique(), email, password, name });
   let updated;
   try {
-    updated = await users.updateLabels({ userId: created.$id, labels: [role] });
+    updated = await users.updateLabels({ userId: created.$id, labels: normalizeAppwriteLabels([getAppwriteRoleLabel(role)]) });
   } catch (error) {
     await users.delete({ userId: created.$id }).catch(() => undefined);
     throw error;
@@ -215,9 +233,10 @@ async function updateWefrotasUser(req, payload) {
     const existing = await users.get({ userId });
     const preservedLabels = (Array.isArray(existing?.labels) ? existing.labels : []).filter((label) => {
       const normalized = String(label || '').trim().toLowerCase();
-      return !WEFROTAS_ACCESS_ROLES.has(normalized) && normalized !== 'admin' && normalized !== 'administrador' && normalized !== 'gestor';
+      return !WEFROTAS_ACCESS_ROLES.has(normalized) && !WEFROTAS_APPWRITE_LABELS.has(normalized) && normalized !== 'administrador';
     });
-    await users.updateLabels({ userId, labels: [...preservedLabels, assertManagedRole(payload.role)] });
+    const labels = normalizeAppwriteLabels([...preservedLabels, getAppwriteRoleLabel(payload.role)]);
+    await users.updateLabels({ userId, labels });
   }
   if (payload.status !== undefined) await users.updateStatus({ userId, status: payload.status === true });
   return { user: normalizeManagedUser(await users.get({ userId })) };

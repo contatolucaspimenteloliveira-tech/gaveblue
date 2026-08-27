@@ -59,7 +59,17 @@
 
   function getCurrentAccessRole() {
     const labels = Array.isArray(currentUser?.labels) ? currentUser.labels.map((label) => String(label).trim().toLowerCase()) : [];
-    return labels.find((label) => ['wefrotas-admin', 'wefrotas-gestor', 'wefrotas-aprovador', 'wefrotas-consulta'].includes(label)) || 'wefrotas-admin';
+    const roleByLabel = {
+      admin: 'wefrotas-admin',
+      gestor: 'wefrotas-gestor',
+      aprovador: 'wefrotas-aprovador',
+      consulta: 'wefrotas-consulta',
+      'wefrotas-admin': 'wefrotas-admin',
+      'wefrotas-gestor': 'wefrotas-gestor',
+      'wefrotas-aprovador': 'wefrotas-aprovador',
+      'wefrotas-consulta': 'wefrotas-consulta'
+    };
+    return labels.map((label) => roleByLabel[label]).find(Boolean) || 'wefrotas-admin';
   }
 
   function assertCanWrite() {

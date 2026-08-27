@@ -23,7 +23,7 @@ Escopos da chave dinâmica: `databases.read`, `databases.write`, `documents.read
 
 A área **Central de Registros > Usuários** administra as contas do Appwrite Auth pela própria Function. A senha temporária é enviada somente na criação e nunca é gravada no banco, no frontend ou nos logs.
 
-Os perfis são armazenados como labels do Auth: `wefrotas-admin`, `wefrotas-gestor`, `wefrotas-aprovador` e `wefrotas-consulta`. Somente um administrador validado por JWT pode listar, criar, editar, ativar ou desativar contas. IDs mantidos em `ADMIN_USER_IDS` continuam sendo administradores de recuperação, mesmo antes de receberem a label nova.
+Os perfis são armazenados como labels alfanuméricas do Auth: `admin`, `gestor`, `aprovador` e `consulta`. A interface continua usando as chaves internas `wefrotas-admin`, `wefrotas-gestor`, `wefrotas-aprovador` e `wefrotas-consulta`, convertidas pela Function antes da gravação. Somente um administrador validado por JWT pode listar, criar, editar, ativar ou desativar contas. IDs mantidos em `ADMIN_USER_IDS` continuam sendo administradores de recuperação, mesmo antes de receberem a label nova.
 
 ## Coleção central_push_subscriptions
 
