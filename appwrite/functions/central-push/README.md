@@ -17,7 +17,13 @@ Variáveis:
 - `CENTRAL_RECORDS_COLLECTION_ID=central_registros_pendentes`
 - `DRIVER_DIRECTORY_COLLECTION_ID=central_driver_directory`
 
-Escopos da chave dinâmica: `databases.read`, `databases.write`, `documents.read` e `documents.write`.
+Escopos da chave dinâmica: `databases.read`, `databases.write`, `documents.read`, `documents.write`, `users.read` e `users.write`. Os dois últimos são usados exclusivamente pela gestão autenticada de contas do WeFrotas.
+
+## Usuários e perfis do WeFrotas
+
+A área **Central de Registros > Usuários** administra as contas do Appwrite Auth pela própria Function. A senha temporária é enviada somente na criação e nunca é gravada no banco, no frontend ou nos logs.
+
+Os perfis são armazenados como labels do Auth: `wefrotas-admin`, `wefrotas-gestor`, `wefrotas-aprovador` e `wefrotas-consulta`. Somente um administrador validado por JWT pode listar, criar, editar, ativar ou desativar contas. IDs mantidos em `ADMIN_USER_IDS` continuam sendo administradores de recuperação, mesmo antes de receberem a label nova.
 
 ## Coleção central_push_subscriptions
 

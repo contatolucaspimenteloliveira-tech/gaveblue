@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { Account, Client, Databases, Query } from 'node-appwrite';
+import { Account, Client, Databases, ID, Query, Users } from 'node-appwrite';
 import webpush from 'web-push';
 
 const DATABASE_ID = process.env.DATABASE_ID || '6a68ce8c000a36a44d98';
@@ -67,15 +67,18 @@ function assertCentralRecordId(value) {
   return recordId;
 }
 
-function createDatabaseClient(req) {
+function createServerClient(req) {
   const endpoint = process.env.APPWRITE_FUNCTION_API_ENDPOINT;
   const project = process.env.APPWRITE_FUNCTION_PROJECT_ID;
   const key = String(req.headers?.['x-appwrite-key'] || process.env.APPWRITE_FUNCTION_API_KEY || '').trim();
   if (!endpoint || !project || !key) {
     throw new Error('As variáveis automáticas da função Appwrite não estão disponíveis.');
   }
-  const client = new Client().setEndpoint(endpoint).setProject(project).setKey(key);
-  return new Databases(client);
+  return new Client().setEndpoint(endpoint).setProject(project).setKey(key);
+}
+
+function createDatabaseClient(req) {
+  return new Databases(createServerClient(req));
 }
 
 function assertPushConfigured() {
@@ -85,11 +88,20 @@ function assertPushConfigured() {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
-async function assertAdmin(req) {
+const WEFROTAS_ACCESS_ROLES = new Set(['wefrotas-admin', 'wefrotas-gestor', 'wefrotas-aprovador', 'wefrotas-consulta']);
+
+function getWefrotasRole(user, userId = '') {
+  if (ADMIN_USER_IDS.has(String(userId || user?.$id || ''))) return 'wefrotas-admin';
+  const labels = Array.isArray(user?.labels) ? user.labels.map((label) => String(label).trim().toLowerCase()) : [];
+  if (labels.includes('wefrotas-admin') || labels.includes('admin') || labels.includes('administrador')) return 'wefrotas-admin';
+  return labels.find((label) => WEFROTAS_ACCESS_ROLES.has(label)) || 'wefrotas-consulta';
+}
+
+async function authenticateManager(req) {
   const userId = String(req.headers?.['x-appwrite-user-id'] || '').trim();
   const userJwt = String(req.headers?.['x-appwrite-user-jwt'] || '').trim();
-  if (!userId || !userJwt || !ADMIN_USER_IDS.has(userId)) {
-    const error = new Error('Seu usuário não está autorizado a enviar notificações gerais.');
+  if (!userId || !userJwt) {
+    const error = new Error('Entre no WeFrotas para continuar.');
     error.status = 403;
     throw error;
   }
@@ -101,13 +113,114 @@ async function assertAdmin(req) {
       .setJWT(userJwt);
     const authenticatedUser = await new Account(client).get();
     if (authenticatedUser?.$id !== userId) throw new Error('Identidade divergente.');
+    return { userId, user: authenticatedUser, role: getWefrotasRole(authenticatedUser, userId) };
   } catch (caught) {
     const error = new Error('Não foi possível validar sua sessão administrativa.');
     error.status = 403;
     throw error;
   }
+}
 
-  return userId;
+async function assertAdmin(req) {
+  const access = await authenticateManager(req);
+  if (access.role !== 'wefrotas-admin') {
+    const error = new Error('Seu perfil não possui permissão administrativa.');
+    error.status = 403;
+    throw error;
+  }
+  return access.userId;
+}
+
+async function assertAccessRole(req, allowedRoles, message = 'Seu perfil não possui permissão para esta ação.') {
+  const access = await authenticateManager(req);
+  if (!allowedRoles.includes(access.role)) {
+    const error = new Error(message);
+    error.status = 403;
+    throw error;
+  }
+  return access.userId;
+}
+
+const assertOperationalManager = (req) => assertAccessRole(req, ['wefrotas-admin', 'wefrotas-gestor']);
+const assertCentralApprover = (req) => assertAccessRole(req, ['wefrotas-admin', 'wefrotas-gestor', 'wefrotas-aprovador']);
+
+function normalizeManagedUser(user) {
+  return {
+    id: String(user?.$id || ''),
+    name: String(user?.name || ''),
+    email: String(user?.email || ''),
+    role: getWefrotasRole(user),
+    status: user?.status !== false,
+    emailVerification: user?.emailVerification === true,
+    createdAt: String(user?.$createdAt || ''),
+    updatedAt: String(user?.$updatedAt || ''),
+    accessedAt: String(user?.accessedAt || '')
+  };
+}
+
+function assertManagedRole(value) {
+  const role = String(value || '').trim().toLowerCase();
+  if (!WEFROTAS_ACCESS_ROLES.has(role)) {
+    const error = new Error('Perfil de acesso inválido.');
+    error.status = 400;
+    throw error;
+  }
+  return role;
+}
+
+async function listWefrotasUsers(req, payload) {
+  await assertAdmin(req);
+  const search = String(payload.search || '').trim().slice(0, 120);
+  const queries = [Query.limit(100)];
+  const result = await new Users(createServerClient(req)).list({ queries, ...(search ? { search } : {}) });
+  const users = (result?.users || []).map(normalizeManagedUser).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  return { users, total: Number(result?.total || 0) };
+}
+
+async function createWefrotasUser(req, payload) {
+  const creatorId = await assertAdmin(req);
+  const name = String(payload.name || '').trim().slice(0, 128);
+  const email = String(payload.email || '').trim().toLowerCase().slice(0, 320);
+  const password = String(payload.password || '');
+  const role = assertManagedRole(payload.role);
+  if (name.length < 2) throw Object.assign(new Error('Informe o nome do usuário.'), { status: 400 });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw Object.assign(new Error('Informe um e-mail válido.'), { status: 400 });
+  if (password.length < 8) throw Object.assign(new Error('A senha temporária deve ter pelo menos 8 caracteres.'), { status: 400 });
+  const users = new Users(createServerClient(req));
+  const created = await users.create({ userId: ID.unique(), email, password, name });
+  let updated;
+  try {
+    updated = await users.updateLabels({ userId: created.$id, labels: [role] });
+  } catch (error) {
+    await users.delete({ userId: created.$id }).catch(() => undefined);
+    throw error;
+  }
+  return { user: normalizeManagedUser(updated), createdBy: creatorId };
+}
+
+async function updateWefrotasUser(req, payload) {
+  const managerId = await assertAdmin(req);
+  const userId = String(payload.userId || '').trim();
+  if (!/^[a-zA-Z0-9_.-]{1,36}$/.test(userId)) throw Object.assign(new Error('Usuário inválido.'), { status: 400 });
+  if (userId === managerId && (payload.status === false || (payload.role && payload.role !== 'wefrotas-admin'))) {
+    throw Object.assign(new Error('Você não pode desativar ou remover o próprio acesso administrativo.'), { status: 400 });
+  }
+  const users = new Users(createServerClient(req));
+  if (payload.name !== undefined) {
+    const name = String(payload.name || '').trim().slice(0, 128);
+    if (name.length < 2) throw Object.assign(new Error('Informe o nome do usuário.'), { status: 400 });
+    await users.updateName({ userId, name });
+  }
+  if (payload.role !== undefined) {
+    const existing = await users.get({ userId });
+    const preservedLabels = (Array.isArray(existing?.labels) ? existing.labels : []).filter((label) => {
+      const normalized = String(label || '').trim().toLowerCase();
+      return !WEFROTAS_ACCESS_ROLES.has(normalized) && normalized !== 'admin' && normalized !== 'administrador' && normalized !== 'gestor';
+    });
+    await users.updateLabels({ userId, labels: [...preservedLabels, assertManagedRole(payload.role)] });
+  }
+  if (payload.status !== undefined) await users.updateStatus({ userId, status: payload.status === true });
+  return { user: normalizeManagedUser(await users.get({ userId })) };
 }
 
 async function saveSubscription(databases, payload) {
@@ -875,7 +988,7 @@ export default async ({ req, res, log, error }) => {
     }
 
     if (action === 'migrate-central-stations') {
-      const senderId = await assertAdmin(req);
+      const senderId = await assertOperationalManager(req);
       const databases = createDatabaseClient(req);
       const result = await migrateCentralStationsToWefrotas(databases, senderId);
       log('Postos da lista original da Central migrados por ' + senderId + ': ' + JSON.stringify(result));
@@ -883,7 +996,7 @@ export default async ({ req, res, log, error }) => {
     }
 
     if (action === 'revert-imported-central-stations') {
-      const senderId = await assertAdmin(req);
+      const senderId = await assertOperationalManager(req);
       const databases = createDatabaseClient(req);
       const result = await revertImportedCentralStations(databases, senderId);
       log('Importação de postos da Central revertida por ' + senderId + ': ' + JSON.stringify(result));
@@ -900,6 +1013,38 @@ export default async ({ req, res, log, error }) => {
       const databases = createDatabaseClient(req);
       const records = await listDeviceHistory(databases, payload);
       return json(res, 200, { ok: true, records });
+    }
+
+    if (action === 'my-access') {
+      const access = await authenticateManager(req);
+      return json(res, 200, {
+        ok: true,
+        userId: access.userId,
+        role: access.role,
+        permissions: {
+          manageUsers: access.role === 'wefrotas-admin',
+          manageSettings: access.role === 'wefrotas-admin' || access.role === 'wefrotas-gestor',
+          approveRecords: access.role !== 'wefrotas-consulta',
+          editOperations: access.role === 'wefrotas-admin' || access.role === 'wefrotas-gestor',
+          readOnly: access.role === 'wefrotas-consulta'
+        }
+      });
+    }
+
+    if (action === 'wefrotas-users-list') {
+      const result = await listWefrotasUsers(req, payload);
+      return json(res, 200, { ok: true, ...result });
+    }
+
+    if (action === 'wefrotas-user-create') {
+      const result = await createWefrotasUser(req, payload);
+      log('Conta WeFrotas criada por ' + result.createdBy + ': ' + result.user.id);
+      return json(res, 200, { ok: true, user: result.user });
+    }
+
+    if (action === 'wefrotas-user-update') {
+      const result = await updateWefrotasUser(req, payload);
+      return json(res, 200, { ok: true, ...result });
     }
 
     if (action === 'stats') {
@@ -940,7 +1085,7 @@ export default async ({ req, res, log, error }) => {
     }
 
     if (action === 'notify') {
-      const senderId = await assertAdmin(req);
+      const senderId = await assertCentralApprover(req);
       const databases = createDatabaseClient(req);
       const result = await notifySubscription(databases, payload, log);
       log('Notificação individual enviada por ' + senderId + ': ' + JSON.stringify(result));
@@ -948,21 +1093,21 @@ export default async ({ req, res, log, error }) => {
     }
 
     if (action === 'claim-approval') {
-      const senderId = await assertAdmin(req);
+      const senderId = await assertCentralApprover(req);
       const databases = createDatabaseClient(req);
       const result = await claimCentralApproval(databases, senderId, payload);
       return json(res, 200, { ok: true, ...result });
     }
 
     if (action === 'complete-approval') {
-      const senderId = await assertAdmin(req);
+      const senderId = await assertCentralApprover(req);
       const databases = createDatabaseClient(req);
       const result = await completeCentralApproval(databases, senderId, payload);
       return json(res, 200, { ok: true, ...result });
     }
 
     if (action === 'release-approval') {
-      const senderId = await assertAdmin(req);
+      const senderId = await assertCentralApprover(req);
       const databases = createDatabaseClient(req);
       const result = await releaseCentralApproval(databases, senderId, payload);
       return json(res, 200, { ok: true, ...result });

@@ -57,6 +57,19 @@
     return error.code ? `${message} (código ${error.code})` : message;
   }
 
+  function getCurrentAccessRole() {
+    const labels = Array.isArray(currentUser?.labels) ? currentUser.labels.map((label) => String(label).trim().toLowerCase()) : [];
+    return labels.find((label) => ['wefrotas-admin', 'wefrotas-gestor', 'wefrotas-aprovador', 'wefrotas-consulta'].includes(label)) || 'wefrotas-admin';
+  }
+
+  function assertCanWrite() {
+    if (getCurrentAccessRole() === 'wefrotas-consulta') {
+      const error = new Error('Seu perfil é somente consulta e não permite alterações.');
+      error.code = 403;
+      throw error;
+    }
+  }
+
   async function clearPendingRemoteSession() {
     if (!account || !hasPendingLogout()) return true;
     try {
@@ -240,6 +253,7 @@
 
   async function persistSnapshot(snapshot) {
     if (!currentUser) throw new Error('Entre no WeFrotas antes de sincronizar os dados.');
+    assertCanWrite();
     emitStatus('syncing', 'Preparando dados para sincronização...');
     const preparedSnapshot = await currentSnapshotPreparer?.(snapshot) || snapshot;
     const serialized = JSON.stringify(preparedSnapshot);
@@ -281,6 +295,7 @@
 
   function queueSnapshot(snapshot, delay = 1200) {
     if (!currentUser || !snapshot) return;
+    if (getCurrentAccessRole() === 'wefrotas-consulta') return;
     setPendingSync(true);
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => {
@@ -364,6 +379,7 @@
 
   async function syncNow(snapshot) {
     if (!currentUser) throw new Error('Entre no WeFrotas antes de sincronizar os dados.');
+    assertCanWrite();
     const nextSnapshot = snapshot || currentSnapshotGetter?.();
     if (!nextSnapshot) throw new Error('Não há dados disponíveis para sincronização.');
 
@@ -396,6 +412,7 @@
 
   async function uploadReceipt(file) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online antes de enviar arquivos.');
+    assertCanWrite();
     if (!file) throw new Error('Selecione um comprovante.');
     const uploaded = await storage.createFile({ bucketId: config.bucketId, fileId: global.Appwrite.ID.unique(), file, permissions: getPermissions() });
     return String(storage.getFileView({ bucketId: config.bucketId, fileId: uploaded.$id }));
@@ -403,6 +420,7 @@
 
   async function uploadVehicleImage(file) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online antes de enviar a foto do veículo.');
+    assertCanWrite();
     if (!file) throw new Error('Selecione uma foto do veículo.');
     if (!String(file.type || '').startsWith('image/')) throw new Error('O arquivo selecionado precisa ser uma imagem.');
     if (Number(file.size || 0) > 8 * 1024 * 1024) throw new Error('A foto do veículo deve ter no máximo 8 MB.');
@@ -505,6 +523,7 @@
 
   async function uploadCentralBanner(file) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online antes de enviar banners.');
+    assertCanWrite();
     if (!file) throw new Error('Selecione uma imagem para o banner.');
     if (!String(file.type || '').startsWith('image/')) throw new Error('O arquivo selecionado precisa ser uma imagem.');
     const uploaded = await storage.createFile({
@@ -521,6 +540,7 @@
 
   async function deleteCentralBannerFile(fileId) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir banners.');
+    assertCanWrite();
     if (!fileId || String(fileId).startsWith('builtin:')) return;
     return storage.deleteFile({ bucketId: config.bucketId, fileId });
   }
@@ -536,6 +556,7 @@
 
   async function createCentralHomeBanner(data) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para cadastrar banners.');
+    assertCanWrite();
     return tablesDB.createRow({
       databaseId: config.databaseId,
       tableId: config.centralBannersTableId,
@@ -546,6 +567,7 @@
 
   async function upsertCentralHomeBanner(rowId, data) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para cadastrar banners.');
+    assertCanWrite();
     try {
       return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data });
     } catch (error) {
@@ -556,11 +578,13 @@
 
   async function updateCentralHomeBanner(rowId, data) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para alterar banners.');
+    assertCanWrite();
     return tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data });
   }
 
   async function deleteCentralHomeBanner(rowId) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir banners.');
+    assertCanWrite();
     return tablesDB.deleteRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId });
   }
 
@@ -588,6 +612,7 @@
 
   async function updateCentralPendingRecord(rowId, data = {}) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para atualizar registros da Central.');
+    assertCanWrite();
     if (!tablesDB) throw new Error('Banco de dados do Appwrite não está conectado.');
     if (!config.centralTableId) throw new Error('Tabela da Central de Registros não configurada.');
     return tablesDB.updateRow({
@@ -600,6 +625,7 @@
 
   async function deleteCentralPendingRecord(rowId) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir registros da Central.');
+    assertCanWrite();
     if (!tablesDB || !config.centralTableId) throw new Error('Tabela da Central de Registros não está disponível.');
     return tablesDB.deleteRow({ databaseId: config.databaseId, tableId: config.centralTableId, rowId });
   }

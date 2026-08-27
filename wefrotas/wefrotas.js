@@ -94,6 +94,10 @@
     let activeModule = 'home';
     let activeCentralSection = 'registros';
     let activeCentralConfigSection = 'comunicacao';
+    let currentWefrotasRoleLabel = 'Administrador';
+    let centralManagerUsers = [];
+    let centralManagerUsersLoading = false;
+    let wefrotasUsersSearchTimer = null;
     let orderViewerZoom = 1;
     let systemNotifications = [];
     let pendingBatchImportEntity = null;
@@ -243,9 +247,43 @@
       const labels = Array.isArray(user?.labels)
         ? user.labels.map((label) => String(label).trim().toLowerCase())
         : [];
-      if (labels.includes('admin') || labels.includes('administrador')) return 'Administrador';
-      if (labels.includes('gestor')) return 'Gestor';
-      return 'Operador';
+      if (labels.includes('wefrotas-admin') || labels.includes('admin') || labels.includes('administrador') || !labels.some(label => label.startsWith('wefrotas-'))) return 'Administrador';
+      if (labels.includes('wefrotas-gestor') || labels.includes('gestor')) return 'Gestor';
+      if (labels.includes('wefrotas-aprovador')) return 'Aprovador';
+      if (labels.includes('wefrotas-consulta')) return 'Consulta';
+      return 'Consulta';
+    }
+
+    function applyAuthenticatedAccessUi(user) {
+      const roleLabel = getAuthenticatedUserRoleLabel(user);
+      currentWefrotasRoleLabel = roleLabel;
+      const isAdmin = roleLabel === 'Administrador';
+      const canManageSettings = isAdmin || roleLabel === 'Gestor';
+      document.querySelectorAll('[data-central-section="usuarios"]').forEach((node) => node.classList.toggle('hidden', !isAdmin));
+      document.querySelectorAll('[data-central-section="notificacoes"]').forEach((node) => node.classList.toggle('hidden', !isAdmin));
+      document.querySelectorAll('[data-central-section="configuracoes"]').forEach((node) => node.classList.toggle('hidden', !canManageSettings));
+      const approverHiddenModules = new Set(['orders', 'veiculos', 'motoristas', 'fornecedores']);
+      document.querySelectorAll('#app-sidebar button[onclick*="showModule("]').forEach((button) => {
+        const module = button.getAttribute('onclick')?.match(/showModule\('([^']+)'/)?.[1] || '';
+        button.classList.toggle('permission-hidden', roleLabel === 'Aprovador' && approverHiddenModules.has(module));
+      });
+      document.body.classList.toggle('wefrotas-readonly', roleLabel === 'Consulta');
+      document.querySelectorAll('.app-main-shell button, #app-sidebar button').forEach((button) => {
+        if (!button.dataset.permissionOriginalTitle) button.dataset.permissionOriginalTitle = button.title || '';
+        if (roleLabel !== 'Consulta') {
+          if (button.dataset.permissionLocked === 'true') button.disabled = false;
+          button.dataset.permissionLocked = 'false';
+          button.title = button.dataset.permissionOriginalTitle;
+          return;
+        }
+        const actionText = `${button.title || ''} ${button.textContent || ''} ${button.getAttribute('onclick') || ''}`;
+        const mutating = /novo|adicionar|editar|excluir|aprovar|rejeitar|auditar|estornar|salvar|importar|agrupar|distribuir|migrate|reset|delete|create|editselected|opennew/i.test(actionText);
+        if (mutating) {
+          button.disabled = true;
+          button.dataset.permissionLocked = 'true';
+          button.title = 'Seu perfil possui acesso somente para consulta.';
+        }
+      });
     }
 
     function updateManagerIdentityUi() {
@@ -265,6 +303,7 @@
         : 'Usuário';
       if (avatarNode) avatarNode.textContent = initials;
       if (topbarAvatarNode) topbarAvatarNode.textContent = initials;
+      if (authenticatedUser) applyAuthenticatedAccessUi(authenticatedUser);
     }
 
     function updateOperationSettingsUi() {
@@ -3420,6 +3459,168 @@
       return result;
     }
 
+    const wefrotasRoleDefinitions = Object.freeze({
+      'wefrotas-admin': { label: 'Administrador', description: 'Acesso total, inclusive usuários, configurações e ações críticas.' },
+      'wefrotas-gestor': { label: 'Gestor', description: 'Gerencia a operação e os cadastros, mas não administra contas de acesso.' },
+      'wefrotas-aprovador': { label: 'Aprovador', description: 'Analisa, aprova, rejeita e audita registros da Central.' },
+      'wefrotas-consulta': { label: 'Consulta', description: 'Acesso de leitura, sem alterações operacionais.' }
+    });
+
+    function getWefrotasRoleDefinition(role) {
+      return wefrotasRoleDefinitions[role] || wefrotasRoleDefinitions['wefrotas-consulta'];
+    }
+
+    function formatWefrotasUserAccessDate(value) {
+      if (!value) return 'Ainda não acessou';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return 'Acesso não informado';
+      return `Último acesso em ${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    function renderWefrotasUsers() {
+      const list = document.getElementById('central-users-list');
+      if (!list) return;
+      if (centralManagerUsersLoading) {
+        list.innerHTML = '<div class="central-devices-empty"><span class="central-devices-spinner"></span>Atualizando contas de acesso…</div>';
+        return;
+      }
+      if (!centralManagerUsers.length) {
+        list.innerHTML = '<div class="central-devices-empty">Nenhum usuário encontrado para esta pesquisa.</div>';
+        return;
+      }
+      const currentUserId = String(window.WeFrotasBackend?.getUser?.()?.$id || '');
+      list.innerHTML = centralManagerUsers.map((user) => {
+        const role = getWefrotasRoleDefinition(user.role);
+        const active = user.status !== false;
+        const isCurrent = user.id === currentUserId;
+        return `<article class="central-user-card ${active ? '' : 'is-inactive'}">
+          <span class="central-user-avatar">${escapeHtml(getNameInitials(user.name || user.email, 'U'))}</span>
+          <div class="central-user-copy"><div><strong>${escapeHtml(user.name || 'Usuário sem nome')}</strong>${isCurrent ? '<em>VOCÊ</em>' : ''}<span class="central-user-status ${active ? '' : 'is-inactive'}">${active ? 'Ativo' : 'Inativo'}</span></div><p>${escapeHtml(user.email || '')}</p><small>${escapeHtml(formatWefrotasUserAccessDate(user.accessedAt))}</small></div>
+          <div class="central-user-role"><strong>${escapeHtml(role.label)}</strong><span>${escapeHtml(role.description)}</span></div>
+          <div class="central-user-actions"><button type="button" onclick="openWefrotasUserModal('${escapeHtml(user.id)}')">Editar</button><button type="button" class="${active ? 'is-danger' : 'is-success'}" onclick="toggleWefrotasUserStatus('${escapeHtml(user.id)}')" ${isCurrent ? 'disabled title="Você não pode desativar a própria conta"' : ''}>${active ? 'Desativar' : 'Ativar'}</button></div>
+        </article>`;
+      }).join('');
+    }
+
+    async function refreshWefrotasUsers() {
+      if (centralManagerUsersLoading) return;
+      centralManagerUsersLoading = true;
+      renderWefrotasUsers();
+      try {
+        const search = document.getElementById('central-users-search')?.value.trim() || '';
+        const result = await executeCentralPushAdmin({ action: 'wefrotas-users-list', search });
+        centralManagerUsers = Array.isArray(result.users) ? result.users : [];
+      } catch (error) {
+        centralManagerUsers = [];
+        const list = document.getElementById('central-users-list');
+        if (list) list.innerHTML = `<div class="central-devices-empty is-error">${escapeHtml(error?.message || 'Não foi possível carregar os usuários.')}</div>`;
+        return;
+      } finally {
+        centralManagerUsersLoading = false;
+      }
+      renderWefrotasUsers();
+    }
+
+    function scheduleWefrotasUsersRefresh() {
+      window.clearTimeout(wefrotasUsersSearchTimer);
+      wefrotasUsersSearchTimer = window.setTimeout(refreshWefrotasUsers, 350);
+    }
+
+    function updateWefrotasUserPermissionSummary() {
+      const role = document.getElementById('wefrotas-user-role')?.value || 'wefrotas-consulta';
+      const node = document.getElementById('wefrotas-user-permission-summary');
+      if (!node) return;
+      const definition = getWefrotasRoleDefinition(role);
+      node.innerHTML = `<strong>${escapeHtml(definition.label)}</strong><span>${escapeHtml(definition.description)}</span>`;
+    }
+
+    function openWefrotasUserModal(userId = '') {
+      const user = centralManagerUsers.find((item) => item.id === userId) || null;
+      document.getElementById('wefrotas-user-id').value = user?.id || '';
+      document.getElementById('wefrotas-user-name').value = user?.name || '';
+      const emailInput = document.getElementById('wefrotas-user-email');
+      emailInput.value = user?.email || '';
+      emailInput.disabled = Boolean(user);
+      const passwordField = document.getElementById('wefrotas-user-password-field');
+      const passwordInput = document.getElementById('wefrotas-user-password');
+      passwordInput.value = '';
+      passwordInput.required = !user;
+      passwordField.classList.toggle('hidden', Boolean(user));
+      document.getElementById('wefrotas-user-role').value = user?.role || 'wefrotas-consulta';
+      document.getElementById('wefrotas-user-modal-title').textContent = user ? 'Editar usuário' : 'Novo usuário';
+      document.getElementById('wefrotas-user-submit').textContent = user ? 'Salvar alterações' : 'Criar usuário';
+      document.getElementById('wefrotas-user-feedback').textContent = '';
+      updateWefrotasUserPermissionSummary();
+      document.getElementById('wefrotas-user-modal')?.classList.remove('hidden');
+      window.setTimeout(() => document.getElementById('wefrotas-user-name')?.focus(), 50);
+    }
+
+    function closeWefrotasUserModal() {
+      document.getElementById('wefrotas-user-modal')?.classList.add('hidden');
+    }
+
+    function handleWefrotasUserModalBackdrop(event) {
+      if (event.target?.id === 'wefrotas-user-modal') closeWefrotasUserModal();
+    }
+
+    async function saveWefrotasUser(event) {
+      event?.preventDefault();
+      const userId = document.getElementById('wefrotas-user-id')?.value || '';
+      const payload = {
+        action: userId ? 'wefrotas-user-update' : 'wefrotas-user-create',
+        userId,
+        name: document.getElementById('wefrotas-user-name')?.value.trim() || '',
+        role: document.getElementById('wefrotas-user-role')?.value || 'wefrotas-consulta'
+      };
+      if (!userId) {
+        payload.email = document.getElementById('wefrotas-user-email')?.value.trim() || '';
+        payload.password = document.getElementById('wefrotas-user-password')?.value || '';
+      }
+      const button = document.getElementById('wefrotas-user-submit');
+      const feedback = document.getElementById('wefrotas-user-feedback');
+      button.disabled = true;
+      feedback.textContent = userId ? 'Salvando alterações…' : 'Criando acesso seguro…';
+      try {
+        await executeCentralPushAdmin(payload);
+        closeWefrotasUserModal();
+        await refreshWefrotasUsers();
+        showToast(userId ? 'Usuário atualizado.' : 'Usuário criado. Entregue a senha temporária de forma segura.');
+      } catch (error) {
+        feedback.textContent = error?.message || 'Não foi possível salvar o usuário.';
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function toggleWefrotasUserStatus(userId) {
+      const user = centralManagerUsers.find((item) => item.id === userId);
+      if (!user) return;
+      const activating = user.status === false;
+      openPromptModal({
+        title: `${activating ? 'Ativar' : 'Desativar'} ${user.name || user.email}?`,
+        text: activating ? 'O usuário poderá entrar novamente no WeFrotas.' : 'A conta perderá o acesso, mas seu histórico será preservado.',
+        mode: 'confirm',
+        confirmLabel: activating ? 'Ativar usuário' : 'Desativar usuário',
+        cancelLabel: 'Cancelar',
+        onConfirm: async () => {
+          try {
+            await executeCentralPushAdmin({ action: 'wefrotas-user-update', userId, status: activating });
+            await refreshWefrotasUsers();
+            showToast(`Usuário ${activating ? 'ativado' : 'desativado'}.`);
+          } catch (error) { showToast(error?.message || 'Não foi possível alterar o usuário.'); }
+        }
+      });
+    }
+
+    window.refreshWefrotasUsers = refreshWefrotasUsers;
+    window.scheduleWefrotasUsersRefresh = scheduleWefrotasUsersRefresh;
+    window.openWefrotasUserModal = openWefrotasUserModal;
+    window.closeWefrotasUserModal = closeWefrotasUserModal;
+    window.handleWefrotasUserModalBackdrop = handleWefrotasUserModalBackdrop;
+    window.saveWefrotasUser = saveWefrotasUser;
+    window.toggleWefrotasUserStatus = toggleWefrotasUserStatus;
+    document.getElementById('wefrotas-user-role')?.addEventListener('change', updateWefrotasUserPermissionSummary);
+
     async function migrateCentralStationsToWefrotas() {
       const feedback = document.getElementById('central-station-migration-feedback');
       const button = document.getElementById('central-station-migration-button');
@@ -3895,7 +4096,10 @@
         refreshCentralPendingRecords({ silent: true });
         refreshPushSubscriberStats();
       }
-      if (activeCentralSection === 'usuarios') refreshCentralDevices();
+      if (activeCentralSection === 'usuarios') {
+        refreshWefrotasUsers();
+        refreshCentralDevices();
+      }
       if (activeCentralSection === 'configuracoes') showCentralConfigSection(activeCentralConfigSection);
     }
 
@@ -3906,6 +4110,10 @@
     window.openCentralCommunicationFromSettings = openCentralCommunicationFromSettings;
 
     function showModule(module, button) {
+      if (currentWefrotasRoleLabel === 'Aprovador' && ['orders', 'veiculos', 'motoristas', 'fornecedores'].includes(module)) {
+        showToast('Seu perfil de aprovador não possui acesso a este módulo.');
+        return;
+      }
       const legacyCentralSection = module === 'documentos'
         ? 'registros'
         : (module === 'notificacoes' ? 'notificacoes' : '');
