@@ -1602,7 +1602,7 @@
       centralCities = Array.isArray(snapshot.centralCities) && snapshot.centralCities.length
         ? snapshot.centralCities.map(normalizeCentralCityRecord).filter((city) => city.name)
         : CENTRAL_DEFAULT_CITIES.map((city) => ({ ...city }));
-      ensureSupplierCitiesRegistered();
+      const migratedSupplierCities = ensureSupplierCitiesRegistered();
       allOrders = Array.isArray(snapshot.orders) ? snapshot.orders : [];
       allFinanceEntries = Array.isArray(snapshot.finance) ? snapshot.finance : [];
       allAdministrations = normalizeAdministrationList(snapshot.administrations || snapshot.administracoes || []);
@@ -1620,7 +1620,7 @@
       if (!allAdministrations.length) allAdministrations = collectLegacyAdministrationOptions();
       const migratedLegacyLiters = migrateFinanceEntries();
       syncOrderCounterWithOrders();
-      return migratedLegacyLiters;
+      return migratedLegacyLiters || migratedSupplierCities;
     }
 
     function getLegacyLocalStorageSnapshot() {
@@ -1783,6 +1783,14 @@
 
       saveFullSnapshotToLocalStorage(snapshot);
       return Promise.resolve();
+    }
+
+    async function persistCentralConfigurationImmediately() {
+      await saveToLocalStorage();
+      const backend = window.WeFrotasBackend;
+      if (backend?.getUser?.() && backend?.syncNow) {
+        await backend.syncNow(buildStorageSnapshot());
+      }
     }
 
     async function persistFinanceImmediately() {
@@ -1995,7 +2003,7 @@
     }
 
     async function applyRemoteStorageSnapshot(snapshot) {
-      const migratedLegacyLiters = applyStorageSnapshot(snapshot);
+      const migratedStorage = applyStorageSnapshot(snapshot);
       try {
         wefrotasStorageEngine = 'IndexedDB';
         await writeWeFrotasIndexedDbSnapshot(buildStorageSnapshot());
@@ -2010,7 +2018,11 @@
       updateCustomLogoUi();
       updateManagerIdentityUi();
       updateOperationSettingsUi();
-      if (migratedLegacyLiters) await saveToLocalStorage();
+      if (migratedStorage) {
+        await persistCentralConfigurationImmediately().catch((error) => {
+          console.warn('A migração local foi aplicada, mas ainda não pôde ser sincronizada.', error);
+        });
+      }
     }
 
     async function connectWeFrotasOnline() {
@@ -2806,6 +2818,7 @@
 
     function ensureSupplierCitiesRegistered() {
       const known = new Set(centralCities.map((city) => normalizeComparableText(city.name)));
+      let changed = false;
       allSuppliers.forEach((supplier) => {
         const name = String(supplier?.cidade || '').trim();
         const key = normalizeComparableText(name);
@@ -2819,7 +2832,9 @@
           featured: false
         });
         known.add(key);
+        changed = true;
       });
+      return changed;
     }
 
     function getDriverVehicleIds(driver) {
@@ -4289,7 +4304,7 @@
             ? { ...supplier, cidade: name }
             : supplier);
         }
-        await saveToLocalStorage();
+        await persistCentralConfigurationImmediately();
         renderAll();
         renderCentralCities();
         resetCentralCityForm();
@@ -4303,13 +4318,20 @@
       }
     }
 
-    function toggleCentralCity(id) {
+    async function toggleCentralCity(id) {
       const city = centralCities.find((item) => String(item.id) === String(id));
       if (!city) return;
       city.active = !city.active;
-      saveToLocalStorage();
-      renderCentralCities();
-      showToast(city.active ? 'Cidade ativada no aplicativo.' : 'Cidade ocultada do aplicativo.');
+      try {
+        await persistCentralConfigurationImmediately();
+        renderCentralCities();
+        showToast(city.active ? 'Cidade ativada no aplicativo.' : 'Cidade ocultada do aplicativo.');
+      } catch (error) {
+        city.active = !city.active;
+        await saveToLocalStorage().catch(() => {});
+        renderCentralCities();
+        showToast(error?.message || 'Não foi possível atualizar a cidade no aplicativo.');
+      }
     }
 
     function confirmDeleteCentralCity(id) {
@@ -4333,6 +4355,7 @@
     async function deleteCentralCity(id) {
       const city = centralCities.find((item) => String(item.id) === String(id));
       if (!city) return;
+      const cityIndex = centralCities.findIndex((item) => String(item.id) === String(id));
       const counts = getCentralCityStationCounts(city.name);
       if (counts.total > 0) {
         showToast('A cidade recebeu um vínculo e não pode mais ser excluída. Atualize os fornecedores primeiro.');
@@ -4340,13 +4363,19 @@
       }
       try {
         centralCities = centralCities.filter((item) => String(item.id) !== String(id));
-        await saveToLocalStorage();
+        await persistCentralConfigurationImmediately();
         if (document.getElementById('central-city-edit-id')?.value === String(id)) resetCentralCityForm();
         renderCentralCities();
         renderAll();
         showToast('Cidade excluída com sucesso.');
         if (city.fileId) window.WeFrotasBackend.deleteCentralCityImage(city.fileId).catch(() => {});
       } catch (error) {
+        if (!centralCities.some((item) => String(item.id) === String(id))) {
+          centralCities.splice(Math.max(0, cityIndex), 0, city);
+          await saveToLocalStorage().catch(() => {});
+          renderCentralCities();
+          renderAll();
+        }
         showToast(error?.message || 'Não foi possível excluir a cidade.');
       }
     }
