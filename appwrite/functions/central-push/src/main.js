@@ -36,6 +36,14 @@ const CENTRAL_STATION_DIRECTORY = Object.freeze([
   { name: 'Posto Diamante Negro', city: 'São Mateus', address: 'São Mateus, ES', mapsUrl: 'https://maps.app.goo.gl/caunq78awoUE6Nf96' },
   { name: 'Posto Damiani', city: 'São Mateus', address: 'São Mateus, ES', mapsUrl: 'https://maps.app.goo.gl/LiyUgK2LJwUFPsjm8' }
 ]);
+const CENTRAL_DEFAULT_CITIES = Object.freeze([
+  { id: 'city-boa-esperanca', name: 'Boa Esperança', imageUrl: 'https://gaveblue.com.br/postoscredenciados-covreecia/assets/cidades/boa-esperanca.jpeg', active: true, featured: false },
+  { id: 'city-montanha', name: 'Montanha', imageUrl: 'https://gaveblue.com.br/postoscredenciados-covreecia/assets/cidades/montanha.jpeg', active: true, featured: false },
+  { id: 'city-nova-venecia', name: 'Nova Venécia', imageUrl: 'https://gaveblue.com.br/postoscredenciados-covreecia/assets/cidades/nova-venecia.jpeg', active: true, featured: false },
+  { id: 'city-pedro-canario', name: 'Pedro Canário', imageUrl: 'https://gaveblue.com.br/postoscredenciados-covreecia/assets/cidades/pedro-canario.jpeg', active: true, featured: false },
+  { id: 'city-pinheiros', name: 'Pinheiros', imageUrl: 'https://gaveblue.com.br/postoscredenciados-covreecia/assets/cidades/pinheiros.jpeg', active: true, featured: true },
+  { id: 'city-sao-mateus', name: 'São Mateus', imageUrl: 'https://gaveblue.com.br/postoscredenciados-covreecia/assets/cidades/sao-mateus.jpeg', active: true, featured: false }
+]);
 
 function parseBody(req) {
   if (req.bodyJson && typeof req.bodyJson === 'object') return req.bodyJson;
@@ -535,7 +543,8 @@ async function listCentralDirectory(databases) {
     .filter((station) => station.name && station.city && station.address)
     .map((station) => ({ ...station, mapsUrl: /^https:\/\//i.test(station.mapsUrl) ? station.mapsUrl : '' }))
     .sort((a, b) => a.city.localeCompare(b.city, 'pt-BR') || a.name.localeCompare(b.name, 'pt-BR'));
-  const cities = (Array.isArray(snapshot?.centralCities) ? snapshot.centralCities : [])
+  const configuredCities = Array.isArray(snapshot?.centralCities) && snapshot.centralCities.length ? snapshot.centralCities : CENTRAL_DEFAULT_CITIES;
+  const cities = configuredCities
     .map((city) => ({
       id: String(city?.id || ''),
       name: String(city?.name || city?.nome || '').trim().slice(0, 120),
