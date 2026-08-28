@@ -44,6 +44,7 @@ const CENTRAL_DEFAULT_CITIES = Object.freeze([
   { id: 'city-pinheiros', name: 'Pinheiros', imageUrl: 'https://gaveblue.com.br/postoscredenciados-covreecia/assets/cidades/pinheiros.jpeg', active: true, featured: true },
   { id: 'city-sao-mateus', name: 'São Mateus', imageUrl: 'https://gaveblue.com.br/postoscredenciados-covreecia/assets/cidades/sao-mateus.jpeg', active: true, featured: false }
 ]);
+const CENTRAL_GENERIC_CITY_IMAGE_URL = 'https://gaveblue.com.br/postoscredenciados-covreecia/assets/home/buscar-postos.jpeg';
 
 function parseBody(req) {
   if (req.bodyJson && typeof req.bodyJson === 'object') return req.bodyJson;
@@ -544,11 +545,25 @@ async function listCentralDirectory(databases) {
     .map((station) => ({ ...station, mapsUrl: /^https:\/\//i.test(station.mapsUrl) ? station.mapsUrl : '' }))
     .sort((a, b) => a.city.localeCompare(b.city, 'pt-BR') || a.name.localeCompare(b.name, 'pt-BR'));
   const configuredCities = Array.isArray(snapshot?.centralCities) && snapshot.centralCities.length ? snapshot.centralCities : CENTRAL_DEFAULT_CITIES;
-  const cities = configuredCities
+  const configuredCityNames = new Set(configuredCities.map((city) => normalizeStationName(city?.name || city?.nome)));
+  const migratedSupplierCities = stations
+    .map((supplier) => String(supplier?.cidade || supplier?.cidadePosto || '').trim().slice(0, 120))
+    .filter((name) => name && !configuredCityNames.has(normalizeStationName(name)))
+    .map((name) => {
+      configuredCityNames.add(normalizeStationName(name));
+      return {
+        id: crypto.createHash('sha256').update(`central-city:${normalizeStationName(name)}`).digest('hex').slice(0, 36),
+        name,
+        imageUrl: CENTRAL_GENERIC_CITY_IMAGE_URL,
+        active: true,
+        featured: false
+      };
+    });
+  const cities = [...configuredCities, ...migratedSupplierCities]
     .map((city) => ({
       id: String(city?.id || ''),
       name: String(city?.name || city?.nome || '').trim().slice(0, 120),
-      imageUrl: String(city?.imageUrl || city?.imagemUrl || '').trim().slice(0, 1000),
+      imageUrl: String(city?.imageUrl || city?.imagemUrl || CENTRAL_GENERIC_CITY_IMAGE_URL).trim().slice(0, 1000),
       active: city?.active !== false && city?.ativo !== false,
       featured: city?.featured === true || city?.destaque === true
     }))
