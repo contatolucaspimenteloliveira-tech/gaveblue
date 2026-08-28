@@ -3360,10 +3360,15 @@
       const documentDigits = onlyDigits(payload.documento || '');
       const name = normalizeComparableText(payload.nome);
       const type = normalizeComparableText(payload.tipo);
+      const city = normalizeComparableText(payload.cidade);
       return allSuppliers.find((item) =>
         item.id !== ignoreId && (
           (documentDigits && onlyDigits(item.documento || '') === documentDigits) ||
-          (normalizeComparableText(item.nome) === name && normalizeComparableText(item.tipo) === type)
+          (
+            normalizeComparableText(item.nome) === name &&
+            normalizeComparableText(item.tipo) === type &&
+            (type !== 'posto' || normalizeComparableText(item.cidade) === city)
+          )
         )
       );
     }
@@ -4110,7 +4115,7 @@
     }
 
     function showCentralConfigSection(section = 'comunicacao', button = null) {
-      const allowedSections = new Set(['comunicacao', 'fluxos', 'integracoes']);
+      const allowedSections = new Set(['comunicacao', 'cidades', 'fluxos', 'integracoes']);
       activeCentralConfigSection = allowedSections.has(section) ? section : 'comunicacao';
       document.querySelectorAll('.central-config-view').forEach((view) => {
         view.classList.toggle('active', view.id === `central-config-${activeCentralConfigSection}`);
@@ -4122,6 +4127,194 @@
       });
       if (button) button.focus({ preventScroll: true });
       if (activeCentralConfigSection === 'comunicacao') loadCentralBanners();
+      if (activeCentralConfigSection === 'cidades') renderCentralCitiesAndStations();
+    }
+
+    function getCentralStationSuppliers() {
+      return allSuppliers
+        .filter((supplier) => normalizeComparableText(supplier.tipo) === 'posto')
+        .slice()
+        .sort((a, b) => {
+          const cityCompare = String(a.cidade || '').localeCompare(String(b.cidade || ''), 'pt-BR', { sensitivity: 'base' });
+          if (cityCompare !== 0) return cityCompare;
+          return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' });
+        });
+    }
+
+    function renderCentralCitiesAndStations() {
+      const list = document.getElementById('central-stations-list');
+      if (!list) return;
+      const stations = getCentralStationSuppliers();
+      if (!stations.length) {
+        list.innerHTML = '<div class="central-stations-empty"><strong>Nenhuma cidade publicada</strong><span>Cadastre o primeiro posto para disponibilizar uma cidade no aplicativo.</span></div>';
+        return;
+      }
+
+      const groups = new Map();
+      stations.forEach((station) => {
+        const city = String(station.cidade || '').trim() || 'Cidade não informada';
+        const key = normalizeComparableText(city);
+        if (!groups.has(key)) groups.set(key, { city, stations: [] });
+        groups.get(key).stations.push(station);
+      });
+
+      list.innerHTML = Array.from(groups.values()).map(({ city, stations: cityStations }) => {
+        const activeCount = cityStations.filter(isEntityActive).length;
+        const allActive = activeCount === cityStations.length;
+        return `
+          <section class="central-city-group">
+            <header class="central-city-group-head">
+              <div>
+                <strong>${escapeHtml(city)}</strong>
+                <span>${cityStations.length} ${cityStations.length === 1 ? 'posto cadastrado' : 'postos cadastrados'} · ${activeCount} ${activeCount === 1 ? 'visível' : 'visíveis'} no app</span>
+              </div>
+              <div class="central-city-group-actions">
+                <button type="button" class="central-station-action" data-city="${escapeHtml(city)}" onclick="renameCentralCity(this.dataset.city)">Renomear</button>
+                <button type="button" class="central-station-action" data-city="${escapeHtml(city)}" data-active="${allActive ? 'false' : 'true'}" onclick="toggleCentralCity(this.dataset.city, this.dataset.active === 'true')">${allActive ? 'Ocultar todos' : 'Ativar todos'}</button>
+              </div>
+            </header>
+            <div class="central-city-stations">
+              ${cityStations.map((station) => {
+                const active = isEntityActive(station);
+                const mapUrl = /^https?:\/\//i.test(String(station.mapaUrl || '').trim()) ? String(station.mapaUrl).trim() : '';
+                return `
+                  <article class="central-station-item${active ? '' : ' is-inactive'}">
+                    <div class="central-station-copy">
+                      <div><strong>${escapeHtml(station.nome || 'Posto sem nome')}</strong><span class="central-station-state ${active ? 'is-active' : ''}">${active ? 'Visível' : 'Oculto'}</span></div>
+                      <span>${escapeHtml(station.endereco || 'Endereço não informado')}</span>
+                      ${mapUrl ? `<a href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener noreferrer">Abrir endereço no mapa</a>` : ''}
+                    </div>
+                    <div class="central-station-actions">
+                      <button type="button" class="central-station-action" data-station-id="${escapeHtml(station.id)}" onclick="editCentralStation(this.dataset.stationId)">Editar</button>
+                      <button type="button" class="central-station-action ${active ? 'danger' : 'success'}" data-station-id="${escapeHtml(station.id)}" onclick="toggleCentralStation(this.dataset.stationId)">${active ? 'Ocultar' : 'Ativar'}</button>
+                    </div>
+                  </article>`;
+              }).join('')}
+            </div>
+          </section>`;
+      }).join('');
+    }
+
+    function setCentralStationFeedback(message, type = '') {
+      const feedback = document.getElementById('central-station-feedback');
+      if (!feedback) return;
+      feedback.textContent = message || '';
+      feedback.dataset.status = type;
+    }
+
+    function saveCentralStationFromSettings(event) {
+      event?.preventDefault();
+      const cityInput = document.getElementById('central-station-city');
+      const nameInput = document.getElementById('central-station-name');
+      const addressInput = document.getElementById('central-station-address');
+      const mapInput = document.getElementById('central-station-map-url');
+      const cidade = cityInput?.value.trim() || '';
+      const nome = nameInput?.value.trim() || '';
+      const endereco = addressInput?.value.trim() || '';
+      const mapaUrl = mapInput?.value.trim() || '';
+
+      if (!cidade || !nome || !endereco) {
+        setCentralStationFeedback('Preencha cidade, nome do posto e endereço.', 'error');
+        return;
+      }
+      if (mapaUrl && !/^https?:\/\//i.test(mapaUrl)) {
+        setCentralStationFeedback('Informe um link válido, iniciado por https://.', 'error');
+        return;
+      }
+      const duplicate = getCentralStationSuppliers().find((station) =>
+        normalizeComparableText(station.nome) === normalizeComparableText(nome) &&
+        normalizeComparableText(station.cidade) === normalizeComparableText(cidade)
+      );
+      if (duplicate) {
+        setCentralStationFeedback('Esse posto já está cadastrado nesta cidade.', 'error');
+        return;
+      }
+
+      allSuppliers.unshift({
+        id: generateId(),
+        nome,
+        tipo: 'posto',
+        tipoLabel: getSupplierTypeLabel('posto'),
+        documento: '',
+        telefone: '',
+        cidade,
+        endereco,
+        mapaUrl,
+        email: '',
+        observacoes: 'Publicado pelas Configurações da Central.',
+        ativo: true
+      });
+      saveToLocalStorage();
+      renderAll();
+      renderCentralCitiesAndStations();
+      if (cityInput) cityInput.value = '';
+      if (nameInput) nameInput.value = '';
+      if (addressInput) addressInput.value = '';
+      if (mapInput) mapInput.value = '';
+      setCentralStationFeedback('Posto publicado. A cidade será exibida automaticamente no aplicativo.', 'success');
+      showToast('Cidade e posto publicados no aplicativo.');
+    }
+
+    function editCentralStation(id) {
+      const supplier = allSuppliers.find((item) => String(item.id) === String(id));
+      if (!supplier || normalizeComparableText(supplier.tipo) !== 'posto') {
+        showToast('Posto não encontrado.');
+        return;
+      }
+      openSupplierEditor(supplier);
+    }
+
+    function toggleCentralStation(id) {
+      const supplier = allSuppliers.find((item) => String(item.id) === String(id));
+      if (!supplier || normalizeComparableText(supplier.tipo) !== 'posto') return;
+      supplier.ativo = !isEntityActive(supplier);
+      saveToLocalStorage();
+      renderAll();
+      renderCentralCitiesAndStations();
+      showToast(supplier.ativo ? 'Posto ativado no aplicativo.' : 'Posto ocultado do aplicativo.');
+    }
+
+    function toggleCentralCity(city, active) {
+      const cityKey = normalizeComparableText(city);
+      let changed = 0;
+      allSuppliers.forEach((supplier) => {
+        if (normalizeComparableText(supplier.tipo) === 'posto' && normalizeComparableText(supplier.cidade) === cityKey) {
+          supplier.ativo = Boolean(active);
+          changed += 1;
+        }
+      });
+      if (!changed) return;
+      saveToLocalStorage();
+      renderAll();
+      renderCentralCitiesAndStations();
+      showToast(active ? 'Cidade ativada no aplicativo.' : 'Cidade ocultada do aplicativo.');
+    }
+
+    function renameCentralCity(city) {
+      const originalCity = String(city || '').trim();
+      if (!originalCity) return;
+      openPromptModal({
+        title: 'Renomear cidade',
+        text: `O novo nome será aplicado a todos os postos cadastrados em ${originalCity}.`,
+        placeholder: 'Novo nome da cidade',
+        value: originalCity,
+        confirmLabel: 'Salvar cidade',
+        onConfirm: (value) => {
+          const newCity = String(value || '').trim();
+          if (!newCity) {
+            showToast('Informe o novo nome da cidade.');
+            return;
+          }
+          const cityKey = normalizeComparableText(originalCity);
+          allSuppliers.forEach((supplier) => {
+            if (normalizeComparableText(supplier.tipo) === 'posto' && normalizeComparableText(supplier.cidade) === cityKey) supplier.cidade = newCity;
+          });
+          saveToLocalStorage();
+          renderAll();
+          renderCentralCitiesAndStations();
+          showToast('Cidade atualizada no aplicativo.');
+        }
+      });
     }
 
     function showCentralSection(section = 'registros', button = null) {
@@ -4171,6 +4364,12 @@
     window.showCentralSubmodule = showCentralSubmodule;
     window.showCentralConfigSection = showCentralConfigSection;
     window.openCentralCommunicationFromSettings = openCentralCommunicationFromSettings;
+    window.renderCentralCitiesAndStations = renderCentralCitiesAndStations;
+    window.saveCentralStationFromSettings = saveCentralStationFromSettings;
+    window.editCentralStation = editCentralStation;
+    window.toggleCentralStation = toggleCentralStation;
+    window.toggleCentralCity = toggleCentralCity;
+    window.renameCentralCity = renameCentralCity;
 
     function showModule(module, button) {
       if (!hasWefrotasPermission('read')) {
@@ -11538,16 +11737,10 @@
       document.getElementById('modal-title').textContent = 'Editar motorista';
     }
 
-    function editSelectedSupplier() {
-      if (selectedSuppliers.size !== 1) {
-        showToast('Selecione apenas um fornecedor para editar.');
-        return;
-      }
-      const id = Array.from(selectedSuppliers)[0];
-      const supplier = allSuppliers.find(item => item.id === id);
+    function openSupplierEditor(supplier) {
       if (!supplier) return;
       openCadastroModal('supplier');
-      currentEditingId = id;
+      currentEditingId = supplier.id;
       document.getElementById('supplier-name').value = supplier.nome || '';
       document.getElementById('supplier-type').value = supplier.tipo || '';
       syncCustomSelectById('supplier-type');
@@ -11560,6 +11753,16 @@
       document.getElementById('supplier-notes').value = supplier.observacoes || '';
       document.getElementById('supplier-active').checked = isEntityActive(supplier);
       document.getElementById('modal-title').textContent = 'Editar fornecedor';
+    }
+
+    function editSelectedSupplier() {
+      if (selectedSuppliers.size !== 1) {
+        showToast('Selecione apenas um fornecedor para editar.');
+        return;
+      }
+      const id = Array.from(selectedSuppliers)[0];
+      const supplier = allSuppliers.find(item => item.id === id);
+      openSupplierEditor(supplier);
     }
 
     function editSelectedOrder() {
@@ -13077,7 +13280,7 @@
             return;
           }
         }
-        if (findSupplierDuplicate({ nome, tipo, documento }, currentEditingId)) {
+        if (findSupplierDuplicate({ nome, tipo, documento, cidade }, currentEditingId)) {
           showToast('Já existe um fornecedor igual cadastrado.');
           return;
         }
@@ -13093,6 +13296,7 @@
         }
         saveToLocalStorage();
         renderAll();
+        if (activeCentralConfigSection === 'cidades') renderCentralCitiesAndStations();
         closeCadastroModal();
       }
 
