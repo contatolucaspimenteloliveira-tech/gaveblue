@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260827-central-content-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260827-city-registry-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -764,7 +764,7 @@
 
               <div class="central-config-tabs" role="tablist" aria-label="Áreas de configuração da Central">
                 <button type="button" role="tab" aria-selected="true" class="central-config-tab active" data-central-config-section="comunicacao" onclick="showCentralConfigSection('comunicacao', this)">Banners</button>
-                <button type="button" role="tab" aria-selected="false" class="central-config-tab" data-central-config-section="cidades" onclick="showCentralConfigSection('cidades', this)">Cidades e postos</button>
+                <button type="button" role="tab" aria-selected="false" class="central-config-tab" data-central-config-section="cidades" onclick="showCentralConfigSection('cidades', this)">Cidades</button>
                 <button type="button" role="tab" aria-selected="false" class="central-config-tab" data-central-config-section="fluxos" onclick="showCentralConfigSection('fluxos', this)">Fluxos de registro</button>
                 <button type="button" role="tab" aria-selected="false" class="central-config-tab" data-central-config-section="integracoes" onclick="showCentralConfigSection('integracoes', this)">Integrações</button>
               </div>
@@ -809,40 +809,42 @@
 
               <div id="central-config-cidades" class="central-config-view">
                 <div class="central-communication-intro">
-                  <div><strong>Cidades e postos do aplicativo</strong><span>Cadastre postos credenciados, informe a cidade e controle quais opções aparecem para o motorista.</span></div>
+                  <div><strong>Cidades do aplicativo</strong><span>Cadastre as cidades, altere suas imagens e controle quais cards aparecem para o motorista.</span></div>
                   <span class="central-communication-status"><i></i> Sincronização automática</span>
                 </div>
-                <div class="central-communication-grid central-stations-management-grid">
+                <div class="central-communication-grid central-cities-management-grid">
                   <section class="central-communication-card">
-                    <div class="central-communication-card-head"><span>NOVO DESTINO</span><h3>Adicionar cidade e posto</h3><p>Ao publicar o primeiro posto de uma cidade, ela passa a aparecer automaticamente no aplicativo.</p></div>
-                    <form class="central-station-form" onsubmit="saveCentralStationFromSettings(event)">
+                    <div class="central-communication-card-head"><span>CADASTRO DE CIDADE</span><h3 id="central-city-form-title">Adicionar cidade</h3><p>Os postos são cadastrados separadamente em Fornecedores e vinculados a uma cidade desta lista.</p></div>
+                    <form class="central-city-form" onsubmit="saveCentralCityFromSettings(event)">
+                      <input type="hidden" id="central-city-edit-id">
                       <div class="settings-field-stack">
-                        <label class="settings-input-label" for="central-station-city">Cidade</label>
-                        <input type="text" id="central-station-city" class="settings-text-input" maxlength="80" placeholder="Ex.: Pinheiros" required>
+                        <label class="settings-input-label" for="central-city-name">Nome da cidade</label>
+                        <input type="text" id="central-city-name" class="settings-text-input" maxlength="80" placeholder="Ex.: Pinheiros" required>
                       </div>
-                      <div class="settings-field-stack">
-                        <label class="settings-input-label" for="central-station-name">Nome do posto</label>
-                        <input type="text" id="central-station-name" class="settings-text-input" maxlength="120" placeholder="Ex.: Auto Posto Central" required>
+                      <label class="central-banner-upload" for="central-city-image-file">
+                        <input id="central-city-image-file" type="file" accept="image/png,image/jpeg,image/webp" onchange="previewCentralCityImage()">
+                        <span>Escolher imagem da cidade</span>
+                        <small>Formato recomendado: 960 × 540 px (16:9).</small>
+                      </label>
+                      <div class="central-city-preview-shell">
+                        <div id="central-city-preview-placeholder" class="central-banner-preview-placeholder"><span>Prévia do card da cidade</span><small>A imagem será cortada em 16:9.</small></div>
+                        <img id="central-city-image-preview" class="central-banner-preview hidden" alt="Prévia da cidade">
                       </div>
-                      <div class="settings-field-stack">
-                        <label class="settings-input-label" for="central-station-address">Endereço</label>
-                        <input type="text" id="central-station-address" class="settings-text-input" maxlength="180" placeholder="Rua, número e bairro" required>
+                      <label class="central-city-active-field"><input id="central-city-active" type="checkbox" checked><span>Exibir esta cidade no aplicativo</span></label>
+                      <div class="central-city-form-actions">
+                        <button id="central-city-save" type="submit" class="settings-action-btn full active">Cadastrar cidade</button>
+                        <button id="central-city-cancel" type="button" class="settings-action-btn full hidden" onclick="resetCentralCityForm()">Cancelar edição</button>
                       </div>
-                      <div class="settings-field-stack">
-                        <label class="settings-input-label" for="central-station-map-url">Link do endereço no mapa <span>(opcional)</span></label>
-                        <input type="url" id="central-station-map-url" class="settings-text-input" maxlength="500" placeholder="https://maps.app.goo.gl/...">
-                      </div>
-                      <button id="central-station-save" type="submit" class="settings-action-btn full active">Publicar no aplicativo</button>
-                      <p id="central-station-feedback" class="settings-description !mb-0" role="status" aria-live="polite"></p>
+                      <p id="central-city-feedback" class="settings-description !mb-0" role="status" aria-live="polite"></p>
                     </form>
                   </section>
                   <section class="central-communication-card">
                     <div class="central-banner-list-head">
-                      <div class="central-communication-card-head"><span>DESTINOS DISPONÍVEIS</span><h3>Cidades no aplicativo</h3><p>Edite os dados ou oculte um posto sem apagar o histórico de registros.</p></div>
-                      <button type="button" class="settings-action-btn" onclick="renderCentralCitiesAndStations()">Atualizar</button>
+                      <div class="central-communication-card-head"><span>CARDS DO APLICATIVO</span><h3>Cidades cadastradas</h3><p>A quantidade considera somente postos ativos vinculados à cidade.</p></div>
+                      <button type="button" class="settings-action-btn" onclick="renderCentralCities()">Atualizar</button>
                     </div>
-                    <div id="central-stations-list" class="central-stations-list">
-                      <p class="settings-description">Abra esta tela para carregar as cidades e postos.</p>
+                    <div id="central-cities-list" class="central-cities-list">
+                      <p class="settings-description">Abra esta tela para carregar as cidades.</p>
                     </div>
                   </section>
                 </div>
@@ -1716,8 +1718,8 @@
 
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
-  <script src="./wefrotas-backend.js?v=20260827-access-policy-1"></script>
-  <script src="./wefrotas.js?v=20260827-central-content-1"></script>
+  <script src="./wefrotas-backend.js?v=20260827-city-registry-1"></script>
+  <script src="./wefrotas.js?v=20260827-city-registry-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

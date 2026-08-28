@@ -515,7 +515,7 @@ async function decodeWefrotasSnapshot(databases, storedValue) {
   return JSON.parse(value || '{}');
 }
 
-async function listCentralStations(databases) {
+async function listCentralDirectory(databases) {
   const row = await databases.getDocument({
     databaseId: DATABASE_ID,
     collectionId: WEFROTAS_TABLE_ID,
@@ -523,7 +523,7 @@ async function listCentralStations(databases) {
   });
   const snapshot = await decodeWefrotasSnapshot(databases, row?.snapshot);
   const stations = Array.isArray(snapshot?.suppliers) ? snapshot.suppliers : [];
-  return stations
+  const normalizedStations = stations
     .filter((supplier) => String(supplier?.tipo || '') === 'posto' && supplier?.ativo !== false)
     .map((supplier) => ({
       id: String(supplier?.id || ''),
@@ -535,6 +535,17 @@ async function listCentralStations(databases) {
     .filter((station) => station.name && station.city && station.address)
     .map((station) => ({ ...station, mapsUrl: /^https:\/\//i.test(station.mapsUrl) ? station.mapsUrl : '' }))
     .sort((a, b) => a.city.localeCompare(b.city, 'pt-BR') || a.name.localeCompare(b.name, 'pt-BR'));
+  const cities = (Array.isArray(snapshot?.centralCities) ? snapshot.centralCities : [])
+    .map((city) => ({
+      id: String(city?.id || ''),
+      name: String(city?.name || city?.nome || '').trim().slice(0, 120),
+      imageUrl: String(city?.imageUrl || city?.imagemUrl || '').trim().slice(0, 1000),
+      active: city?.active !== false && city?.ativo !== false,
+      featured: city?.featured === true || city?.destaque === true
+    }))
+    .filter((city) => city.name && city.imageUrl)
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  return { stations: normalizedStations, cities };
 }
 
 function normalizeStationName(value) {
@@ -1220,8 +1231,8 @@ export default async ({ req, res, log, error }) => {
 
     if (action === 'stations') {
       const databases = createDatabaseClient(req);
-      const stations = await listCentralStations(databases);
-      return json(res, 200, { ok: true, stations, updatedAt: new Date().toISOString() });
+      const directory = await listCentralDirectory(databases);
+      return json(res, 200, { ok: true, ...directory, updatedAt: new Date().toISOString() });
     }
 
     if (action === 'migrate-central-stations') {

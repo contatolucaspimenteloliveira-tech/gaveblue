@@ -583,6 +583,29 @@
     };
   }
 
+  async function uploadCentralCityImage(file) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online antes de enviar imagens de cidades.');
+    assertPermission('manageSettings', 'Seu perfil não permite alterar as cidades da Central.');
+    if (!file || !String(file.type || '').startsWith('image/')) throw new Error('Selecione uma imagem válida para a cidade.');
+    const uploaded = await storage.createFile({
+      bucketId: config.bucketId,
+      fileId: global.Appwrite.ID.unique(),
+      file,
+      permissions: getPublicBannerFilePermissions()
+    });
+    return {
+      fileId: uploaded.$id,
+      imageUrl: String(storage.getFileView({ bucketId: config.bucketId, fileId: uploaded.$id }))
+    };
+  }
+
+  async function deleteCentralCityImage(fileId) {
+    if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir imagens de cidades.');
+    assertPermission('manageSettings', 'Seu perfil não permite alterar as cidades da Central.');
+    if (!fileId || String(fileId).startsWith('builtin:')) return;
+    return storage.deleteFile({ bucketId: config.bucketId, fileId });
+  }
+
   async function deleteCentralBannerFile(fileId) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para excluir banners.');
     assertPermission('manageSettings', 'Seu perfil não permite excluir banners.');
@@ -724,7 +747,7 @@
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
     syncNow,
     uploadReceipt, uploadVehicleImage, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord,
-    uploadCentralBanner, deleteCentralBannerFile, listCentralHomeBanners,
+    uploadCentralBanner, deleteCentralBannerFile, uploadCentralCityImage, deleteCentralCityImage, listCentralHomeBanners,
     createCentralHomeBanner, upsertCentralHomeBanner, updateCentralHomeBanner, deleteCentralHomeBanner,
     syncCentralDriverDirectory
   });

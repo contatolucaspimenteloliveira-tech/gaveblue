@@ -649,22 +649,24 @@ async function executeCentralPushFunction(payload, retryOptions = {}) {
 function refreshCentralStationCityOptions() {
   const select = document.getElementById('fuel-city');
   if (!select) return;
-  const existing = new Set(Array.from(select.options).map((option) => option.value));
+  const selected = select.value;
+  select.innerHTML = '<option value="">Selecione uma cidade</option>';
   Object.keys(postosPorCidade).sort((a, b) => a.localeCompare(b, 'pt-BR')).forEach((city) => {
-    if (existing.has(city)) return;
     const option = document.createElement('option');
     option.value = city;
     option.textContent = city;
     option.dataset.centralManaged = 'true';
     select.appendChild(option);
   });
+  if (Object.prototype.hasOwnProperty.call(postosPorCidade, selected)) select.value = selected;
 }
 
 async function loadManagedCentralStations() {
   try {
     const result = await executeCentralPushFunction({ action: 'stations' });
     const stations = Array.isArray(result?.stations) ? result.stations : [];
-    if (!stations.length) return false;
+    const cities = Array.isArray(result?.cities) ? result.cities : [];
+    if (!stations.length && !cities.length) return false;
 
     const nextDirectory = {};
     stations.forEach((station) => {
@@ -680,8 +682,16 @@ async function loadManagedCentralStations() {
       });
     });
 
-    if (!Object.keys(nextDirectory).length) return false;
     postosPorCidade = nextDirectory;
+    if (cities.length) {
+      cityImageCards = cities
+        .filter((city) => city?.active !== false && String(city?.name || '').trim() && String(city?.imageUrl || '').trim())
+        .map((city) => ({
+          name: String(city.name).trim(),
+          image: String(city.imageUrl).trim(),
+          featured: city?.featured === true
+        }));
+    }
     refreshCentralStationCityOptions();
     renderCityImageCards();
     return true;
@@ -5151,7 +5161,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   });
 });
 
-const cityImageCards = [
+let cityImageCards = [
   {
     name: 'Boa Esperan\u00e7a',
     image: 'assets/cidades/boa-esperanca.jpeg',
@@ -5196,14 +5206,12 @@ function renderCityImageCards() {
   grid.className = 'city-card-grid';
   grid.innerHTML = '';
 
-  const availableCards = cityImageCards
-    .filter((city) => Array.isArray(postosPorCidade[city.name]) && postosPorCidade[city.name].length)
-    .map((city) => ({
+  const availableCards = cityImageCards.map((city) => ({
       ...city,
-      postos: `${postosPorCidade[city.name].length} posto${postosPorCidade[city.name].length === 1 ? '' : 's'}`
+      postos: `${(postosPorCidade[city.name] || []).length} posto${(postosPorCidade[city.name] || []).length === 1 ? '' : 's'}`
     }));
 
-  (availableCards.length ? availableCards : cityImageCards).forEach((city) => {
+  availableCards.forEach((city) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'city-image-card';

@@ -1,6 +1,7 @@
 ﻿let allVehicles = [];
     let allDrivers = [];
     let allSuppliers = [];
+    let centralCities = [];
     let allOrders = [];
     let allFinanceEntries = [];
     let allAdministrations = [];
@@ -29,6 +30,14 @@
       { rowId: 'builtin-sinalizacao', fileId: 'builtin:mobile-sinalizacao', title: 'Atenção à sinalização', path: 'mobile-sinalizacao.jpeg', sortOrder: 7 },
       { rowId: 'builtin-celular-volante', fileId: 'builtin:mobile-celular-volante', title: 'Não use o celular ao volante', path: 'mobile-celular-volante.jpeg', sortOrder: 8 },
       { rowId: 'builtin-agosto-lilas', fileId: 'builtin:mobile-agosto-lilas', title: 'Agosto Lilás', path: 'mobile-agosto-lilas.jpg', sortOrder: 9 }
+    ]);
+    const CENTRAL_DEFAULT_CITIES = Object.freeze([
+      { id: 'city-boa-esperanca', name: 'Boa Esperança', imageUrl: new URL('../postoscredenciados-covreecia/assets/cidades/boa-esperanca.jpeg', window.location.href).href, fileId: 'builtin:city-boa-esperanca', active: true },
+      { id: 'city-montanha', name: 'Montanha', imageUrl: new URL('../postoscredenciados-covreecia/assets/cidades/montanha.jpeg', window.location.href).href, fileId: 'builtin:city-montanha', active: true },
+      { id: 'city-nova-venecia', name: 'Nova Venécia', imageUrl: new URL('../postoscredenciados-covreecia/assets/cidades/nova-venecia.jpeg', window.location.href).href, fileId: 'builtin:city-nova-venecia', active: true },
+      { id: 'city-pedro-canario', name: 'Pedro Canário', imageUrl: new URL('../postoscredenciados-covreecia/assets/cidades/pedro-canario.jpeg', window.location.href).href, fileId: 'builtin:city-pedro-canario', active: true },
+      { id: 'city-pinheiros', name: 'Pinheiros', imageUrl: new URL('../postoscredenciados-covreecia/assets/cidades/pinheiros.jpeg', window.location.href).href, fileId: 'builtin:city-pinheiros', active: true, featured: true },
+      { id: 'city-sao-mateus', name: 'São Mateus', imageUrl: new URL('../postoscredenciados-covreecia/assets/cidades/sao-mateus.jpeg', window.location.href).href, fileId: 'builtin:city-sao-mateus', active: true }
     ]);
     const CENTRAL_DEFAULT_BANNERS_MIGRATION = Object.freeze({
       rowId: 'builtin-migration-v1',
@@ -1559,6 +1568,7 @@
         vehicles: allVehicles,
         drivers: allDrivers,
         suppliers: allSuppliers,
+        centralCities,
         orders: allOrders,
         finance: allFinanceEntries,
         administrations: allAdministrations,
@@ -1589,6 +1599,10 @@
       allVehicles = Array.isArray(snapshot.vehicles) ? snapshot.vehicles.map(normalizeVehicleRecord) : [];
       allDrivers = Array.isArray(snapshot.drivers) ? snapshot.drivers.map(normalizeDriverRecord) : [];
       allSuppliers = Array.isArray(snapshot.suppliers) ? snapshot.suppliers.map(normalizeSupplierRecord) : [];
+      centralCities = Array.isArray(snapshot.centralCities) && snapshot.centralCities.length
+        ? snapshot.centralCities.map(normalizeCentralCityRecord).filter((city) => city.name)
+        : CENTRAL_DEFAULT_CITIES.map((city) => ({ ...city }));
+      ensureSupplierCitiesRegistered();
       allOrders = Array.isArray(snapshot.orders) ? snapshot.orders : [];
       allFinanceEntries = Array.isArray(snapshot.finance) ? snapshot.finance : [];
       allAdministrations = normalizeAdministrationList(snapshot.administrations || snapshot.administracoes || []);
@@ -1614,6 +1628,7 @@
         vehicles: parseLocalStorageJson('wefrotas_vehicles', []),
         drivers: parseLocalStorageJson('wefrotas_drivers', []),
         suppliers: parseLocalStorageJson('wefrotas_suppliers', []),
+        centralCities: parseLocalStorageJson('wefrotas_central_cities', []),
         orders: parseLocalStorageJson('wefrotas_orders', []),
         finance: parseLocalStorageJson('wefrotas_finance', []),
         administrations: parseLocalStorageJson('wefrotas_administrations', []),
@@ -1640,6 +1655,7 @@
         localStorage.setItem('wefrotas_allow_manual_order_number_editing', snapshot.allowManualOrderNumberEditing ? 'true' : 'false');
         localStorage.setItem('wefrotas_administrations', JSON.stringify(snapshot.administrations || []));
         localStorage.setItem('wefrotas_central_device_links', JSON.stringify(snapshot.centralDeviceLinks || {}));
+        localStorage.setItem('wefrotas_central_cities', JSON.stringify(snapshot.centralCities || []));
       } catch (error) {
         console.warn('Não foi possível salvar preferências pequenas no localStorage.', error);
       }
@@ -1650,6 +1666,7 @@
         localStorage.setItem('wefrotas_vehicles', JSON.stringify(snapshot.vehicles || []));
         localStorage.setItem('wefrotas_drivers', JSON.stringify(snapshot.drivers || []));
         localStorage.setItem('wefrotas_suppliers', JSON.stringify(snapshot.suppliers || []));
+        localStorage.setItem('wefrotas_central_cities', JSON.stringify(snapshot.centralCities || []));
         localStorage.setItem('wefrotas_orders', JSON.stringify(snapshot.orders || []));
         localStorage.setItem('wefrotas_finance', JSON.stringify(snapshot.finance || []));
         localStorage.setItem('wefrotas_administrations', JSON.stringify(snapshot.administrations || []));
@@ -2774,6 +2791,35 @@
         endereco: String(supplier?.endereco || supplier?.address || '').trim(),
         mapaUrl: String(supplier?.mapaUrl || supplier?.linkMapa || supplier?.mapLink || '').trim()
       };
+    }
+
+    function normalizeCentralCityRecord(city) {
+      return {
+        id: String(city?.id || generateId()),
+        name: String(city?.name || city?.nome || '').trim(),
+        imageUrl: String(city?.imageUrl || city?.imagemUrl || '').trim(),
+        fileId: String(city?.fileId || '').trim(),
+        active: city?.active !== false && city?.ativo !== false,
+        featured: city?.featured === true || city?.destaque === true
+      };
+    }
+
+    function ensureSupplierCitiesRegistered() {
+      const known = new Set(centralCities.map((city) => normalizeComparableText(city.name)));
+      allSuppliers.forEach((supplier) => {
+        const name = String(supplier?.cidade || '').trim();
+        const key = normalizeComparableText(name);
+        if (!name || !key || known.has(key)) return;
+        centralCities.push({
+          id: generateId(),
+          name,
+          imageUrl: new URL('../postoscredenciados-covreecia/assets/home/buscar-postos.jpeg', window.location.href).href,
+          fileId: 'builtin:city-generic',
+          active: true,
+          featured: false
+        });
+        known.add(key);
+      });
     }
 
     function getDriverVehicleIds(driver) {
@@ -4127,194 +4173,142 @@
       });
       if (button) button.focus({ preventScroll: true });
       if (activeCentralConfigSection === 'comunicacao') loadCentralBanners();
-      if (activeCentralConfigSection === 'cidades') renderCentralCitiesAndStations();
+      if (activeCentralConfigSection === 'cidades') renderCentralCities();
     }
 
-    function getCentralStationSuppliers() {
-      return allSuppliers
-        .filter((supplier) => normalizeComparableText(supplier.tipo) === 'posto')
-        .slice()
-        .sort((a, b) => {
-          const cityCompare = String(a.cidade || '').localeCompare(String(b.cidade || ''), 'pt-BR', { sensitivity: 'base' });
-          if (cityCompare !== 0) return cityCompare;
-          return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' });
-        });
+    function getCentralCityStationCounts(cityName) {
+      const key = normalizeComparableText(cityName);
+      const linked = allSuppliers.filter((supplier) => normalizeComparableText(supplier.tipo) === 'posto' && normalizeComparableText(supplier.cidade) === key);
+      return { total: linked.length, active: linked.filter(isEntityActive).length };
     }
 
-    function renderCentralCitiesAndStations() {
-      const list = document.getElementById('central-stations-list');
+    function renderCentralCities() {
+      const list = document.getElementById('central-cities-list');
       if (!list) return;
-      const stations = getCentralStationSuppliers();
-      if (!stations.length) {
-        list.innerHTML = '<div class="central-stations-empty"><strong>Nenhuma cidade publicada</strong><span>Cadastre o primeiro posto para disponibilizar uma cidade no aplicativo.</span></div>';
+      const cities = centralCities.slice().sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+      if (!cities.length) {
+        list.innerHTML = '<div class="central-stations-empty"><strong>Nenhuma cidade cadastrada</strong><span>Cadastre uma cidade para depois vinculá-la aos postos em Fornecedores.</span></div>';
         return;
       }
-
-      const groups = new Map();
-      stations.forEach((station) => {
-        const city = String(station.cidade || '').trim() || 'Cidade não informada';
-        const key = normalizeComparableText(city);
-        if (!groups.has(key)) groups.set(key, { city, stations: [] });
-        groups.get(key).stations.push(station);
-      });
-
-      list.innerHTML = Array.from(groups.values()).map(({ city, stations: cityStations }) => {
-        const activeCount = cityStations.filter(isEntityActive).length;
-        const allActive = activeCount === cityStations.length;
+      list.innerHTML = cities.map((city) => {
+        const counts = getCentralCityStationCounts(city.name);
         return `
-          <section class="central-city-group">
-            <header class="central-city-group-head">
-              <div>
-                <strong>${escapeHtml(city)}</strong>
-                <span>${cityStations.length} ${cityStations.length === 1 ? 'posto cadastrado' : 'postos cadastrados'} · ${activeCount} ${activeCount === 1 ? 'visível' : 'visíveis'} no app</span>
-              </div>
-              <div class="central-city-group-actions">
-                <button type="button" class="central-station-action" data-city="${escapeHtml(city)}" onclick="renameCentralCity(this.dataset.city)">Renomear</button>
-                <button type="button" class="central-station-action" data-city="${escapeHtml(city)}" data-active="${allActive ? 'false' : 'true'}" onclick="toggleCentralCity(this.dataset.city, this.dataset.active === 'true')">${allActive ? 'Ocultar todos' : 'Ativar todos'}</button>
-              </div>
-            </header>
-            <div class="central-city-stations">
-              ${cityStations.map((station) => {
-                const active = isEntityActive(station);
-                const mapUrl = /^https?:\/\//i.test(String(station.mapaUrl || '').trim()) ? String(station.mapaUrl).trim() : '';
-                return `
-                  <article class="central-station-item${active ? '' : ' is-inactive'}">
-                    <div class="central-station-copy">
-                      <div><strong>${escapeHtml(station.nome || 'Posto sem nome')}</strong><span class="central-station-state ${active ? 'is-active' : ''}">${active ? 'Visível' : 'Oculto'}</span></div>
-                      <span>${escapeHtml(station.endereco || 'Endereço não informado')}</span>
-                      ${mapUrl ? `<a href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener noreferrer">Abrir endereço no mapa</a>` : ''}
-                    </div>
-                    <div class="central-station-actions">
-                      <button type="button" class="central-station-action" data-station-id="${escapeHtml(station.id)}" onclick="editCentralStation(this.dataset.stationId)">Editar</button>
-                      <button type="button" class="central-station-action ${active ? 'danger' : 'success'}" data-station-id="${escapeHtml(station.id)}" onclick="toggleCentralStation(this.dataset.stationId)">${active ? 'Ocultar' : 'Ativar'}</button>
-                    </div>
-                  </article>`;
-              }).join('')}
+          <article class="central-city-item${city.active ? '' : ' is-inactive'}">
+            <img src="${escapeHtml(city.imageUrl)}" alt="${escapeHtml(city.name)}">
+            <div class="central-city-item-copy">
+              <div><strong>${escapeHtml(city.name)}</strong><span class="central-station-state ${city.active ? 'is-active' : ''}">${city.active ? 'Visível' : 'Oculta'}</span></div>
+              <span>${counts.active} ${counts.active === 1 ? 'posto ativo' : 'postos ativos'} · ${counts.total} ${counts.total === 1 ? 'vinculado' : 'vinculados'} no cadastro</span>
             </div>
-          </section>`;
+            <div class="central-station-actions">
+              <button type="button" class="central-station-action" data-city-id="${escapeHtml(city.id)}" onclick="editCentralCity(this.dataset.cityId)">Editar</button>
+              <button type="button" class="central-station-action ${city.active ? 'danger' : 'success'}" data-city-id="${escapeHtml(city.id)}" onclick="toggleCentralCity(this.dataset.cityId)">${city.active ? 'Ocultar' : 'Ativar'}</button>
+            </div>
+          </article>`;
       }).join('');
     }
 
-    function setCentralStationFeedback(message, type = '') {
-      const feedback = document.getElementById('central-station-feedback');
+    function setCentralCityFeedback(message, type = '') {
+      const feedback = document.getElementById('central-city-feedback');
       if (!feedback) return;
       feedback.textContent = message || '';
       feedback.dataset.status = type;
     }
 
-    function saveCentralStationFromSettings(event) {
+    function previewCentralCityImage() {
+      const file = document.getElementById('central-city-image-file')?.files?.[0];
+      if (!file) return;
+      const preview = document.getElementById('central-city-image-preview');
+      const placeholder = document.getElementById('central-city-preview-placeholder');
+      if (!preview) return;
+      preview.src = URL.createObjectURL(file);
+      preview.classList.remove('hidden');
+      placeholder?.classList.add('hidden');
+    }
+
+    function resetCentralCityForm() {
+      const editId = document.getElementById('central-city-edit-id');
+      const name = document.getElementById('central-city-name');
+      const file = document.getElementById('central-city-image-file');
+      const active = document.getElementById('central-city-active');
+      const preview = document.getElementById('central-city-image-preview');
+      if (editId) editId.value = '';
+      if (name) name.value = '';
+      if (file) file.value = '';
+      if (active) active.checked = true;
+      if (preview) { preview.src = ''; preview.classList.add('hidden'); }
+      document.getElementById('central-city-preview-placeholder')?.classList.remove('hidden');
+      const title = document.getElementById('central-city-form-title');
+      const save = document.getElementById('central-city-save');
+      if (title) title.textContent = 'Adicionar cidade';
+      if (save) save.textContent = 'Cadastrar cidade';
+      document.getElementById('central-city-cancel')?.classList.add('hidden');
+      setCentralCityFeedback('');
+    }
+
+    function editCentralCity(id) {
+      const city = centralCities.find((item) => String(item.id) === String(id));
+      if (!city) return;
+      document.getElementById('central-city-edit-id').value = city.id;
+      document.getElementById('central-city-name').value = city.name;
+      document.getElementById('central-city-active').checked = city.active;
+      const preview = document.getElementById('central-city-image-preview');
+      if (preview) { preview.src = city.imageUrl; preview.classList.remove('hidden'); }
+      document.getElementById('central-city-preview-placeholder')?.classList.add('hidden');
+      document.getElementById('central-city-form-title').textContent = 'Editar cidade';
+      document.getElementById('central-city-save').textContent = 'Salvar alterações';
+      document.getElementById('central-city-cancel')?.classList.remove('hidden');
+      document.getElementById('central-city-name')?.focus();
+    }
+
+    async function saveCentralCityFromSettings(event) {
       event?.preventDefault();
-      const cityInput = document.getElementById('central-station-city');
-      const nameInput = document.getElementById('central-station-name');
-      const addressInput = document.getElementById('central-station-address');
-      const mapInput = document.getElementById('central-station-map-url');
-      const cidade = cityInput?.value.trim() || '';
-      const nome = nameInput?.value.trim() || '';
-      const endereco = addressInput?.value.trim() || '';
-      const mapaUrl = mapInput?.value.trim() || '';
-
-      if (!cidade || !nome || !endereco) {
-        setCentralStationFeedback('Preencha cidade, nome do posto e endereço.', 'error');
-        return;
+      const editId = document.getElementById('central-city-edit-id')?.value || '';
+      const name = document.getElementById('central-city-name')?.value.trim() || '';
+      const active = document.getElementById('central-city-active')?.checked !== false;
+      const file = document.getElementById('central-city-image-file')?.files?.[0] || null;
+      const current = centralCities.find((item) => String(item.id) === String(editId));
+      if (!name) return setCentralCityFeedback('Informe o nome da cidade.', 'error');
+      if (centralCities.some((city) => city.id !== editId && normalizeComparableText(city.name) === normalizeComparableText(name))) {
+        return setCentralCityFeedback('Esta cidade já está cadastrada.', 'error');
       }
-      if (mapaUrl && !/^https?:\/\//i.test(mapaUrl)) {
-        setCentralStationFeedback('Informe um link válido, iniciado por https://.', 'error');
-        return;
-      }
-      const duplicate = getCentralStationSuppliers().find((station) =>
-        normalizeComparableText(station.nome) === normalizeComparableText(nome) &&
-        normalizeComparableText(station.cidade) === normalizeComparableText(cidade)
-      );
-      if (duplicate) {
-        setCentralStationFeedback('Esse posto já está cadastrado nesta cidade.', 'error');
-        return;
-      }
+      if (!current && !file) return setCentralCityFeedback('Escolha a imagem que será exibida no card da cidade.', 'error');
 
-      allSuppliers.unshift({
-        id: generateId(),
-        nome,
-        tipo: 'posto',
-        tipoLabel: getSupplierTypeLabel('posto'),
-        documento: '',
-        telefone: '',
-        cidade,
-        endereco,
-        mapaUrl,
-        email: '',
-        observacoes: 'Publicado pelas Configurações da Central.',
-        ativo: true
-      });
-      saveToLocalStorage();
-      renderAll();
-      renderCentralCitiesAndStations();
-      if (cityInput) cityInput.value = '';
-      if (nameInput) nameInput.value = '';
-      if (addressInput) addressInput.value = '';
-      if (mapInput) mapInput.value = '';
-      setCentralStationFeedback('Posto publicado. A cidade será exibida automaticamente no aplicativo.', 'success');
-      showToast('Cidade e posto publicados no aplicativo.');
-    }
-
-    function editCentralStation(id) {
-      const supplier = allSuppliers.find((item) => String(item.id) === String(id));
-      if (!supplier || normalizeComparableText(supplier.tipo) !== 'posto') {
-        showToast('Posto não encontrado.');
-        return;
-      }
-      openSupplierEditor(supplier);
-    }
-
-    function toggleCentralStation(id) {
-      const supplier = allSuppliers.find((item) => String(item.id) === String(id));
-      if (!supplier || normalizeComparableText(supplier.tipo) !== 'posto') return;
-      supplier.ativo = !isEntityActive(supplier);
-      saveToLocalStorage();
-      renderAll();
-      renderCentralCitiesAndStations();
-      showToast(supplier.ativo ? 'Posto ativado no aplicativo.' : 'Posto ocultado do aplicativo.');
-    }
-
-    function toggleCentralCity(city, active) {
-      const cityKey = normalizeComparableText(city);
-      let changed = 0;
-      allSuppliers.forEach((supplier) => {
-        if (normalizeComparableText(supplier.tipo) === 'posto' && normalizeComparableText(supplier.cidade) === cityKey) {
-          supplier.ativo = Boolean(active);
-          changed += 1;
+      const saveButton = document.getElementById('central-city-save');
+      if (saveButton) saveButton.disabled = true;
+      setCentralCityFeedback('Salvando cidade e sincronizando o aplicativo...');
+      try {
+        let uploaded = current ? { fileId: current.fileId, imageUrl: current.imageUrl } : null;
+        if (file) uploaded = await window.WeFrotasBackend.uploadCentralCityImage(file);
+        if (!uploaded?.imageUrl) throw new Error('Não foi possível salvar a imagem da cidade.');
+        const previousName = current?.name || '';
+        const next = { id: current?.id || generateId(), name, active, featured: current?.featured === true, fileId: uploaded.fileId, imageUrl: uploaded.imageUrl };
+        centralCities = current ? centralCities.map((city) => city.id === current.id ? next : city) : [...centralCities, next];
+        if (current && normalizeComparableText(previousName) !== normalizeComparableText(name)) {
+          allSuppliers = allSuppliers.map((supplier) => normalizeComparableText(supplier.tipo) === 'posto' && normalizeComparableText(supplier.cidade) === normalizeComparableText(previousName)
+            ? { ...supplier, cidade: name }
+            : supplier);
         }
-      });
-      if (!changed) return;
-      saveToLocalStorage();
-      renderAll();
-      renderCentralCitiesAndStations();
-      showToast(active ? 'Cidade ativada no aplicativo.' : 'Cidade ocultada do aplicativo.');
+        await saveToLocalStorage();
+        renderAll();
+        renderCentralCities();
+        resetCentralCityForm();
+        setCentralCityFeedback(current ? 'Cidade atualizada no aplicativo.' : 'Cidade cadastrada no aplicativo.', 'success');
+        showToast(current ? 'Cidade atualizada com sucesso.' : 'Cidade cadastrada com sucesso.');
+        if (file && current?.fileId && current.fileId !== uploaded.fileId) window.WeFrotasBackend.deleteCentralCityImage(current.fileId).catch(() => {});
+      } catch (error) {
+        setCentralCityFeedback(error?.message || 'Não foi possível salvar a cidade.', 'error');
+      } finally {
+        if (saveButton) saveButton.disabled = false;
+      }
     }
 
-    function renameCentralCity(city) {
-      const originalCity = String(city || '').trim();
-      if (!originalCity) return;
-      openPromptModal({
-        title: 'Renomear cidade',
-        text: `O novo nome será aplicado a todos os postos cadastrados em ${originalCity}.`,
-        placeholder: 'Novo nome da cidade',
-        value: originalCity,
-        confirmLabel: 'Salvar cidade',
-        onConfirm: (value) => {
-          const newCity = String(value || '').trim();
-          if (!newCity) {
-            showToast('Informe o novo nome da cidade.');
-            return;
-          }
-          const cityKey = normalizeComparableText(originalCity);
-          allSuppliers.forEach((supplier) => {
-            if (normalizeComparableText(supplier.tipo) === 'posto' && normalizeComparableText(supplier.cidade) === cityKey) supplier.cidade = newCity;
-          });
-          saveToLocalStorage();
-          renderAll();
-          renderCentralCitiesAndStations();
-          showToast('Cidade atualizada no aplicativo.');
-        }
-      });
+    function toggleCentralCity(id) {
+      const city = centralCities.find((item) => String(item.id) === String(id));
+      if (!city) return;
+      city.active = !city.active;
+      saveToLocalStorage();
+      renderCentralCities();
+      showToast(city.active ? 'Cidade ativada no aplicativo.' : 'Cidade ocultada do aplicativo.');
     }
 
     function showCentralSection(section = 'registros', button = null) {
@@ -4364,12 +4358,12 @@
     window.showCentralSubmodule = showCentralSubmodule;
     window.showCentralConfigSection = showCentralConfigSection;
     window.openCentralCommunicationFromSettings = openCentralCommunicationFromSettings;
-    window.renderCentralCitiesAndStations = renderCentralCitiesAndStations;
-    window.saveCentralStationFromSettings = saveCentralStationFromSettings;
-    window.editCentralStation = editCentralStation;
-    window.toggleCentralStation = toggleCentralStation;
+    window.renderCentralCities = renderCentralCities;
+    window.previewCentralCityImage = previewCentralCityImage;
+    window.saveCentralCityFromSettings = saveCentralCityFromSettings;
+    window.editCentralCity = editCentralCity;
     window.toggleCentralCity = toggleCentralCity;
-    window.renameCentralCity = renameCentralCity;
+    window.resetCentralCityForm = resetCentralCityForm;
 
     function showModule(module, button) {
       if (!hasWefrotasPermission('read')) {
@@ -5029,7 +5023,10 @@
           </div>
           <div class="field-wrap">
             <label>Cidade do posto</label>
-            <input class="soft-input w-full" id="supplier-city" placeholder="Ex.: Pinheiros">
+            <select class="soft-input w-full" id="supplier-city">
+              <option value="">Selecione uma cidade cadastrada</option>
+              ${centralCities.filter((city) => city.active).slice().sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')).map((city) => `<option value="${escapeHtml(city.name)}">${escapeHtml(city.name)}</option>`).join('')}
+            </select>
           </div>
           <div class="field-wrap full">
             <label>Endereço</label>
@@ -11746,7 +11743,11 @@
       syncCustomSelectById('supplier-type');
       document.getElementById('supplier-document').value = supplier.documento || '';
       document.getElementById('supplier-phone').value = supplier.telefone || '';
-      document.getElementById('supplier-city').value = supplier.cidade || '';
+      const supplierCitySelect = document.getElementById('supplier-city');
+      if (supplierCitySelect && supplier.cidade && !Array.from(supplierCitySelect.options).some((option) => option.value === supplier.cidade)) {
+        supplierCitySelect.add(new Option(`${supplier.cidade} (cidade oculta)`, supplier.cidade));
+      }
+      if (supplierCitySelect) supplierCitySelect.value = supplier.cidade || '';
       document.getElementById('supplier-address').value = supplier.endereco || '';
       document.getElementById('supplier-map-url').value = supplier.mapaUrl || '';
       document.getElementById('supplier-email').value = supplier.email || '';
@@ -13296,7 +13297,7 @@
         }
         saveToLocalStorage();
         renderAll();
-        if (activeCentralConfigSection === 'cidades') renderCentralCitiesAndStations();
+        if (activeCentralConfigSection === 'cidades') renderCentralCities();
         closeCadastroModal();
       }
 
