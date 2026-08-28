@@ -24,6 +24,7 @@ const CENTRAL_APPWRITE_WORKSPACE_ID = 'covre-e-cia';
 const CENTRAL_APPWRITE_ORIGIN = 'postoscredenciados-covreecia';
 const CENTRAL_APPWRITE_RETRY_KEY = 'postoscredenciados-covreecia:appwrite-pending-record';
 const CENTRAL_DRIVER_DIRECTORY_CACHE_KEY = 'postoscredenciados-covreecia:driver-directory-cache-v1';
+const CENTRAL_STATION_DIRECTORY_CACHE_KEY = 'postoscredenciados-covreecia:station-directory-cache-v1';
 const CENTRAL_DEVICE_STATE_DB = 'central-registros-device-state-v1';
 const CENTRAL_DEVICE_STATE_STORE = 'state';
 const CENTRAL_PENDING_UPLOADS_STORE = 'pendingUploads';
@@ -675,6 +676,16 @@ async function loadManagedCentralStations() {
       stations: stations.length
     });
 
+    try {
+      localStorage.setItem(CENTRAL_STATION_DIRECTORY_CACHE_KEY, JSON.stringify({
+        stations,
+        cities,
+        updatedAt: Date.now()
+      }));
+    } catch (error) {
+      console.warn('Não foi possível guardar a cópia local das cidades e postos.', error);
+    }
+
     const nextDirectory = {};
     stations.forEach((station) => {
       const city = String(station?.city || '').trim();
@@ -1280,6 +1291,45 @@ async function requestCentralPersistentStorage() {
     return Boolean(await navigator.storage.persist());
   } catch (error) {
     console.warn('O navegador não confirmou armazenamento persistente.', error);
+    return false;
+  }
+}
+
+function restoreManagedCentralStationsCache() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(CENTRAL_STATION_DIRECTORY_CACHE_KEY) || 'null');
+    const stations = Array.isArray(cached?.stations) ? cached.stations : [];
+    const cities = Array.isArray(cached?.cities) ? cached.cities : [];
+    if (!stations.length && !cities.length) return false;
+
+    const nextDirectory = {};
+    stations.forEach((station) => {
+      const city = String(station?.city || '').trim();
+      const name = String(station?.name || '').trim();
+      const address = String(station?.address || '').trim();
+      if (!city || !name || !address) return;
+      if (!nextDirectory[city]) nextDirectory[city] = [];
+      nextDirectory[city].push({
+        nome: name,
+        endereco: address,
+        link: /^https:\/\//i.test(String(station?.mapsUrl || '')) ? String(station.mapsUrl) : ''
+      });
+    });
+
+    postosPorCidade = nextDirectory;
+    if (cities.length) {
+      cityImageCards = cities
+        .filter((city) => city?.active !== false && String(city?.name || '').trim() && String(city?.imageUrl || '').trim())
+        .map((city) => ({
+          name: String(city.name).trim(),
+          image: String(city.imageUrl).trim(),
+          featured: city?.featured === true
+        }));
+    }
+    refreshCentralStationCityOptions();
+    renderCityImageCards();
+    return true;
+  } catch (error) {
     return false;
   }
 }
@@ -5251,6 +5301,7 @@ function renderCityImageCards() {
 window.addEventListener('DOMContentLoaded', async () => {
   await ensureCentralDeviceStateRestored();
   updateCentralConnectivityStatus();
+  restoreManagedCentralStationsCache();
   renderCityImageCards();
   // A lista fixa existe apenas como fallback offline. Em uma conexão normal,
   // aguardamos o diretório do WeFrotas antes de liberar a navegação para que
