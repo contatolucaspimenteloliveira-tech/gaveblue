@@ -666,7 +666,10 @@ async function loadManagedCentralStations() {
     const result = await executeCentralPushFunction({ action: 'stations' });
     const stations = Array.isArray(result?.stations) ? result.stations : [];
     const cities = Array.isArray(result?.cities) ? result.cities : [];
-    if (!stations.length && !cities.length) return false;
+    if (!stations.length && !cities.length) {
+      console.warn('O diretório administrado retornou sem cidades e postos; mantendo o último diretório válido.');
+      return false;
+    }
 
     const nextDirectory = {};
     stations.forEach((station) => {
