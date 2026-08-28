@@ -532,7 +532,7 @@ async function listCentralDirectory(databases) {
   const snapshot = await decodeWefrotasSnapshot(databases, row?.snapshot);
   const stations = Array.isArray(snapshot?.suppliers) ? snapshot.suppliers : [];
   const normalizedStations = stations
-    .filter((supplier) => String(supplier?.tipo || '') === 'posto' && supplier?.ativo !== false)
+    .filter((supplier) => String(supplier?.tipo || '') === 'posto' && supplier?.ativo !== false && supplier?.active !== false)
     .map((supplier) => ({
       id: String(supplier?.id || ''),
       name: String(supplier?.nome || '').trim().slice(0, 160),
