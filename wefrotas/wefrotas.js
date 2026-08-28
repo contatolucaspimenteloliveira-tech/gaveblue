@@ -1345,8 +1345,31 @@
         .reduce((sum, entry) => sum + getFinanceNetTotal(entry), 0);
     }
 
+    function normalizeDateForFilter(value) {
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+      }
+
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+
+      const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+
+      const brazilianMatch = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+      if (brazilianMatch) {
+        return `${brazilianMatch[3]}-${brazilianMatch[2].padStart(2, '0')}-${brazilianMatch[1].padStart(2, '0')}`;
+      }
+
+      const parsed = new Date(raw);
+      if (Number.isNaN(parsed.getTime())) return '';
+      return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+    }
+
     function getFinanceEntryDate(entry) {
-      return entry?.dataAbastecimento || entry?.dataVencimento || String(entry?.createdAt || '').slice(0, 10) || '';
+      return normalizeDateForFilter(entry?.dataAbastecimento)
+        || normalizeDateForFilter(entry?.dataVencimento)
+        || normalizeDateForFilter(entry?.createdAt);
     }
 
     function getFinanceEntryStatus(entry) {
@@ -6664,9 +6687,12 @@
     }
 
     function isDateWithinRange(dateString, start, end) {
-      if (!dateString) return false;
-      if (start && dateString < start) return false;
-      if (end && dateString > end) return false;
+      const normalizedDate = normalizeDateForFilter(dateString);
+      const normalizedStart = normalizeDateForFilter(start);
+      const normalizedEnd = normalizeDateForFilter(end);
+      if (!normalizedDate) return false;
+      if (normalizedStart && normalizedDate < normalizedStart) return false;
+      if (normalizedEnd && normalizedDate > normalizedEnd) return false;
       return true;
     }
 
