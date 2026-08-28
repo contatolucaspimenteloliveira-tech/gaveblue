@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260827-city-registry-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260828-city-delete-report-filters-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -1068,7 +1068,11 @@
 
         <section id="panel-relatorios" class="module-panel content-card orders-page-shell p-4 sm:p-6">
           <div class="filter-card report-filter-card p-3 sm:p-4 mb-4">
-            <div class="grid xl:grid-cols-[1.25fr_1fr_0.72fr_0.72fr] gap-2.5 items-end">
+            <div class="report-filter-heading">
+              <div><span>FILTROS</span><strong>Personalize o relatório</strong></div>
+              <button type="button" class="report-filter-clear" onclick="clearReportFilters()">Limpar filtros</button>
+            </div>
+            <div class="report-filter-grid grid xl:grid-cols-[1.25fr_1fr_0.72fr_0.72fr] gap-2.5 items-end">
               <div>
                 <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Relatório</label>
                 <select id="report-filter-type" class="soft-input w-full">
@@ -1103,7 +1107,10 @@
                 <input id="report-filter-end" type="date" class="soft-input w-full">
               </div>
             </div>
-            <p id="report-filter-date-context" class="report-filter-context">A data usada depende do relatório selecionado.</p>
+            <div class="report-filter-footer">
+              <p id="report-filter-date-context" class="report-filter-context">A data usada depende do relatório selecionado.</p>
+              <button type="button" class="report-filter-apply" onclick="applyReportFilters()">Aplicar filtros</button>
+            </div>
           </div>
           <div class="filter-card report-results-card p-4 sm:p-5">
             <div class="report-results-toolbar-sticky flex items-start justify-between gap-4 flex-wrap mb-4">
@@ -1718,8 +1725,8 @@
 
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
-  <script src="./wefrotas-backend.js?v=20260827-city-registry-1"></script>
-  <script src="./wefrotas.js?v=20260827-city-registry-1"></script>
+  <script src="./wefrotas-backend.js?v=20260828-city-delete-report-filters-1"></script>
+  <script src="./wefrotas.js?v=20260828-city-delete-report-filters-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

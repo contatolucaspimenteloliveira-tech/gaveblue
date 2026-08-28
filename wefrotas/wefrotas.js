@@ -4202,6 +4202,7 @@
             <div class="central-station-actions">
               <button type="button" class="central-station-action" data-city-id="${escapeHtml(city.id)}" onclick="editCentralCity(this.dataset.cityId)">Editar</button>
               <button type="button" class="central-station-action ${city.active ? 'danger' : 'success'}" data-city-id="${escapeHtml(city.id)}" onclick="toggleCentralCity(this.dataset.cityId)">${city.active ? 'Ocultar' : 'Ativar'}</button>
+              <button type="button" class="central-station-action danger" data-city-id="${escapeHtml(city.id)}" onclick="confirmDeleteCentralCity(this.dataset.cityId)">Excluir</button>
             </div>
           </article>`;
       }).join('');
@@ -4309,6 +4310,45 @@
       saveToLocalStorage();
       renderCentralCities();
       showToast(city.active ? 'Cidade ativada no aplicativo.' : 'Cidade ocultada do aplicativo.');
+    }
+
+    function confirmDeleteCentralCity(id) {
+      const city = centralCities.find((item) => String(item.id) === String(id));
+      if (!city) return;
+      const counts = getCentralCityStationCounts(city.name);
+      if (counts.total > 0) {
+        showToast(`Não é possível excluir ${city.name}: existem ${counts.total} ${counts.total === 1 ? 'posto vinculado' : 'postos vinculados'}. Altere esses fornecedores primeiro.`);
+        return;
+      }
+      openPromptModal({
+        title: `Excluir ${city.name}?`,
+        text: 'A cidade e a imagem do card serão removidas. Esta ação não pode ser desfeita.',
+        mode: 'confirm',
+        confirmLabel: 'Excluir cidade',
+        cancelLabel: 'Cancelar',
+        onConfirm: () => deleteCentralCity(id)
+      });
+    }
+
+    async function deleteCentralCity(id) {
+      const city = centralCities.find((item) => String(item.id) === String(id));
+      if (!city) return;
+      const counts = getCentralCityStationCounts(city.name);
+      if (counts.total > 0) {
+        showToast('A cidade recebeu um vínculo e não pode mais ser excluída. Atualize os fornecedores primeiro.');
+        return;
+      }
+      try {
+        centralCities = centralCities.filter((item) => String(item.id) !== String(id));
+        await saveToLocalStorage();
+        if (document.getElementById('central-city-edit-id')?.value === String(id)) resetCentralCityForm();
+        renderCentralCities();
+        renderAll();
+        showToast('Cidade excluída com sucesso.');
+        if (city.fileId) window.WeFrotasBackend.deleteCentralCityImage(city.fileId).catch(() => {});
+      } catch (error) {
+        showToast(error?.message || 'Não foi possível excluir a cidade.');
+      }
     }
 
     function showCentralSection(section = 'registros', button = null) {
@@ -4994,7 +5034,7 @@
           </div>
           <div class="field-wrap">
             <label>${requiredLabel('Tipo de parceiro')}</label>
-            <select class="soft-input w-full" id="supplier-type" required>
+            <select class="soft-input w-full" id="supplier-type" onchange="syncSupplierCityLabel()" required>
               <option value="">Selecione</option>
               <option value="posto">Posto de combustível</option>
               <option value="oficina">Oficina</option>
@@ -5022,7 +5062,7 @@
             <input class="soft-input w-full" id="supplier-phone" placeholder="(00) 00000-0000">
           </div>
           <div class="field-wrap">
-            <label>Cidade do posto</label>
+            <label id="supplier-city-label">Cidade</label>
             <select class="soft-input w-full" id="supplier-city">
               <option value="">Selecione uma cidade cadastrada</option>
               ${centralCities.filter((city) => city.active).slice().sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')).map((city) => `<option value="${escapeHtml(city.name)}">${escapeHtml(city.name)}</option>`).join('')}
@@ -5035,7 +5075,6 @@
           <div class="field-wrap full">
             <label>Link da rota / Google Maps</label>
             <input class="soft-input w-full" id="supplier-map-url" type="url" placeholder="https://maps.app.goo.gl/...">
-            <small>Os dados são usados na Central de Registros quando o parceiro for um posto ativo.</small>
           </div>
           <div class="field-wrap">
             <label>E-mail</label>
@@ -5046,13 +5085,14 @@
             <textarea class="soft-input textarea w-full" id="supplier-notes" placeholder="Observações do parceiro"></textarea>
           </div>
           <div class="field-wrap full entity-active-field">
-            <div><strong>Fornecedor ativo</strong><small>Disponível para novos lançamentos financeiros.</small></div>
+            <div><strong>Fornecedor ativo</strong></div>
             <label class="entity-active-switch" aria-label="Ativar ou desativar fornecedor">
               <input id="supplier-active" type="checkbox" checked>
               <span aria-hidden="true"></span>
             </label>
           </div>
         `;
+        syncSupplierCityLabel();
       } else if (type === 'order') {
         syncOrderCounterWithOrders();
         setModalVisual('order', 'Preencha as informações para criar uma nova ordem de serviço.');
@@ -6544,6 +6584,34 @@
         start: document.getElementById('report-filter-start')?.value || '',
         end: document.getElementById('report-filter-end')?.value || ''
       };
+    }
+
+    function syncReportDateBounds() {
+      const startNode = document.getElementById('report-filter-start');
+      const endNode = document.getElementById('report-filter-end');
+      if (!startNode || !endNode) return;
+      endNode.min = startNode.value || '';
+      startNode.max = endNode.value || '';
+    }
+
+    function applyReportFilters() {
+      const filters = getReportFilters();
+      syncReportDateBounds();
+      if (filters.start && filters.end && filters.start > filters.end) {
+        showToast('A data inicial não pode ser posterior à data final.');
+        return false;
+      }
+      renderReports();
+      return true;
+    }
+
+    function clearReportFilters() {
+      setFilterValue('report-filter-type', 'cost');
+      setFilterValue('report-filter-vehicle', '');
+      setFilterValue('report-filter-start', '');
+      setFilterValue('report-filter-end', '');
+      syncReportDateBounds();
+      renderReports();
     }
 
     function getReportTitleByType(type) {
@@ -8562,6 +8630,7 @@
       if (dateContextNode) {
         dateContextNode.textContent = getReportDateContextLabel(filters.type);
       }
+      syncReportDateBounds();
       renderReportSummary(reportData.summary);
       renderReportColumnsPanel(reportData);
       renderReportResultsTable(reportData);
@@ -11741,6 +11810,7 @@
       document.getElementById('supplier-name').value = supplier.nome || '';
       document.getElementById('supplier-type').value = supplier.tipo || '';
       syncCustomSelectById('supplier-type');
+      syncSupplierCityLabel();
       document.getElementById('supplier-document').value = supplier.documento || '';
       document.getElementById('supplier-phone').value = supplier.telefone || '';
       const supplierCitySelect = document.getElementById('supplier-city');
@@ -11754,6 +11824,12 @@
       document.getElementById('supplier-notes').value = supplier.observacoes || '';
       document.getElementById('supplier-active').checked = isEntityActive(supplier);
       document.getElementById('modal-title').textContent = 'Editar fornecedor';
+    }
+
+    function syncSupplierCityLabel() {
+      const label = document.getElementById('supplier-city-label');
+      if (!label) return;
+      label.textContent = document.getElementById('supplier-type')?.value === 'posto' ? 'Cidade do posto' : 'Cidade';
     }
 
     function editSelectedSupplier() {
@@ -13868,12 +13944,12 @@
     });
     ['report-filter-start', 'report-filter-end'].forEach(id => {
       const node = document.getElementById(id);
-      if (node) node.addEventListener('change', renderReports);
+      if (node) node.addEventListener('change', applyReportFilters);
     });
     const reportTypeFilter = document.getElementById('report-filter-type');
-    if (reportTypeFilter) reportTypeFilter.addEventListener('change', renderReports);
+    if (reportTypeFilter) reportTypeFilter.addEventListener('change', applyReportFilters);
     const reportVehicleFilter = document.getElementById('report-filter-vehicle');
-    if (reportVehicleFilter) reportVehicleFilter.addEventListener('change', renderReports);
+    if (reportVehicleFilter) reportVehicleFilter.addEventListener('change', applyReportFilters);
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
         toggleSettings(false);
