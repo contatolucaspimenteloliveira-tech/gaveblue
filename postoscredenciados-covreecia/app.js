@@ -563,6 +563,7 @@ function scheduleCentralReconnect() {
     retryPendingCentralRegistro();
     processCentralOfflineSubmissions();
     loadCentralOnboardingConfig();
+    loadManagedCentralStations();
   }, 20000);
 }
 
@@ -5244,7 +5245,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   await ensureCentralDeviceStateRestored();
   updateCentralConnectivityStatus();
   renderCityImageCards();
-  loadManagedCentralStations();
+  // A lista fixa existe apenas como fallback offline. Em uma conexão normal,
+  // aguardamos o diretório do WeFrotas antes de liberar a navegação para que
+  // cidades recém-cadastradas não desapareçam até o próximo carregamento.
+  await loadManagedCentralStations();
   ensureDriverDirectoryLoaded().catch((error) => {
     console.warn('O diretório será carregado novamente quando necessário.', error);
   });
