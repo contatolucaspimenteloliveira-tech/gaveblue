@@ -2333,7 +2333,7 @@
 
     async function baixarRecibosPdfMobile(recibosVisiveis) {
       if (!window.html2canvas || !(window.jspdf && window.jspdf.jsPDF)) {
-        alert('O recurso de PDF nÃ£o estÃ¡ disponÃ­vel neste navegador.');
+        alert('O recurso de PDF não está disponível neste navegador.');
         return;
       }
 
@@ -2442,7 +2442,7 @@
       const recibosVisiveis = obterRecibosVisiveisParaImpressao();
 
       if (!recibosVisiveis.length) {
-        alert('Nenhum recibo visÃ­vel para imprimir.');
+        alert('Nenhum recibo visível para imprimir.');
         return;
       }
 
@@ -2451,21 +2451,9 @@
         return;
       }
 
-      const isTrainerBatchPrint = recibosVisiveis.length > 1
-        && recibosVisiveis.every((recibo) => recibo.classList.contains('recibo-moyses'));
-
-      const htmlRecibos = isTrainerBatchPrint
-        ? Array.from({ length: Math.ceil(recibosVisiveis.length / 2) }, (_, pageIndex) => {
-            const pageReceipts = recibosVisiveis.slice(pageIndex * 2, pageIndex * 2 + 2);
-            return `
-              <div class="print-sheet print-sheet--trainer">
-                ${pageReceipts.map((recibo) => `<div class="print-item print-item--trainer">${clonarReciboParaImpressao(recibo)}</div>`).join('')}
-              </div>
-            `;
-          }).join('')
-        : recibosVisiveis
-            .map((recibo) => `<div class="print-item">${clonarReciboParaImpressao(recibo)}</div>`)
-            .join('');
+      const htmlRecibos = recibosVisiveis
+        .map((recibo) => `<div class="print-item">${clonarReciboParaImpressao(recibo)}</div>`)
+        .join('');
 
       const janelaImpressao = window.open('', '_blank', 'width=900,height=1200');
 
@@ -2481,7 +2469,7 @@
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>ImpressÃ£o de Recibos</title>
+          <title>Impressão de Recibos</title>
           <style>
             @page {
               size: A4 portrait;
@@ -2510,29 +2498,6 @@
             .print-item + .print-item {
               break-before: page !important;
               page-break-before: always !important;
-            }
-            .print-sheet--trainer {
-              width: 210mm;
-              min-height: 297mm;
-              padding: 8mm 12mm 7mm;
-              display: flex;
-              flex-direction: column;
-              gap: 8mm;
-              break-after: page;
-              page-break-after: always;
-            }
-            .print-sheet--trainer:last-child {
-              break-after: auto;
-              page-break-after: auto;
-            }
-            .trainer-print .print-item + .print-item {
-              break-before: auto !important;
-              page-break-before: auto !important;
-            }
-            .trainer-print .print-item--trainer {
-              flex: 1 1 0;
-              display: flex;
-              align-items: stretch;
             }
             .recibo {
               position: relative;
@@ -2751,19 +2716,6 @@
               -webkit-appearance: none;
               appearance: none;
             }
-            .trainer-print .recibo-moyses {
-              width: 100% !important;
-              max-width: none !important;
-              min-height: 0 !important;
-              height: 100%;
-              padding: 12mm 6mm 10mm !important;
-            }
-            .trainer-print .moyses-corpo-vazio {
-              min-height: 78mm;
-            }
-            .trainer-print .moyses-assinatura-area {
-              padding-top: 4mm;
-            }
             .checkbox-recibo,
             .botoes,
             .loading-overlay,
@@ -2779,7 +2731,7 @@
             }
           </style>
         </head>
-        <body class="${isTrainerBatchPrint ? 'trainer-print' : ''}">
+        <body>
           ${htmlRecibos}
           <script>
             window.onload = function () {
