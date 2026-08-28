@@ -670,6 +670,10 @@ async function loadManagedCentralStations() {
       console.warn('O diretório administrado retornou sem cidades e postos; mantendo o último diretório válido.');
       return false;
     }
+    console.info('Diretório da Central atualizado.', {
+      cities: cities.map((city) => String(city?.name || '').trim()).filter(Boolean),
+      stations: stations.length
+    });
 
     const nextDirectory = {};
     stations.forEach((station) => {
