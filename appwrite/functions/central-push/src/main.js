@@ -405,6 +405,36 @@ async function deleteSubscription(databases, subscriptionId) {
   return documentId;
 }
 
+async function touchSubscriptionPresence(databases, payload) {
+  const documentId = String(payload.subscriptionId || '').trim();
+  if (!isValidSubscriptionId(documentId)) {
+    const error = new Error('Identificador do aparelho inválido.');
+    error.status = 400;
+    throw error;
+  }
+  const updatedAt = new Date().toISOString();
+  const data = { active: true, updatedAt };
+  const userAgent = String(payload.userAgent || '').trim();
+  if (userAgent) data.userAgent = userAgent.slice(0, 1024);
+  try {
+    await databases.updateDocument({ databaseId: DATABASE_ID, collectionId: COLLECTION_ID, documentId, data });
+    return { touched: true, updatedAt };
+  } catch (error) {
+    if (Number(error?.code) !== 404) throw error;
+    return { touched: false, updatedAt: '' };
+  }
+}
+
+function getSubscriptionPresence(updatedAt, active = true) {
+  if (!active) return 'offline';
+  const lastSeen = new Date(updatedAt || 0).getTime();
+  if (!Number.isFinite(lastSeen) || lastSeen <= 0) return 'offline';
+  const elapsed = Date.now() - lastSeen;
+  if (elapsed <= 75_000) return 'online';
+  if (elapsed <= 180_000) return 'unstable';
+  return 'offline';
+}
+
 async function listDriverDirectory(databases) {
   const rows = [];
   let offset = 0;
@@ -1247,6 +1277,12 @@ export default async ({ req, res, log, error }) => {
       return json(res, 200, { ok: true, subscriptionId });
     }
 
+    if (action === 'presence') {
+      const databases = createDatabaseClient(req);
+      const presence = await touchSubscriptionPresence(databases, payload);
+      return json(res, 200, { ok: true, ...presence });
+    }
+
     if (action === 'onboarding-config') {
       const databases = createDatabaseClient(req);
       const config = await getCentralOnboardingConfig(databases);
@@ -1367,7 +1403,8 @@ export default async ({ req, res, log, error }) => {
         id: String(document.$id || ''),
         userAgent: String(document.userAgent || ''),
         active: document.active !== false,
-        updatedAt: String(document.updatedAt || document.$updatedAt || '')
+        updatedAt: String(document.updatedAt || document.$updatedAt || ''),
+        presence: getSubscriptionPresence(document.updatedAt || document.$updatedAt, document.active !== false)
       }));
       return json(res, 200, { ok: true, subscribers: subscriptions.length, devices });
     }

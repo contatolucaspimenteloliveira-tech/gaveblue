@@ -2061,7 +2061,8 @@
         getSnapshotUpdatedAt: () => wefrotasLocalSnapshotUpdatedAt,
         prepareSnapshot: prepareSnapshotForOnline,
         applySnapshot: applyRemoteStorageSnapshot,
-        onStatus: updateOnlineStatus
+        onStatus: updateOnlineStatus,
+        onCentralRecordsChange: () => refreshCentralPendingRecords({ silent: true })
       });
       if (!backend.isConfigured()) {
         toggleOnlineLogin(true, 'O acesso online ainda não foi configurado.');
@@ -2190,7 +2191,14 @@
     }
 
     function startCentralPendingAutoRefresh() {
-      return;
+      window.clearInterval(centralPendingAutoRefreshTimer);
+      centralPendingAutoRefreshTimer = window.setInterval(() => {
+        if (document.visibilityState !== 'visible' || !window.WeFrotasBackend?.getUser?.()) return;
+        refreshCentralPendingRecords({ silent: true });
+        if (activeCentralSection === 'usuarios' || activeCentralSection === 'notificacoes') {
+          refreshPushSubscriberStats();
+        }
+      }, 15000);
     }
 
     window.logoutWeFrotasOnline = logoutWeFrotasOnline;
@@ -3867,6 +3875,7 @@
         id: String(device.id || device.$id || '').trim(),
         userAgent: String(device.userAgent || '').trim(),
         updatedAt: String(device.updatedAt || device.$updatedAt || '').trim(),
+        presence: String(device.presence || '').trim().toLowerCase(),
         active: device.active !== false
       };
     }
@@ -3915,7 +3924,17 @@
       if (!value) return 'Atividade ainda não informada';
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return 'Atividade recente';
-      return `Atualizado em ${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+      return `Último contato em ${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    function getCentralDevicePresence(device = {}) {
+      if (device.active === false) return { key: 'offline', label: 'Offline' };
+      const lastSeen = new Date(device.updatedAt || 0).getTime();
+      const elapsed = Number.isFinite(lastSeen) ? Date.now() - lastSeen : Number.POSITIVE_INFINITY;
+      const key = elapsed <= 75000 ? 'online' : elapsed <= 180000 ? 'unstable' : 'offline';
+      if (key === 'online') return { key, label: 'Online' };
+      if (key === 'unstable') return { key, label: 'Conexão instável' };
+      return { key: 'offline', label: 'Offline' };
     }
 
     function renderCentralDevices() {
@@ -3936,7 +3955,7 @@
         const linkedDriver = getCentralDeviceDriver(device.id);
         const latestRecord = getCentralDeviceRecord(device.id);
         const shortId = device.id.slice(-6).toUpperCase();
-        const status = device.active === false ? 'Inativo' : 'Ativo';
+        const presence = getCentralDevicePresence(device);
         const recordLabel = latestRecord
           ? `Último envio: ${escapeHtml(latestRecord.motorista || 'motorista não informado')} • ${escapeHtml(getCentralPendingRecordType(latestRecord))}`
           : 'Ainda não enviou registros para a Central';
@@ -3945,7 +3964,7 @@
             <div class="central-device-main">
               <span class="central-device-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="7" y="2.5" width="10" height="19" rx="2.5" stroke-width="1.9"/><path d="M10 5.5h4M11 18.5h2" stroke-width="1.9" stroke-linecap="round"/></svg></span>
               <div class="central-device-copy">
-                <div><strong>${linkedDriver ? escapeHtml(linkedDriver.nome) : 'Aparelho não vinculado'}</strong><span class="central-device-status ${device.active === false ? 'is-inactive' : ''}">${status}</span></div>
+                <div><strong>${linkedDriver ? escapeHtml(linkedDriver.nome) : 'Aparelho não vinculado'}</strong><span class="central-device-status is-${presence.key}"><i aria-hidden="true"></i>${presence.label}</span></div>
                 <p>${escapeHtml(describeCentralDevice(device.userAgent))} • ID ${escapeHtml(shortId)}</p>
                 <small>${escapeHtml(formatCentralDeviceDate(device.updatedAt))}</small>
                 <small>${recordLabel}</small>

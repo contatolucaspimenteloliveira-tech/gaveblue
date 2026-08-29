@@ -14,6 +14,8 @@
   let currentSnapshotApplier = null;
   let statusListener = null;
   let unsubscribeRealtime = null;
+  let unsubscribeCentralRealtime = null;
+  let centralRecordsListener = null;
   let syncTimer = null;
   let syncChain = Promise.resolve();
   let remoteApplyTimer = null;
@@ -339,6 +341,8 @@
 
   async function subscribeRealtime() {
     unsubscribeRealtime?.();
+    unsubscribeCentralRealtime?.();
+    unsubscribeCentralRealtime = null;
     if (!currentUser) return;
     const expectedRowId = await getPrimaryRowId();
     const channel = `tablesdb.${config.databaseId}.tables.${config.tableId}.rows`;
@@ -359,6 +363,10 @@
         } catch (error) { console.warn('Não foi possível aplicar a atualização em tempo real.', error); }
       }, 700);
     });
+    if (config.centralTableId && typeof centralRecordsListener === 'function') {
+      const centralChannel = `tablesdb.${config.databaseId}.tables.${config.centralTableId}.rows`;
+      unsubscribeCentralRealtime = client.subscribe(centralChannel, event => centralRecordsListener(event));
+    }
   }
 
   async function restoreSession() {
@@ -433,6 +441,7 @@
       throw error;
     }
     clearTimeout(remoteApplyTimer); unsubscribeRealtime?.(); unsubscribeRealtime = null;
+    unsubscribeCentralRealtime?.(); unsubscribeCentralRealtime = null;
     await account.deleteSession({ sessionId: 'current' });
     currentUser = null; setPendingLogout(false);
     emitStatus('signed-out', 'Sessão encerrada. Os dados foram sincronizados e a cópia local foi preservada.');
@@ -706,6 +715,7 @@
     currentSnapshotPreparer = options.prepareSnapshot;
     currentSnapshotApplier = options.applySnapshot;
     statusListener = options.onStatus;
+    centralRecordsListener = options.onCentralRecordsChange;
     return restoreSession();
   }
 

@@ -5616,8 +5616,12 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
 .central-device-copy strong { overflow: hidden; color: #172033; font-size: 14px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
 .central-device-copy p,
 .central-device-copy small { display: block; overflow: hidden; margin: 3px 0 0; color: #64748b; font-size: 10px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
-.central-device-status { flex: 0 0 auto; padding: 4px 7px; border-radius: 999px; color: #047857; background: #dcfce7; font-size: 9px; font-weight: 900; }
-.central-device-status.is-inactive { color: #b91c1c; background: #fee2e2; }
+.central-device-status { display:inline-flex; align-items:center; gap:5px; flex:0 0 auto; padding:4px 7px; border-radius:999px; font-size:9px; font-weight:900; }
+.central-device-status i { width:6px; height:6px; border-radius:999px; background:currentColor; box-shadow:0 0 0 2px rgba(255,255,255,.8); }
+.central-device-status.is-online { color:#047857; background:#dcfce7; }
+.central-device-status.is-unstable { color:#a16207; background:#fef3c7; }
+.central-device-status.is-offline,
+.central-device-status.is-inactive { color:#b91c1c; background:#fee2e2; }
 .central-device-linking { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 7px 9px; }
 .central-device-linking label { grid-column: 1 / -1; color: #475569; font-size: 10px; font-weight: 850; }
 .central-device-linking select {

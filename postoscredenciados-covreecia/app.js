@@ -50,6 +50,8 @@ const CENTRAL_PUSH_FUNCTION_ID = 'central-push';
 const CENTRAL_PUSH_PUBLIC_KEY = 'BK6Dhnrl6Wr4nO4PtE-ZlnW7ttRe0vtA3b7ssZsa7S9bGdR8gcBBu9SNuNBoMntUkcMBkAOAcgvhMJalNysihgw';
 const CENTRAL_PUSH_PROMPT_DISMISSED_KEY = 'central-push-prompt-dismissed';
 const CENTRAL_PUSH_SUBSCRIPTION_ID_KEY = 'central-push-subscription-id';
+const CENTRAL_DEVICE_HEARTBEAT_INTERVAL_MS = 30000;
+const CENTRAL_DEVICE_HEARTBEAT_MIN_INTERVAL_MS = 20000;
 const CENTRAL_NOTIFICATIONS_DB = 'central-registros-notifications-v1';
 const CENTRAL_NOTIFICATIONS_STORE = 'notifications';
 const REMOVED_DRIVER_NAMES = ['ELOIS DOS SANTOS'];
@@ -61,6 +63,9 @@ let centralDeviceStateWritePromise = Promise.resolve();
 let centralOfflineSyncInProgress = false;
 let centralConnectionDegraded = false;
 let centralReconnectTimer = null;
+let centralDeviceHeartbeatTimer = null;
+let centralDeviceHeartbeatInProgress = false;
+let centralDeviceHeartbeatLastSentAt = 0;
 let pendingFuelWhatsAppPayload = null;
 let uploadedFuelReceipt = null;
 let fuelReceiptUploadPromise = null;
@@ -747,6 +752,42 @@ function getCentralDeviceId() {
   return deviceId;
 }
 
+async function sendCentralDeviceHeartbeat({ force = false } = {}) {
+  if (!navigator.onLine || document.visibilityState === 'hidden' || centralDeviceHeartbeatInProgress) return false;
+  const subscriptionId = getCentralPushSubscriptionId();
+  if (!subscriptionId) return false;
+  const now = Date.now();
+  if (!force && now - centralDeviceHeartbeatLastSentAt < CENTRAL_DEVICE_HEARTBEAT_MIN_INTERVAL_MS) return false;
+
+  centralDeviceHeartbeatInProgress = true;
+  try {
+    const result = await executeCentralPushFunction({
+      action: 'presence',
+      subscriptionId,
+      deviceId: getCentralDeviceId(),
+      userAgent: navigator.userAgent
+    }, { attempts: 1, timeoutMs: 8000 });
+    if (result?.touched === false) {
+      saveCentralPushSubscriptionId('');
+      setupCentralPushExperience();
+      return false;
+    }
+    centralDeviceHeartbeatLastSentAt = now;
+    return true;
+  } catch (error) {
+    console.warn('Não foi possível atualizar a presença deste aparelho.', error);
+    return false;
+  } finally {
+    centralDeviceHeartbeatInProgress = false;
+  }
+}
+
+function startCentralDeviceHeartbeat() {
+  if (centralDeviceHeartbeatTimer) window.clearInterval(centralDeviceHeartbeatTimer);
+  sendCentralDeviceHeartbeat({ force: true });
+  centralDeviceHeartbeatTimer = window.setInterval(() => sendCentralDeviceHeartbeat(), CENTRAL_DEVICE_HEARTBEAT_INTERVAL_MS);
+}
+
 function shouldShowCentralPushPrompt() {
   // A autorização de notificações pertence ao onboarding e à tela de Configurações.
   // Não exibir convites soltos durante o uso normal do aplicativo.
@@ -802,6 +843,7 @@ async function enableCentralPushNotifications() {
     });
 
     saveCentralPushSubscriptionId(result.subscriptionId);
+    startCentralDeviceHeartbeat();
     localStorage.removeItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY);
     document.getElementById('central-push-prompt')?.remove();
     showSuccessMessage('Notificações ativadas neste celular.');
@@ -851,6 +893,7 @@ function setupCentralPushExperience() {
             userAgent: navigator.userAgent
           });
           saveCentralPushSubscriptionId(result.subscriptionId);
+          startCentralDeviceHeartbeat();
         } catch (error) {
           // A inscrição local continua válida. Uma falha temporária ao renovar
           // o cadastro no servidor não deve pedir autorização novamente.
@@ -5204,6 +5247,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   setupPwaInstallExperience();
   registerServiceWorker();
   setupCentralPushExperience();
+  startCentralDeviceHeartbeat();
   refreshCentralNotificationBadge();
 
   navigator.serviceWorker?.addEventListener('message', (event) => {
@@ -5343,6 +5387,7 @@ window.addEventListener('keydown', (event) => {
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
+    sendCentralDeviceHeartbeat({ force: true });
     refreshMySubmissions({ silent: true });
     retryPendingCentralRegistro();
     processCentralOfflineSubmissions();
@@ -5362,6 +5407,7 @@ window.addEventListener('online', () => {
   processCentralOfflineSubmissions();
   loadManagedCentralStations();
   setupCentralPushExperience();
+  sendCentralDeviceHeartbeat({ force: true });
 });
 
 window.addEventListener('offline', () => {
