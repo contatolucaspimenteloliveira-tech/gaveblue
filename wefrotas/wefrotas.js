@@ -18,6 +18,8 @@
     let centralDeviceLinks = {};
     let centralHomeBanners = [];
     let centralBannerSaving = false;
+    let selectedCentralBannerId = '';
+    let selectedCentralCityId = '';
     let centralDefaultBannersSeeding = null;
     const CENTRAL_DEFAULT_BANNERS = Object.freeze([
       { rowId: 'builtin-hero-posto', fileId: 'builtin:hero-posto', title: 'Postos credenciados', path: 'hero-posto.png', sortOrder: 0 },
@@ -2471,24 +2473,23 @@
         .filter((banner) => !isCentralBannerMigrationMarker(banner))
         .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
       if (!rows.length) {
+        selectedCentralBannerId = '';
+        updateCentralBannerActionbar(rows);
         list.innerHTML = '<p class="settings-description">Nenhum banner personalizado. A Central continua usando os banners padrão do aplicativo.</p>';
         return;
       }
+      if (!rows.some((banner) => String(banner.$id) === String(selectedCentralBannerId))) selectedCentralBannerId = '';
       list.innerHTML = rows.map((banner, index) => `
-        <article class="central-banner-item ${banner.active ? '' : 'is-disabled'}">
+        <article class="central-banner-item ${banner.active ? '' : 'is-disabled'} ${String(banner.$id) === String(selectedCentralBannerId) ? 'is-selected' : ''}" data-banner-id="${escapeHtml(banner.$id)}" onclick="selectCentralBanner(this.dataset.bannerId)">
+          <span class="central-entity-selector" aria-hidden="true">${String(banner.$id) === String(selectedCentralBannerId) ? '✓' : ''}</span>
           <img src="${escapeHtml(banner.imageUrl || '')}" alt="${escapeHtml(banner.title || 'Banner da Central')}">
           <div class="central-banner-item-copy">
             <strong>${escapeHtml(banner.title || 'Banner sem descrição')} ${isBuiltinCentralBanner(banner) ? '<em>PADRÃO</em>' : ''}</strong>
-            <span>${banner.active ? 'Visível no aplicativo' : 'Oculto no aplicativo'}</span>
-          </div>
-          <div class="central-banner-item-actions">
-            <button type="button" onclick="moveCentralBanner('${escapeHtml(banner.$id)}', -1)" ${index === 0 ? 'disabled' : ''} aria-label="Mover para cima">↑</button>
-            <button type="button" onclick="moveCentralBanner('${escapeHtml(banner.$id)}', 1)" ${index === rows.length - 1 ? 'disabled' : ''} aria-label="Mover para baixo">↓</button>
-            <button type="button" onclick="toggleCentralBanner('${escapeHtml(banner.$id)}')">${banner.active ? 'Ocultar' : 'Ativar'}</button>
-            <button type="button" class="is-danger" onclick="confirmDeleteCentralBanner('${escapeHtml(banner.$id)}')">Excluir</button>
+            <span>${banner.active ? 'Visível no aplicativo' : 'Oculto no aplicativo'} · ${getCentralBannerDuration(banner.imageUrl) / 1000} s</span>
           </div>
         </article>
       `).join('');
+      updateCentralBannerActionbar(rows);
     }
 
     function isBuiltinCentralBanner(banner) {
@@ -2556,6 +2557,7 @@
       const titleInput = document.getElementById('central-banner-title');
       const file = fileInput?.files?.[0];
       const title = titleInput?.value.trim() || '';
+      const duration = Number(document.getElementById('central-banner-duration')?.value || 6000);
       if (!file || !title) {
         setCentralBannerFeedback('Informe uma descrição e escolha uma imagem.', true);
         return;
@@ -2570,7 +2572,7 @@
         const nextOrder = centralHomeBanners
           .filter((item) => !isCentralBannerMigrationMarker(item))
           .reduce((max, item) => Math.max(max, Number(item.sortOrder || 0)), -1) + 1;
-        await window.WeFrotasBackend.createCentralHomeBanner({ title, imageUrl: upload.imageUrl, fileId: upload.fileId, active: true, sortOrder: nextOrder });
+        await window.WeFrotasBackend.createCentralHomeBanner({ title, imageUrl: setCentralBannerDuration(upload.imageUrl, duration), fileId: upload.fileId, active: true, sortOrder: nextOrder });
         fileInput.value = '';
         titleInput.value = '';
         previewCentralBannerFile();
@@ -2639,6 +2641,7 @@
         await window.WeFrotasBackend.deleteCentralHomeBanner(rowId);
         await window.WeFrotasBackend.deleteCentralBannerFile(banner.fileId).catch(() => undefined);
         centralHomeBanners = centralHomeBanners.filter(item => item.$id !== rowId);
+        if (String(selectedCentralBannerId) === String(rowId)) selectedCentralBannerId = '';
         renderCentralBanners();
         showToast('Banner removido.');
       } catch (error) { showToast(error?.message || 'Não foi possível excluir o banner.'); }
@@ -4376,7 +4379,7 @@
     }
 
     function showCentralConfigSection(section = 'comunicacao', button = null) {
-      const allowedSections = new Set(['comunicacao', 'cidades', 'fluxos', 'integracoes']);
+      const allowedSections = new Set(['comunicacao', 'cidades', 'integracoes']);
       activeCentralConfigSection = allowedSections.has(section) ? section : 'comunicacao';
       document.querySelectorAll('.central-config-view').forEach((view) => {
         view.classList.toggle('active', view.id === `central-config-${activeCentralConfigSection}`);
@@ -4402,25 +4405,72 @@
       if (!list) return;
       const cities = centralCities.slice().sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
       if (!cities.length) {
+        selectedCentralCityId = '';
+        updateCentralCityActionbar();
         list.innerHTML = '<div class="central-stations-empty"><strong>Nenhuma cidade cadastrada</strong><span>Cadastre uma cidade para depois vinculá-la aos postos em Fornecedores.</span></div>';
         return;
       }
+      if (!cities.some((city) => String(city.id) === String(selectedCentralCityId))) selectedCentralCityId = '';
       list.innerHTML = cities.map((city) => {
         const counts = getCentralCityStationCounts(city.name);
         return `
-          <article class="central-city-item${city.active ? '' : ' is-inactive'}">
+          <article class="central-city-item${city.active ? '' : ' is-inactive'}${String(city.id) === String(selectedCentralCityId) ? ' is-selected' : ''}" data-city-id="${escapeHtml(city.id)}" onclick="selectCentralCity(this.dataset.cityId)">
+            <span class="central-entity-selector" aria-hidden="true">${String(city.id) === String(selectedCentralCityId) ? '✓' : ''}</span>
             <img src="${escapeHtml(city.imageUrl)}" alt="${escapeHtml(city.name)}">
             <div class="central-city-item-copy">
               <div><strong>${escapeHtml(city.name)}</strong><span class="central-station-state ${city.active ? 'is-active' : ''}">${city.active ? 'Visível' : 'Oculta'}</span></div>
               <span>${counts.active} ${counts.active === 1 ? 'posto ativo' : 'postos ativos'} · ${counts.total} ${counts.total === 1 ? 'vinculado' : 'vinculados'} no cadastro</span>
             </div>
-            <div class="central-station-actions">
-              <button type="button" class="central-station-action" data-city-id="${escapeHtml(city.id)}" onclick="editCentralCity(this.dataset.cityId)">Editar</button>
-              <button type="button" class="central-station-action ${city.active ? 'danger' : 'success'}" data-city-id="${escapeHtml(city.id)}" onclick="toggleCentralCity(this.dataset.cityId)">${city.active ? 'Ocultar' : 'Ativar'}</button>
-              <button type="button" class="central-station-action danger" data-city-id="${escapeHtml(city.id)}" onclick="confirmDeleteCentralCity(this.dataset.cityId)">Excluir</button>
-            </div>
           </article>`;
       }).join('');
+      updateCentralCityActionbar();
+    }
+
+    function updateCentralCityActionbar() {
+      const selected = centralCities.find((city) => String(city.id) === String(selectedCentralCityId));
+      const label = document.getElementById('central-city-selection-label');
+      if (label) label.textContent = selected ? selected.name : 'Selecione uma cidade';
+      ['central-city-edit', 'central-city-visibility', 'central-city-delete'].forEach((id) => {
+        const button = document.getElementById(id);
+        if (button) button.disabled = !selected;
+      });
+      const visibility = document.getElementById('central-city-visibility');
+      if (visibility) visibility.title = selected?.active ? 'Ocultar' : 'Exibir';
+    }
+
+    function selectCentralCity(id) {
+      selectedCentralCityId = String(id || '');
+      renderCentralCities();
+    }
+
+    function openCentralCityModal() {
+      if (!requireWefrotasPermission('manageSettings', 'Seu perfil não possui permissão para cadastrar cidades.')) return;
+      resetCentralCityForm();
+      const modal = document.getElementById('central-city-modal');
+      modal?.classList.add('open');
+      modal?.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('central-action-modal-open');
+      window.setTimeout(() => document.getElementById('central-city-name')?.focus(), 80);
+    }
+
+    function closeCentralCityModal() {
+      const modal = document.getElementById('central-city-modal');
+      modal?.classList.remove('open');
+      modal?.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('central-action-modal-open');
+      resetCentralCityForm();
+    }
+
+    function editSelectedCentralCity() {
+      if (selectedCentralCityId) editCentralCity(selectedCentralCityId);
+    }
+
+    function toggleSelectedCentralCity() {
+      if (selectedCentralCityId) toggleCentralCity(selectedCentralCityId);
+    }
+
+    function deleteSelectedCentralCity() {
+      if (selectedCentralCityId) confirmDeleteCentralCity(selectedCentralCityId);
     }
 
     function setCentralCityFeedback(message, type = '') {
@@ -4444,8 +4494,10 @@
     function resetCentralBannerForm() {
       const fileInput = document.getElementById('central-banner-file');
       const titleInput = document.getElementById('central-banner-title');
+      const durationInput = document.getElementById('central-banner-duration');
       if (fileInput) fileInput.value = '';
       if (titleInput) titleInput.value = '';
+      if (durationInput) durationInput.value = '6000';
       previewCentralBannerFile();
       setCentralBannerFeedback('');
     }
@@ -4470,6 +4522,71 @@
       resetCentralBannerForm();
     }
 
+    function getCentralBannerDuration(imageUrl) {
+      const match = String(imageUrl || '').match(/(?:#|&)slideDuration=(\d+)/i);
+      const duration = Number(match?.[1] || 6000);
+      return [4000, 6000, 8000, 10000, 15000].includes(duration) ? duration : 6000;
+    }
+
+    function setCentralBannerDuration(imageUrl, duration) {
+      const clean = String(imageUrl || '').replace(/#.*$/, '');
+      return `${clean}#slideDuration=${getCentralBannerDuration(`#slideDuration=${duration}`)}`;
+    }
+
+    function updateCentralBannerActionbar(rows = null) {
+      const orderedRows = rows || centralHomeBanners.filter((banner) => !isCentralBannerMigrationMarker(banner)).sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+      const selected = orderedRows.find((banner) => String(banner.$id) === String(selectedCentralBannerId));
+      const index = selected ? orderedRows.indexOf(selected) : -1;
+      const label = document.getElementById('central-banner-selection-label');
+      if (label) label.textContent = selected ? selected.title || 'Banner selecionado' : 'Selecione um banner';
+      const up = document.getElementById('central-banner-move-up');
+      const down = document.getElementById('central-banner-move-down');
+      const duration = document.getElementById('central-banner-selected-duration');
+      const visibility = document.getElementById('central-banner-visibility');
+      const remove = document.getElementById('central-banner-delete');
+      if (up) up.disabled = !selected || index <= 0;
+      if (down) down.disabled = !selected || index < 0 || index >= orderedRows.length - 1;
+      if (duration) { duration.disabled = !selected; if (selected) duration.value = String(getCentralBannerDuration(selected.imageUrl)); }
+      if (visibility) { visibility.disabled = !selected; visibility.title = selected?.active ? 'Ocultar' : 'Exibir'; }
+      if (remove) remove.disabled = !selected;
+    }
+
+    function selectCentralBanner(rowId) {
+      selectedCentralBannerId = String(rowId || '');
+      renderCentralBanners();
+    }
+
+    function moveSelectedCentralBanner(direction) {
+      if (selectedCentralBannerId) moveCentralBanner(selectedCentralBannerId, direction);
+    }
+
+    function toggleSelectedCentralBanner() {
+      if (selectedCentralBannerId) toggleCentralBanner(selectedCentralBannerId);
+    }
+
+    function deleteSelectedCentralBanner() {
+      if (selectedCentralBannerId) confirmDeleteCentralBanner(selectedCentralBannerId);
+    }
+
+    async function updateSelectedCentralBannerDuration() {
+      const banner = centralHomeBanners.find((item) => String(item.$id) === String(selectedCentralBannerId));
+      const select = document.getElementById('central-banner-selected-duration');
+      if (!banner || !select) return;
+      const previousUrl = banner.imageUrl;
+      const nextUrl = setCentralBannerDuration(previousUrl, select.value);
+      select.disabled = true;
+      try {
+        await window.WeFrotasBackend.updateCentralHomeBanner(banner.$id, { imageUrl: nextUrl });
+        banner.imageUrl = nextUrl;
+        renderCentralBanners();
+        showToast(`Duração alterada para ${Number(select.value) / 1000} segundos.`);
+      } catch (error) {
+        banner.imageUrl = previousUrl;
+        select.disabled = false;
+        showToast(error?.message || 'Não foi possível alterar a duração do slide.');
+      }
+    }
+
     function resetCentralCityForm() {
       const editId = document.getElementById('central-city-edit-id');
       const name = document.getElementById('central-city-name');
@@ -4486,7 +4603,6 @@
       const save = document.getElementById('central-city-save');
       if (title) title.textContent = 'Adicionar cidade';
       if (save) save.textContent = 'Cadastrar cidade';
-      document.getElementById('central-city-cancel')?.classList.add('hidden');
       setCentralCityFeedback('');
     }
 
@@ -4501,8 +4617,11 @@
       document.getElementById('central-city-preview-placeholder')?.classList.add('hidden');
       document.getElementById('central-city-form-title').textContent = 'Editar cidade';
       document.getElementById('central-city-save').textContent = 'Salvar alterações';
-      document.getElementById('central-city-cancel')?.classList.remove('hidden');
-      document.getElementById('central-city-name')?.focus();
+      const modal = document.getElementById('central-city-modal');
+      modal?.classList.add('open');
+      modal?.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('central-action-modal-open');
+      window.setTimeout(() => document.getElementById('central-city-name')?.focus(), 80);
     }
 
     async function saveCentralCityFromSettings(event) {
@@ -4536,8 +4655,7 @@
         await persistCentralConfigurationImmediately();
         renderAll();
         renderCentralCities();
-        resetCentralCityForm();
-        setCentralCityFeedback(current ? 'Cidade atualizada no aplicativo.' : 'Cidade cadastrada no aplicativo.', 'success');
+        closeCentralCityModal();
         showToast(current ? 'Cidade atualizada com sucesso.' : 'Cidade cadastrada com sucesso.');
         if (file && current?.fileId && current.fileId !== uploaded.fileId) window.WeFrotasBackend.deleteCentralCityImage(current.fileId).catch(() => {});
       } catch (error) {
@@ -4592,6 +4710,7 @@
       }
       try {
         centralCities = centralCities.filter((item) => String(item.id) !== String(id));
+        if (String(selectedCentralCityId) === String(id)) selectedCentralCityId = '';
         await persistCentralConfigurationImmediately();
         if (document.getElementById('central-city-edit-id')?.value === String(id)) resetCentralCityForm();
         renderCentralCities();
@@ -4656,6 +4775,17 @@
     window.openCentralCommunicationFromSettings = openCentralCommunicationFromSettings;
     window.openCentralBannerModal = openCentralBannerModal;
     window.closeCentralBannerModal = closeCentralBannerModal;
+    window.selectCentralBanner = selectCentralBanner;
+    window.moveSelectedCentralBanner = moveSelectedCentralBanner;
+    window.toggleSelectedCentralBanner = toggleSelectedCentralBanner;
+    window.deleteSelectedCentralBanner = deleteSelectedCentralBanner;
+    window.updateSelectedCentralBannerDuration = updateSelectedCentralBannerDuration;
+    window.openCentralCityModal = openCentralCityModal;
+    window.closeCentralCityModal = closeCentralCityModal;
+    window.selectCentralCity = selectCentralCity;
+    window.editSelectedCentralCity = editSelectedCentralCity;
+    window.toggleSelectedCentralCity = toggleSelectedCentralCity;
+    window.deleteSelectedCentralCity = deleteSelectedCentralCity;
     window.openWefrotasUsersFromSettings = openWefrotasUsersFromSettings;
     window.renderCentralCities = renderCentralCities;
     window.previewCentralCityImage = previewCentralCityImage;
@@ -14220,6 +14350,10 @@
       if (event.key === 'Escape') {
         if (document.getElementById('central-banner-modal')?.classList.contains('open')) {
           closeCentralBannerModal();
+          return;
+        }
+        if (document.getElementById('central-city-modal')?.classList.contains('open')) {
+          closeCentralCityModal();
           return;
         }
         toggleSettings(false);

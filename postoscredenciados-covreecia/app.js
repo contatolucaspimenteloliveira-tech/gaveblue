@@ -5495,6 +5495,12 @@ const CENTRAL_BUILTIN_BANNER_VARIANTS = Object.freeze({
   'builtin:hero-posto-proximo': './assets/home/hero-posto-proximo-mobile.jpeg'
 });
 
+function getManagedBannerDuration(imageUrl) {
+  const match = String(imageUrl || '').match(/(?:#|&)slideDuration=(\d+)/i);
+  const duration = Number(match?.[1] || 6000);
+  return Math.min(15000, Math.max(4000, duration));
+}
+
 async function loadManagedHomeBanners() {
   const slidesContainer = document.querySelector('#home-hero-carousel .home-hero-slides');
   if (!slidesContainer) return false;
@@ -5522,6 +5528,7 @@ async function loadManagedHomeBanners() {
       if (fileId.startsWith('builtin:mobile-')) classes.push('hero-mobile-only');
       if (managesBuiltinBanners && index === 0) classes.push('is-active');
       slide.className = classes.join(' ');
+      slide.dataset.duration = String(getManagedBannerDuration(banner.imageUrl));
       if (mobileVariant) {
         const source = document.createElement('source');
         source.media = '(max-width: 767px)';
@@ -5601,8 +5608,12 @@ function initHomeHeroCarousel() {
   };
 
   const restartAutoplay = () => {
-    window.clearInterval(autoplayId);
-    autoplayId = window.setInterval(() => showSlide(currentSlide + 1), 10000);
+    window.clearTimeout(autoplayId);
+    const duration = Number(slides[currentSlide]?.dataset.duration || 6000);
+    autoplayId = window.setTimeout(() => {
+      showSlide(currentSlide + 1);
+      restartAutoplay();
+    }, Math.min(15000, Math.max(4000, duration)));
   };
 
   const goToSlide = (direction) => {

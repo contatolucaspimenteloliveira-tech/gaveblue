@@ -6003,13 +6003,14 @@ body.dark-mode .central-onboarding-reset button { border-color: #854d0e; color: 
 .central-cities-list { display: grid; gap: 9px; }
 .central-city-item {
   display: grid;
-  grid-template-columns: 108px minmax(0, 1fr) auto;
+  grid-template-columns: 22px 108px minmax(0, 1fr);
   align-items: center;
   gap: 13px;
   padding: 10px;
   border: 1px solid #dce5f1;
   border-radius: 15px;
   background: #fff;
+  cursor: pointer;
 }
 .central-city-item.is-inactive { opacity: .68; background: #f8fafc; }
 .central-city-item > img { width: 108px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 11px; background: #e2e8f0; }
@@ -6237,17 +6238,72 @@ body.dark-mode .vehicle-image-preview-shell { border-color: #334155; background:
 .central-banner-list-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .central-primary-action { display: inline-flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap; }
 .central-primary-action > span { font-size: 18px; font-weight: 500; line-height: 1; }
+.central-icon-action { width: 42px; min-width: 42px; height: 42px; padding: 0; }
+.central-icon-action svg { width: 18px; height: 18px; }
 .central-banner-management-grid { grid-template-columns: minmax(0, 1fr); }
+.central-entity-actionbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 54px;
+  margin: 0 0 12px;
+  padding: 8px 10px 8px 14px;
+  border: 1px solid #dbe4f0;
+  border-radius: 14px;
+  color: #64748b;
+  background: #f8fafc;
+  font-size: 11px;
+  font-weight: 800;
+}
+.central-entity-actionbar-controls { display: flex; align-items: center; gap: 7px; }
+.central-entity-actionbar-controls button,
+.central-entity-actionbar-controls select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #dbe4f0;
+  border-radius: 10px;
+  color: #334155;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 850;
+}
+.central-entity-actionbar-controls button svg { width: 17px; height: 17px; }
+.central-entity-actionbar-controls button:disabled,
+.central-entity-actionbar-controls select:disabled { opacity: .38; cursor: default; }
+.central-entity-actionbar-controls .is-danger { border-color: #fecaca; color: #dc2626; background: #fff1f2; }
+.central-entity-selector {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  color: #fff;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
 .central-banner-list { display: grid; gap: 12px; }
 .central-banner-item {
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
+  grid-template-columns: 22px 104px minmax(0, 1fr);
+  align-items: center;
   gap: 12px;
   padding: 12px;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
   background: #fff;
+  cursor: pointer;
 }
+.central-banner-item.is-selected,
+.central-city-item.is-selected { border-color: #7185f5; box-shadow: 0 0 0 3px rgba(99, 102, 241, .10); }
+.central-banner-item.is-selected .central-entity-selector,
+.central-city-item.is-selected .central-entity-selector { border-color: #5b6ee8; background: #5b6ee8; }
 .central-banner-item.is-disabled { opacity: .62; }
 .central-banner-item > img { width: 104px; height: 68px; object-fit: cover; border-radius: 11px; background: #f1f5f9; }
 .central-banner-item-copy { display: grid; align-content: center; gap: 4px; min-width: 0; }
@@ -6315,6 +6371,10 @@ body.dark-mode .central-action-modal { background: rgba(2, 6, 23, .72); }
 body.dark-mode .central-action-modal-card { border-color: #334155; background: #172033; }
 body.dark-mode .central-action-modal-head { border-color: #334155; background: rgba(23, 32, 51, .97); }
 body.dark-mode .central-action-modal-close { border-color: #475569; color: #e2e8f0; background: #111827; }
+body.dark-mode .central-entity-actionbar { border-color: #334155; color: #94a3b8; background: #111827; }
+body.dark-mode .central-entity-actionbar-controls button,
+body.dark-mode .central-entity-actionbar-controls select { border-color: #475569; color: #e2e8f0; background: #172033; }
+body.dark-mode .central-entity-selector { border-color: #475569; background: #111827; }
 
 /*
  * Fallback local para os tamanhos de ícones usados no HTML.
@@ -7031,7 +7091,7 @@ svg.h-8 { height: 2rem; }
   }
 
   .central-banner-item {
-    grid-template-columns: 78px minmax(0, 1fr);
+    grid-template-columns: 22px 78px minmax(0, 1fr);
   }
 
   .central-banner-item > img {
@@ -7151,7 +7211,7 @@ svg.h-8 { height: 2rem; }
   .central-city-group-actions .central-station-action,
   .central-station-actions .central-station-action { flex: 1; }
   .central-station-copy > span { overflow: visible; white-space: normal; }
-  .central-city-item { grid-template-columns: 92px minmax(0, 1fr); }
+  .central-city-item { grid-template-columns: 22px 92px minmax(0, 1fr); }
   .central-city-item > img { width: 92px; }
   .central-city-item .central-station-actions { grid-column: 1 / -1; }
 }
@@ -7493,13 +7553,16 @@ body.dark-mode #panel-settings input[type="range"] {
   }
 
   .central-banner-list-head,
-  .central-banner-list-actions,
   .central-action-modal-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .central-banner-list-actions .settings-action-btn,
+  .central-banner-list-actions { width: 100%; }
+
+  .central-entity-actionbar { align-items: stretch; flex-direction: column; }
+  .central-entity-actionbar-controls { overflow-x: auto; padding-bottom: 2px; }
+
   .central-action-modal-actions .settings-action-btn {
     width: 100%;
   }
