@@ -773,6 +773,14 @@ async function sendCentralDeviceHeartbeat({ force = false } = {}) {
       return false;
     }
     await applyCentralDeviceProfileSync(result?.profileSync);
+    const profileSync = result?.profileSync;
+    if (profileSync?.configured === true && profileSync.updatedAt && profileSync.appliedAt !== profileSync.updatedAt) {
+      await executeCentralPushFunction({
+        action: 'device-profile-applied',
+        subscriptionId,
+        updatedAt: profileSync.updatedAt
+      }, { attempts: 1, timeoutMs: 8000 });
+    }
     centralDeviceHeartbeatLastSentAt = now;
     return true;
   } catch (error) {
@@ -1902,7 +1910,8 @@ function renderVehicleDirectoryResults(queryValue) {
     return;
   }
 
-  const vehicles = getDirectoryVehicles().filter((vehicle) => [
+  const permittedVehicleIds = new Set(selectedDirectoryVehicles.map((vehicle) => String(vehicle.vehicleId || '')));
+  const vehicles = getDirectoryVehicles().filter((vehicle) => permittedVehicleIds.has(String(vehicle.vehicleId || ''))).filter((vehicle) => [
     vehicle.plate,
     vehicle.vehicleName,
     vehicle.fleetNumber

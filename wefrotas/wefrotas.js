@@ -3879,6 +3879,7 @@
         driverId: String(device.driverId || '').trim(),
         vehicleId: String(device.vehicleId || '').trim(),
         linkUpdatedAt: String(device.linkUpdatedAt || '').trim(),
+        linkAppliedAt: String(device.linkAppliedAt || '').trim(),
         linkConfigured: device.linkConfigured === true,
         active: device.active !== false
       };
@@ -4006,6 +4007,22 @@
       }
     }
 
+    async function waitForCentralDeviceLinkApplied(deviceId, expectedUpdatedAt, timeoutMs = 40000) {
+      const startedAt = Date.now();
+      await new Promise((resolve) => window.setTimeout(resolve, 3000));
+      while (Date.now() - startedAt < timeoutMs) {
+        try {
+          const result = await executeCentralPushAdmin({ action: 'device-profile-status', subscriptionId: deviceId });
+          const status = result?.profileSync || {};
+          if (String(status.updatedAt || '') === String(expectedUpdatedAt || '') && status.appliedAt) return status;
+        } catch (error) {
+          console.warn('Aguardando confirmação do vínculo pelo aparelho.', error);
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 1800));
+      }
+      throw new Error('A alteração foi salva, mas o aparelho ainda não confirmou. Abra a Central nesse celular e aguarde a sincronização.');
+    }
+
     async function saveCentralDeviceLink(deviceId) {
       if (!requireWefrotasPermission('manageDevices', 'Somente administradores podem gerenciar aparelhos.')) return;
       const select = document.getElementById(`central-device-driver-${deviceId}`);
@@ -4023,7 +4040,8 @@
           centralDeviceLinks[deviceId] = { driverId: '', vehicleId: '', updatedAt, linkedAt: updatedAt, source: 'wefrotas' };
           const device = centralPushDevices.find(item => item.id === deviceId);
           if (device) Object.assign(device, { driverId: '', vehicleId: '', linkUpdatedAt: updatedAt, linkConfigured: true });
-          await persistCentralConfigurationImmediately();
+          const confirmed = await waitForCentralDeviceLinkApplied(deviceId, updatedAt);
+          if (device) device.linkAppliedAt = String(confirmed.appliedAt || '');
           renderCentralDevices();
           showToast('Vínculo removido. O aparelho continua autorizado a receber notificações.');
           return;
@@ -4056,7 +4074,8 @@
           linkUpdatedAt: updatedAt,
           linkConfigured: true
         });
-        await persistCentralConfigurationImmediately();
+        const confirmed = await waitForCentralDeviceLinkApplied(deviceId, updatedAt);
+        if (device) device.linkAppliedAt = String(confirmed.appliedAt || '');
         renderCentralDevices();
         showToast(`Aparelho vinculado a ${driver.nome}.`);
       } catch (error) {

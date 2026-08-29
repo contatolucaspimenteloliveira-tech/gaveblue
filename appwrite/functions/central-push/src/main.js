@@ -439,21 +439,23 @@ async function resolveCentralDeviceProfile(databases, subscriptionId, snapshot =
     ? snapshot.centralDeviceLinks
     : (await getWefrotasSnapshot(databases))?.centralDeviceLinks || {};
   if (!Object.prototype.hasOwnProperty.call(links, subscriptionId)) {
-    return { configured: false, linked: false, updatedAt: '', profile: null };
+    return { configured: false, linked: false, updatedAt: '', appliedAt: '', profile: null };
   }
   const link = links[subscriptionId] && typeof links[subscriptionId] === 'object' ? links[subscriptionId] : {};
   const driverId = String(link.driverId || '').trim();
   const vehicleId = String(link.vehicleId || '').trim();
   const updatedAt = String(link.updatedAt || link.linkedAt || '').trim();
-  if (!driverId || !vehicleId) return { configured: true, linked: false, updatedAt, profile: null };
+  const appliedAt = String(link.appliedAt || '').trim();
+  if (!driverId || !vehicleId) return { configured: true, linked: false, updatedAt, appliedAt, profile: null };
 
   const resolvedDirectory = Array.isArray(directory) ? directory : await listDriverDirectory(databases);
   const row = resolvedDirectory.find((item) => String(item.driverId) === driverId && String(item.vehicleId) === vehicleId);
-  if (!row) return { configured: true, linked: false, updatedAt, profile: null };
+  if (!row) return { configured: true, linked: false, updatedAt, appliedAt, profile: null };
   return {
     configured: true,
     linked: true,
     updatedAt,
+    appliedAt,
     profile: {
       driverId,
       vehicleId,
@@ -496,15 +498,38 @@ async function updateCentralDeviceProfile(databases, subscriptionId, { driverId 
     ? { ...snapshot.centralDeviceLinks }
     : {};
   const updatedAt = new Date().toISOString();
+  const normalizedSource = String(source || '').slice(0, 30);
   links[normalizedSubscriptionId] = {
     driverId: normalizedDriverId,
     vehicleId: normalizedVehicleId,
     updatedAt,
     linkedAt: updatedAt,
-    source: String(source || '').slice(0, 30)
+    appliedAt: normalizedSource === 'central-app' ? updatedAt : '',
+    source: normalizedSource
   };
   snapshot.centralDeviceLinks = links;
   await persistWefrotasSnapshot(databases, snapshot, actorId || `device:${normalizedSubscriptionId.slice(-8)}`);
+  return resolveCentralDeviceProfile(databases, normalizedSubscriptionId, snapshot);
+}
+
+async function acknowledgeCentralDeviceProfile(databases, subscriptionId, expectedUpdatedAt) {
+  const normalizedSubscriptionId = String(subscriptionId || '').trim();
+  if (!isValidSubscriptionId(normalizedSubscriptionId)) {
+    throw Object.assign(new Error('Identificador do aparelho inválido.'), { status: 400 });
+  }
+  const snapshot = await getWefrotasSnapshot(databases);
+  const links = snapshot.centralDeviceLinks && typeof snapshot.centralDeviceLinks === 'object'
+    ? { ...snapshot.centralDeviceLinks }
+    : {};
+  const current = links[normalizedSubscriptionId];
+  const currentUpdatedAt = String(current?.updatedAt || current?.linkedAt || '').trim();
+  if (!current || !currentUpdatedAt || currentUpdatedAt !== String(expectedUpdatedAt || '').trim()) {
+    return resolveCentralDeviceProfile(databases, normalizedSubscriptionId, snapshot);
+  }
+  const appliedAt = new Date().toISOString();
+  links[normalizedSubscriptionId] = { ...current, appliedAt };
+  snapshot.centralDeviceLinks = links;
+  await persistWefrotasSnapshot(databases, snapshot, `device:${normalizedSubscriptionId.slice(-8)}`);
   return resolveCentralDeviceProfile(databases, normalizedSubscriptionId, snapshot);
 }
 
@@ -1364,9 +1389,15 @@ export default async ({ req, res, log, error }) => {
       const databases = createDatabaseClient(req);
       const presence = await touchSubscriptionPresence(databases, payload);
       const profileSync = presence.touched
-        ? await resolveCentralDeviceProfile(databases, String(payload.subscriptionId || '').trim()).catch(() => ({ configured: false, linked: false, updatedAt: '', profile: null }))
-        : { configured: false, linked: false, updatedAt: '', profile: null };
+        ? await resolveCentralDeviceProfile(databases, String(payload.subscriptionId || '').trim()).catch(() => ({ configured: false, linked: false, updatedAt: '', appliedAt: '', profile: null }))
+        : { configured: false, linked: false, updatedAt: '', appliedAt: '', profile: null };
       return json(res, 200, { ok: true, ...presence, profileSync });
+    }
+
+    if (action === 'device-profile-applied') {
+      const databases = createDatabaseClient(req);
+      const profileSync = await acknowledgeCentralDeviceProfile(databases, payload.subscriptionId, payload.updatedAt);
+      return json(res, 200, { ok: true, profileSync });
     }
 
     if (action === 'device-profile-set') {
@@ -1393,6 +1424,17 @@ export default async ({ req, res, log, error }) => {
         targetId: String(payload.subscriptionId || ''),
         after: { driverId: String(payload.driverId || ''), vehicleId: String(payload.vehicleId || '') }
       });
+      return json(res, 200, { ok: true, profileSync });
+    }
+
+    if (action === 'device-profile-status') {
+      await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const subscriptionId = String(payload.subscriptionId || '').trim();
+      if (!isValidSubscriptionId(subscriptionId)) {
+        throw Object.assign(new Error('Identificador do aparelho inválido.'), { status: 400 });
+      }
+      const profileSync = await resolveCentralDeviceProfile(databases, subscriptionId);
       return json(res, 200, { ok: true, profileSync });
     }
 
@@ -1516,7 +1558,7 @@ export default async ({ req, res, log, error }) => {
       const directory = await listDriverDirectory(databases).catch(() => []);
       const devices = await Promise.all(subscriptions.map(async (document) => {
         const id = String(document.$id || '');
-        const profileSync = await resolveCentralDeviceProfile(databases, id, snapshot, directory).catch(() => ({ configured: false, linked: false, updatedAt: '', profile: null }));
+        const profileSync = await resolveCentralDeviceProfile(databases, id, snapshot, directory).catch(() => ({ configured: false, linked: false, updatedAt: '', appliedAt: '', profile: null }));
         return {
           id,
           userAgent: String(document.userAgent || ''),
@@ -1526,6 +1568,7 @@ export default async ({ req, res, log, error }) => {
           driverId: String(profileSync.profile?.driverId || ''),
           vehicleId: String(profileSync.profile?.vehicleId || ''),
           linkUpdatedAt: String(profileSync.updatedAt || ''),
+          linkAppliedAt: String(profileSync.appliedAt || ''),
           linkConfigured: profileSync.configured === true
         };
       }));

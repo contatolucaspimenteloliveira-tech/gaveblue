@@ -50,6 +50,8 @@ As ações públicas da Function são:
 - `presence`: renova o horário do último contato enquanto a Central está aberta, permitindo ao WeFrotas indicar aparelho online, instável ou offline sem armazenar localização;
 - `device-profile-set`: sincroniza com o WeFrotas o motorista e o veículo confirmados no aparelho;
 - `device-profile-admin-set`: altera pelo WeFrotas o motorista e o veículo que o aparelho deve utilizar;
+- `device-profile-applied`: confirma que o aparelho realmente aplicou o vínculo recebido;
+- `device-profile-status`: permite ao administrador aguardar essa confirmação antes de concluir a operação;
 - `directory`: retorna apenas os vínculos ativos mínimos de motorista e veículo publicados pelo WeFrotas;
 - `history`: retorna os registros vinculados ao `deviceId` ou à inscrição técnica informada.
 
