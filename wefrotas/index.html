@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260829-canonical-driver-links-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260829-settings-page-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -133,6 +133,14 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M17 16v-7"/>
             </svg>
             <span class="nav-label">Relatórios</span>
+          </button>
+
+          <button class="nav-btn" onclick="showModule('settings', this)">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3" stroke-width="1.9"></circle>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span class="nav-label">Configurações</span>
           </button>
         </nav>
 
@@ -1164,78 +1172,82 @@
             <div id="report-summary-grid" class="report-summary-grid report-summary-footer mt-4"></div>
           </div>
         </section>
+
+        <section id="panel-settings" class="module-panel settings-page" aria-labelledby="module-header-title">
+          <div id="settings-page-mount"></div>
+        </section>
         </main>
       </div>
     </div>
 
   <div id="toast-stack" class="toast-stack"></div>
 
-  <div id="settings-overlay" class="panel-overlay" onclick="toggleSettings(false)"></div>
-  <aside id="settings-panel" class="panel-shell" aria-hidden="true">
-    <div class="panel-head">
-      <div>
-        <p class="panel-kicker">WeFrotas</p>
-        <h2 class="panel-title">Configurações</h2>
-      </div>
-      <button class="icon-action bg-white border border-slate-200 text-slate-600" type="button" onclick="toggleSettings(false)" aria-label="Fechar configurações">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"/>
-        </svg>
-      </button>
-    </div>
+  <div id="settings-page-source" hidden>
     <div class="panel-body">
       <div id="settings-screen-home" class="settings-screen active">
-        <div class="settings-menu-list">
-          <button type="button" class="settings-menu-item" onclick="openSettingsScreen('visual')">
-            <div>
-              <p class="settings-menu-title">Visual</p>
-              <p class="settings-menu-subtitle">Tema e aparência do sistema</p>
-            </div>
-            <span class="settings-menu-arrow"></span>
-          </button>
-          <button type="button" class="settings-menu-item" onclick="openSettingsScreen('brand')">
-            <div>
-              <p class="settings-menu-title">Marca</p>
-              <p class="settings-menu-subtitle">Logo personalizada e tamanho</p>
-            </div>
-            <span class="settings-menu-arrow"></span>
-          </button>
-          <button type="button" class="settings-menu-item" onclick="openSettingsScreen('operation')">
-            <div>
-              <p class="settings-menu-title">Operação</p>
-              <p class="settings-menu-subtitle">Usuário conectado e edição do número da OS</p>
-            </div>
-            <span class="settings-menu-arrow"></span>
-          </button>
-          <button type="button" class="settings-menu-item" onclick="openCentralCommunicationFromSettings()">
-            <div>
-              <p class="settings-menu-title">Comunicação da Central</p>
-              <p class="settings-menu-subtitle">Banners e aparência exibida para o motorista</p>
-            </div>
-            <span class="settings-menu-arrow"></span>
-          </button>
-          <button type="button" class="settings-menu-item" onclick="openSettingsScreen('backup')">
-            <div>
-              <p class="settings-menu-title">Backup</p>
-              <p class="settings-menu-subtitle">Exportação e restauração local</p>
-            </div>
-            <span class="settings-menu-arrow"></span>
-          </button>
-          <button type="button" class="settings-menu-item" onclick="openSettingsScreen('import')">
-            <div>
-              <p class="settings-menu-title">Importação</p>
-              <p class="settings-menu-subtitle">Planilhas de veículos, motoristas e fornecedores</p>
-            </div>
-            <span class="settings-menu-arrow"></span>
-          </button>
-          <button type="button" class="settings-menu-item" onclick="openSettingsScreen('about')">
-            <div>
-              <p class="settings-menu-title">Sobre os dados</p>
-              <p class="settings-menu-subtitle">Como o WeFrotas salva informações</p>
-            </div>
-            <span class="settings-menu-arrow"></span>
-          </button>
-        </div>
+        <section class="settings-dashboard-section">
+          <h3 class="settings-dashboard-heading">Geral</h3>
+          <div class="settings-menu-grid settings-menu-grid--two">
+            <button type="button" class="settings-menu-item" onclick="openSettingsScreen('visual')">
+              <span class="settings-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg></span>
+              <span class="settings-menu-copy"><strong class="settings-menu-title">Visual</strong><span class="settings-menu-subtitle">Tema, cores e aparência do sistema.</span></span>
+              <span class="settings-menu-arrow" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="settings-menu-item" onclick="openSettingsScreen('brand')">
+              <span class="settings-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"></circle><path d="m9 15-1 6 4-2 4 2-1-6M12 6v6M9 9h6"></path></svg></span>
+              <span class="settings-menu-copy"><strong class="settings-menu-title">Marca</strong><span class="settings-menu-subtitle">Logo personalizada e identidade visual.</span></span>
+              <span class="settings-menu-arrow" aria-hidden="true"></span>
+            </button>
+          </div>
+        </section>
+
+        <section class="settings-dashboard-section">
+          <h3 class="settings-dashboard-heading">Sistema</h3>
+          <div class="settings-menu-grid">
+            <button type="button" class="settings-menu-item settings-menu-item--wide" onclick="openSettingsScreen('operation')">
+              <span class="settings-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.12-1.3l1.62-1.25-2-3.46-1.94.78A7 7 0 0 0 14.3 5.45L14 3.4h-4l-.3 2.05a7 7 0 0 0-2.26 1.32l-1.94-.78-2 3.46 1.62 1.25A7 7 0 0 0 5 12c0 .45.04.88.12 1.3L3.5 14.55l2 3.46 1.94-.78a7 7 0 0 0 2.26 1.32l.3 2.05h4l.3-2.05a7 7 0 0 0 2.26-1.32l1.94.78 2-3.46-1.62-1.25A7 7 0 0 0 19 12Z"></path></svg></span>
+              <span class="settings-menu-copy"><strong class="settings-menu-title">Operação</strong><span class="settings-menu-subtitle">Usuário conectado, administrações, numeração da OS e regras gerais.</span></span>
+              <span class="settings-menu-arrow" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="settings-menu-item settings-menu-item--wide" onclick="openCentralCommunicationFromSettings()">
+              <span class="settings-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H7l-3 3z"></path><path d="M8 9h8M8 12h5"></path></svg></span>
+              <span class="settings-menu-copy"><strong class="settings-menu-title">Comunicação da Central</strong><span class="settings-menu-subtitle">Banners, cidades e aparência exibida para o motorista.</span></span>
+              <span class="settings-menu-arrow" aria-hidden="true"></span>
+            </button>
+          </div>
+        </section>
+
+        <section class="settings-dashboard-section">
+          <h3 class="settings-dashboard-heading">Acessos e Segurança</h3>
+          <div class="settings-menu-grid">
+            <button type="button" class="settings-menu-item settings-menu-item--wide" onclick="openWefrotasUsersFromSettings()">
+              <span class="settings-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><circle cx="17" cy="10" r="2.5"></circle><path d="M3 20v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2M15 15h1a5 5 0 0 1 5 5"></path></svg></span>
+              <span class="settings-menu-copy"><strong class="settings-menu-title">Usuários do WeFrotas</strong><span class="settings-menu-subtitle">Cadastre a equipe, defina perfis de acesso e gerencie contas.</span></span>
+              <span class="settings-menu-arrow" aria-hidden="true"></span>
+            </button>
+          </div>
+        </section>
+
+        <section class="settings-dashboard-section">
+          <h3 class="settings-dashboard-heading">Dados e Manutenção</h3>
+          <div class="settings-menu-grid settings-menu-grid--three">
+            <button type="button" class="settings-menu-item" onclick="openSettingsScreen('backup')">
+              <span class="settings-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 16V4M8 8l4-4 4 4"></path><path d="M5 13a4 4 0 0 0 0 8h14a4 4 0 0 0 0-8"></path></svg></span>
+              <span class="settings-menu-copy"><strong class="settings-menu-title">Backup</strong><span class="settings-menu-subtitle">Exportação e restauração local.</span></span>
+              <span class="settings-menu-arrow" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="settings-menu-item" onclick="openSettingsScreen('import')">
+              <span class="settings-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5zM8 7h8M8 11h3M13 11h3M8 15h3M13 15h3"></path></svg></span>
+              <span class="settings-menu-copy"><strong class="settings-menu-title">Importação</strong><span class="settings-menu-subtitle">Planilhas de veículos, motoristas e fornecedores.</span></span>
+              <span class="settings-menu-arrow" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="settings-menu-item" onclick="openSettingsScreen('about')">
+              <span class="settings-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7h.01"></path></svg></span>
+              <span class="settings-menu-copy"><strong class="settings-menu-title">Sobre os dados</strong><span class="settings-menu-subtitle">Como o WeFrotas salva informações.</span></span>
+              <span class="settings-menu-arrow" aria-hidden="true"></span>
+            </button>
+          </div>
+        </section>
       </div>
 
       <div id="settings-screen-visual" class="settings-screen">
@@ -1409,7 +1421,7 @@
         </section>
       </div>
     </div>
-  </aside>
+  </div>
 
   <div id="notifications-overlay" class="panel-overlay" onclick="toggleNotifications(false)"></div>
   <aside id="notifications-panel" class="panel-shell" aria-hidden="true">
@@ -1726,7 +1738,7 @@
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260829-canonical-driver-links-1"></script>
-  <script src="./wefrotas.js?v=20260829-canonical-driver-links-1"></script>
+  <script src="./wefrotas.js?v=20260829-settings-page-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

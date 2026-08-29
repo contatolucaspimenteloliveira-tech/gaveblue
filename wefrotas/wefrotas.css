@@ -7095,3 +7095,203 @@ svg.h-8 { height: 2rem; }
   .central-city-item > img { width: 92px; }
   .central-city-item .central-station-actions { grid-column: 1 / -1; }
 }
+
+/* Configurações como módulo de página inteira */
+.settings-page {
+  min-height: calc(100vh - var(--wefrotas-topbar-height, 96px) - 36px);
+  padding: 0 4px 28px;
+}
+
+#settings-page-mount,
+.settings-page-body {
+  width: 100%;
+}
+
+#panel-settings .settings-page-body {
+  padding: 0;
+  overflow: visible;
+}
+
+.settings-dashboard-section + .settings-dashboard-section {
+  margin-top: 26px;
+}
+
+.settings-dashboard-heading {
+  margin: 0 0 12px;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+}
+
+.settings-menu-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.settings-menu-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-menu-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+#panel-settings .settings-menu-item {
+  min-height: 86px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid #dbe5f1;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
+}
+
+#panel-settings .settings-menu-item:hover {
+  transform: translateY(-2px);
+  border-color: #b9c8ff;
+  box-shadow: 0 14px 30px rgba(67, 86, 213, 0.10);
+}
+
+.settings-menu-item--wide {
+  grid-column: 1 / -1;
+}
+
+.settings-menu-icon {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  flex: 0 0 50px;
+  border-radius: 14px;
+  color: #3151d3;
+  background: linear-gradient(145deg, #edf2ff, #f6f7ff);
+}
+
+.settings-menu-icon svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.settings-menu-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+#panel-settings .settings-menu-title {
+  color: #172033;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+#panel-settings .settings-menu-subtitle {
+  margin-top: 5px;
+  color: #718096;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+#panel-settings .settings-menu-arrow {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  border-top: 2px solid #172033;
+  border-right: 2px solid #172033;
+  transform: rotate(45deg);
+}
+
+#panel-settings .settings-screen:not(#settings-screen-home) {
+  width: min(100%, 920px);
+}
+
+#panel-settings .settings-screen:not(#settings-screen-home) .settings-subhead {
+  margin-bottom: 16px;
+}
+
+#panel-settings .settings-screen:not(#settings-screen-home) .settings-block {
+  margin-bottom: 14px;
+  padding: 22px;
+  border: 1px solid #dbe5f1;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
+}
+
+#panel-settings .settings-screen:not(#settings-screen-home) .settings-label {
+  color: #3151d3;
+}
+
+body.dark-mode .settings-dashboard-heading,
+body.dark-mode #panel-settings .settings-menu-title,
+body.dark-mode #panel-settings .settings-subtitle-title {
+  color: #f8fafc;
+}
+
+body.dark-mode #panel-settings .settings-menu-item,
+body.dark-mode #panel-settings .settings-screen:not(#settings-screen-home) .settings-block {
+  border-color: #334155;
+  background: #172033;
+}
+
+body.dark-mode #panel-settings .settings-menu-subtitle,
+body.dark-mode #panel-settings .settings-description {
+  color: #94a3b8;
+}
+
+body.dark-mode #panel-settings .settings-menu-icon {
+  color: #a5b4fc;
+  background: #263449;
+}
+
+body.dark-mode #panel-settings .settings-menu-arrow {
+  border-color: #cbd5e1;
+}
+
+@media (max-width: 900px) {
+  .settings-menu-grid--three {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .settings-page {
+    padding: 4px 0 22px;
+  }
+
+  .settings-menu-grid--two,
+  .settings-menu-grid--three {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-dashboard-section + .settings-dashboard-section {
+    margin-top: 22px;
+  }
+
+  #panel-settings .settings-menu-item {
+    min-height: 78px;
+    padding: 13px;
+  }
+
+  .settings-menu-icon {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+  }
+
+  .settings-menu-icon svg {
+    width: 23px;
+    height: 23px;
+  }
+
+  #panel-settings .settings-screen:not(#settings-screen-home) .settings-block {
+    padding: 16px;
+    border-radius: 16px;
+  }
+}

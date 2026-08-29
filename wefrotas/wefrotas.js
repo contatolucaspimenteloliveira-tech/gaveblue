@@ -2353,29 +2353,39 @@
       panel.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
     }
 
-    function toggleSettings(force) {
-      const shouldOpen = typeof force === 'boolean'
-        ? force
-        : !document.getElementById('settings-panel')?.classList.contains('open');
-      if (shouldOpen) toggleNotifications(false);
-      if (shouldOpen) {
-        updateCustomLogoUi();
-        openSettingsScreen('home');
+    function initializeSettingsPage() {
+      const sourcePanel = document.getElementById('settings-page-source');
+      const sourceBody = sourcePanel?.querySelector('.panel-body');
+      const mount = document.getElementById('settings-page-mount');
+      if (sourceBody && mount && sourceBody.parentElement !== mount) {
+        sourceBody.classList.add('settings-page-body');
+        mount.appendChild(sourceBody);
       }
-      togglePanel('settings-panel', 'settings-overlay', shouldOpen);
+      sourcePanel?.remove();
+    }
+
+    function toggleSettings(force) {
+      if (force === false) return;
+      toggleNotifications(false);
+      showModule('settings', getModuleNavButton('settings'));
+      updateCustomLogoUi();
+      openSettingsScreen('home');
     }
 
     function openSettingsScreen(screen) {
       document.querySelectorAll('.settings-screen').forEach((node) => node.classList.remove('active'));
       const target = document.getElementById(`settings-screen-${screen}`);
       target?.classList.add('active');
-      document.querySelector('#settings-panel .panel-body')?.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function openCentralCommunicationFromSettings() {
-      toggleSettings(false);
       showCentralSubmodule('configuracoes');
       showCentralConfigSection('comunicacao');
+    }
+
+    function openWefrotasUsersFromSettings() {
+      showCentralSubmodule('usuarios');
     }
 
     function setCentralBannerFeedback(message, isError = false) {
@@ -3507,6 +3517,10 @@
       relatorios: {
         title: 'Relatórios',
         subtitle: 'Visualize custos, desempenho e histórico da operação com leitura rápida.'
+      },
+      settings: {
+        title: 'Configurações',
+        subtitle: 'Personalize, administre e mantenha o WeFrotas.'
       }
     };
 
@@ -4558,6 +4572,7 @@
     window.showCentralSubmodule = showCentralSubmodule;
     window.showCentralConfigSection = showCentralConfigSection;
     window.openCentralCommunicationFromSettings = openCentralCommunicationFromSettings;
+    window.openWefrotasUsersFromSettings = openWefrotasUsersFromSettings;
     window.renderCentralCities = renderCentralCities;
     window.previewCentralCityImage = previewCentralCityImage;
     window.saveCentralCityFromSettings = saveCentralCityFromSettings;
@@ -13969,6 +13984,7 @@
     });
 
     async function initializeWeFrotas() {
+      initializeSettingsPage();
       await loadFromStorage();
       if (syncAllocatedOrderStatuses()) saveToLocalStorage();
       initializeCentralManagement();
