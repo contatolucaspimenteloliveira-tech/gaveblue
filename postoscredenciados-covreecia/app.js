@@ -23,7 +23,7 @@ const CENTRAL_APPWRITE_TABLE_ID = 'central_registros_pendentes';
 const CENTRAL_APPWRITE_WORKSPACE_ID = 'covre-e-cia';
 const CENTRAL_APPWRITE_ORIGIN = 'postoscredenciados-covreecia';
 const CENTRAL_APPWRITE_RETRY_KEY = 'postoscredenciados-covreecia:appwrite-pending-record';
-const CENTRAL_DRIVER_DIRECTORY_CACHE_KEY = 'postoscredenciados-covreecia:driver-directory-cache-v1';
+const CENTRAL_DRIVER_DIRECTORY_CACHE_KEY = 'postoscredenciados-covreecia:driver-directory-cache-v2';
 const CENTRAL_STATION_DIRECTORY_CACHE_KEY = 'postoscredenciados-covreecia:station-directory-cache-v1';
 const CENTRAL_DEVICE_STATE_DB = 'central-registros-device-state-v1';
 const CENTRAL_DEVICE_STATE_STORE = 'state';
@@ -93,6 +93,7 @@ let receiptCameraFlashEnabled = false;
 let pendingReceiptCameraFile = null;
 let pendingReceiptCameraPreviewUrl = '';
 let centralDriverDirectory = [];
+let centralDriverDirectoryLoadedAt = 0;
 let selectedDirectoryDriver = null;
 let selectedDirectoryVehicles = [];
 let selectedDirectoryVehicleIndex = 0;
@@ -1560,7 +1561,7 @@ async function requireAuthorizedDriverProfile() {
   if (!navigator.onLine) return profile;
 
   try {
-    await ensureDriverDirectoryLoaded();
+    await ensureDriverDirectoryLoaded({ force: true });
   } catch (error) {
     if (!navigator.onLine || centralConnectionDegraded) return profile;
     showErrorMessage('Não foi possível validar seu perfil agora. Tente novamente.');
@@ -1844,8 +1845,9 @@ function getDirectoryDrivers() {
   return [...drivers.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 }
 
-async function ensureDriverDirectoryLoaded() {
-  if (centralDriverDirectory.length) return centralDriverDirectory;
+async function ensureDriverDirectoryLoaded({ force = false } = {}) {
+  const isFresh = centralDriverDirectory.length && Date.now() - centralDriverDirectoryLoadedAt < 15000;
+  if (!force && isFresh) return centralDriverDirectory;
   if (!driverDirectoryLoadPromise) {
     driverDirectoryLoadPromise = executeCentralPushFunction(
       { action: 'directory' },
@@ -1857,6 +1859,7 @@ async function ensureDriverDirectoryLoaded() {
           throw new Error('O diretório ainda está vazio. Abra o WeFrotas e sincronize os dados para publicar os vínculos ativos.');
         }
         try {
+          centralDriverDirectoryLoadedAt = Date.now();
           localStorage.setItem(CENTRAL_DRIVER_DIRECTORY_CACHE_KEY, JSON.stringify({
             savedAt: Date.now(),
             directory: centralDriverDirectory
@@ -1872,6 +1875,7 @@ async function ensureDriverDirectoryLoaded() {
           const cacheAge = Date.now() - Number(cached?.savedAt || 0);
           if (Array.isArray(cached?.directory) && cached.directory.length && cacheAge >= 0 && cacheAge <= CENTRAL_DIRECTORY_CACHE_MAX_AGE) {
             centralDriverDirectory = cached.directory;
+            centralDriverDirectoryLoadedAt = Number(cached.savedAt || 0);
             console.warn('Usando o último diretório validado enquanto a conexão se recupera.');
             return centralDriverDirectory;
           }
@@ -1910,8 +1914,7 @@ function renderVehicleDirectoryResults(queryValue) {
     return;
   }
 
-  const permittedVehicleIds = new Set(selectedDirectoryVehicles.map((vehicle) => String(vehicle.vehicleId || '')));
-  const vehicles = getDirectoryVehicles().filter((vehicle) => permittedVehicleIds.has(String(vehicle.vehicleId || ''))).filter((vehicle) => [
+  const vehicles = getDirectoryVehicles().filter((vehicle) => [
     vehicle.plate,
     vehicle.vehicleName,
     vehicle.fleetNumber
@@ -2321,7 +2324,7 @@ async function openDriverVehicleEditor() {
   if (title) title.textContent = 'Alterar veículo';
   if (kicker) kicker.textContent = 'VEÍCULO DESTE APARELHO';
   try {
-    await ensureDriverDirectoryLoaded();
+    await ensureDriverDirectoryLoaded({ force: true });
     selectedDirectoryDriver = getDirectoryDrivers().find((driver) => String(driver.id) === String(profile.driverId)) || null;
     selectedDirectoryVehicles = selectedDirectoryDriver?.vehicles || [];
     selectedDirectoryVehicleIndex = Math.max(0, selectedDirectoryVehicles.findIndex((vehicle) => String(vehicle.vehicleId) === String(profile.vehicleId)));
@@ -2367,6 +2370,9 @@ function startDriverProfileEditing() {
   document.getElementById('driver-directory-loading')?.classList.add('hidden');
   document.getElementById('driver-directory-error')?.classList.add('hidden');
   setDriverOnboardingStep('driver-onboarding-driver-step');
+  ensureDriverDirectoryLoaded({ force: true }).catch((error) => {
+    console.warn('Não foi possível atualizar imediatamente o diretório de motoristas.', error);
+  });
   window.setTimeout(() => search?.focus(), 80);
 }
 

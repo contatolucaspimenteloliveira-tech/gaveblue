@@ -2870,7 +2870,13 @@
 
     function getDriverVehicleIds(driver) {
       if (!driver) return [];
-      const linkedFromDriver = Array.isArray(driver.vehicleIds) ? driver.vehicleIds : [];
+      // O cadastro do motorista e sua lista `vehicleIds` são a fonte oficial.
+      // `motoristaId` permanece apenas como compatibilidade para registros realmente
+      // legados que ainda não possuem a propriedade `vehicleIds`.
+      if (Array.isArray(driver.vehicleIds)) {
+        return Array.from(new Set(driver.vehicleIds.filter(Boolean).map(String)));
+      }
+      const linkedFromDriver = driver.vehicleId ? [driver.vehicleId] : [];
       const linkedFromVehicles = allVehicles
         .filter((vehicle) => String(vehicle.motoristaId || '') === String(driver.id))
         .map((vehicle) => vehicle.id);
@@ -3736,6 +3742,22 @@
             showToast(`Usuário ${activating ? 'ativado' : 'desativado'}.`);
           } catch (error) { showToast(error?.message || 'Não foi possível alterar o usuário.'); }
         }
+      });
+    }
+
+    function syncDriversWithVehicle(vehicleId, driverId = '') {
+      const normalizedVehicleId = String(vehicleId || '');
+      const normalizedDriverId = String(driverId || '');
+      if (!normalizedVehicleId) return;
+      allDrivers = allDrivers.map((driver) => {
+        const vehicleIds = Array.isArray(driver.vehicleIds)
+          ? driver.vehicleIds.filter(Boolean).map(String)
+          : driver.vehicleId
+            ? [String(driver.vehicleId)]
+            : [];
+        const nextVehicleIds = vehicleIds.filter((id) => id !== normalizedVehicleId);
+        if (String(driver.id || '') === normalizedDriverId) nextVehicleIds.push(normalizedVehicleId);
+        return { ...driver, vehicleIds: Array.from(new Set(nextVehicleIds)) };
       });
     }
 
@@ -13419,9 +13441,12 @@
           allVehicles = allVehicles.map(vehicle => vehicle.id === currentEditingId
             ? { ...vehicle, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo, vehicleImageUrl, vehicleImageFileId }
             : vehicle);
+          syncDriversWithVehicle(currentEditingId, motoristaId);
           showToast('Veículo atualizado com sucesso.');
         } else {
-          allVehicles.unshift({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo, vehicleImageUrl, vehicleImageFileId });
+          const newVehicleId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+          allVehicles.unshift({ id: newVehicleId, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo, vehicleImageUrl, vehicleImageFileId });
+          syncDriversWithVehicle(newVehicleId, motoristaId);
           showToast('Veículo cadastrado com sucesso.');
         }
         saveToLocalStorage();

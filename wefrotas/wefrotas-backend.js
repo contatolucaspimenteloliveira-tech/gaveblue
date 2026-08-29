@@ -486,8 +486,11 @@
       const driverId = String(driver?.id || '').trim();
       const driverName = String(driver?.nome || driver?.name || '').trim();
       if (!driverId || !driverName) return;
+      const hasCanonicalLinks = Array.isArray(driver.vehicleIds) || Boolean(driver.vehicleId);
       const linkedIds = new Set((Array.isArray(driver.vehicleIds) ? driver.vehicleIds : driver.vehicleId ? [driver.vehicleId] : []).map(String));
-      const linkedVehicles = vehicles.filter((vehicle) => linkedIds.has(String(vehicle?.id || '')) || String(vehicle?.motoristaId || vehicle?.driverId || '') === driverId);
+      const linkedVehicles = vehicles.filter((vehicle) => hasCanonicalLinks
+        ? linkedIds.has(String(vehicle?.id || ''))
+        : String(vehicle?.motoristaId || vehicle?.driverId || '') === driverId);
       const candidates = linkedVehicles.length ? linkedVehicles : [null];
       candidates.forEach((vehicle) => rows.push({
         driverId,
