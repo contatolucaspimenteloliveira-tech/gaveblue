@@ -102,6 +102,12 @@
       animation: floatChar 3.4s ease-in-out infinite;
       z-index: 2;
       transition: box-shadow .18s ease, filter .18s ease;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .char:focus-visible {
+      outline: 3px solid #2563eb;
+      outline-offset: 5px;
     }
     .char.purple {
       width: 110px;
@@ -145,12 +151,12 @@
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      gap: 8px;
+      gap: 10px;
     }
     .char.orange .face { top: 34px; }
     .eye {
-      width: 16px;
-      height: 16px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       background: #fff;
       position: relative;
@@ -158,13 +164,13 @@
       box-shadow: inset 0 2px 4px rgba(0,0,0,.18);
     }
     .pupil {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       background: #020617;
       border-radius: 50%;
       position: absolute;
-      left: 4px;
-      top: 4px;
+      left: 6px;
+      top: 6px;
       will-change: transform;
     }
     .mouth {
@@ -179,7 +185,8 @@
       transition: .25s ease;
     }
 
-    .happy .mouth {
+    .happy .mouth,
+    .char.is-happy .mouth {
       width: 26px;
       height: 10px;
       border-radius: 0 0 20px 20px;
@@ -267,7 +274,7 @@
                   Voltar para gaveblue.com.br
                 </a>
 
-                <button onclick="history.back()" class="secondary-action rounded-2xl px-6 py-4 text-sm sm:text-base font-bold inline-flex items-center justify-center gap-3">
+                <button id="btnBack" onclick="history.back()" class="secondary-action rounded-2xl px-6 py-4 text-sm sm:text-base font-bold inline-flex items-center justify-center gap-3">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                   </svg>
@@ -278,19 +285,19 @@
 
             <div>
               <div class="glass-panel chars-panel rounded-[1.75rem] p-5 sm:p-6">
-                <div class="char purple">
+                <div class="char purple" role="button" tabindex="0" aria-label="Fazer o personagem azul sorrir" aria-pressed="false">
                   <div class="face"><span class="eye"><span class="pupil"></span></span><span class="eye"><span class="pupil"></span></span></div>
                   <span class="mouth"></span>
                 </div>
-                <div class="char black">
+                <div class="char black" role="button" tabindex="0" aria-label="Fazer o personagem azul-escuro sorrir" aria-pressed="false">
                   <div class="face"><span class="eye"><span class="pupil"></span></span><span class="eye"><span class="pupil"></span></span></div>
                   <span class="mouth"></span>
                 </div>
-                <div class="char yellow">
+                <div class="char yellow" role="button" tabindex="0" aria-label="Fazer o personagem violeta sorrir" aria-pressed="false">
                   <div class="face"><span class="eye"><span class="pupil"></span></span><span class="eye"><span class="pupil"></span></span></div>
                   <span class="mouth"></span>
                 </div>
-                <div class="char orange">
+                <div class="char orange" role="button" tabindex="0" aria-label="Fazer o personagem deitado sorrir" aria-pressed="false">
                   <div class="face"><span class="eye"><span class="pupil"></span></span><span class="eye"><span class="pupil"></span></span></div>
                   <span class="mouth"></span>
                 </div>
@@ -333,6 +340,8 @@
     const pupils = document.querySelectorAll('.pupil');
     const charsPanel = document.querySelector('.chars-panel');
     const btnHome = document.getElementById('btnHome');
+    const btnBack = document.getElementById('btnBack');
+    const characters = document.querySelectorAll('.char');
 
     function moveEyes(clientX, clientY) {
       pupils.forEach((pupil) => {
@@ -367,15 +376,30 @@
       moveEyes(event.touches[0].clientX, event.touches[0].clientY);
     }, { passive: true });
 
-    // felicidade ao hover no botão
-    btnHome.addEventListener('mouseenter', () => {
-      charsPanel.classList.add('happy');
-      charsPanel.classList.add('super-glow');
+    // Todos sorriem quando o usuário aponta para uma das ações de retorno.
+    [btnHome, btnBack].forEach((button) => {
+      button.addEventListener('mouseenter', () => {
+        charsPanel.classList.add('happy', 'super-glow');
+      });
+
+      button.addEventListener('mouseleave', () => {
+        charsPanel.classList.remove('happy', 'super-glow');
+      });
     });
 
-    btnHome.addEventListener('mouseleave', () => {
-      charsPanel.classList.remove('happy');
-      charsPanel.classList.remove('super-glow');
+    // Cada personagem também pode sorrir individualmente ao clique ou pelo teclado.
+    function toggleCharacterSmile(character) {
+      const isHappy = character.classList.toggle('is-happy');
+      character.setAttribute('aria-pressed', String(isHappy));
+    }
+
+    characters.forEach((character) => {
+      character.addEventListener('click', () => toggleCharacterSmile(character));
+      character.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        toggleCharacterSmile(character);
+      });
     });
 
   </script>
