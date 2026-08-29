@@ -13,33 +13,36 @@
     * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
     body {
       min-height: 100vh;
-      color: white;
+      color: #0f172a;
       background:
-        radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.18), transparent 28%),
-        radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.22), transparent 28%),
-        radial-gradient(circle at 50% 100%, rgba(34, 197, 94, 0.08), transparent 32%),
-        linear-gradient(135deg, #09111f 0%, #0f172a 38%, #151b3b 68%, #0b1220 100%);
+        radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.10), transparent 30%),
+        radial-gradient(circle at 85% 18%, rgba(125, 211, 252, 0.15), transparent 32%),
+        radial-gradient(circle at 50% 100%, rgba(99, 102, 241, 0.07), transparent 36%),
+        linear-gradient(180deg, #ffffff 0%, #f8fbff 48%, #eef6ff 100%);
       background-attachment: fixed;
       overflow-x: hidden;
     }
 
     .card-gradient {
-      background: linear-gradient(180deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.96));
-      border: 1px solid rgba(148, 163, 184, 0.16);
-      box-shadow: 0 24px 60px rgba(2, 6, 23, 0.32);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(248, 251, 255, 0.98));
+      border: 1px solid #dbe7f5;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.09);
     }
     .glass-panel {
-      background: rgba(15, 23, 42, 0.64);
-      border: 1px solid rgba(148, 163, 184, 0.14);
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid #dbe7f5;
       backdrop-filter: blur(16px);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
     }
     .top-action {
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.18);
+      color: #1e40af;
+      background: #ffffff;
+      border: 1px solid #dbe7f5;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
       backdrop-filter: blur(10px);
       transition: all 0.2s ease;
     }
-    .top-action:hover { background: rgba(255,255,255,0.2); }
+    .top-action:hover { background: #eff6ff; border-color: #93c5fd; }
     .primary-action {
       background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
       box-shadow: 0 12px 28px rgba(59, 130, 246, 0.2);
@@ -50,23 +53,25 @@
       box-shadow: 0 16px 36px rgba(59, 130, 246, 0.28);
     }
     .secondary-action {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
+      color: #334155;
+      background: #ffffff;
+      border: 1px solid #dbe7f5;
       transition: all 0.2s ease;
     }
     .secondary-action:hover {
-      background: rgba(255,255,255,0.14);
+      background: #f8fbff;
+      border-color: #93c5fd;
       transform: translateY(-1px);
     }
     .gradient-text {
-      background: linear-gradient(90deg, #ffffff 0%, #93c5fd 34%, #c4b5fd 66%, #ffffff 100%);
+      background: linear-gradient(90deg, #0f172a 0%, #2563eb 45%, #4f46e5 100%);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
     }
     .error-code {
       letter-spacing: -0.06em;
-      text-shadow: 0 12px 40px rgba(59, 130, 246, 0.18);
+      text-shadow: 0 12px 40px rgba(37, 99, 235, 0.12);
     }
 
     .chars-panel {
@@ -211,21 +216,21 @@
 </head>
 <body>
   <div class="min-h-full flex flex-col">
-    <header class="flex-shrink-0 h-16 border-b border-slate-700/50 bg-slate-900/95 backdrop-blur-xl">
+    <header class="flex-shrink-0 h-16 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl shadow-[0_8px_30px_rgba(15,23,42,0.05)]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-3">
         <div class="flex items-center gap-3 min-w-0">
-          <a href="https://gaveblue.com" target="_self" rel="noopener noreferrer">
-            <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo GaveBlue" class="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy">
+          <a href="https://gaveblue.com.br/" target="_self" rel="noopener noreferrer">
+            <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo GaveBlue" class="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity [filter:brightness(0)_saturate(100%)_invert(32%)_sepia(94%)_saturate(2038%)_hue-rotate(211deg)_brightness(97%)_contrast(101%)]" loading="lazy">
           </a>
-          <div class="hidden md:block w-px h-6 bg-slate-700/70"></div>
+          <div class="hidden md:block w-px h-6 bg-slate-200"></div>
           <div class="hidden md:block min-w-0">
-            <p class="text-slate-400 text-xs uppercase tracking-[0.22em] font-semibold">Sistema GaveBlue</p>
-            <h1 class="text-white text-sm sm:text-base font-bold truncate">Página não encontrada</h1>
+            <p class="text-slate-500 text-xs uppercase tracking-[0.22em] font-semibold">Sistema GaveBlue</p>
+            <h1 class="text-slate-900 text-sm sm:text-base font-bold truncate">Página não encontrada</h1>
           </div>
         </div>
 
         <div class="flex items-center gap-2 sm:gap-3">
-          <a href="https://gaveblue.com" class="top-action rounded-xl px-3 sm:px-4 py-2 text-sm font-semibold text-white inline-flex items-center gap-2">
+          <a href="https://gaveblue.com.br/" class="top-action rounded-xl px-3 sm:px-4 py-2 text-sm font-semibold inline-flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
@@ -245,24 +250,24 @@
 
           <div class="relative grid lg:grid-cols-[1.2fr_0.8fr] gap-8 lg:gap-12 items-center">
             <div>
-              <span class="inline-flex px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-sm font-semibold mb-5">Erro 404</span>
+              <span class="inline-flex px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-sm font-semibold mb-5">Erro 404</span>
               <div class="error-code text-6xl sm:text-7xl lg:text-8xl font-extrabold leading-none gradient-text">404</div>
-              <h2 class="text-2xl sm:text-4xl font-extrabold text-white leading-tight mt-4">
+              <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 leading-tight mt-4">
                 A página que você tentou acessar <span class="gradient-text">não existe</span>
               </h2>
-              <p class="text-slate-300 text-sm sm:text-lg mt-4 leading-relaxed max-w-2xl">
+              <p class="text-slate-600 text-sm sm:text-lg mt-4 leading-relaxed max-w-2xl">
                 O endereço pode ter sido digitado errado, a página pode ter sido movida ou esse link não está mais disponível. Para continuar, volte para o site principal da GaveBlue.
               </p>
 
               <div class="mt-8 flex flex-col sm:flex-row gap-3">
-                <a id="btnHome" href="https://gaveblue.com" class="primary-action rounded-2xl px-6 py-4 text-sm sm:text-base font-bold text-white inline-flex items-center justify-center gap-3">
+                <a id="btnHome" href="https://gaveblue.com.br/" class="primary-action rounded-2xl px-6 py-4 text-sm sm:text-base font-bold text-white inline-flex items-center justify-center gap-3">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                   </svg>
-                  Voltar para gaveblue.com
+                  Voltar para gaveblue.com.br
                 </a>
 
-                <button onclick="history.back()" class="secondary-action rounded-2xl px-6 py-4 text-sm sm:text-base font-bold text-white inline-flex items-center justify-center gap-3">
+                <button onclick="history.back()" class="secondary-action rounded-2xl px-6 py-4 text-sm sm:text-base font-bold inline-flex items-center justify-center gap-3">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                   </svg>
@@ -296,27 +301,27 @@
       </div>
     </main>
 
-    <footer class="border-t border-slate-700/50 bg-slate-900/55 px-4 sm:px-6 lg:px-8">
+    <footer class="border-t border-slate-200 bg-white/75 px-4 sm:px-6 lg:px-8">
       <div class="max-w-7xl mx-auto py-6">
         <div class="flex flex-col lg:flex-row items-center justify-between gap-5">
           <div class="flex justify-center lg:justify-start w-full lg:w-auto">
-            <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo GaveBlue" class="h-10 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" onclick="window.location.href='https://gaveblue.com';">
+            <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo GaveBlue" class="h-10 w-auto cursor-pointer hover:opacity-80 transition-opacity [filter:brightness(0)_saturate(100%)_invert(32%)_sepia(94%)_saturate(2038%)_hue-rotate(211deg)_brightness(97%)_contrast(101%)]" loading="lazy" onclick="window.location.href='https://gaveblue.com.br/';">
           </div>
 
           <div class="flex items-center justify-center gap-2 w-full lg:w-auto">
-            <a href="https://instagram.com/gaveblue" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all shadow-lg" title="Instagram">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" ry="5" stroke-width="2"></rect><circle cx="12" cy="12" r="4" stroke-width="2"></circle><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"></circle></svg>
+            <a href="https://instagram.com/gaveblue" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 hover:bg-blue-100 hover:border-blue-200 transition-all shadow-sm" title="Instagram">
+              <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" ry="5" stroke-width="2"></rect><circle cx="12" cy="12" r="4" stroke-width="2"></circle><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"></circle></svg>
             </a>
-            <a href="https://wa.me/5527988790381" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all shadow-lg" title="WhatsApp">
-              <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" /></svg>
+            <a href="https://wa.me/5527988790381" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 hover:bg-blue-100 hover:border-blue-200 transition-all shadow-sm" title="WhatsApp">
+              <svg class="w-4 h-4 text-blue-700" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" /></svg>
             </a>
-            <a href="mailto:contato@gaveblue.com" class="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all shadow-lg" title="E-mail">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+            <a href="mailto:contato@gaveblue.com.br" class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 hover:bg-blue-100 hover:border-blue-200 transition-all shadow-sm" title="E-mail">
+              <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
             </a>
           </div>
 
           <div class="text-center lg:text-right w-full lg:w-auto">
-            <a href="https://gaveblue.com" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-white transition-colors text-sm block">gaveblue.com</a>
+            <a href="https://gaveblue.com.br/" class="text-slate-600 hover:text-blue-700 transition-colors text-sm block">gaveblue.com.br</a>
             <p class="text-slate-500 text-xs mt-1">© 2026 GaveBlue — Todos os direitos reservados</p>
           </div>
         </div>
