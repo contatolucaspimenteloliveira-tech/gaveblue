@@ -157,7 +157,7 @@
     }
 
     function sairApp() {
-      window.location.href = 'https://gaveblue.com';
+      window.location.href = 'https://gaveblue.com.br/';
     }
 
     globalSearchInputEl.addEventListener('input', (event) => {
