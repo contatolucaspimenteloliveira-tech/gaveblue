@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260829-settings-dark-profile-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260829-central-settings-modal-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -66,10 +66,6 @@
               <button class="sidebar-subnav-btn" type="button" data-central-section="usuarios" onclick="showCentralSubmodule('usuarios', this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 20v-1.5A3.5 3.5 0 0 0 12.5 15h-5A3.5 3.5 0 0 0 4 18.5V20M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 8h4M19 6v4" stroke-width="1.9" stroke-linecap="round"/></svg>
                 <span>Usuários</span>
-              </button>
-              <button class="sidebar-subnav-btn" type="button" data-central-section="configuracoes" onclick="showCentralSubmodule('configuracoes', this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3.5" stroke-width="1.9"/><path d="M19 12a7 7 0 0 0-.12-1.3l1.62-1.25-2-3.46-1.94.78A7 7 0 0 0 14.3 5.45L14 3.4h-4l-.3 2.05a7 7 0 0 0-2.26 1.32l-1.94-.78-2 3.46 1.62 1.25A7 7 0 0 0 5 12c0 .45.04.88.12 1.3L3.5 14.55l2 3.46 1.94-.78a7 7 0 0 0 2.26 1.32l.3 2.05h4l.3-2.05a7 7 0 0 0 2.26-1.32l1.94.78 2-3.46-1.62-1.25A7 7 0 0 0 19 12Z" stroke-width="1.4" stroke-linejoin="round"/></svg>
-                <span>Configurações</span>
               </button>
             </div>
           </div>
@@ -776,10 +772,13 @@
                   <div><strong>Comunicação com o motorista</strong><span>Publique imagens no carrossel da Home, defina a ordem e escolha o que permanece visível no aplicativo.</span></div>
                   <span class="central-communication-status"><i></i> Sincronização automática</span>
                 </div>
-                <div class="central-communication-grid">
-                  <section class="central-communication-card">
-                    <div class="central-communication-card-head"><span>NOVO CONTEÚDO</span><h3>Adicionar banner</h3><p>A imagem será exibida em proporção 2,2:1. Mantenha textos e elementos importantes afastados das bordas.</p></div>
-                    <div class="central-banner-form">
+                <div id="central-banner-modal" class="central-action-modal" aria-hidden="true" onclick="if (event.target === this) closeCentralBannerModal()">
+                  <section class="central-action-modal-card" role="dialog" aria-modal="true" aria-labelledby="central-banner-modal-title">
+                    <div class="central-action-modal-head">
+                      <div class="central-communication-card-head"><span>NOVO CONTEÚDO</span><h3 id="central-banner-modal-title">Adicionar banner</h3><p>A imagem será exibida em proporção 2,2:1. Mantenha textos e elementos importantes afastados das bordas.</p></div>
+                      <button type="button" class="central-action-modal-close" onclick="closeCentralBannerModal()" aria-label="Fechar cadastro de banner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l12 12M18 6 6 18" stroke-width="2" stroke-linecap="round"/></svg></button>
+                    </div>
+                    <div class="central-banner-form central-action-modal-body">
                       <div class="settings-field-stack">
                         <label class="settings-input-label" for="central-banner-title">Descrição da imagem</label>
                         <input type="text" id="central-banner-title" class="settings-text-input" maxlength="100" placeholder="Ex.: Aviso de revisão de KM">
@@ -793,14 +792,22 @@
                         <div id="central-banner-preview-placeholder" class="central-banner-preview-placeholder"><span>Prévia no aplicativo</span><small>O enquadramento final aparecerá aqui.</small></div>
                         <img id="central-banner-preview" class="central-banner-preview hidden" alt="Prévia do novo banner">
                       </div>
-                      <button id="central-banner-save" type="button" class="settings-action-btn full active" onclick="saveCentralBanner()">Publicar no carrossel</button>
                       <p id="central-banner-feedback" class="settings-description !mb-0" role="status" aria-live="polite"></p>
+                      <div class="central-action-modal-actions">
+                        <button type="button" class="settings-action-btn" onclick="closeCentralBannerModal()">Cancelar</button>
+                        <button id="central-banner-save" type="button" class="settings-action-btn active" onclick="saveCentralBanner()">Publicar no carrossel</button>
+                      </div>
                     </div>
                   </section>
+                </div>
+                <div class="central-communication-grid central-banner-management-grid">
                   <section class="central-communication-card">
                     <div class="central-banner-list-head">
                       <div class="central-communication-card-head"><span>HOME DO APLICATIVO</span><h3>Banners publicados</h3><p>Reordene, oculte ou exclua os conteúdos enviados.</p></div>
-                      <button type="button" class="settings-action-btn" onclick="loadCentralBanners()">Atualizar</button>
+                      <div class="central-banner-list-actions">
+                        <button type="button" class="settings-action-btn" onclick="loadCentralBanners()">Atualizar</button>
+                        <button type="button" class="settings-action-btn active central-primary-action" onclick="openCentralBannerModal()"><span aria-hidden="true">+</span> Novo banner</button>
+                      </div>
                     </div>
                     <div id="central-banner-list" class="central-banner-list">
                       <p class="settings-description">Abra esta tela para carregar os banners.</p>
@@ -1242,6 +1249,14 @@
             </button>
           </div>
         </section>
+      </div>
+
+      <div id="settings-screen-central" class="settings-screen settings-screen-central">
+        <div class="settings-subhead">
+          <button type="button" class="settings-back-btn" onclick="openSettingsScreen('home')"> Voltar</button>
+          <h3 class="settings-subtitle-title">Configurações da Central</h3>
+        </div>
+        <div id="settings-central-mount"></div>
       </div>
 
       <div id="settings-screen-visual" class="settings-screen">
@@ -1735,7 +1750,7 @@
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260829-settings-dark-profile-1"></script>
-  <script src="./wefrotas.js?v=20260829-settings-dark-profile-1"></script>
+  <script src="./wefrotas.js?v=20260829-central-settings-modal-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

@@ -2405,6 +2405,13 @@
         sourceBody.classList.add('settings-page-body');
         mount.appendChild(sourceBody);
       }
+      const centralSettingsMount = document.getElementById('settings-central-mount');
+      const centralSettingsView = document.getElementById('central-view-configuracoes');
+      const centralSettingsShell = centralSettingsView?.querySelector('.central-config-shell');
+      if (centralSettingsMount && centralSettingsShell && centralSettingsShell.parentElement !== centralSettingsMount) {
+        centralSettingsMount.appendChild(centralSettingsShell);
+        centralSettingsView.remove();
+      }
       sourcePanel?.remove();
     }
 
@@ -2424,7 +2431,9 @@
     }
 
     function openCentralCommunicationFromSettings() {
-      showCentralSubmodule('configuracoes');
+      if (!requireWefrotasPermission('manageSettings', 'Seu perfil não possui acesso às configurações da Central.')) return;
+      showModule('settings', getModuleNavButton('settings'));
+      openSettingsScreen('central');
       showCentralConfigSection('comunicacao');
     }
 
@@ -2565,8 +2574,10 @@
         fileInput.value = '';
         titleInput.value = '';
         previewCentralBannerFile();
-        setCentralBannerFeedback('Banner publicado. A Central passa a recebê-lo automaticamente.');
         await loadCentralBanners();
+        centralBannerSaving = false;
+        closeCentralBannerModal();
+        showToast('Banner publicado no carrossel.');
       } catch (error) {
         if (upload?.fileId) window.WeFrotasBackend.deleteCentralBannerFile(upload.fileId).catch(() => undefined);
         setCentralBannerFeedback(error?.message || 'Não foi possível publicar o banner.', true);
@@ -4430,6 +4441,35 @@
       placeholder?.classList.add('hidden');
     }
 
+    function resetCentralBannerForm() {
+      const fileInput = document.getElementById('central-banner-file');
+      const titleInput = document.getElementById('central-banner-title');
+      if (fileInput) fileInput.value = '';
+      if (titleInput) titleInput.value = '';
+      previewCentralBannerFile();
+      setCentralBannerFeedback('');
+    }
+
+    function openCentralBannerModal() {
+      if (!requireWefrotasPermission('manageSettings', 'Seu perfil não possui permissão para publicar banners.')) return;
+      const modal = document.getElementById('central-banner-modal');
+      if (!modal) return;
+      resetCentralBannerForm();
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('central-action-modal-open');
+      window.setTimeout(() => document.getElementById('central-banner-title')?.focus(), 80);
+    }
+
+    function closeCentralBannerModal() {
+      if (centralBannerSaving) return;
+      const modal = document.getElementById('central-banner-modal');
+      modal?.classList.remove('open');
+      modal?.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('central-action-modal-open');
+      resetCentralBannerForm();
+    }
+
     function resetCentralCityForm() {
       const editId = document.getElementById('central-city-edit-id');
       const name = document.getElementById('central-city-name');
@@ -4570,12 +4610,11 @@
     }
 
     function showCentralSection(section = 'registros', button = null) {
-      const allowedSections = new Set(['registros', 'notificacoes', 'usuarios', 'configuracoes']);
+      const allowedSections = new Set(['registros', 'notificacoes', 'usuarios']);
       const requestedSection = allowedSections.has(section) ? section : 'registros';
       const requiredPermission = {
         notificacoes: 'sendNotifications',
-        usuarios: 'manageUsers',
-        configuracoes: 'manageSettings'
+        usuarios: 'manageUsers'
       }[requestedSection];
       if (requiredPermission && !hasWefrotasPermission(requiredPermission)) {
         showToast('Seu perfil não possui acesso a esta área da Central.');
@@ -4608,7 +4647,6 @@
         refreshWefrotasUsers();
         refreshCentralDevices();
       }
-      if (activeCentralSection === 'configuracoes') showCentralConfigSection(activeCentralConfigSection);
     }
 
     window.showCentralSection = showCentralSection;
@@ -4616,6 +4654,8 @@
     window.showCentralSubmodule = showCentralSubmodule;
     window.showCentralConfigSection = showCentralConfigSection;
     window.openCentralCommunicationFromSettings = openCentralCommunicationFromSettings;
+    window.openCentralBannerModal = openCentralBannerModal;
+    window.closeCentralBannerModal = closeCentralBannerModal;
     window.openWefrotasUsersFromSettings = openWefrotasUsersFromSettings;
     window.renderCentralCities = renderCentralCities;
     window.previewCentralCityImage = previewCentralCityImage;
@@ -14178,6 +14218,10 @@
     if (reportVehicleFilter) reportVehicleFilter.addEventListener('change', applyReportFilters);
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
+        if (document.getElementById('central-banner-modal')?.classList.contains('open')) {
+          closeCentralBannerModal();
+          return;
+        }
         toggleSettings(false);
         toggleNotifications(false);
         if (window.innerWidth <= 1120) toggleSidebar(false);
