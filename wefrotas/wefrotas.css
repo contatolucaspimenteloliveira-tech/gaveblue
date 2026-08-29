@@ -7254,6 +7254,145 @@ body.dark-mode #panel-settings .settings-menu-arrow {
   border-color: #cbd5e1;
 }
 
+/* Tema escuro da estrutura atual e do módulo de configurações */
+body.dark-mode .app-main-shell,
+body.dark-mode .app-main-content {
+  background: #0b1220;
+}
+
+body.dark-mode .app-topbar {
+  border-color: #263449;
+  background: rgba(11, 18, 32, 0.94);
+}
+
+body.dark-mode .app-topbar-title,
+body.dark-mode .sidebar-user-name {
+  color: #f8fafc;
+}
+
+body.dark-mode .app-topbar-kicker,
+body.dark-mode .app-topbar-subtitle,
+body.dark-mode .sidebar-user-role {
+  color: #94a3b8;
+}
+
+body.dark-mode .app-sidebar {
+  border-color: #263449;
+  background: #0f172a;
+}
+
+body.dark-mode .sidebar-toggle-btn,
+body.dark-mode .top-action,
+body.dark-mode .mobile-search-toggle,
+body.dark-mode .global-search-input,
+body.dark-mode .sidebar-user-card,
+body.dark-mode .sidebar-logout-btn {
+  border-color: #334155;
+  color: #cbd5e1;
+  background: #172033;
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.28);
+}
+
+body.dark-mode .sidebar-toggle-btn:hover,
+body.dark-mode .top-action:hover,
+body.dark-mode .mobile-search-toggle:hover,
+body.dark-mode .sidebar-logout-btn:hover {
+  border-color: #475569;
+  color: #ffffff;
+  background: #1e293b;
+}
+
+body.dark-mode .global-search-input:focus {
+  border-color: #6366f1;
+  color: #f8fafc;
+  background: #111b2d;
+}
+
+body.dark-mode .global-search-input::placeholder {
+  color: #64748b;
+}
+
+body.dark-mode #panel-settings .settings-menu-item:hover {
+  border-color: #5967d8;
+  background: #1b2740;
+  box-shadow: 0 14px 30px rgba(2, 6, 23, 0.30);
+}
+
+body.dark-mode #panel-settings .settings-back-btn,
+body.dark-mode #panel-settings .settings-action-btn,
+body.dark-mode #panel-settings .settings-text-input {
+  border-color: #3b4a63;
+  color: #e2e8f0;
+  background: #111b2d;
+}
+
+body.dark-mode #panel-settings .settings-back-btn:hover,
+body.dark-mode #panel-settings .settings-action-btn:hover {
+  border-color: #5967d8;
+  color: #ffffff;
+  background: #263449;
+}
+
+body.dark-mode #panel-settings .settings-action-btn.active,
+body.dark-mode #panel-settings .settings-action-btn.full {
+  border-color: transparent;
+  color: #ffffff;
+  background: linear-gradient(135deg, #4f66e8 0%, #7c4ed8 100%);
+}
+
+body.dark-mode #panel-settings .settings-text-input:focus {
+  border-color: #818cf8;
+  color: #ffffff;
+  background: #0f172a;
+  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.15);
+}
+
+body.dark-mode #panel-settings .settings-text-input::placeholder {
+  color: #64748b;
+}
+
+body.dark-mode #panel-settings .settings-input-label,
+body.dark-mode #panel-settings .settings-checkbox-row {
+  color: #cbd5e1;
+}
+
+body.dark-mode #panel-settings .settings-chip,
+body.dark-mode #panel-settings .settings-chip-item {
+  border-color: #3b4a63;
+  color: #e2e8f0;
+  background: #111b2d;
+}
+
+body.dark-mode #panel-settings .settings-chip-item button {
+  border-color: #7f1d1d;
+  color: #fca5a5;
+  background: #3f1820;
+}
+
+body.dark-mode #panel-settings .settings-empty-line {
+  border-color: #475569;
+  color: #94a3b8;
+  background: #111b2d;
+}
+
+body.dark-mode #panel-settings .settings-logo-preview {
+  border-color: #334155;
+  background: #ffffff;
+}
+
+body.dark-mode #panel-settings input[type="range"] {
+  color-scheme: dark;
+}
+
+.settings-user-name-form .settings-text-input {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.settings-user-name-form .settings-action-btn {
+  white-space: nowrap;
+}
+
 @media (max-width: 900px) {
   .settings-menu-grid--three {
     grid-template-columns: 1fr;
@@ -7277,6 +7416,11 @@ body.dark-mode #panel-settings .settings-menu-arrow {
   #panel-settings .settings-menu-item {
     min-height: 78px;
     padding: 13px;
+  }
+
+  .settings-user-name-form {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .settings-menu-icon {

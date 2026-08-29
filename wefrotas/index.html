@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260829-settings-page-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260829-settings-dark-profile-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -195,12 +195,6 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.17V11a6 6 0 10-12 0v3.17c0 .53-.21 1.04-.59 1.43L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
               </svg>
               <span id="notifications-badge" class="notification-badge hidden">0</span>
-            </button>
-            <button class="top-action header-utility-btn" type="button" onclick="toggleSettings()" aria-label="Configurações">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="3" stroke-width="2"></circle>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 .99-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 .99 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51.99H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-              </svg>
             </button>
             <button id="online-sync-btn" class="top-action header-utility-btn online-sync-action" type="button" onclick="syncWeFrotasOnline()" aria-label="Sincronizar dados" title="Sincronizar dados" hidden>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -1313,9 +1307,12 @@
           <p class="settings-label">Usuário conectado</p>
           <div class="settings-list">
             <div class="settings-field-stack">
-              <label class="settings-input-label" for="settings-manager-name">Nome cadastrado no Appwrite</label>
-              <input type="text" id="settings-manager-name" class="settings-text-input" readonly aria-readonly="true">
-              <p class="settings-description !mb-0">O nome, as iniciais e o perfil são carregados automaticamente do usuário autenticado. Para alterar, edite o usuário no Appwrite.</p>
+              <label class="settings-input-label" for="settings-manager-name">Nome do usuário</label>
+              <div class="settings-inline-form settings-user-name-form">
+                <input type="text" id="settings-manager-name" class="settings-text-input" maxlength="128" autocomplete="name" placeholder="Digite o nome do usuário">
+                <button type="button" id="settings-manager-name-save" class="settings-action-btn" onclick="saveAuthenticatedUserName()">Salvar nome</button>
+              </div>
+              <p class="settings-description !mb-0">Este nome e suas iniciais serão atualizados no seu perfil do WeFrotas.</p>
             </div>
           </div>
         </section>
@@ -1737,8 +1734,8 @@
 
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
-  <script src="./wefrotas-backend.js?v=20260829-canonical-driver-links-1"></script>
-  <script src="./wefrotas.js?v=20260829-settings-page-1"></script>
+  <script src="./wefrotas-backend.js?v=20260829-settings-dark-profile-1"></script>
+  <script src="./wefrotas.js?v=20260829-settings-dark-profile-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

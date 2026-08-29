@@ -193,6 +193,16 @@
     ];
   }
 
+  async function updateAuthenticatedUserName(name) {
+    if (!currentUser || !account) throw new Error('Entre no WeFrotas Online para alterar seu nome.');
+    const normalizedName = String(name || '').trim().replace(/\s+/g, ' ');
+    if (normalizedName.length < 2) throw new Error('Informe um nome com pelo menos 2 caracteres.');
+    if (normalizedName.length > 128) throw new Error('O nome deve ter no máximo 128 caracteres.');
+    currentUser = await account.updateName({ name: normalizedName });
+    emitStatus('online', `Perfil atualizado para ${currentUser.name || currentUser.email}.`);
+    return currentUser;
+  }
+
   async function getPrimaryRowId() {
     if (!primaryRowId) primaryRowId = await digestId(config.companyId);
     return primaryRowId;
@@ -755,6 +765,7 @@
   global.WeFrotasBackend = Object.freeze({
     config, isConfigured, initialize, signIn, signOut,
     getUser: () => currentUser,
+    updateAuthenticatedUserName,
     getAccessRole: getCurrentAccessRole,
     hasPermission: hasCurrentPermission,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,

@@ -1366,6 +1366,50 @@
       return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
     }
 
+    async function saveAuthenticatedUserName() {
+      const input = document.getElementById('settings-manager-name');
+      const button = document.getElementById('settings-manager-name-save');
+      const name = String(input?.value || '').trim().replace(/\s+/g, ' ');
+      if (name.length < 2) {
+        showToast('Informe um nome com pelo menos 2 caracteres.');
+        input?.focus();
+        return;
+      }
+      if (!window.WeFrotasBackend?.getUser?.()) {
+        showToast('Entre no WeFrotas Online para alterar seu nome.');
+        return;
+      }
+      if (!window.WeFrotasBackend?.updateAuthenticatedUserName) {
+        showToast('A atualização do perfil ainda não está disponível. Recarregue a página.');
+        return;
+      }
+      const originalLabel = button?.textContent || 'Salvar nome';
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Salvando...';
+      }
+      try {
+        const user = await window.WeFrotasBackend.updateAuthenticatedUserName(name);
+        managerDisplayName = getAuthenticatedUserDisplayName(user);
+        updateManagerIdentityUi();
+        updateOperationSettingsUi();
+        showToast('Nome do usuário atualizado.');
+      } catch (error) {
+        console.error('Não foi possível atualizar o nome do usuário.', error);
+        const sessionExpired = error?.code === 401
+          || error?.code === 403
+          || /missing scopes|guests|account/i.test(String(error?.message || ''));
+        showToast(sessionExpired
+          ? 'Sua sessão expirou. Entre novamente para alterar o nome.'
+          : (error?.message || 'Não foi possível atualizar o nome do usuário.'));
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = originalLabel;
+        }
+      }
+    }
+
     function getFinanceEntryDate(entry) {
       return normalizeDateForFilter(entry?.dataAbastecimento)
         || normalizeDateForFilter(entry?.dataVencimento)
