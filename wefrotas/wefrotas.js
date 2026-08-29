@@ -4008,8 +4008,14 @@
 
     async function saveCentralDeviceLink(deviceId) {
       if (!requireWefrotasPermission('manageDevices', 'Somente administradores podem gerenciar aparelhos.')) return;
+      const select = document.getElementById(`central-device-driver-${deviceId}`);
+      const card = select?.closest('.central-device-card');
+      if (card?.dataset.saving === 'true') return;
+      const controls = [...(card?.querySelectorAll('select, button') || [])];
+      if (card) card.dataset.saving = 'true';
+      controls.forEach((control) => { control.disabled = true; });
+      toggleOnlinePlatformLoading(true, 'Salvando o vínculo do aparelho...');
       try {
-        const select = document.getElementById(`central-device-driver-${deviceId}`);
         const driverId = String(select?.value || '').trim();
         if (!driverId) {
           const result = await executeCentralPushAdmin({ action: 'device-profile-admin-set', subscriptionId: deviceId, driverId: '', vehicleId: '' });
@@ -4055,6 +4061,10 @@
         showToast(`Aparelho vinculado a ${driver.nome}.`);
       } catch (error) {
         showToast(error?.message || 'Não foi possível atualizar o vínculo deste aparelho.');
+      } finally {
+        toggleOnlinePlatformLoading(false);
+        if (card) delete card.dataset.saving;
+        controls.forEach((control) => { control.disabled = false; });
       }
     }
 
