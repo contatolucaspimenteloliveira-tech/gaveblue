@@ -48,6 +48,8 @@ As ações públicas da Function são:
 
 - `subscribe` e `unsubscribe`: administram somente a inscrição técnica do próprio aparelho; quando `subscribe` recebe o `deviceId`, ele renova o vínculo dos registros desse aparelho com a inscrição atual;
 - `presence`: renova o horário do último contato enquanto a Central está aberta, permitindo ao WeFrotas indicar aparelho online, instável ou offline sem armazenar localização;
+- `device-profile-set`: sincroniza com o WeFrotas o motorista e o veículo confirmados no aparelho;
+- `device-profile-admin-set`: altera pelo WeFrotas o motorista e o veículo que o aparelho deve utilizar;
 - `directory`: retorna apenas os vínculos ativos mínimos de motorista e veículo publicados pelo WeFrotas;
 - `history`: retorna os registros vinculados ao `deviceId` ou à inscrição técnica informada.
 

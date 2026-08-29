@@ -3876,6 +3876,10 @@
         userAgent: String(device.userAgent || '').trim(),
         updatedAt: String(device.updatedAt || device.$updatedAt || '').trim(),
         presence: String(device.presence || '').trim().toLowerCase(),
+        driverId: String(device.driverId || '').trim(),
+        vehicleId: String(device.vehicleId || '').trim(),
+        linkUpdatedAt: String(device.linkUpdatedAt || '').trim(),
+        linkConfigured: device.linkConfigured === true,
         active: device.active !== false
       };
     }
@@ -3904,7 +3908,8 @@
     }
 
     function getCentralDeviceDriver(deviceId) {
-      const savedDriverId = String(centralDeviceLinks?.[deviceId]?.driverId || '').trim();
+      const remoteDevice = centralPushDevices.find(device => device.id === deviceId);
+      const savedDriverId = String(remoteDevice?.driverId || centralDeviceLinks?.[deviceId]?.driverId || '').trim();
       const saved = allDrivers.find(driver => driver.id === savedDriverId);
       if (saved) return saved;
       const record = getCentralDeviceRecord(deviceId);
@@ -4003,21 +4008,54 @@
 
     async function saveCentralDeviceLink(deviceId) {
       if (!requireWefrotasPermission('manageDevices', 'Somente administradores podem gerenciar aparelhos.')) return;
-      const select = document.getElementById(`central-device-driver-${deviceId}`);
-      const driverId = String(select?.value || '').trim();
-      if (!driverId) {
-        delete centralDeviceLinks[deviceId];
-        await saveToLocalStorage();
+      try {
+        const select = document.getElementById(`central-device-driver-${deviceId}`);
+        const driverId = String(select?.value || '').trim();
+        if (!driverId) {
+          const result = await executeCentralPushAdmin({ action: 'device-profile-admin-set', subscriptionId: deviceId, driverId: '', vehicleId: '' });
+          const updatedAt = String(result?.profileSync?.updatedAt || new Date().toISOString());
+          centralDeviceLinks[deviceId] = { driverId: '', vehicleId: '', updatedAt, linkedAt: updatedAt, source: 'wefrotas' };
+          const device = centralPushDevices.find(item => item.id === deviceId);
+          if (device) Object.assign(device, { driverId: '', vehicleId: '', linkUpdatedAt: updatedAt, linkConfigured: true });
+          await persistCentralConfigurationImmediately();
+          renderCentralDevices();
+          showToast('Vínculo removido. O aparelho continua autorizado a receber notificações.');
+          return;
+        }
+        const driver = allDrivers.find(item => item.id === driverId);
+        if (!driver) return showToast('Motorista não encontrado. Atualize os cadastros e tente novamente.');
+        const linkedVehicleIds = Array.isArray(driver.vehicleIds) ? driver.vehicleIds.map(String) : [];
+        const vehicle = allVehicles.find(item => linkedVehicleIds.includes(String(item.id)))
+          || allVehicles.find(item => String(item.motoristaId || item.driverId || '') === driverId);
+        if (!vehicle) return showToast('Este motorista não possui veículo vinculado. Atualize o cadastro do motorista primeiro.');
+        const result = await executeCentralPushAdmin({
+          action: 'device-profile-admin-set',
+          subscriptionId: deviceId,
+          driverId,
+          vehicleId: String(vehicle.id || '')
+        });
+        const syncedProfile = result?.profileSync?.profile || {};
+        const updatedAt = String(result?.profileSync?.updatedAt || new Date().toISOString());
+        centralDeviceLinks[deviceId] = {
+          driverId: String(syncedProfile.driverId || driverId),
+          vehicleId: String(syncedProfile.vehicleId || vehicle.id || ''),
+          updatedAt,
+          linkedAt: updatedAt,
+          source: 'wefrotas'
+        };
+        const device = centralPushDevices.find(item => item.id === deviceId);
+        if (device) Object.assign(device, {
+          driverId: centralDeviceLinks[deviceId].driverId,
+          vehicleId: centralDeviceLinks[deviceId].vehicleId,
+          linkUpdatedAt: updatedAt,
+          linkConfigured: true
+        });
+        await persistCentralConfigurationImmediately();
         renderCentralDevices();
-        showToast('Vínculo removido. O aparelho continua autorizado a receber notificações.');
-        return;
+        showToast(`Aparelho vinculado a ${driver.nome}.`);
+      } catch (error) {
+        showToast(error?.message || 'Não foi possível atualizar o vínculo deste aparelho.');
       }
-      const driver = allDrivers.find(item => item.id === driverId);
-      if (!driver) return showToast('Motorista não encontrado. Atualize os cadastros e tente novamente.');
-      centralDeviceLinks[deviceId] = { driverId, linkedAt: new Date().toISOString() };
-      await saveToLocalStorage();
-      renderCentralDevices();
-      showToast(`Aparelho vinculado a ${driver.nome}.`);
     }
 
     function confirmCentralDeviceDeletion(deviceId, shortId) {

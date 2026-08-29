@@ -50,8 +50,8 @@ const CENTRAL_PUSH_FUNCTION_ID = 'central-push';
 const CENTRAL_PUSH_PUBLIC_KEY = 'BK6Dhnrl6Wr4nO4PtE-ZlnW7ttRe0vtA3b7ssZsa7S9bGdR8gcBBu9SNuNBoMntUkcMBkAOAcgvhMJalNysihgw';
 const CENTRAL_PUSH_PROMPT_DISMISSED_KEY = 'central-push-prompt-dismissed';
 const CENTRAL_PUSH_SUBSCRIPTION_ID_KEY = 'central-push-subscription-id';
-const CENTRAL_DEVICE_HEARTBEAT_INTERVAL_MS = 30000;
-const CENTRAL_DEVICE_HEARTBEAT_MIN_INTERVAL_MS = 20000;
+const CENTRAL_DEVICE_HEARTBEAT_INTERVAL_MS = 15000;
+const CENTRAL_DEVICE_HEARTBEAT_MIN_INTERVAL_MS = 10000;
 const CENTRAL_NOTIFICATIONS_DB = 'central-registros-notifications-v1';
 const CENTRAL_NOTIFICATIONS_STORE = 'notifications';
 const REMOVED_DRIVER_NAMES = ['ELOIS DOS SANTOS'];
@@ -772,6 +772,7 @@ async function sendCentralDeviceHeartbeat({ force = false } = {}) {
       setupCentralPushExperience();
       return false;
     }
+    await applyCentralDeviceProfileSync(result?.profileSync);
     centralDeviceHeartbeatLastSentAt = now;
     return true;
   } catch (error) {
@@ -779,6 +780,54 @@ async function sendCentralDeviceHeartbeat({ force = false } = {}) {
     return false;
   } finally {
     centralDeviceHeartbeatInProgress = false;
+  }
+}
+
+async function applyCentralDeviceProfileSync(profileSync) {
+  if (!profileSync || profileSync.configured !== true) return false;
+  const updatedAt = String(profileSync.updatedAt || '').trim();
+  const currentProfile = getDriverProfile();
+  const currentUpdatedAt = String(currentProfile?.linkUpdatedAt || '').trim();
+  if (updatedAt && currentUpdatedAt && updatedAt <= currentUpdatedAt) return false;
+
+  if (profileSync.linked !== true || !profileSync.profile) {
+    localStorage.removeItem(DRIVER_PROFILE_STORAGE_KEY);
+  } else {
+    const remote = profileSync.profile;
+    localStorage.setItem(DRIVER_PROFILE_STORAGE_KEY, JSON.stringify({
+      name: String(remote.name || '').trim(),
+      vehicle: String(remote.vehicle || '').trim(),
+      plate: String(remote.plate || '').trim().toUpperCase(),
+      vehicleImageUrl: String(remote.vehicleImageUrl || '').trim(),
+      driverId: String(remote.driverId || '').trim(),
+      vehicleId: String(remote.vehicleId || '').trim(),
+      linkUpdatedAt: updatedAt
+    }));
+  }
+  await persistCentralDeviceState();
+  renderHomeDriverArea();
+  renderProfilePage();
+  populateDriverSelects();
+  return true;
+}
+
+async function syncCentralDeviceProfile({ silent = false } = {}) {
+  const subscriptionId = getCentralPushSubscriptionId();
+  const profile = getDriverProfile();
+  if (!subscriptionId || !isStoredDriverProfileComplete(profile) || !navigator.onLine) return false;
+  try {
+    const result = await executeCentralPushFunction({
+      action: 'device-profile-set',
+      subscriptionId,
+      driverId: profile.driverId,
+      vehicleId: profile.vehicleId
+    });
+    await applyCentralDeviceProfileSync(result?.profileSync);
+    return true;
+  } catch (error) {
+    if (!silent) showErrorMessage(error?.message || 'Não foi possível sincronizar o vínculo deste aparelho.');
+    console.warn('Não foi possível sincronizar o perfil do aparelho.', error);
+    return false;
   }
 }
 
@@ -843,6 +892,7 @@ async function enableCentralPushNotifications() {
     });
 
     saveCentralPushSubscriptionId(result.subscriptionId);
+    await syncCentralDeviceProfile({ silent: true });
     startCentralDeviceHeartbeat();
     localStorage.removeItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY);
     document.getElementById('central-push-prompt')?.remove();
@@ -893,6 +943,7 @@ function setupCentralPushExperience() {
             userAgent: navigator.userAgent
           });
           saveCentralPushSubscriptionId(result.subscriptionId);
+          await syncCentralDeviceProfile({ silent: true });
           startCentralDeviceHeartbeat();
         } catch (error) {
           // A inscrição local continua válida. Uma falha temporária ao renovar
@@ -1472,7 +1523,8 @@ function getDriverProfile() {
       plate,
       vehicleImageUrl: String(profile.vehicleImageUrl || '').trim(),
       driverId: String(profile.driverId || ''),
-      vehicleId: String(profile.vehicleId || '')
+      vehicleId: String(profile.vehicleId || ''),
+      linkUpdatedAt: String(profile.linkUpdatedAt || '')
     } : null;
   } catch (error) {
     return null;
@@ -2106,13 +2158,15 @@ async function confirmSuggestedDriverVehicle() {
       plate: vehicle.plate,
       vehicleImageUrl: String(vehicle.vehicleImageUrl || vehicle.imageUrl || vehicle.photoUrl || ''),
       driverId: selectedDirectoryDriver.id,
-      vehicleId: vehicle.vehicleId
+      vehicleId: vehicle.vehicleId,
+      linkUpdatedAt: new Date().toISOString()
     }));
   } catch (error) {
     showErrorMessage('Não foi possível salvar o perfil neste aparelho.');
     return;
   }
   await persistCentralDeviceState();
+  await syncCentralDeviceProfile({ silent: true });
   requestCentralPersistentStorage();
   saveDriverNameSuggestion(selectedDirectoryDriver.name);
   renderHomeDriverArea();

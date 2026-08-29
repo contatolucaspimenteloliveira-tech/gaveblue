@@ -425,6 +425,89 @@ async function touchSubscriptionPresence(databases, payload) {
   }
 }
 
+async function getWefrotasSnapshot(databases) {
+  const row = await databases.getDocument({
+    databaseId: DATABASE_ID,
+    collectionId: WEFROTAS_TABLE_ID,
+    documentId: wefrotasSnapshotDocumentId()
+  });
+  return decodeWefrotasSnapshot(databases, row?.snapshot);
+}
+
+async function resolveCentralDeviceProfile(databases, subscriptionId, snapshot = null, directory = null) {
+  const links = snapshot?.centralDeviceLinks && typeof snapshot.centralDeviceLinks === 'object'
+    ? snapshot.centralDeviceLinks
+    : (await getWefrotasSnapshot(databases))?.centralDeviceLinks || {};
+  if (!Object.prototype.hasOwnProperty.call(links, subscriptionId)) {
+    return { configured: false, linked: false, updatedAt: '', profile: null };
+  }
+  const link = links[subscriptionId] && typeof links[subscriptionId] === 'object' ? links[subscriptionId] : {};
+  const driverId = String(link.driverId || '').trim();
+  const vehicleId = String(link.vehicleId || '').trim();
+  const updatedAt = String(link.updatedAt || link.linkedAt || '').trim();
+  if (!driverId || !vehicleId) return { configured: true, linked: false, updatedAt, profile: null };
+
+  const resolvedDirectory = Array.isArray(directory) ? directory : await listDriverDirectory(databases);
+  const row = resolvedDirectory.find((item) => String(item.driverId) === driverId && String(item.vehicleId) === vehicleId);
+  if (!row) return { configured: true, linked: false, updatedAt, profile: null };
+  return {
+    configured: true,
+    linked: true,
+    updatedAt,
+    profile: {
+      driverId,
+      vehicleId,
+      name: String(row.driverName || ''),
+      vehicle: String(row.vehicleName || ''),
+      plate: String(row.plate || ''),
+      vehicleImageUrl: String(row.vehicleImageUrl || '')
+    }
+  };
+}
+
+async function updateCentralDeviceProfile(databases, subscriptionId, { driverId = '', vehicleId = '', source = '' } = {}, actorId = '') {
+  const normalizedSubscriptionId = String(subscriptionId || '').trim();
+  if (!isValidSubscriptionId(normalizedSubscriptionId)) {
+    throw Object.assign(new Error('Identificador do aparelho inválido.'), { status: 400 });
+  }
+  try {
+    await databases.getDocument({ databaseId: DATABASE_ID, collectionId: COLLECTION_ID, documentId: normalizedSubscriptionId });
+  } catch (error) {
+    if (Number(error?.code) === 404) throw Object.assign(new Error('Este aparelho não está mais inscrito.'), { status: 404 });
+    throw error;
+  }
+
+  let normalizedDriverId = String(driverId || '').trim();
+  let normalizedVehicleId = String(vehicleId || '').trim();
+  if (normalizedDriverId) {
+    const directory = await listDriverDirectory(databases);
+    let row = directory.find((item) => String(item.driverId) === normalizedDriverId && String(item.vehicleId) === normalizedVehicleId);
+    if (!row && !normalizedVehicleId) row = directory.find((item) => String(item.driverId) === normalizedDriverId);
+    if (!row) {
+      throw Object.assign(new Error('O motorista não possui permissão para usar este veículo.'), { status: 403 });
+    }
+    normalizedVehicleId = String(row.vehicleId || '').trim();
+  } else {
+    normalizedVehicleId = '';
+  }
+
+  const snapshot = await getWefrotasSnapshot(databases);
+  const links = snapshot.centralDeviceLinks && typeof snapshot.centralDeviceLinks === 'object'
+    ? { ...snapshot.centralDeviceLinks }
+    : {};
+  const updatedAt = new Date().toISOString();
+  links[normalizedSubscriptionId] = {
+    driverId: normalizedDriverId,
+    vehicleId: normalizedVehicleId,
+    updatedAt,
+    linkedAt: updatedAt,
+    source: String(source || '').slice(0, 30)
+  };
+  snapshot.centralDeviceLinks = links;
+  await persistWefrotasSnapshot(databases, snapshot, actorId || `device:${normalizedSubscriptionId.slice(-8)}`);
+  return resolveCentralDeviceProfile(databases, normalizedSubscriptionId, snapshot);
+}
+
 function getSubscriptionPresence(updatedAt, active = true) {
   if (!active) return 'offline';
   const lastSeen = new Date(updatedAt || 0).getTime();
@@ -1280,7 +1363,37 @@ export default async ({ req, res, log, error }) => {
     if (action === 'presence') {
       const databases = createDatabaseClient(req);
       const presence = await touchSubscriptionPresence(databases, payload);
-      return json(res, 200, { ok: true, ...presence });
+      const profileSync = presence.touched
+        ? await resolveCentralDeviceProfile(databases, String(payload.subscriptionId || '').trim()).catch(() => ({ configured: false, linked: false, updatedAt: '', profile: null }))
+        : { configured: false, linked: false, updatedAt: '', profile: null };
+      return json(res, 200, { ok: true, ...presence, profileSync });
+    }
+
+    if (action === 'device-profile-set') {
+      const databases = createDatabaseClient(req);
+      const profileSync = await updateCentralDeviceProfile(databases, payload.subscriptionId, {
+        driverId: payload.driverId,
+        vehicleId: payload.vehicleId,
+        source: 'central-app'
+      });
+      return json(res, 200, { ok: true, profileSync });
+    }
+
+    if (action === 'device-profile-admin-set') {
+      const senderId = await assertAdmin(req);
+      const databases = createDatabaseClient(req);
+      const profileSync = await updateCentralDeviceProfile(databases, payload.subscriptionId, {
+        driverId: payload.driverId,
+        vehicleId: payload.vehicleId,
+        source: 'wefrotas'
+      }, senderId);
+      await writeWefrotasAudit(databases, {
+        actorId: senderId,
+        action: 'central.device.link',
+        targetId: String(payload.subscriptionId || ''),
+        after: { driverId: String(payload.driverId || ''), vehicleId: String(payload.vehicleId || '') }
+      });
+      return json(res, 200, { ok: true, profileSync });
     }
 
     if (action === 'onboarding-config') {
@@ -1399,12 +1512,22 @@ export default async ({ req, res, log, error }) => {
       await assertAdmin(req);
       const databases = createDatabaseClient(req);
       const subscriptions = await listSubscriptions(databases);
-      const devices = subscriptions.map((document) => ({
-        id: String(document.$id || ''),
-        userAgent: String(document.userAgent || ''),
-        active: document.active !== false,
-        updatedAt: String(document.updatedAt || document.$updatedAt || ''),
-        presence: getSubscriptionPresence(document.updatedAt || document.$updatedAt, document.active !== false)
+      const snapshot = await getWefrotasSnapshot(databases).catch(() => ({}));
+      const directory = await listDriverDirectory(databases).catch(() => []);
+      const devices = await Promise.all(subscriptions.map(async (document) => {
+        const id = String(document.$id || '');
+        const profileSync = await resolveCentralDeviceProfile(databases, id, snapshot, directory).catch(() => ({ configured: false, linked: false, updatedAt: '', profile: null }));
+        return {
+          id,
+          userAgent: String(document.userAgent || ''),
+          active: document.active !== false,
+          updatedAt: String(document.updatedAt || document.$updatedAt || ''),
+          presence: getSubscriptionPresence(document.updatedAt || document.$updatedAt, document.active !== false),
+          driverId: String(profileSync.profile?.driverId || ''),
+          vehicleId: String(profileSync.profile?.vehicleId || ''),
+          linkUpdatedAt: String(profileSync.updatedAt || ''),
+          linkConfigured: profileSync.configured === true
+        };
       }));
       return json(res, 200, { ok: true, subscribers: subscriptions.length, devices });
     }
