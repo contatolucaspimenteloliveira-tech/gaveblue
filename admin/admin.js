@@ -19,7 +19,16 @@
   function toast(message) { const node = $('#toast'); node.textContent = message; node.classList.remove('hidden'); clearTimeout(toast.timer); toast.timer = setTimeout(() => node.classList.add('hidden'), 3500); }
   async function invoke(action, payload = {}) {
     const { data, error } = await state.client.functions.invoke(config.functionName || 'platform-admin', { body: { action, ...payload } });
-    if (error) throw new Error(error.message || 'Falha ao acessar a gestão da plataforma.');
+    if (error) {
+      let message = error.message || 'Falha ao acessar a gestão da plataforma.';
+      try {
+        const details = await error.context?.json();
+        if (details?.error) message = details.error;
+      } catch (_) {
+        // A resposta pode não ter corpo JSON (proxy ou indisponibilidade de rede).
+      }
+      throw new Error(message);
+    }
     if (!data?.ok) throw new Error(data?.error || 'Operação não concluída.');
     return data;
   }
