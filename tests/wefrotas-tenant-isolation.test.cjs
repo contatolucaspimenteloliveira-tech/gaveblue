@@ -1,0 +1,204 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const { webcrypto } = require('node:crypto');
+const { test } = require('node:test');
+const source = fs.readFileSync(path.join(__dirname, '../wefrotas/wefrotas-backend.js'), 'utf8');
+const ui = fs.readFileSync(path.join(__dirname, '../wefrotas/wefrotas.js'), 'utf8');
+const clone = value => JSON.parse(JSON.stringify(value));
+const tenant = (name) => ({ id: name, workspaceId: name, appwriteLabel: `org${name}`, appwriteManagerLabels: [`org${name}adm`], role: 'wefrotas-admin', modules: ['wefrotas'] });
+const missing = () => Object.assign(new Error('not found'), { code: 404 });
+
+async function harness() {
+  const rows = new Map(), writes = [], local = new Map(), timers = new Map();
+  let nextTimer = 0, applied = { vehicles: [{ id: 'COVRE-PRIVATE' }], orders: [{ id: 'COVRE-ORDER' }] };
+  let getError, pendingRead;
+  const context = { console, TextEncoder, Uint8Array, crypto: webcrypto,
+    setTimeout: fn => { timers.set(++nextTimer, fn); return nextTimer; }, clearTimeout: id => timers.delete(id),
+    localStorage: { getItem: k => local.get(k) ?? null, setItem: (k,v) => local.set(k,v), removeItem: k => local.delete(k) },
+    WEFROTAS_APPWRITE_CONFIG: { enabled: true, endpoint: 'https://example.test/v1', projectId: 'test', databaseId: 'db', tableId: 'snapshots' },
+    Appwrite: {
+      Client: class { setEndpoint() { return this; } setProject() { return this; } subscribe() { return () => {}; } },
+      Account: class { async get() { return { $id: 'user', email: 'test@example.test', labels: ['admin'] }; } async deleteSession() {} },
+      Storage: class {},
+      TablesDB: class {
+        async getRow({ rowId }) { if (pendingRead) await pendingRead; if (getError) throw getError; if (!rows.has(rowId)) throw missing(); return rows.get(rowId); }
+        async updateRow(args) { if (!rows.has(args.rowId)) throw missing(); writes.push(clone(args)); rows.set(args.rowId, clone(args.data)); return args.data; }
+        async createRow(args) { writes.push(clone(args)); rows.set(args.rowId, clone(args.data)); return args.data; }
+      },
+      Permission: { read: x => `read:${x}`, update: x => `update:${x}`, delete: x => `delete:${x}` },
+      Role: { label: x => x, users: () => 'users' }
+    }
+  };
+  context.window = context;
+  vm.runInNewContext(source, context);
+  const backend = context.WeFrotasBackend;
+  await backend.initialize({ getSnapshot: () => applied, applySnapshot: async s => { applied = clone(s); } });
+  async function seed(name, snapshot) {
+    const id = Buffer.from(await webcrypto.subtle.digest('SHA-256', new TextEncoder().encode(name))).toString('hex').slice(0,36);
+    rows.set(id, { workspaceId: name, snapshot: JSON.stringify(snapshot) });
+    return id;
+  }
+  return { backend, rows, writes, local, timers, seed, snapshot: () => applied,
+    fail: e => { getError = e; }, hold: promise => { pendingRead = promise; } };
+}
+
+test('new tenant never uploads or adopts the previous company cache', async () => {
+  const h = await harness();
+  h.backend.setOrganizationContext(tenant('gave-test'));
+  const result = await h.backend.adoptRemoteOrUploadLocal();
+  assert.equal(result.mode, 'empty-workspace');
+  assert.deepEqual(h.snapshot().vehicles, []);
+  assert.deepEqual(h.snapshot().orders, []);
+  assert.deepEqual(h.snapshot().centralCities, []);
+  assert.equal(h.writes.length, 0);
+  assert.equal(h.backend.isSnapshotReady(), true);
+});
+
+test('switch A → B → A keeps remote business data and permissions separated', async () => {
+  const h = await harness();
+  await h.seed('covre', { vehicles: [{ id: 'COVRE-PRIVATE' }] });
+  h.backend.setOrganizationContext(tenant('covre'));
+  await h.backend.adoptRemoteOrUploadLocal();
+  h.backend.setOrganizationContext(tenant('gave-test'));
+  await h.backend.adoptRemoteOrUploadLocal();
+  await h.backend.syncNow({ vehicles: [{ id: 'GAVE-ONLY' }] });
+  assert.ok(h.writes.every(w => w.data.workspaceId === 'gave-test'));
+  assert.ok(h.writes.every(w => w.permissions.includes('read:orggave-test')));
+  h.backend.setOrganizationContext(tenant('covre'));
+  await h.backend.adoptRemoteOrUploadLocal();
+  assert.deepEqual(h.snapshot().vehicles, [{ id: 'COVRE-PRIVATE' }]);
+  h.backend.setOrganizationContext(tenant('gave-test'));
+  await h.backend.adoptRemoteOrUploadLocal();
+  assert.deepEqual(h.snapshot().vehicles, [{ id: 'GAVE-ONLY' }]);
+});
+
+test('queued writes from a previous tenant are cancelled', async () => {
+  const h = await harness();
+  h.backend.setOrganizationContext(tenant('covre'));
+  await h.backend.adoptRemoteOrUploadLocal();
+  h.backend.queueSnapshot({ vehicles: [{ id: 'OLD-QUEUE' }] });
+  const oldCallbacks = [...h.timers.values()];
+  h.backend.setOrganizationContext(tenant('gave-test'));
+  await h.backend.adoptRemoteOrUploadLocal();
+  for (const cb of oldCallbacks) cb();
+  await Promise.resolve();
+  assert.equal(h.writes.length, 0);
+});
+
+for (const code of [401, 403, 500]) test(`remote error ${code} cannot bootstrap local data`, async () => {
+  const h = await harness();
+  h.backend.setOrganizationContext(tenant('gave-test'));
+  h.fail(Object.assign(new Error('remote failed'), { code }));
+  await assert.rejects(h.backend.adoptRemoteOrUploadLocal());
+  await assert.rejects(h.backend.syncNow({ vehicles: [{ id: 'LEAK' }] }));
+  assert.equal(h.writes.length, 0);
+  assert.equal(h.backend.isSnapshotReady(), false);
+});
+
+test('incomplete chunks and wrong-workspace rows fail closed', async () => {
+  const h = await harness();
+  const id = await h.seed('gave-test', {});
+  h.backend.setOrganizationContext(tenant('gave-test'));
+  h.rows.get(id).workspaceId = 'covre';
+  await assert.rejects(h.backend.adoptRemoteOrUploadLocal(), /outra empresa/);
+  h.rows.set(id, { workspaceId: 'gave-test', snapshot: 'chunked-v1:{"generation":"missing","count":1}' });
+  await assert.rejects(h.backend.adoptRemoteOrUploadLocal());
+  assert.equal(h.backend.isSnapshotReady(), false);
+  assert.equal(h.writes.length, 0);
+});
+
+test('without an authorized tenant no upload is allowed, even with legacy admin labels', async () => {
+  const h = await harness();
+  h.backend.queueSnapshot({ vehicles: [{ id: 'LEAK' }] });
+  await assert.rejects(h.backend.syncNow({}));
+  assert.equal(h.timers.size, 0);
+  assert.equal(h.writes.length, 0);
+});
+
+test('a delayed response cannot be applied to a different company', async () => {
+  const h = await harness();
+  await h.seed('covre', { vehicles: [{ id: 'SECRET' }] });
+  h.backend.setOrganizationContext(tenant('covre'));
+  let release;
+  h.hold(new Promise(resolve => { release = resolve; }));
+  const loading = h.backend.adoptRemoteOrUploadLocal();
+  h.backend.setOrganizationContext(tenant('gave-test'));
+  release();
+  await assert.rejects(loading);
+  assert.equal(h.writes.length, 0);
+});
+
+test('frontend cache has no shared startup key and auth errors stay behind login', () => {
+  assert.match(ui, /let wefrotasIndexedDbSnapshotKey = ''/);
+  assert.match(ui, /tenant:\$\{organization.id\}:\$\{organization.workspaceId\}/);
+  assert.doesNotMatch(ui, /store.get\(['"]current['"]\)/);
+  assert.match(ui, /await activateOrganizationStorage\(result.organization\)/);
+  const flow = ui.slice(ui.indexOf('async function loginWeFrotasOnline'), ui.indexOf('async function logoutWeFrotasOnline'));
+  assert.match(flow, /throw syncError/);
+});
+
+function storageHarness(indexedDbAvailable = true) {
+  const local = new Map([['wefrotas_vehicles', '[{"id":"LEGACY-COVRE"}]']]);
+  const rows = new Map([['current', { key: 'current', value: { vehicles: [{ id: 'LEGACY-COVRE' }] } }]]);
+  const context = { console, Promise, JSON, Date,
+    wefrotasStorageWorkspace: '', wefrotasIndexedDbSnapshotKey: '',
+    wefrotasLocalSnapshotUpdatedAt: '', wefrotasStorageEngine: 'IndexedDB',
+    wefrotasStorageQueue: Promise.resolve(), wefrotasIndexedDbStore: 'snapshots',
+    localStorage: { getItem: k => local.get(k) ?? null, setItem: (k,v) => local.set(k,v), removeItem: k => local.delete(k) },
+    snapshot: {},
+    buildStorageSnapshot: () => context.snapshot,
+    applyStorageSnapshot: value => { context.snapshot = clone(value); },
+    window: { WeFrotasBackend: { isSnapshotReady: () => true, queueSnapshot: () => {} } },
+    openWeFrotasIndexedDb: async () => {
+      if (!indexedDbAvailable) throw Error('IndexedDB unavailable');
+      return { transaction: () => ({ objectStore: () => ({
+        get: key => { const req = {}; queueMicrotask(() => { req.result = rows.get(key); req.onsuccess(); }); return req; },
+        put: row => { const req = {}; queueMicrotask(() => { rows.set(row.key, clone(row)); req.onsuccess(); }); return req; }
+      }) }) };
+    }
+  };
+  const slices = [
+    ['    function parseLocalStorageJson(', '    function applyStorageSnapshot('],
+    ['    function getLegacyLocalStorageSnapshot(', '    function openWeFrotasIndexedDb('],
+    ['    function readWeFrotasIndexedDbSnapshot(', '    async function activateOrganizationStorage(']
+  ].map(([a,b]) => ui.slice(ui.indexOf(a), ui.indexOf(b,ui.indexOf(a)))).join('\n');
+  vm.createContext(context); vm.runInContext(slices, context);
+  function switchTo(name) { context.wefrotasStorageWorkspace = name; context.wefrotasIndexedDbSnapshotKey = `tenant:${name}:${name}`; }
+  return { context, local, rows, switchTo };
+}
+
+for (const indexed of [true, false]) test(`tenant storage is isolated with ${indexed ? 'IndexedDB' : 'localStorage fallback'}`, async () => {
+  const h = storageHarness(indexed);
+  await h.context.loadFromStorage();
+  assert.deepEqual(h.context.snapshot, { centralCities: [] });
+  h.switchTo('covre');
+  await h.context.loadFromStorage();
+  assert.notEqual(h.context.snapshot.vehicles?.[0]?.id, 'LEGACY-COVRE');
+  h.context.snapshot = { vehicles: [{ id: 'A' }] };
+  await h.context.saveToLocalStorage();
+  h.switchTo('gave-test');
+  await h.context.loadFromStorage();
+  assert.notEqual(h.context.snapshot.vehicles?.[0]?.id, 'A');
+  h.context.snapshot = { vehicles: [{ id: 'B' }] };
+  await h.context.saveToLocalStorage();
+  h.switchTo('covre');
+  await h.context.loadFromStorage();
+  assert.deepEqual(h.context.snapshot.vehicles, [{ id: 'A' }]);
+  assert.equal(h.local.get('wefrotas_vehicles'), '[{"id":"LEGACY-COVRE"}]');
+  assert.equal(h.rows.get('current').value.vehicles[0].id, 'LEGACY-COVRE');
+});
+
+test('delayed IndexedDB writes retain the original tenant key and immutable payload', async () => {
+  const h = storageHarness();
+  h.switchTo('covre');
+  const snapshot = { vehicles: [{ id: 'A' }] };
+  h.context.snapshot = snapshot;
+  const saving = h.context.saveToLocalStorage();
+  h.switchTo('gave-test');
+  snapshot.vehicles[0].id = 'MUTATED';
+  await saving;
+  assert.equal(h.rows.get('tenant:covre:covre').value.vehicles[0].id, 'A');
+  assert.equal(h.rows.has('tenant:gave-test:gave-test'), false);
+});

@@ -48,5 +48,5 @@ test('legacy mode still handles existing labels but does not infer org labels', 
 
 test('identity UI is reapplied after authorized organization context is set', () => {
   const block = source.slice(source.indexOf('    async function loadAuthorizedOrganizationContext()'), source.indexOf('    const wefrotasRoleDefinitions'));
-  assert.match(block, /setOrganizationContext\([\s\S]*?\}\);\s*updateManagerIdentityUi\(\);/);
+  assert.match(block, /setOrganizationContext\([\s\S]*?\}\);\s*await activateOrganizationStorage\(result.organization\);\s*updateManagerIdentityUi\(\);/);
 });

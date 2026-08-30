@@ -126,16 +126,9 @@
     const wefrotasIndexedDbName = 'wefrotas_app_storage';
     const wefrotasIndexedDbVersion = 1;
     const wefrotasIndexedDbStore = 'snapshots';
-    const wefrotasIndexedDbSnapshotKey = 'current';
-    const wefrotasLegacyLargeKeys = [
-      'wefrotas_vehicles',
-      'wefrotas_drivers',
-      'wefrotas_suppliers',
-      'wefrotas_orders',
-      'wefrotas_finance',
-      'wefrotas_deleted_orders',
-      'wefrotas_notifications'
-    ];
+    // Never open an unowned/legacy snapshot before the server resolves the tenant.
+    let wefrotasIndexedDbSnapshotKey = '';
+    let wefrotasStorageWorkspace = '';
     let wefrotasDbConnection = null;
     let wefrotasStorageEngine = 'localStorage';
     let wefrotasStorageQueue = Promise.resolve();
@@ -488,8 +481,6 @@
       try {
         wefrotasStorageEngine = 'IndexedDB';
         await writeWeFrotasIndexedDbSnapshot(optimizedSnapshot);
-        saveSmallSettingsToLocalStorage(optimizedSnapshot);
-        clearLegacyLargeLocalStorageData();
       } catch (error) {
         wefrotasStorageEngine = 'localStorage';
         saveFullSnapshotToLocalStorage(optimizedSnapshot);
@@ -1682,9 +1673,9 @@
       allVehicles = Array.isArray(snapshot.vehicles) ? snapshot.vehicles.map(normalizeVehicleRecord) : [];
       allDrivers = Array.isArray(snapshot.drivers) ? snapshot.drivers.map(normalizeDriverRecord) : [];
       allSuppliers = Array.isArray(snapshot.suppliers) ? snapshot.suppliers.map(normalizeSupplierRecord) : [];
-      centralCities = Array.isArray(snapshot.centralCities) && snapshot.centralCities.length
+      centralCities = Array.isArray(snapshot.centralCities)
         ? snapshot.centralCities.map(normalizeCentralCityRecord).filter((city) => city.name)
-        : CENTRAL_DEFAULT_CITIES.map((city) => ({ ...city }));
+        : (wefrotasStorageWorkspace === 'covre-e-cia' ? CENTRAL_DEFAULT_CITIES.map((city) => ({ ...city })) : []);
       const migratedSupplierCities = ensureSupplierCitiesRegistered();
       allOrders = Array.isArray(snapshot.orders) ? snapshot.orders : [];
       allFinanceEntries = Array.isArray(snapshot.finance) ? snapshot.finance : [];
@@ -1707,64 +1698,20 @@
     }
 
     function getLegacyLocalStorageSnapshot() {
-      return {
-        vehicles: parseLocalStorageJson('wefrotas_vehicles', []),
-        drivers: parseLocalStorageJson('wefrotas_drivers', []),
-        suppliers: parseLocalStorageJson('wefrotas_suppliers', []),
-        centralCities: parseLocalStorageJson('wefrotas_central_cities', []),
-        orders: parseLocalStorageJson('wefrotas_orders', []),
-        finance: parseLocalStorageJson('wefrotas_finance', []),
-        administrations: parseLocalStorageJson('wefrotas_administrations', []),
-        deletedOrders: parseLocalStorageJson('wefrotas_deleted_orders', []),
-        orderCounter: localStorage.getItem('wefrotas_order_counter') || 1,
-        notifications: parseLocalStorageJson('wefrotas_notifications', []),
-        centralDeviceLinks: parseLocalStorageJson('wefrotas_central_device_links', {}),
-        customLogoEnabled: localStorage.getItem('wefrotas_custom_logo_enabled') === 'true',
-        customLogoUrl: localStorage.getItem('wefrotas_custom_logo_url') || '',
-        customLogoScale: localStorage.getItem('wefrotas_custom_logo_scale') || 60,
-        managerDisplayName: localStorage.getItem('wefrotas_manager_display_name') || localStorage.getItem('wefrotas_default_administrator_name') || 'Gestor',
-        allowManualOrderNumberEditing: localStorage.getItem('wefrotas_allow_manual_order_number_editing') === 'true'
-      };
+      // The old shared keys are deliberately left untouched for recovery, not adopted.
+      if (!wefrotasStorageWorkspace) return {};
+      return parseLocalStorageJson(`wefrotas:tenant:${wefrotasStorageWorkspace}:snapshot`, {});
     }
 
-    function saveSmallSettingsToLocalStorage(snapshot = buildStorageSnapshot()) {
-      try {
-        localStorage.setItem('wefrotas_storage_engine', wefrotasStorageEngine);
-        localStorage.setItem('wefrotas_order_counter', String(snapshot.orderCounter || 1));
-        localStorage.setItem('wefrotas_custom_logo_enabled', snapshot.customLogoEnabled ? 'true' : 'false');
-        localStorage.setItem('wefrotas_custom_logo_url', snapshot.customLogoUrl || '');
-        localStorage.setItem('wefrotas_custom_logo_scale', String(snapshot.customLogoScale || 60));
-        localStorage.setItem('wefrotas_manager_display_name', snapshot.managerDisplayName || 'Gestor');
-        localStorage.setItem('wefrotas_allow_manual_order_number_editing', snapshot.allowManualOrderNumberEditing ? 'true' : 'false');
-        localStorage.setItem('wefrotas_administrations', JSON.stringify(snapshot.administrations || []));
-        localStorage.setItem('wefrotas_central_device_links', JSON.stringify(snapshot.centralDeviceLinks || {}));
-        localStorage.setItem('wefrotas_central_cities', JSON.stringify(snapshot.centralCities || []));
-      } catch (error) {
-        console.warn('Não foi possível salvar preferências pequenas no localStorage.', error);
-      }
+
+
+
+    function saveFullSnapshotToLocalStorage(snapshot = buildStorageSnapshot(), workspace = wefrotasStorageWorkspace) {
+      if (!workspace) return;
+      localStorage.setItem(`wefrotas:tenant:${workspace}:snapshot`, JSON.stringify(snapshot));
     }
 
-    function saveFullSnapshotToLocalStorage(snapshot = buildStorageSnapshot()) {
-      try {
-        localStorage.setItem('wefrotas_vehicles', JSON.stringify(snapshot.vehicles || []));
-        localStorage.setItem('wefrotas_drivers', JSON.stringify(snapshot.drivers || []));
-        localStorage.setItem('wefrotas_suppliers', JSON.stringify(snapshot.suppliers || []));
-        localStorage.setItem('wefrotas_central_cities', JSON.stringify(snapshot.centralCities || []));
-        localStorage.setItem('wefrotas_orders', JSON.stringify(snapshot.orders || []));
-        localStorage.setItem('wefrotas_finance', JSON.stringify(snapshot.finance || []));
-        localStorage.setItem('wefrotas_administrations', JSON.stringify(snapshot.administrations || []));
-        localStorage.setItem('wefrotas_deleted_orders', JSON.stringify(snapshot.deletedOrders || []));
-        localStorage.setItem('wefrotas_notifications', JSON.stringify(snapshot.notifications || []));
-        localStorage.setItem('wefrotas_central_device_links', JSON.stringify(snapshot.centralDeviceLinks || {}));
-        saveSmallSettingsToLocalStorage(snapshot);
-      } catch (error) {
-        console.warn('Não foi possível salvar snapshot completo no localStorage.', error);
-      }
-    }
 
-    function clearLegacyLargeLocalStorageData() {
-      wefrotasLegacyLargeKeys.forEach((key) => localStorage.removeItem(key));
-    }
 
     function openWeFrotasIndexedDb() {
       if (!window.indexedDB) {
@@ -1793,10 +1740,12 @@
     }
 
     function readWeFrotasIndexedDbSnapshot() {
+      const snapshotKey = wefrotasIndexedDbSnapshotKey;
+      if (!snapshotKey) return Promise.resolve(null);
       return openWeFrotasIndexedDb().then((db) => new Promise((resolve, reject) => {
         const transaction = db.transaction(wefrotasIndexedDbStore, 'readonly');
         const store = transaction.objectStore(wefrotasIndexedDbStore);
-        const request = store.get(wefrotasIndexedDbSnapshotKey);
+        const request = store.get(snapshotKey);
         request.onsuccess = () => {
           wefrotasLocalSnapshotUpdatedAt = request.result?.updatedAt || '';
           resolve(request.result?.value || null);
@@ -1805,13 +1754,14 @@
       }));
     }
 
-    function writeWeFrotasIndexedDbSnapshot(snapshot = buildStorageSnapshot()) {
+    function writeWeFrotasIndexedDbSnapshot(snapshot = buildStorageSnapshot(), snapshotKey = wefrotasIndexedDbSnapshotKey) {
+      if (!snapshotKey) return Promise.resolve();
       return openWeFrotasIndexedDb().then((db) => new Promise((resolve, reject) => {
         const transaction = db.transaction(wefrotasIndexedDbStore, 'readwrite');
         const store = transaction.objectStore(wefrotasIndexedDbStore);
         const updatedAt = new Date().toISOString();
         const request = store.put({
-          key: wefrotasIndexedDbSnapshotKey,
+          key: snapshotKey,
           value: snapshot,
           updatedAt
         });
@@ -1824,13 +1774,12 @@
     }
 
     async function loadFromStorage() {
+      if (!wefrotasStorageWorkspace) { applyStorageSnapshot({ centralCities: [] }); return; }
       try {
         const indexedDbSnapshot = await readWeFrotasIndexedDbSnapshot();
         if (indexedDbSnapshot) {
           wefrotasStorageEngine = 'IndexedDB';
           applyStorageSnapshot(indexedDbSnapshot);
-          saveSmallSettingsToLocalStorage(indexedDbSnapshot);
-          clearLegacyLargeLocalStorageData();
           return;
         }
 
@@ -1838,8 +1787,6 @@
         applyStorageSnapshot(legacySnapshot);
         wefrotasStorageEngine = 'IndexedDB';
         await writeWeFrotasIndexedDbSnapshot(buildStorageSnapshot());
-        saveSmallSettingsToLocalStorage(buildStorageSnapshot());
-        clearLegacyLargeLocalStorageData();
       } catch (error) {
         console.warn('IndexedDB indisponível. Mantendo fallback em localStorage.', error);
         wefrotasStorageEngine = 'localStorage';
@@ -1848,24 +1795,43 @@
     }
 
     function saveToLocalStorage() {
-      const snapshot = buildStorageSnapshot();
-      saveSmallSettingsToLocalStorage(snapshot);
+      if (!wefrotasStorageWorkspace || !window.WeFrotasBackend?.isSnapshotReady?.()) return Promise.resolve();
+      const workspace = wefrotasStorageWorkspace;
+      const snapshotKey = wefrotasIndexedDbSnapshotKey;
+      const snapshot = JSON.parse(JSON.stringify(buildStorageSnapshot()));
       window.WeFrotasBackend?.queueSnapshot(snapshot);
 
       if (wefrotasStorageEngine === 'IndexedDB') {
         wefrotasStorageQueue = wefrotasStorageQueue
-          .then(() => writeWeFrotasIndexedDbSnapshot(snapshot))
-          .then(() => clearLegacyLargeLocalStorageData())
+          .then(() => writeWeFrotasIndexedDbSnapshot(snapshot, snapshotKey))
           .catch((error) => {
             console.warn('Falha ao salvar no IndexedDB. Salvando cópia de emergência em localStorage.', error);
             wefrotasStorageEngine = 'localStorage';
-            saveFullSnapshotToLocalStorage(snapshot);
+            saveFullSnapshotToLocalStorage(snapshot, workspace);
           });
         return wefrotasStorageQueue;
       }
 
       saveFullSnapshotToLocalStorage(snapshot);
       return Promise.resolve();
+    }
+
+    async function activateOrganizationStorage(organization) {
+      await wefrotasStorageQueue.catch(() => {});
+      wefrotasStorageWorkspace = organization.workspaceId;
+      wefrotasIndexedDbSnapshotKey = `tenant:${organization.id}:${organization.workspaceId}`;
+      wefrotasLocalSnapshotUpdatedAt = '';
+      centralPendingRecords = [];
+      centralPushDevices = [];
+      centralHomeBanners = [];
+      centralManagerUsers = [];
+      centralPendingLoaded = false;
+      centralPendingFiltersLoaded = false;
+      centralPushSubscriberTotal = 0;
+      selectedVehicles.clear(); selectedDrivers.clear(); selectedSuppliers.clear();
+      selectedOrders.clear(); selectedFinance.clear();
+      applyStorageSnapshot({ centralCities: [] });
+      await loadFromStorage();
     }
 
     async function persistCentralConfigurationImmediately() {
@@ -2090,8 +2056,6 @@
       try {
         wefrotasStorageEngine = 'IndexedDB';
         await writeWeFrotasIndexedDbSnapshot(buildStorageSnapshot());
-        saveSmallSettingsToLocalStorage(buildStorageSnapshot());
-        clearLegacyLargeLocalStorageData();
       } catch (error) {
         wefrotasStorageEngine = 'localStorage';
         saveFullSnapshotToLocalStorage(buildStorageSnapshot());
@@ -2101,7 +2065,7 @@
       updateCustomLogoUi();
       updateManagerIdentityUi();
       updateOperationSettingsUi();
-      if (migratedStorage) {
+      if (migratedStorage && window.WeFrotasBackend?.isSnapshotReady?.()) {
         await persistCentralConfigurationImmediately().catch((error) => {
           console.warn('A migração local foi aplicada, mas ainda não pôde ser sincronizada.', error);
         });
@@ -2148,8 +2112,7 @@
       } catch (error) {
         window.clearTimeout(preparingTimer);
         console.error('Sessão recuperada, mas os dados continuam pendentes.', error);
-        toggleOnlineLogin(false);
-        scheduleOnlineIdleLogout();
+        toggleOnlineLogin(true, 'Não foi possível confirmar os dados da empresa. Tente entrar novamente.');
         updateOnlineStatus({
           state: 'error',
           message: `Conectado, mas a sincronização está pendente: ${error?.message || 'erro no Appwrite'}`,
@@ -2198,6 +2161,7 @@
             message: `Conectado, mas a sincronização está pendente: ${syncError?.message || 'erro no Appwrite'}`,
             user
           });
+          throw syncError;
         } finally {
           window.clearTimeout(preparingTimer);
         }
@@ -2527,6 +2491,7 @@
     }
 
     async function ensureDefaultCentralBanners(rows) {
+      if (window.WeFrotasBackend?.getOrganizationContext?.()?.workspaceId !== 'covre-e-cia') return rows;
       if (rows.some(isCentralBannerMigrationMarker)) return rows;
       if (!window.WeFrotasBackend?.upsertCentralHomeBanner) return rows;
       if (!centralDefaultBannersSeeding) {
@@ -3629,6 +3594,7 @@
 
 
     async function executeCentralPushAdmin(payload) {
+      const requestedUserId = window.WeFrotasBackend?.getUser?.()?.$id;
       const config = window.WEFROTAS_APPWRITE_CONFIG || {};
       const functionId = config.pushFunctionId || 'central-push';
       if (!config.endpoint || !config.projectId) {
@@ -3651,6 +3617,9 @@
       });
 
       const execution = await response.json().catch(() => ({}));
+      if (requestedUserId !== window.WeFrotasBackend?.getUser?.()?.$id) {
+        throw new Error('A sessão mudou. A resposta da empresa anterior foi descartada.');
+      }
       if (!response.ok) {
         throw new Error(execution?.message || 'Não foi possível acessar o canal de notificações.');
       }
@@ -3676,10 +3645,11 @@
         ...result.organization,
         role: result.role
       });
+      await activateOrganizationStorage(result.organization);
       updateManagerIdentityUi();
       const tenantLogo = document.getElementById('wefrotas-tenant-logo');
-      if (tenantLogo && result.organization.branding?.logoUrl) {
-        tenantLogo.src = result.organization.branding.logoUrl;
+      if (tenantLogo) {
+        tenantLogo.src = result.organization.branding?.logoUrl || wefrotasLogoSrc;
         tenantLogo.alt = `Logo ${result.organization.name || 'da empresa'}`;
       }
       return result.organization;
@@ -5805,24 +5775,8 @@
       customLogoEnabled = false;
       customLogoUrl = '';
       customLogoScale = 60;
-      [
-        'wefrotas_vehicles',
-        'wefrotas_drivers',
-        'wefrotas_suppliers',
-        'wefrotas_orders',
-        'wefrotas_finance',
-        'wefrotas_administrations',
-        'wefrotas_deleted_orders',
-        'wefrotas_order_counter',
-        'wefrotas_notifications',
-        'wefrotas_custom_logo_enabled',
-        'wefrotas_custom_logo_url',
-        'wefrotas_custom_logo_scale',
-        'wefrotas_default_administrator_name',
-        'wefrotas_manager_display_name',
-        'wefrotas_allow_manual_order_number_editing',
-        'wefrotas_theme'
-      ].forEach((key) => localStorage.removeItem(key));
+      // saveToLocalStorage replaces only the authenticated tenant's snapshot.
+      // Shared legacy data must never be deleted by another company's reset.
       applyThemeState(false);
       saveToLocalStorage();
       renderAll();

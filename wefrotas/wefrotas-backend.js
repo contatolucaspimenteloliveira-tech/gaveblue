@@ -26,6 +26,9 @@
   const SNAPSHOT_CHUNK_SIZE = 600 * 1024;
   const CHUNK_REQUEST_BATCH_SIZE = 4;
   let primaryRowId = '';
+  let snapshotReady = false;
+  let contextRevision = 0;
+  let activeSnapshotWrites = 0;
   let organizationContext = Object.freeze({
     id: '',
     slug: String(config.companyId || 'covre-e-cia'),
@@ -59,13 +62,15 @@
   }
 
   function hasPendingSync() {
-    try { return localStorage.getItem(SYNC_PENDING_KEY) === '1'; } catch (error) { return false; }
+    try { return organizationContext.id && localStorage.getItem(`${SYNC_PENDING_KEY}:${organizationContext.id}`) === '1'; } catch (error) { return false; }
   }
 
   function setPendingSync(pending) {
+    if (!organizationContext.id) return;
+    const key = `${SYNC_PENDING_KEY}:${organizationContext.id}`;
     try {
-      if (pending) localStorage.setItem(SYNC_PENDING_KEY, '1');
-      else localStorage.removeItem(SYNC_PENDING_KEY);
+      if (pending) localStorage.setItem(key, '1');
+      else localStorage.removeItem(key);
     } catch (error) {
       console.warn('Não foi possível atualizar o estado local da sincronização.', error);
     }
@@ -98,6 +103,7 @@
   }
 
   function assertPermission(permission, message = 'Seu perfil não possui permissão para esta ação.') {
+    if (!currentUser || !organizationContext.id || !organizationContext.appwriteLabel) throw new Error('Aguarde a confirmação da empresa autorizada.');
     if (!hasCurrentPermission(permission)) {
       const error = new Error(message);
       error.code = 403;
@@ -106,7 +112,21 @@
   }
 
   function assertCanWrite() {
+    if (!snapshotReady) throw new Error('Os dados desta empresa ainda não foram confirmados. Nenhum dado local será enviado.');
     assertPermission('syncSnapshot', 'Seu perfil não permite sincronizar alterações operacionais.');
+  }
+
+  function invalidateOrganizationContext() {
+    if (activeSnapshotWrites) throw new Error('Aguarde o envio em andamento antes de trocar de empresa.');
+    snapshotReady = false;
+    contextRevision += 1;
+    clearTimeout(syncTimer); syncTimer = null;
+    clearTimeout(remoteApplyTimer); remoteApplyTimer = null;
+    unsubscribeRealtime?.(); unsubscribeRealtime = null;
+    unsubscribeCentralRealtime?.(); unsubscribeCentralRealtime = null;
+    organizationContext = Object.freeze({ id: '', workspaceId: '', role: '', modules: [] });
+    primaryRowId = '';
+    lastSerializedSnapshot = '';
   }
 
   async function clearPendingRemoteSession() {
@@ -220,6 +240,8 @@
   function setOrganizationContext(nextContext = {}) {
     const workspaceId = String(nextContext.workspaceId || nextContext.appwriteWorkspaceId || '').trim();
     if (!/^[a-zA-Z0-9_.-]{2,36}$/.test(workspaceId)) throw new Error('A empresa autorizada possui um identificador inválido.');
+    if (!nextContext.id || !nextContext.appwriteLabel) throw new Error('A empresa autorizada não foi confirmada pelo servidor.');
+    invalidateOrganizationContext();
     organizationContext = Object.freeze({
       id: String(nextContext.id || ''),
       slug: String(nextContext.slug || workspaceId),
@@ -247,7 +269,12 @@
   }
 
   async function getPrimaryRowId() {
-    if (!primaryRowId) primaryRowId = await digestId(organizationContext.workspaceId);
+    if (!primaryRowId) {
+      const revision = contextRevision;
+      const rowId = await digestId(organizationContext.workspaceId);
+      if (revision !== contextRevision) throw new Error('A empresa mudou durante o carregamento.');
+      primaryRowId = rowId;
+    }
     return primaryRowId;
   }
 
@@ -289,6 +316,7 @@
       await Promise.all(Array.from({ length: end - start }, async (_, offset) => {
         const index = start + offset;
         const row = await getRow(await getChunkRowId(manifest.generation, index));
+        if (row.workspaceId !== organizationContext.workspaceId) throw new Error('Um bloco recebido pertence a outra empresa.');
         chunks[index] = String(row?.snapshot || '');
       }));
     }
@@ -314,19 +342,25 @@
   }
 
   async function loadRemoteRecord() {
-    if (!currentUser) return null;
+    if (!currentUser || !organizationContext.id) throw new Error('Empresa não confirmada.');
     const rowId = await getPrimaryRowId();
+    let row;
     try {
-      const row = await getRow(rowId);
-      const manifest = parseChunkManifest(row?.snapshot);
-      return row?.snapshot ? {
-        snapshot: manifest ? await loadChunkedSnapshot(manifest) : await decodeSnapshot(row.snapshot),
-        updatedAt: row.updatedAt || row.$updatedAt || ''
-      } : null;
+      row = await getRow(rowId);
     } catch (error) {
       if (error?.code === 404 || error?.type === 'row_not_found') return null;
       throw error;
     }
+    if (row.workspaceId !== organizationContext.workspaceId) throw new Error('Os dados recebidos pertencem a outra empresa.');
+    if (!row.snapshot) throw new Error('O registro da empresa está incompleto. Nenhum dado será sobrescrito.');
+    const manifest = parseChunkManifest(row.snapshot);
+    // A missing chunk is corruption, NOT an empty company.
+    const snapshot = manifest ? await loadChunkedSnapshot(manifest) : await decodeSnapshot(row.snapshot);
+    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) throw new Error('O backup da empresa é inválido. Nenhum dado será sobrescrito.');
+    return {
+      snapshot,
+      updatedAt: row.updatedAt || row.$updatedAt || ''
+    };
   }
 
   async function loadRemoteSnapshot() {
@@ -337,6 +371,8 @@
   async function persistSnapshot(snapshot) {
     if (!currentUser) throw new Error('Entre no WeFrotas antes de sincronizar os dados.');
     assertCanWrite();
+    activeSnapshotWrites += 1;
+    try {
     emitStatus('syncing', 'Preparando dados para sincronização...');
     const preparedSnapshot = await currentSnapshotPreparer?.(snapshot) || snapshot;
     const maxVehicles = Number(organizationContext.limits?.vehicles || 0);
@@ -375,20 +411,27 @@
     lastSerializedSnapshot = serialized;
     setPendingSync(false);
     emitStatus('online', 'Dados sincronizados.');
-    if (previousManifest?.generation && previousManifest.generation !== generation) cleanupChunkGeneration(previousManifest).catch(error => console.warn('Não foi possível remover todos os blocos antigos do snapshot.', error));
+    if (previousManifest?.generation && previousManifest.generation !== generation) await cleanupChunkGeneration(previousManifest).catch(error => console.warn('Não foi possível remover todos os blocos antigos do snapshot.', error));
     return preparedSnapshot;
+    } finally { activeSnapshotWrites -= 1; }
   }
 
   function queueSnapshot(snapshot, delay = 1200) {
-    if (!currentUser || !snapshot) return;
+    if (!currentUser || !snapshot || !snapshotReady) return;
     if (!hasCurrentPermission('syncSnapshot')) return;
+    const revision = contextRevision;
+    snapshot = JSON.parse(JSON.stringify(snapshot));
     setPendingSync(true);
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => {
+      if (revision !== contextRevision || !snapshotReady) return;
       syncTimer = null;
       const serialized = JSON.stringify(snapshot);
       if (serialized === lastSerializedSnapshot) { setPendingSync(false); return; }
-      syncChain = syncChain.then(() => persistSnapshot(snapshot)).catch(error => {
+      syncChain = syncChain.then(() => {
+        if (revision !== contextRevision || !snapshotReady) return;
+        return persistSnapshot(snapshot);
+      }).catch(error => {
         console.error('Falha ao sincronizar WeFrotas.', error);
         emitStatus('error', `Falha na sincronização: ${describeError(error)}. Cópia local pendente.`, { error });
       });
@@ -399,10 +442,13 @@
     unsubscribeRealtime?.();
     unsubscribeCentralRealtime?.();
     unsubscribeCentralRealtime = null;
-    if (!currentUser) return;
+    if (!currentUser || !snapshotReady) return;
+    const revision = contextRevision;
     const expectedRowId = await getPrimaryRowId();
+    if (revision !== contextRevision) return;
     const channel = `tablesdb.${config.databaseId}.tables.${config.tableId}.rows`;
     unsubscribeRealtime = client.subscribe(channel, event => {
+      if (revision !== contextRevision || !snapshotReady) return;
       if (event?.payload?.workspaceId !== organizationContext.workspaceId) return;
       if (event?.payload?.$id && event.payload.$id !== expectedRowId) return;
       if (hasPendingSync()) return;
@@ -410,6 +456,7 @@
       remoteApplyTimer = setTimeout(async () => {
         try {
           const remoteSnapshot = await loadRemoteSnapshot();
+          if (revision !== contextRevision || !snapshotReady) return;
           if (!remoteSnapshot) return;
           const serialized = JSON.stringify(remoteSnapshot);
           if (serialized === lastSerializedSnapshot) return;
@@ -426,17 +473,19 @@
   }
 
   async function restoreSession() {
+    invalidateOrganizationContext();
     if (!buildServices()) { emitStatus('local', 'Modo local: Appwrite ainda não configurado.'); return null; }
     if (hasPendingLogout() && !await clearPendingRemoteSession()) { currentUser = null; emitStatus('signed-out', 'Logout pendente. Entre novamente quando a conexão for restabelecida.'); return null; }
     try {
       currentUser = await account.get();
       emitStatus('online', `Conectado como ${currentUser.name || currentUser.email}.`);
-      subscribeRealtime();
       return currentUser;
     } catch (error) { currentUser = null; emitStatus('signed-out', 'Entre para acessar os dados online.'); return null; }
   }
 
   async function signIn(email, password) {
+    await syncChain.catch(() => {});
+    invalidateOrganizationContext();
     if (!isConfigured()) throw new Error('Appwrite ainda não foi configurado.');
     if (!account) buildServices();
     if (hasPendingLogout() && !await clearPendingRemoteSession()) throw new Error('Ainda estamos encerrando a sessão anterior. Tente novamente em instantes.');
@@ -460,7 +509,7 @@
   }
 
   async function flushPendingSnapshot() {
-    if (!currentUser) return;
+    if (!currentUser || !snapshotReady) return;
     clearTimeout(syncTimer); syncTimer = null; await syncChain;
     const snapshot = currentSnapshotGetter?.();
     if (!snapshot) { setPendingSync(false); return; }
@@ -472,7 +521,8 @@
   async function syncNow(snapshot) {
     if (!currentUser) throw new Error('Entre no WeFrotas antes de sincronizar os dados.');
     assertCanWrite();
-    const nextSnapshot = snapshot || currentSnapshotGetter?.();
+    const revision = contextRevision;
+    const nextSnapshot = JSON.parse(JSON.stringify(snapshot || currentSnapshotGetter?.() || null));
     if (!nextSnapshot) throw new Error('Não há dados disponíveis para sincronização.');
 
     // A sincronização imediata substitui qualquer envio agendado do mesmo estado.
@@ -482,7 +532,10 @@
     setPendingSync(true);
     syncChain = syncChain
       .catch(() => undefined)
-      .then(() => persistSnapshot(nextSnapshot));
+      .then(() => {
+        if (revision !== contextRevision || !snapshotReady) throw new Error('A empresa mudou durante a sincronização.');
+        return persistSnapshot(nextSnapshot);
+      });
     return syncChain;
   }
 
@@ -500,6 +553,7 @@
     unsubscribeCentralRealtime?.(); unsubscribeCentralRealtime = null;
     await account.deleteSession({ sessionId: 'current' });
     currentUser = null; setPendingLogout(false);
+    invalidateOrganizationContext();
     emitStatus('signed-out', 'Sessão encerrada. Os dados foram sincronizados e a cópia local foi preservada.');
   }
 
@@ -766,37 +820,43 @@
 
   async function adoptRemoteOrUploadLocal() {
     if (!currentUser) return { mode: 'signed-out' };
+    if (!organizationContext.id) throw new Error('Empresa não confirmada.');
+    snapshotReady = false;
+    const revision = contextRevision;
 
     // The Appwrite copy is authoritative whenever it exists. A fresh browser starts
     // with an empty/default local snapshot, and must NEVER upload that snapshot
     // before first downloading the company data.
     const remoteRecord = await loadRemoteRecord();
+    if (revision !== contextRevision) throw new Error('A empresa mudou durante o carregamento.');
     if (remoteRecord?.snapshot) {
       const remoteSerialized = JSON.stringify(remoteRecord.snapshot);
       lastSerializedSnapshot = remoteSerialized;
       setPendingSync(false);
       await currentSnapshotApplier?.(remoteRecord.snapshot);
-      await syncCentralDriverDirectory(remoteRecord.snapshot).catch((error) => console.warn('Não foi possível atualizar o diretório da Central.', error));
+      if (revision !== contextRevision) throw new Error('A empresa mudou durante o carregamento.');
+      snapshotReady = true;
+      await subscribeRealtime();
       emitStatus('online', 'Dados da empresa carregados do servidor.');
       return { mode: 'remote-authoritative', snapshot: remoteRecord.snapshot };
     }
 
-    // Only bootstrap Appwrite from local storage when no remote company snapshot
-    // exists yet. This is the one safe case for an initial local upload.
-    let localSnapshot = currentSnapshotGetter?.();
-    if (localSnapshot && currentSnapshotPreparer) localSnapshot = await currentSnapshotPreparer(localSnapshot) || localSnapshot;
-    if (localSnapshot) {
-      setPendingSync(true);
-      const persistedSnapshot = await persistSnapshot(localSnapshot);
-      return { mode: 'uploaded-initial-local', snapshot: persistedSnapshot };
-    }
+    // An empty tenant starts empty. Never bootstrap from an unowned browser cache.
+    const emptySnapshot = { vehicles: [], drivers: [], suppliers: [], centralCities: [], orders: [], finance: [], administrations: [], deletedOrders: [], notifications: [], centralDeviceLinks: {}, orderCounter: 1 };
+    await currentSnapshotApplier?.(emptySnapshot);
+    if (revision !== contextRevision) throw new Error('A empresa mudou durante o carregamento.');
+    snapshotReady = true;
+    lastSerializedSnapshot = JSON.stringify(currentSnapshotGetter?.() || emptySnapshot);
     setPendingSync(false);
-    return { mode: 'empty-workspace', snapshot: null };
+    await subscribeRealtime();
+    emitStatus('online', 'Empresa nova carregada, sem importar dados de outro cadastro.');
+    return { mode: 'empty-workspace', snapshot: emptySnapshot };
   }
 
   global.WeFrotasBackend = Object.freeze({
     config, isConfigured, initialize, signIn, signOut,
     setOrganizationContext,
+    isSnapshotReady: () => snapshotReady,
     getOrganizationContext: () => organizationContext,
     getUser: () => currentUser,
     updateAuthenticatedUserName,
