@@ -1,6 +1,12 @@
 # Edge Function `platform-admin`
 
-Publique com autenticação JWT obrigatória:
+Esta Function valida a sessão internamente com `auth.getUser()`. Por isso,
+`supabase/config.toml` mantém `verify_jwt = false`: a verificação legada do
+gateway não aceita os tokens emitidos pela configuração moderna de chaves do
+projeto e não substitui a autorização feita no código.
+
+Publique com autenticação interna obrigatória (`auth.getUser()` +
+`platform_admins`):
 
 ```bash
 supabase functions deploy platform-admin
