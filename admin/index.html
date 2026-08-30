@@ -13,7 +13,7 @@
 </head>
 <body>
   <div id="setup-screen" class="center-screen hidden">
-    <div class="setup-card"><span class="eyebrow">CONFIGURAÇÃO INICIAL</span><h1>Conecte o Supabase</h1><p>O painel está instalado, mas falta informar a URL pública e a chave <code>anon</code> em <code>admin/supabase-config.js</code>.</p><a href="../supabase/README.md">Ver instruções de implantação</a></div>
+    <div class="setup-card"><span class="eyebrow">CONFIGURAÇÃO INICIAL</span><h1>Conecte o Supabase</h1><p>O painel está instalado, mas falta informar a URL e a chave pública (<code>publishable</code> ou <code>anon</code>) em <code>admin/supabase-config.js</code>.</p><a href="../supabase/README.md">Ver instruções de implantação</a></div>
   </div>
   <div id="login-screen" class="center-screen hidden">
     <form id="login-form" class="login-card">
@@ -57,19 +57,20 @@
       <label>Razão social<input id="org-legal-name" maxlength="180"></label><label>CNPJ/Documento<input id="org-document" maxlength="32"></label><label>Workspace Appwrite<input id="org-workspace" maxlength="36"></label><label>Plano<select id="org-plan"></select></label>
       <fieldset class="wide"><legend>Módulos contratados</legend><label class="check"><input id="org-module-wefrotas" type="checkbox" checked> WeFrotas</label><label class="check"><input id="org-module-central" type="checkbox" checked> Central de Registros</label></fieldset>
       <label>Cor principal<input id="org-primary-color" type="color" value="#2563eb"></label><label>Cor secundária<input id="org-secondary-color" type="color" value="#7c3aed"></label><label class="wide">Logo (URL)<input id="org-logo-url" type="url"></label>
+      <label class="wide">Endereço institucional<input id="org-address" maxlength="240"></label><label>E-mail de suporte<input id="org-support-email" type="email" maxlength="320"></label><label>WhatsApp<input id="org-whatsapp" maxlength="24" placeholder="5527999999999"></label><label class="wide">Instagram (URL)<input id="org-instagram" type="url" maxlength="1000"></label>
     </div><span id="org-form-error" class="form-error"></span><footer><button type="button" class="secondary" data-close-modal>Cancelar</button><button type="submit" class="primary">Salvar empresa</button></footer>
   </form></div>
 
   <div id="detail-modal" class="modal hidden" aria-hidden="true"><section class="modal-card detail-card"><header><div><span class="eyebrow">GESTÃO DO CLIENTE</span><h2 id="detail-title">Empresa</h2></div><button type="button" data-close-detail aria-label="Fechar">×</button></header><div id="detail-content"></div></section></div>
 
   <div id="member-modal" class="modal hidden" aria-hidden="true"><form id="member-form" class="modal-card">
-    <header><div><span class="eyebrow">ACESSO DA EMPRESA</span><h2>Adicionar usuário</h2></div><button type="button" data-close-member aria-label="Fechar">×</button></header>
+    <header><div><span class="eyebrow">ACESSO DA EMPRESA</span><h2 id="member-modal-title">Adicionar usuário</h2></div><button type="button" data-close-member aria-label="Fechar">×</button></header>
     <div class="form-grid"><input id="member-organization-id" type="hidden"><label>Nome<input id="member-name" maxlength="128"></label><label>E-mail *<input id="member-email" type="email" required maxlength="320"></label><label>Perfil<select id="member-role"><option value="admin">Administrador</option><option value="manager">Gestor</option><option value="approver">Aprovador</option><option value="viewer">Consulta</option><option value="driver">Motorista</option></select></label><label>Status<select id="member-status"><option value="active">Ativo</option><option value="disabled">Desativado</option></select></label><label>ID do usuário no Appwrite<input id="member-appwrite-id" maxlength="36" placeholder="Se a conta já existir"></label><label>Senha temporária<input id="member-temporary-password" type="password" minlength="8" maxlength="256" placeholder="Obrigatória para conta nova"></label></div>
     <span id="member-form-error" class="form-error"></span><footer><button type="button" class="secondary" data-close-member>Cancelar</button><button type="submit" class="primary">Salvar acesso</button></footer>
   </form></div>
   <div id="toast" class="toast hidden"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./supabase-config.js?v=20260830-multitenant-1"></script>
-  <script src="./admin.js?v=20260830-multitenant-1"></script>
+  <script src="./supabase-config.js?v=20260830-multitenant-2"></script>
+  <script src="./admin.js?v=20260830-multitenant-2"></script>
 </body>
 </html>

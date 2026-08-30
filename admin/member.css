@@ -10,6 +10,13 @@
   min-height: 36px;
 }
 
+.member-edit {
+  min-height: 28px;
+  padding: 0 9px;
+  margin-left: 6px;
+  font-size: 10px;
+}
+
 @media (max-width: 540px) {
   .member-list-head {
     align-items: flex-start;

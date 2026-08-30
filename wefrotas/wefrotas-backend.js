@@ -207,6 +207,16 @@
     ];
   }
 
+  function getTenantManagedPermissions({ publicRead = false } = {}) {
+    const { Permission, Role } = global.Appwrite;
+    const managerLabels = organizationContext.appwriteManagerLabels?.length ? organizationContext.appwriteManagerLabels : ['admin'];
+    return [
+      Permission.read(publicRead ? Role.any() : (organizationContext.appwriteLabel ? Role.label(organizationContext.appwriteLabel) : Role.users())),
+      ...managerLabels.map((label) => Permission.update(Role.label(label))),
+      ...managerLabels.map((label) => Permission.delete(Role.label(label)))
+    ];
+  }
+
   function setOrganizationContext(nextContext = {}) {
     const workspaceId = String(nextContext.workspaceId || nextContext.appwriteWorkspaceId || '').trim();
     if (!/^[a-zA-Z0-9_.-]{2,36}$/.test(workspaceId)) throw new Error('A empresa autorizada possui um identificador inválido.');
@@ -592,39 +602,20 @@
   }
 
   function getPublicBannerFilePermissions() {
-    const { Permission, Role } = global.Appwrite;
-    return [
-      Permission.read(Role.any()),
-      Permission.update(Role.label('admin')),
-      Permission.delete(Role.label('admin'))
-    ];
+    return getTenantManagedPermissions({ publicRead: true });
   }
 
   function getCentralRecordPermissions() {
     const { Permission, Role } = global.Appwrite;
-    return [
-      Permission.read(Role.users()),
-      Permission.update(Role.label('admin')),
-      Permission.delete(Role.label('admin'))
-    ];
+    return [Permission.read(organizationContext.appwriteLabel ? Role.label(organizationContext.appwriteLabel) : Role.users())];
   }
 
   function getPublicDirectoryPermissions() {
-    const { Permission, Role } = global.Appwrite;
-    return [
-      Permission.read(Role.any()),
-      Permission.update(Role.label('admin')),
-      Permission.delete(Role.label('admin'))
-    ];
+    return getTenantManagedPermissions();
   }
 
   function getPublicVehicleFilePermissions() {
-    const { Permission, Role } = global.Appwrite;
-    return [
-      Permission.read(Role.any()),
-      Permission.update(Role.label('admin')),
-      Permission.delete(Role.label('admin'))
-    ];
+    return getTenantManagedPermissions({ publicRead: true });
   }
 
   async function uploadCentralBanner(file) {

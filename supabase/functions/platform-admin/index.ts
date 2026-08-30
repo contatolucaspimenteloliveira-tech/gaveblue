@@ -17,9 +17,9 @@ const cleanSlug = (value: unknown) => String(value || '').trim().toLowerCase()
 
 const orgLabel = (organizationId: string) => `org${organizationId.replace(/-/g, '').slice(0, 24)}`;
 const orgRoleLabel = (organizationId: string, role: string) => `${orgLabel(organizationId)}${({ admin: 'adm', manager: 'mgr', approver: 'apr', viewer: 'view', driver: 'drv' } as Record<string,string>)[role] || 'view'}`;
-const roleLabel: Record<string, string> = { admin: 'admin', manager: 'gestor', approver: 'aprovador', viewer: 'consulta', driver: 'motorista' };
+const legacyRoleLabels = new Set(['admin', 'gestor', 'aprovador', 'consulta', 'motorista']);
 
-async function syncAppwriteLabels(appwriteUserId: string, organizationId: string, role: string) {
+async function syncAppwriteLabels(appwriteUserId: string, organizationId: string, role: string, active = true) {
   const endpoint = Deno.env.get('APPWRITE_ENDPOINT');
   const project = Deno.env.get('APPWRITE_PROJECT_ID');
   const key = Deno.env.get('APPWRITE_API_KEY');
@@ -29,13 +29,8 @@ async function syncAppwriteLabels(appwriteUserId: string, organizationId: string
   const currentResponse = await fetch(userUrl, { headers });
   if (!currentResponse.ok) throw new Error('Usuário Appwrite não encontrado para sincronizar o acesso.');
   const current = await currentResponse.json();
-  const managedRoles = new Set(Object.values(roleLabel));
-  const labels = [...new Set([
-    ...(Array.isArray(current.labels) ? current.labels : []).filter((item: string) => !managedRoles.has(item) && !/^org[a-f0-9]{24}(?:adm|mgr|apr|view|drv)?$/.test(item)),
-    orgLabel(organizationId),
-    orgRoleLabel(organizationId, role),
-    roleLabel[role] || 'consulta'
-  ])];
+  const preserved = (Array.isArray(current.labels) ? current.labels : []).filter((item: string) => !legacyRoleLabels.has(item) && !/^org[a-f0-9]{24}(?:adm|mgr|apr|view|drv)?$/.test(item));
+  const labels = [...new Set(active ? [...preserved, orgLabel(organizationId), orgRoleLabel(organizationId, role)] : preserved)];
   const response = await fetch(`${userUrl}/labels`, { method: 'PUT', headers, body: JSON.stringify({ labels }) });
   if (!response.ok) throw new Error((await response.json().catch(() => ({})))?.message || 'Falha ao aplicar o acesso no Appwrite.');
   return { skipped: false, labels };
@@ -99,7 +94,13 @@ Deno.serve(async (req) => {
         logo_url: String(payload.logoUrl || '').trim().slice(0, 1000),
         primary_color: /^#[0-9a-f]{6}$/i.test(payload.primaryColor) ? payload.primaryColor : '#2563eb',
         secondary_color: /^#[0-9a-f]{6}$/i.test(payload.secondaryColor) ? payload.secondaryColor : '#7c3aed',
-        appwrite_workspace_id: cleanSlug(payload.appwriteWorkspaceId || slug).slice(0, 36)
+        appwrite_workspace_id: cleanSlug(payload.appwriteWorkspaceId || slug).slice(0, 36),
+        metadata: {
+          address: String(payload.address || '').trim().slice(0, 240),
+          supportEmail: String(payload.supportEmail || '').trim().toLowerCase().slice(0, 320),
+          whatsapp: String(payload.whatsapp || '').replace(/\D/g, '').slice(0, 15),
+          instagramUrl: String(payload.instagramUrl || '').trim().slice(0, 1000)
+        }
       };
       const query = id ? admin.from('organizations').update(row).eq('id', id).select().single() : admin.from('organizations').insert(row).select().single();
       const { data: organization, error } = await query;
@@ -122,7 +123,7 @@ Deno.serve(async (req) => {
       const role = ['admin', 'manager', 'approver', 'viewer', 'driver'].includes(payload.role) ? payload.role : 'viewer';
       if (!organizationId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(400, { ok: false, error: 'Informe empresa e e-mail válidos.' });
       const [{ data: currentMember }, { data: subscription }, { count: activeMembers }] = await Promise.all([
-        admin.from('organization_members').select('id').eq('organization_id', organizationId).eq('email', email).maybeSingle(),
+        admin.from('organization_members').select('id,appwrite_user_id').eq('organization_id', organizationId).eq('email', email).maybeSingle(),
         admin.from('organization_subscriptions').select('max_users,plans(max_users)').eq('organization_id', organizationId).maybeSingle(),
         admin.from('organization_members').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('status', 'active')
       ]);
@@ -130,19 +131,12 @@ Deno.serve(async (req) => {
       const maxUsers = subscription?.max_users || plan?.max_users || null;
       if (!currentMember && payload.status !== 'disabled' && maxUsers && Number(activeMembers || 0) >= maxUsers) return json(409, { ok: false, error: `O limite de ${maxUsers} usuários deste plano foi atingido.` });
       const { data: usersData } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      let user = usersData.users.find((item) => item.email?.toLowerCase() === email);
-      if (!user) {
-        const adminAppUrl = Deno.env.get('ADMIN_APP_URL') || 'https://gaveblue.com.br/admin/';
-        const { data, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo: adminAppUrl });
-        if (error) throw error;
-        user = data.user;
-      }
-      if (!user) throw new Error('O usuário não pôde ser criado no Supabase Auth.');
-      const appwriteUser = await ensureAppwriteUser({ appwriteUserId: String(payload.appwriteUserId || '').trim(), email, name: String(payload.name || ''), temporaryPassword: String(payload.temporaryPassword || '') });
-      const member = { organization_id: organizationId, user_id: user.id, email, appwrite_user_id: appwriteUser.id, role, status: payload.status === 'disabled' ? 'disabled' : 'active' };
+      const user = usersData.users.find((item) => item.email?.toLowerCase() === email);
+      const appwriteUser = await ensureAppwriteUser({ appwriteUserId: String(payload.appwriteUserId || currentMember?.appwrite_user_id || '').trim(), email, name: String(payload.name || ''), temporaryPassword: String(payload.temporaryPassword || '') });
+      const member = { organization_id: organizationId, user_id: user?.id || null, email, appwrite_user_id: appwriteUser.id, role, status: payload.status === 'disabled' ? 'disabled' : 'active' };
       const { data: saved, error } = await admin.from('organization_members').upsert(member, { onConflict: 'organization_id,email' }).select().single();
       if (error) throw error;
-      const appwrite = member.status === 'active' ? await syncAppwriteLabels(member.appwrite_user_id, organizationId, role) : { skipped: true };
+      const appwrite = await syncAppwriteLabels(member.appwrite_user_id, organizationId, role, member.status === 'active');
       await admin.from('platform_audit_logs').insert({ actor_user_id: authData.user.id, organization_id: organizationId, action: 'member.save', target_type: 'member', target_id: saved.id, after_data: member });
       return json(200, { ok: true, member: saved, appwrite });
     }

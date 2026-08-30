@@ -28,7 +28,15 @@ let centralOrganizationContext = {
   workspaceId: CENTRAL_DEFAULT_ORGANIZATION_SLUG,
   name: 'Covre & Cia',
   modules: ['central'],
-  branding: {}
+  branding: {},
+  institutional: {
+    legalName: 'COVRE & CIA LTDA',
+    document: '28.419.232/0001-06',
+    address: 'Av. Agenor Luiz Heringer, 463 - Centro, Pinheiros/ES',
+    supportEmail: 'adm01@covreecia.com.br',
+    whatsapp: '5527999884208',
+    instagramUrl: 'https://www.instagram.com/covre_e_cia?igsh=czBmYWxudGhiNmVo'
+  }
 };
 let centralOrganizationContextPromise = null;
 function centralTenantStorageKey(baseKey) {
@@ -3501,6 +3509,48 @@ function getRequestedCentralOrganizationSlug() {
   return String(querySlug || storedSlug || CENTRAL_DEFAULT_ORGANIZATION_SLUG).trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 48) || CENTRAL_DEFAULT_ORGANIZATION_SLUG;
 }
 
+function applyCentralOrganizationBranding(organization = {}) {
+  const name = String(organization.name || 'Central de Registros').trim();
+  const branding = organization.branding || {};
+  const institutional = organization.institutional || {};
+  const logoUrl = String(branding.logoUrl || '').trim();
+  const primaryColor = String(branding.primaryColor || '');
+  const secondaryColor = String(branding.secondaryColor || '');
+  if (/^#[0-9a-f]{6}$/i.test(primaryColor)) {
+    document.documentElement.style.setProperty('--tenant-primary', primaryColor);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', primaryColor);
+  }
+  if (/^#[0-9a-f]{6}$/i.test(secondaryColor)) document.documentElement.style.setProperty('--tenant-secondary', secondaryColor);
+  document.title = `Central de Registros | ${name}`;
+  document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute('content', name);
+  ['central-brand-logo', 'central-about-logo'].forEach((id) => {
+    const image = document.getElementById(id);
+    if (!image) return;
+    if (logoUrl) image.src = logoUrl;
+    image.alt = `Logo ${name}`;
+  });
+  const legalName = document.getElementById('central-about-legal-name');
+  const documentLine = document.getElementById('central-about-document');
+  const address = document.getElementById('central-about-address');
+  if (legalName) legalName.textContent = String(institutional.legalName || name);
+  if (documentLine) { documentLine.textContent = institutional.document ? `CNPJ/Documento: ${institutional.document}` : ''; documentLine.hidden = !institutional.document; }
+  if (address) { address.textContent = String(institutional.address || ''); address.hidden = !institutional.address; }
+  const contacts = [
+    ['central-about-whatsapp', institutional.whatsapp ? `https://wa.me/${String(institutional.whatsapp).replace(/\D/g, '')}` : '', `WhatsApp ${name}`],
+    ['central-about-email', institutional.supportEmail ? `mailto:${institutional.supportEmail}` : '', `E-mail ${name}`],
+    ['central-about-instagram', institutional.instagramUrl || '', `Instagram ${name}`]
+  ];
+  contacts.forEach(([id, href, label]) => {
+    const link = document.getElementById(id);
+    if (!link) return;
+    link.hidden = !href;
+    if (href) link.href = href;
+    link.setAttribute('aria-label', label);
+  });
+  const contactShell = document.getElementById('central-about-contacts');
+  if (contactShell) contactShell.hidden = !contacts.some(([, href]) => href);
+}
+
 async function loadCentralOrganizationContext() {
   if (centralOrganizationContextPromise) return centralOrganizationContextPromise;
   centralOrganizationContextPromise = (async () => {
@@ -3517,14 +3567,15 @@ async function loadCentralOrganizationContext() {
       if (cached?.slug === organizationSlug && cached?.workspaceId) verifiedOrganization = cached;
     } catch (error) {}
     if (!verifiedOrganization && organizationSlug === CENTRAL_DEFAULT_ORGANIZATION_SLUG) verifiedOrganization = { ...centralOrganizationContext };
-    if (!verifiedOrganization) throw new Error('Não foi possível validar esta empresa sem conexão. Conecte-se uma vez antes de usar a Central offline.');
+    if (!verifiedOrganization) {
+      centralOrganizationContext = { slug: organizationSlug, workspaceId: '', name: '', modules: [], branding: {}, institutional: {} };
+      try { localStorage.setItem(CENTRAL_ORGANIZATION_SLUG_KEY, organizationSlug); } catch (error) {}
+      throw new Error('Não foi possível validar esta empresa sem conexão. Conecte-se uma vez antes de usar a Central offline.');
+    }
   }
   centralOrganizationContext = { ...centralOrganizationContext, ...verifiedOrganization };
   try { localStorage.setItem(CENTRAL_ORGANIZATION_SLUG_KEY, centralOrganizationContext.slug); } catch (error) {}
-  const primaryColor = centralOrganizationContext.branding?.primaryColor;
-  const secondaryColor = centralOrganizationContext.branding?.secondaryColor;
-  if (/^#[0-9a-f]{6}$/i.test(primaryColor || '')) document.documentElement.style.setProperty('--tenant-primary', primaryColor);
-  if (/^#[0-9a-f]{6}$/i.test(secondaryColor || '')) document.documentElement.style.setProperty('--tenant-secondary', secondaryColor);
+  applyCentralOrganizationBranding(centralOrganizationContext);
   return centralOrganizationContext;
   })().catch((error) => { centralOrganizationContextPromise = null; throw error; });
   return centralOrganizationContextPromise;
@@ -5509,12 +5560,6 @@ window.addEventListener('offline', () => {
   updateCentralConnectivityStatus();
 });
 
-const CENTRAL_BANNERS_CONFIG = Object.freeze({
-  endpoint: 'https://nyc.cloud.appwrite.io/v1',
-  projectId: '6a68cb3e00312ec0a3fd',
-  databaseId: '6a68ce8c000a36a44d98',
-  tableId: 'central_home_banners'
-});
 const CENTRAL_BUILTIN_BANNER_VARIANTS = Object.freeze({
   'builtin:hero-revisao-km': './assets/home/hero-revisao-km-mobile.jpeg',
   'builtin:hero-posto-proximo': './assets/home/hero-posto-proximo-mobile.jpeg'
@@ -5530,15 +5575,8 @@ async function loadManagedHomeBanners() {
   const slidesContainer = document.querySelector('#home-hero-carousel .home-hero-slides');
   if (!slidesContainer) return false;
   try {
-    const config = CENTRAL_BANNERS_CONFIG;
-    const response = await fetch(`${config.endpoint}/tablesdb/${config.databaseId}/tables/${config.tableId}/rows`, {
-      headers: { 'x-appwrite-project': config.projectId }
-    });
-    if (!response.ok) throw new Error(`Appwrite respondeu ${response.status}`);
-    const payload = await response.json();
-    const rows = (Array.isArray(payload?.rows) ? payload.rows : []).filter((banner) => (
-      String(banner.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG) === centralOrganizationContext.workspaceId
-    ));
+    const payload = await executeCentralPushFunction({ action: 'banners' }, { attempts: 2, timeoutMs: 7000 });
+    const rows = Array.isArray(payload?.banners) ? payload.banners : [];
     const managesBuiltinBanners = rows.some((banner) => String(banner?.fileId || '').startsWith('builtin:'));
     const banners = rows
       .filter((banner) => banner?.active && String(banner?.imageUrl || '').trim())
@@ -5702,6 +5740,7 @@ function initHomeHeroCarousel() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  await loadCentralOrganizationContext().catch((error) => console.warn('Não foi possível validar a empresa antes de carregar os banners.', error));
   await loadManagedHomeBanners();
   initHomeHeroCarousel();
 });

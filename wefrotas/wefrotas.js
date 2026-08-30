@@ -3662,6 +3662,11 @@
         ...result.organization,
         role: result.role
       });
+      const tenantLogo = document.getElementById('wefrotas-tenant-logo');
+      if (tenantLogo && result.organization.branding?.logoUrl) {
+        tenantLogo.src = result.organization.branding.logoUrl;
+        tenantLogo.alt = `Logo ${result.organization.name || 'da empresa'}`;
+      }
       return result.organization;
     }
 
@@ -10220,7 +10225,7 @@
         mode: 'confirm', title: 'Excluir registros', text: `Excluir ${records.length} registro(s) da Central? Essa ação não poderá ser desfeita.`, confirmLabel: 'Excluir', cancelLabel: 'Cancelar',
         onConfirm: async () => {
           try {
-            await Promise.all(records.map(record => window.WeFrotasBackend.deleteCentralPendingRecord(getCentralPendingRecordId(record))));
+            await Promise.all(records.map(record => executeCentralPushAdmin({ action: 'central-record-delete', recordId: getCentralPendingRecordId(record) })));
             const ids = new Set(records.map(getCentralPendingRecordId));
             centralPendingRecords = centralPendingRecords.filter(record => !ids.has(getCentralPendingRecordId(record)));
             selectedCentralPending.clear();

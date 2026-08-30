@@ -14,6 +14,5 @@ Segredos necessários:
 - `APPWRITE_ENDPOINT=https://nyc.cloud.appwrite.io/v1`
 - `APPWRITE_PROJECT_ID=6a68cb3e00312ec0a3fd`
 - `APPWRITE_API_KEY` com `users.read` e `users.write`
-- `ADMIN_APP_URL=https://gaveblue.com.br/admin/`
 
 A chave `service_role` e a chave do Appwrite ficam somente na Edge Function.

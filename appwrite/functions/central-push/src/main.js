@@ -98,7 +98,7 @@ async function createCentralRecord(databases, payload, organization) {
     throw Object.assign(new Error('O registro não possui os dados mínimos obrigatórios.'), { status: 400 });
   }
   try {
-    return await databases.createDocument({ databaseId: DATABASE_ID, collectionId: CENTRAL_RECORDS_COLLECTION_ID, documentId, data, permissions: CENTRAL_RECORD_PERMISSIONS });
+    return await databases.createDocument({ databaseId: DATABASE_ID, collectionId: CENTRAL_RECORDS_COLLECTION_ID, documentId, data, permissions: tenantReadPermissions(organization) });
   } catch (error) {
     if (Number(error?.code) === 409) return { $id: documentId, alreadyExists: true };
     throw error;
@@ -179,7 +179,7 @@ function organizationAppwriteRoleLabel(organizationId, memberRole) {
 
 async function resolveSupabaseMembership(appwriteUserId) {
   if (!supabaseConfigured()) return null;
-  const select = 'role,status,organization_id,organizations(id,slug,name,status,appwrite_workspace_id,organization_modules(module_key,enabled),organization_subscriptions(status,max_users,max_vehicles,max_devices,plans(max_users,max_vehicles,max_devices)))';
+  const select = 'role,status,organization_id,organizations(id,slug,name,status,appwrite_workspace_id,logo_url,primary_color,secondary_color,organization_modules(module_key,enabled),organization_subscriptions(status,max_users,max_vehicles,max_devices,plans(max_users,max_vehicles,max_devices)))';
   const rows = await supabaseRest(`organization_members?appwrite_user_id=eq.${encodeURIComponent(appwriteUserId)}&status=eq.active&select=${encodeURIComponent(select)}&limit=2`);
   if (!Array.isArray(rows) || rows.length !== 1) {
     const error = new Error(rows?.length > 1 ? 'Seu usuário está vinculado a mais de uma empresa. Selecione a empresa no Painel GaveBlue.' : 'Seu usuário não está vinculado a uma empresa ativa.');
@@ -204,6 +204,7 @@ async function resolveSupabaseMembership(appwriteUserId) {
       appwriteRoleLabel: organizationAppwriteRoleLabel(organization.id, membership.role),
       appwriteManagerLabels: [organizationAppwriteRoleLabel(organization.id, 'admin'), organizationAppwriteRoleLabel(organization.id, 'manager')],
       modules: (organization.organization_modules || []).filter((item) => item.enabled).map((item) => item.module_key),
+      branding: { logoUrl: organization.logo_url, primaryColor: organization.primary_color, secondaryColor: organization.secondary_color },
       limits: {
         users: subscription?.max_users || plan?.max_users || null,
         vehicles: subscription?.max_vehicles || plan?.max_vehicles || null,
@@ -213,10 +214,29 @@ async function resolveSupabaseMembership(appwriteUserId) {
   };
 }
 
+async function ensureMembershipAppwriteLabels(req, userId, membership) {
+  if (!membership?.organization?.appwriteLabel || !membership?.organization?.appwriteRoleLabel) return;
+  const users = new Users(createServerClient(req));
+  const user = await users.get({ userId });
+  const current = normalizeAppwriteLabels(user?.labels);
+  const managedRoles = new Set(['admin', 'administrador', ...WEFROTAS_APPWRITE_LABELS]);
+  const next = normalizeAppwriteLabels([
+    ...current.filter((label) => !managedRoles.has(label) && !/^org[a-f0-9]{24}(?:adm|mgr|apr|view|drv)?$/.test(label)),
+    membership.organization.appwriteLabel,
+    membership.organization.appwriteRoleLabel
+  ]);
+  if (next.length === current.length && next.every((label, index) => label === current[index])) return;
+  await users.updateLabels({ userId, labels: next });
+}
+
 async function resolvePublicOrganization(slugValue) {
   const slug = String(slugValue || WEFROTAS_COMPANY_ID).trim().toLowerCase();
-  if (!supabaseConfigured()) return { slug: WEFROTAS_COMPANY_ID, name: 'Covre & Cia', workspaceId: WEFROTAS_COMPANY_ID, modules: ['wefrotas', 'central'], branding: {} };
-  const select = 'id,slug,name,status,appwrite_workspace_id,logo_url,primary_color,secondary_color,organization_modules(module_key,enabled),organization_subscriptions(status,max_users,max_vehicles,max_devices,plans(max_users,max_vehicles,max_devices))';
+  if (!supabaseConfigured()) return {
+    slug: WEFROTAS_COMPANY_ID, name: 'Covre & Cia', workspaceId: WEFROTAS_COMPANY_ID,
+    appwriteLabel: '', appwriteManagerLabels: ['admin'], modules: ['wefrotas', 'central'], limits: {}, branding: {},
+    institutional: { legalName: 'COVRE & CIA LTDA', document: '28.419.232/0001-06', address: 'Av. Agenor Luiz Heringer, 463 - Centro, Pinheiros/ES', supportEmail: 'adm01@covreecia.com.br', whatsapp: '5527999884208', instagramUrl: 'https://www.instagram.com/covre_e_cia?igsh=czBmYWxudGhiNmVo' }
+  };
+  const select = 'id,slug,name,legal_name,document,status,appwrite_workspace_id,logo_url,primary_color,secondary_color,metadata,organization_modules(module_key,enabled),organization_subscriptions(status,max_users,max_vehicles,max_devices,plans(max_users,max_vehicles,max_devices))';
   const rows = await supabaseRest(`organizations?slug=eq.${encodeURIComponent(slug)}&select=${encodeURIComponent(select)}&limit=1`);
   const organization = rows?.[0];
   const subscription = Array.isArray(organization?.organization_subscriptions) ? organization.organization_subscriptions[0] : organization?.organization_subscriptions;
@@ -229,9 +249,19 @@ async function resolvePublicOrganization(slugValue) {
     slug: organization.slug,
     name: organization.name,
     workspaceId: organization.appwrite_workspace_id,
+    appwriteLabel: organizationAppwriteLabel(organization.id),
+    appwriteManagerLabels: [organizationAppwriteRoleLabel(organization.id, 'admin'), organizationAppwriteRoleLabel(organization.id, 'manager')],
     modules: (organization.organization_modules || []).filter((item) => item.enabled).map((item) => item.module_key),
     limits: { users: subscription?.max_users || plan?.max_users || null, vehicles: subscription?.max_vehicles || plan?.max_vehicles || null, devices: subscription?.max_devices || plan?.max_devices || null },
-    branding: { logoUrl: organization.logo_url, primaryColor: organization.primary_color, secondaryColor: organization.secondary_color }
+    branding: { logoUrl: organization.logo_url, primaryColor: organization.primary_color, secondaryColor: organization.secondary_color },
+    institutional: {
+      legalName: organization.legal_name,
+      document: organization.document,
+      address: String(organization.metadata?.address || ''),
+      supportEmail: String(organization.metadata?.supportEmail || ''),
+      whatsapp: String(organization.metadata?.whatsapp || ''),
+      instagramUrl: String(organization.metadata?.instagramUrl || '')
+    }
   };
 }
 
@@ -278,6 +308,7 @@ async function authenticateManager(req) {
     const authenticatedUser = await new Account(client).get();
     if (authenticatedUser?.$id !== userId) throw new Error('Identidade divergente.');
     const membership = await resolveSupabaseMembership(userId);
+    if (membership) await ensureMembershipAppwriteLabels(req, userId, membership);
     return {
       userId,
       user: authenticatedUser,
@@ -338,22 +369,31 @@ function buildDocumentPermissions({ publicRead = false, authenticatedRead = fals
   ];
 }
 
-const WEFROTAS_SNAPSHOT_PERMISSIONS = buildDocumentPermissions({
-  authenticatedRead: true,
-  update: ROLE_PERMISSION_LABELS.admin,
-  remove: ROLE_PERMISSION_LABELS.admin
-});
-const CENTRAL_RECORD_PERMISSIONS = buildDocumentPermissions({
-  authenticatedRead: true,
-  update: ROLE_PERMISSION_LABELS.admin,
-  remove: ROLE_PERMISSION_LABELS.admin
-});
-const CENTRAL_PUBLIC_MANAGEMENT_PERMISSIONS = buildDocumentPermissions({
-  publicRead: true,
-  update: ROLE_PERMISSION_LABELS.admin,
-  remove: ROLE_PERMISSION_LABELS.admin
-});
-const ADMIN_READ_PERMISSIONS = buildDocumentPermissions({ read: ROLE_PERMISSION_LABELS.admin });
+function tenantManagerLabels(organization = {}) {
+  return Array.isArray(organization.appwriteManagerLabels) && organization.appwriteManagerLabels.length
+    ? organization.appwriteManagerLabels
+    : ['admin'];
+}
+
+function normalizeTenant(value = WEFROTAS_COMPANY_ID) {
+  if (value && typeof value === 'object') return value;
+  return { workspaceId: String(value || WEFROTAS_COMPANY_ID), appwriteLabel: '', appwriteManagerLabels: ['admin'] };
+}
+
+function tenantManagedPermissions(organization = {}, { publicRead = false, auditOnly = false } = {}) {
+  const readLabels = organization.appwriteLabel ? [organization.appwriteLabel] : ROLE_PERMISSION_LABELS.admin;
+  const managerLabels = tenantManagerLabels(organization);
+  return buildDocumentPermissions({
+    publicRead,
+    read: auditOnly ? managerLabels.slice(0, 1) : readLabels,
+    update: auditOnly ? [] : managerLabels,
+    remove: auditOnly ? [] : managerLabels
+  });
+}
+
+function tenantReadPermissions(organization = {}) {
+  return buildDocumentPermissions({ read: organization.appwriteLabel ? [organization.appwriteLabel] : ROLE_PERMISSION_LABELS.admin });
+}
 
 function normalizeManagedUser(user) {
   return {
@@ -420,9 +460,9 @@ async function createWefrotasUser(req, payload) {
   const created = await users.create({ userId: ID.unique(), email, password, name });
   let updated;
   try {
-    updated = await users.updateLabels({ userId: created.$id, labels: normalizeAppwriteLabels([
-      getAppwriteRoleLabel(role), access.organization.appwriteLabel, organizationAppwriteRoleLabel(access.organization.id, WEFROTAS_TO_MEMBER_ROLE[role])
-    ]) });
+    updated = await users.updateLabels({ userId: created.$id, labels: normalizeAppwriteLabels(supabaseConfigured()
+      ? [access.organization.appwriteLabel, organizationAppwriteRoleLabel(access.organization.id, WEFROTAS_TO_MEMBER_ROLE[role])]
+      : [getAppwriteRoleLabel(role)]) });
     if (supabaseConfigured()) await supabaseRest('organization_members?on_conflict=organization_id,email', {
       method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify({ organization_id: access.organization.id, email, appwrite_user_id: created.$id, role: WEFROTAS_TO_MEMBER_ROLE[role], status: 'active' })
@@ -431,7 +471,7 @@ async function createWefrotasUser(req, payload) {
     await users.delete({ userId: created.$id }).catch(() => undefined);
     throw error;
   }
-  return { user: normalizeManagedUser(updated), createdBy: creatorId, workspaceId: access.organization.workspaceId };
+  return { user: normalizeManagedUser(updated), createdBy: creatorId, workspaceId: access.organization.workspaceId, organization: access.organization };
 }
 
 async function updateWefrotasUser(req, payload) {
@@ -471,7 +511,9 @@ async function updateWefrotasUser(req, payload) {
       return !WEFROTAS_ACCESS_ROLES.has(normalized) && !WEFROTAS_APPWRITE_LABELS.has(normalized) && normalized !== 'administrador' && !/^org[a-f0-9]{24}(?:adm|mgr|apr|view|drv)?$/.test(normalized);
     });
     const memberRole = WEFROTAS_TO_MEMBER_ROLE[assertManagedRole(payload.role)];
-    const labels = normalizeAppwriteLabels([...preservedLabels, getAppwriteRoleLabel(payload.role), access.organization.appwriteLabel, organizationAppwriteRoleLabel(access.organization.id, memberRole)]);
+    const labels = normalizeAppwriteLabels(supabaseConfigured()
+      ? [...preservedLabels, access.organization.appwriteLabel, organizationAppwriteRoleLabel(access.organization.id, memberRole)]
+      : [...preservedLabels, getAppwriteRoleLabel(payload.role)]);
     await users.updateLabels({ userId, labels });
     if (supabaseConfigured()) await supabaseRest(`organization_members?organization_id=eq.${encodeURIComponent(access.organization.id)}&appwrite_user_id=eq.${encodeURIComponent(userId)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ role: memberRole }) });
   }
@@ -479,16 +521,7 @@ async function updateWefrotasUser(req, payload) {
     await users.updateStatus({ userId, status: payload.status === true });
     if (supabaseConfigured()) await supabaseRest(`organization_members?organization_id=eq.${encodeURIComponent(access.organization.id)}&appwrite_user_id=eq.${encodeURIComponent(userId)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: payload.status === true ? 'active' : 'disabled' }) });
   }
-  return { user: normalizeManagedUser(await users.get({ userId })), before, managerId, workspaceId: access.organization.workspaceId };
-}
-
-async function ensureAdminAppwriteLabel(req, userId) {
-  const users = new Users(createServerClient(req));
-  const user = await users.get({ userId });
-  const labels = normalizeAppwriteLabels(user?.labels);
-  if (labels.includes('admin')) return;
-  const nextLabels = [...labels.filter((label) => !WEFROTAS_APPWRITE_LABELS.has(label)), 'admin'];
-  await users.updateLabels({ userId, labels: nextLabels });
+  return { user: normalizeManagedUser(await users.get({ userId })), before, managerId, workspaceId: access.organization.workspaceId, organization: access.organization };
 }
 
 async function saveSubscription(databases, payload, workspaceId = WEFROTAS_COMPANY_ID) {
@@ -600,6 +633,8 @@ async function touchSubscriptionPresence(databases, payload, workspaceId = WEFRO
   const userAgent = String(payload.userAgent || '').trim();
   if (userAgent) data.userAgent = userAgent.slice(0, 1024);
   try {
+    const current = await databases.getDocument({ databaseId: DATABASE_ID, collectionId: COLLECTION_ID, documentId });
+    if (String(current.workspaceId || WEFROTAS_COMPANY_ID) !== workspaceId) throw Object.assign(new Error('Este dispositivo pertence a outra empresa.'), { status: 403 });
     await databases.updateDocument({ databaseId: DATABASE_ID, collectionId: COLLECTION_ID, documentId, data });
     return { touched: true, updatedAt };
   } catch (error) {
@@ -618,6 +653,8 @@ async function getWefrotasSnapshot(databases, workspaceId = WEFROTAS_COMPANY_ID)
 }
 
 async function resolveCentralDeviceProfile(databases, subscriptionId, snapshot = null, directory = null, workspaceId = WEFROTAS_COMPANY_ID) {
+  const subscription = await databases.getDocument({ databaseId: DATABASE_ID, collectionId: COLLECTION_ID, documentId: subscriptionId });
+  if (String(subscription.workspaceId || WEFROTAS_COMPANY_ID) !== workspaceId) throw Object.assign(new Error('Este dispositivo pertence a outra empresa.'), { status: 403 });
   const links = snapshot?.centralDeviceLinks && typeof snapshot.centralDeviceLinks === 'object'
     ? snapshot.centralDeviceLinks
     : (await getWefrotasSnapshot(databases, workspaceId))?.centralDeviceLinks || {};
@@ -650,13 +687,15 @@ async function resolveCentralDeviceProfile(databases, subscriptionId, snapshot =
   };
 }
 
-async function updateCentralDeviceProfile(databases, subscriptionId, { driverId = '', vehicleId = '', source = '' } = {}, actorId = '', workspaceId = WEFROTAS_COMPANY_ID) {
+async function updateCentralDeviceProfile(databases, subscriptionId, { driverId = '', vehicleId = '', source = '' } = {}, actorId = '', tenant = WEFROTAS_COMPANY_ID) {
+  const organization = normalizeTenant(tenant); const workspaceId = organization.workspaceId;
   const normalizedSubscriptionId = String(subscriptionId || '').trim();
   if (!isValidSubscriptionId(normalizedSubscriptionId)) {
     throw Object.assign(new Error('Identificador do aparelho inválido.'), { status: 400 });
   }
   try {
-    await databases.getDocument({ databaseId: DATABASE_ID, collectionId: COLLECTION_ID, documentId: normalizedSubscriptionId });
+    const subscription = await databases.getDocument({ databaseId: DATABASE_ID, collectionId: COLLECTION_ID, documentId: normalizedSubscriptionId });
+    if (String(subscription.workspaceId || WEFROTAS_COMPANY_ID) !== workspaceId) throw Object.assign(new Error('Este dispositivo pertence a outra empresa.'), { status: 403 });
   } catch (error) {
     if (Number(error?.code) === 404) throw Object.assign(new Error('Este aparelho não está mais inscrito.'), { status: 404 });
     throw error;
@@ -691,15 +730,18 @@ async function updateCentralDeviceProfile(databases, subscriptionId, { driverId 
     source: normalizedSource
   };
   snapshot.centralDeviceLinks = links;
-  await persistWefrotasSnapshot(databases, snapshot, actorId || `device:${normalizedSubscriptionId.slice(-8)}`, workspaceId);
+  await persistWefrotasSnapshot(databases, snapshot, actorId || `device:${normalizedSubscriptionId.slice(-8)}`, organization);
   return resolveCentralDeviceProfile(databases, normalizedSubscriptionId, snapshot, null, workspaceId);
 }
 
-async function acknowledgeCentralDeviceProfile(databases, subscriptionId, expectedUpdatedAt, workspaceId = WEFROTAS_COMPANY_ID) {
+async function acknowledgeCentralDeviceProfile(databases, subscriptionId, expectedUpdatedAt, tenant = WEFROTAS_COMPANY_ID) {
+  const organization = normalizeTenant(tenant); const workspaceId = organization.workspaceId;
   const normalizedSubscriptionId = String(subscriptionId || '').trim();
   if (!isValidSubscriptionId(normalizedSubscriptionId)) {
     throw Object.assign(new Error('Identificador do aparelho inválido.'), { status: 400 });
   }
+  const subscription = await databases.getDocument({ databaseId: DATABASE_ID, collectionId: COLLECTION_ID, documentId: normalizedSubscriptionId });
+  if (String(subscription.workspaceId || WEFROTAS_COMPANY_ID) !== workspaceId) throw Object.assign(new Error('Este dispositivo pertence a outra empresa.'), { status: 403 });
   const snapshot = await getWefrotasSnapshot(databases, workspaceId);
   const links = snapshot.centralDeviceLinks && typeof snapshot.centralDeviceLinks === 'object'
     ? { ...snapshot.centralDeviceLinks }
@@ -712,7 +754,7 @@ async function acknowledgeCentralDeviceProfile(databases, subscriptionId, expect
   const appliedAt = new Date().toISOString();
   links[normalizedSubscriptionId] = { ...current, appliedAt };
   snapshot.centralDeviceLinks = links;
-  await persistWefrotasSnapshot(databases, snapshot, `device:${normalizedSubscriptionId.slice(-8)}`, workspaceId);
+  await persistWefrotasSnapshot(databases, snapshot, `device:${normalizedSubscriptionId.slice(-8)}`, organization);
   return resolveCentralDeviceProfile(databases, normalizedSubscriptionId, snapshot, null, workspaceId);
 }
 
@@ -751,6 +793,21 @@ async function listDriverDirectory(databases, workspaceId = WEFROTAS_COMPANY_ID)
     }))
     .filter((item) => item.driverId && item.driverName)
     .sort((a, b) => a.driverName.localeCompare(b.driverName, 'pt-BR'));
+}
+
+async function listCentralBanners(databases, workspaceId = WEFROTAS_COMPANY_ID) {
+  const rows = [];
+  let offset = 0;
+  while (true) {
+    const page = await databases.listDocuments({ databaseId: DATABASE_ID, collectionId: CENTRAL_BANNERS_COLLECTION_ID, queries: [Query.limit(100), Query.offset(offset)] });
+    rows.push(...page.documents.filter((document) => String(document.workspaceId || WEFROTAS_COMPANY_ID) === workspaceId));
+    if (page.documents.length < 100) break;
+    offset += page.documents.length;
+  }
+  return rows.map((banner) => ({
+    id: String(banner.$id || ''), title: String(banner.title || ''), imageUrl: String(banner.imageUrl || ''),
+    fileId: String(banner.fileId || ''), active: banner.active === true, sortOrder: Number(banner.sortOrder || 0)
+  }));
 }
 
 function isValidDeviceId(value) {
@@ -807,7 +864,8 @@ async function getCentralOnboardingConfig(databases, workspaceId = WEFROTAS_COMP
   }
 }
 
-async function resetCentralOnboarding(databases, senderId, workspaceId = WEFROTAS_COMPANY_ID) {
+async function resetCentralOnboarding(databases, senderId, tenant = WEFROTAS_COMPANY_ID) {
+  const organization = normalizeTenant(tenant); const workspaceId = organization.workspaceId;
   const updatedAt = new Date().toISOString();
   const version = `central-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`;
   await updateOrCreateWefrotasRow(databases, centralOnboardingConfigDocumentId(workspaceId), {
@@ -815,7 +873,7 @@ async function resetCentralOnboarding(databases, senderId, workspaceId = WEFROTA
     snapshot: JSON.stringify({ version, updatedAt }),
     updatedAt,
     updatedBy: senderId
-  });
+  }, tenantManagedPermissions(organization));
   return { version, updatedAt };
 }
 
@@ -933,21 +991,22 @@ async function updateOrCreateWefrotasRow(databases, documentId, data, permission
   }
 }
 
-async function writeWefrotasAudit(databases, { actorId, action, targetId = '', before = null, after = null, justification = '', result = 'success', workspaceId = WEFROTAS_COMPANY_ID }) {
+async function writeWefrotasAudit(databases, { actorId, action, targetId = '', before = null, after = null, justification = '', result = 'success', workspaceId = WEFROTAS_COMPANY_ID, organization: tenant = null }) {
+  const organization = normalizeTenant(tenant || workspaceId); workspaceId = organization.workspaceId;
   const updatedAt = new Date().toISOString();
   const documentId = crypto.createHash('sha256')
     .update(`audit:${updatedAt}:${actorId}:${action}:${targetId}:${crypto.randomUUID()}`)
     .digest('hex')
     .slice(0, 36);
   await updateOrCreateWefrotasRow(databases, documentId, {
-    workspaceId: `${workspaceId}:audit`,
-    snapshot: JSON.stringify({ actorId, action, targetId, before, after, justification: String(justification || '').slice(0, 500), result, createdAt: updatedAt }),
+    workspaceId,
+    snapshot: JSON.stringify({ kind: 'platform-audit', actorId, action, targetId, before, after, justification: String(justification || '').slice(0, 500), result, createdAt: updatedAt }),
     updatedAt,
     updatedBy: actorId
-  }, ADMIN_READ_PERMISSIONS);
+  }, tenantManagedPermissions(organization, { auditOnly: true }));
 }
 
-async function updateCollectionPermissions(databases, collectionId, permissions) {
+async function updateCollectionPermissions(databases, collectionId, permissions, includeDocument = () => true) {
   let cursor = '';
   let updated = 0;
   do {
@@ -956,6 +1015,7 @@ async function updateCollectionPermissions(databases, collectionId, permissions)
     const page = await databases.listDocuments({ databaseId: DATABASE_ID, collectionId, queries });
     const documents = Array.isArray(page?.documents) ? page.documents : [];
     for (const document of documents) {
+      if (!includeDocument(document)) continue;
       const resolvedPermissions = typeof permissions === 'function' ? permissions(document) : permissions;
       await databases.updateDocument({
         databaseId: DATABASE_ID,
@@ -970,20 +1030,35 @@ async function updateCollectionPermissions(databases, collectionId, permissions)
   return updated;
 }
 
-async function hardenWefrotasPermissions(databases) {
+async function hardenWefrotasPermissions(databases, organization) {
+  const workspaceId = organization.workspaceId;
+  const belongsToTenant = (document) => {
+    const documentWorkspace = String(document?.workspaceId || WEFROTAS_COMPANY_ID).replace(/:audit$/, '');
+    return documentWorkspace === workspaceId;
+  };
+  const isAuditDocument = (document) => {
+    if (String(document?.workspaceId || '').endsWith(':audit')) return true;
+    try { return JSON.parse(String(document?.snapshot || '{}')).kind === 'platform-audit'; } catch { return false; }
+  };
+  const snapshotPermissions = tenantManagedPermissions(organization);
+  const auditPermissions = tenantManagedPermissions(organization, { auditOnly: true });
+  const recordPermissions = tenantReadPermissions(organization);
+  const publicPermissions = tenantManagedPermissions(organization, { publicRead: true });
   const results = {};
   results.snapshots = await updateCollectionPermissions(databases, WEFROTAS_TABLE_ID, (document) => (
-    String(document?.workspaceId || '').endsWith(':audit') ? ADMIN_READ_PERMISSIONS : WEFROTAS_SNAPSHOT_PERMISSIONS
-  ));
-  results.centralRecords = await updateCollectionPermissions(databases, CENTRAL_RECORDS_COLLECTION_ID, CENTRAL_RECORD_PERMISSIONS);
-  results.driverDirectory = await updateCollectionPermissions(databases, DRIVER_DIRECTORY_COLLECTION_ID, CENTRAL_PUBLIC_MANAGEMENT_PERMISSIONS);
-  results.banners = await updateCollectionPermissions(databases, CENTRAL_BANNERS_COLLECTION_ID, CENTRAL_PUBLIC_MANAGEMENT_PERMISSIONS);
-  results.approvalLocks = await updateCollectionPermissions(databases, APPROVAL_LOCKS_COLLECTION_ID, []);
-  results.pushSubscriptions = await updateCollectionPermissions(databases, COLLECTION_ID, []);
+    isAuditDocument(document) ? auditPermissions : snapshotPermissions
+  ), belongsToTenant);
+  results.centralRecords = await updateCollectionPermissions(databases, CENTRAL_RECORDS_COLLECTION_ID, recordPermissions, belongsToTenant);
+  results.driverDirectory = await updateCollectionPermissions(databases, DRIVER_DIRECTORY_COLLECTION_ID, snapshotPermissions, belongsToTenant);
+  results.banners = await updateCollectionPermissions(databases, CENTRAL_BANNERS_COLLECTION_ID, publicPermissions, belongsToTenant);
+  results.approvalLocks = 0;
+  results.pushSubscriptions = 0;
   return results;
 }
 
-async function persistWefrotasSnapshot(databases, snapshot, senderId, workspaceId = WEFROTAS_COMPANY_ID) {
+async function persistWefrotasSnapshot(databases, snapshot, senderId, tenant = WEFROTAS_COMPANY_ID) {
+  const organization = normalizeTenant(tenant); const workspaceId = organization.workspaceId;
+  const snapshotPermissions = tenantManagedPermissions(organization);
   const serialized = JSON.stringify(snapshot);
   const compressed = `gzip-base64:${gzipSync(Buffer.from(serialized, 'utf8')).toString('base64')}`;
   const storedSnapshot = compressed.length < serialized.length ? compressed : serialized;
@@ -1004,7 +1079,7 @@ async function persistWefrotasSnapshot(databases, snapshot, senderId, workspaceI
           snapshot: chunk,
           updatedAt,
           updatedBy: senderId
-        }, WEFROTAS_SNAPSHOT_PERMISSIONS)
+        }, snapshotPermissions)
       )));
     }
     primarySnapshot = `chunked-v1:${JSON.stringify({ generation, count: chunks.length, length: storedSnapshot.length })}`;
@@ -1015,10 +1090,11 @@ async function persistWefrotasSnapshot(databases, snapshot, senderId, workspaceI
     snapshot: primarySnapshot,
     updatedAt,
     updatedBy: senderId
-  }, WEFROTAS_SNAPSHOT_PERMISSIONS);
+  }, snapshotPermissions);
 }
 
-async function appendApprovedFinanceEntry(databases, senderId, payload = {}, workspaceId = WEFROTAS_COMPANY_ID) {
+async function appendApprovedFinanceEntry(databases, senderId, payload = {}, tenant = WEFROTAS_COMPANY_ID) {
+  const organization = normalizeTenant(tenant); const workspaceId = organization.workspaceId;
   const entry = payload?.entry && typeof payload.entry === 'object' && !Array.isArray(payload.entry)
     ? structuredClone(payload.entry)
     : null;
@@ -1031,7 +1107,7 @@ async function appendApprovedFinanceEntry(databases, senderId, payload = {}, wor
     throw Object.assign(new Error('O lançamento aprovado excede o tamanho permitido.'), { status: 400 });
   }
 
-  const lockId = approvalLockDocumentId('__finance_snapshot__');
+  const lockId = approvalLockDocumentId(`${workspaceId}:__finance_snapshot__`);
   let locked = false;
   for (let attempt = 0; attempt < 12 && !locked; attempt += 1) {
     const claimedAt = new Date().toISOString();
@@ -1072,12 +1148,13 @@ async function appendApprovedFinanceEntry(databases, senderId, payload = {}, wor
 
     finance.unshift(entry);
     snapshot.finance = finance;
-    await persistWefrotasSnapshot(databases, snapshot, senderId, workspaceId);
+    await persistWefrotasSnapshot(databases, snapshot, senderId, organization);
     await writeWefrotasAudit(databases, {
       actorId: senderId,
       action: 'central.finance.append',
       targetId: centralRecordId,
-      after: { entryId, entryType: String(entry.entryType || entry.kind || ''), total: Number(entry.total || 0) }
+      after: { entryId, entryType: String(entry.entryType || entry.kind || ''), total: Number(entry.total || 0) },
+      organization
     });
     return { created: true, entryId, centralRecordId };
   } finally {
@@ -1087,7 +1164,8 @@ async function appendApprovedFinanceEntry(databases, senderId, payload = {}, wor
   }
 }
 
-async function updateCentralRecordStatus(databases, senderId, payload = {}, workspaceId = WEFROTAS_COMPANY_ID) {
+async function updateCentralRecordStatus(databases, senderId, payload = {}, tenant = WEFROTAS_COMPANY_ID) {
+  const organization = normalizeTenant(tenant); const workspaceId = organization.workspaceId;
   const recordId = String(payload?.recordId || '').trim();
   const status = String(payload?.status || '').trim().toLowerCase();
   if (!/^[a-z0-9_]{1,36}$/i.test(recordId)) {
@@ -1114,7 +1192,7 @@ async function updateCentralRecordStatus(databases, senderId, payload = {}, work
     collectionId: CENTRAL_RECORDS_COLLECTION_ID,
     documentId: recordId,
     data,
-    permissions: CENTRAL_RECORD_PERMISSIONS
+    permissions: tenantReadPermissions(organization)
   });
   await writeWefrotasAudit(databases, {
     actorId: senderId,
@@ -1122,12 +1200,24 @@ async function updateCentralRecordStatus(databases, senderId, payload = {}, work
     targetId: recordId,
     before: { status: String(before?.status || ''), resolucao: String(before?.resolucao || '') },
     after: { status, resolucao, lancamentoFinanceiroId: String(data.lancamentoFinanceiroId || '') },
-    justification: resolucao
+    justification: resolucao,
+    organization
   });
   return updated;
 }
 
-async function migrateCentralStationsToWefrotas(databases, senderId, workspaceId = WEFROTAS_COMPANY_ID) {
+async function deleteCentralRecord(databases, senderId, payload = {}, tenant = WEFROTAS_COMPANY_ID) {
+  const organization = normalizeTenant(tenant); const workspaceId = organization.workspaceId;
+  const recordId = assertCentralRecordId(payload.recordId);
+  const before = await getCentralRecord(databases, recordId);
+  if (String(before.workspaceId || WEFROTAS_COMPANY_ID) !== workspaceId) throw Object.assign(new Error('Este registro pertence a outra empresa.'), { status: 403 });
+  await databases.deleteDocument({ databaseId: DATABASE_ID, collectionId: CENTRAL_RECORDS_COLLECTION_ID, documentId: recordId });
+  await writeWefrotasAudit(databases, { actorId: senderId, action: 'central.record.delete', targetId: recordId, before: { status: String(before.status || ''), protocol: String(before.protocolo || '') }, organization });
+  return { deleted: true, recordId };
+}
+
+async function migrateCentralStationsToWefrotas(databases, senderId, tenant = WEFROTAS_COMPANY_ID) {
+  const organization = normalizeTenant(tenant); const workspaceId = organization.workspaceId;
   const row = await databases.getDocument({
     databaseId: DATABASE_ID,
     collectionId: WEFROTAS_TABLE_ID,
@@ -1184,12 +1274,13 @@ async function migrateCentralStationsToWefrotas(databases, senderId, workspaceId
 
   if (created || updated) {
     snapshot.suppliers = suppliers;
-    await persistWefrotasSnapshot(databases, snapshot, senderId, workspaceId);
+    await persistWefrotasSnapshot(databases, snapshot, senderId, organization);
   }
   return { total: CENTRAL_STATION_DIRECTORY.length, created, updated, unchanged };
 }
 
-async function revertImportedCentralStations(databases, senderId, workspaceId = WEFROTAS_COMPANY_ID) {
+async function revertImportedCentralStations(databases, senderId, tenant = WEFROTAS_COMPANY_ID) {
+  const organization = normalizeTenant(tenant); const workspaceId = organization.workspaceId;
   const row = await databases.getDocument({
     databaseId: DATABASE_ID,
     collectionId: WEFROTAS_TABLE_ID,
@@ -1205,7 +1296,7 @@ async function revertImportedCentralStations(databases, senderId, workspaceId = 
   );
   if (removed.length) {
     snapshot.suppliers = suppliers.filter((supplier) => !removed.includes(supplier));
-    await persistWefrotasSnapshot(databases, snapshot, senderId, workspaceId);
+    await persistWefrotasSnapshot(databases, snapshot, senderId, organization);
   }
   return {
     removed: removed.length,
@@ -1302,7 +1393,7 @@ async function claimCentralApproval(databases, senderId, payload, workspaceId = 
     throw error;
   }
 
-  const lockId = approvalLockDocumentId(recordId);
+  const lockId = approvalLockDocumentId(`${workspaceId}:${recordId}`);
   const claimedAt = new Date().toISOString();
   try {
     await databases.createDocument({
@@ -1351,7 +1442,7 @@ async function completeCentralApproval(databases, senderId, payload, workspaceId
     error.status = 400;
     throw error;
   }
-  const lockId = approvalLockDocumentId(recordId);
+  const lockId = approvalLockDocumentId(`${workspaceId}:${recordId}`);
   const lock = await databases.getDocument({
     databaseId: DATABASE_ID,
     collectionId: APPROVAL_LOCKS_COLLECTION_ID,
@@ -1376,7 +1467,7 @@ async function releaseCentralApproval(databases, senderId, payload, workspaceId 
   const recordId = assertCentralRecordId(payload.recordId);
   const record = await getCentralRecord(databases, recordId);
   if (String(record.workspaceId || WEFROTAS_COMPANY_ID) !== workspaceId) throw Object.assign(new Error('Este registro pertence a outra empresa.'), { status: 403 });
-  const lockId = approvalLockDocumentId(recordId);
+  const lockId = approvalLockDocumentId(`${workspaceId}:${recordId}`);
   try {
     const lock = await databases.getDocument({
       databaseId: DATABASE_ID,
@@ -1564,7 +1655,10 @@ export default async ({ req, res, log, error }) => {
     const action = String(payload.action || '');
     if (action === 'tenant-context') {
       const organization = await resolveCentralOrganization(payload);
-      return json(res, 200, { ok: true, organization });
+      return json(res, 200, { ok: true, organization: {
+        slug: organization.slug, name: organization.name, workspaceId: organization.workspaceId,
+        modules: organization.modules, limits: organization.limits, branding: organization.branding, institutional: organization.institutional
+      } });
     }
     if (action === 'central-record-create') {
       const organization = await resolveCentralOrganization(payload);
@@ -1605,7 +1699,7 @@ export default async ({ req, res, log, error }) => {
     if (action === 'device-profile-applied') {
       const organization = await resolveCentralOrganization(payload);
       const databases = createDatabaseClient(req);
-      const profileSync = await acknowledgeCentralDeviceProfile(databases, payload.subscriptionId, payload.updatedAt, organization.workspaceId);
+      const profileSync = await acknowledgeCentralDeviceProfile(databases, payload.subscriptionId, payload.updatedAt, organization);
       return json(res, 200, { ok: true, profileSync });
     }
 
@@ -1616,7 +1710,7 @@ export default async ({ req, res, log, error }) => {
         driverId: payload.driverId,
         vehicleId: payload.vehicleId,
         source: 'central-app'
-      }, '', organization.workspaceId);
+      }, '', organization);
       return json(res, 200, { ok: true, profileSync });
     }
 
@@ -1627,12 +1721,12 @@ export default async ({ req, res, log, error }) => {
         driverId: payload.driverId,
         vehicleId: payload.vehicleId,
         source: 'wefrotas'
-      }, senderId, workspaceId);
+      }, senderId, access.organization);
       await writeWefrotasAudit(databases, {
         actorId: senderId,
         action: 'central.device.link',
         targetId: String(payload.subscriptionId || ''),
-        after: { driverId: String(payload.driverId || ''), vehicleId: String(payload.vehicleId || '') }, workspaceId
+        after: { driverId: String(payload.driverId || ''), vehicleId: String(payload.vehicleId || '') }, workspaceId, organization: access.organization
       });
       return json(res, 200, { ok: true, profileSync });
     }
@@ -1662,10 +1756,16 @@ export default async ({ req, res, log, error }) => {
       return json(res, 200, { ok: true, ...directory, updatedAt: new Date().toISOString() });
     }
 
+    if (action === 'banners') {
+      const organization = await resolveCentralOrganization(payload);
+      const banners = await listCentralBanners(createDatabaseClient(req), organization.workspaceId);
+      return json(res, 200, { ok: true, banners });
+    }
+
     if (action === 'migrate-central-stations') {
       const access = await assertOperationalManager(req); const senderId = access.userId; const workspaceId = access.organization.workspaceId;
       const databases = createDatabaseClient(req);
-      const result = await migrateCentralStationsToWefrotas(databases, senderId, workspaceId);
+      const result = await migrateCentralStationsToWefrotas(databases, senderId, access.organization);
       log('Postos da lista original da Central migrados por ' + senderId + ': ' + JSON.stringify(result));
       return json(res, 200, { ok: true, ...result });
     }
@@ -1673,7 +1773,7 @@ export default async ({ req, res, log, error }) => {
     if (action === 'revert-imported-central-stations') {
       const access = await assertOperationalManager(req); const senderId = access.userId; const workspaceId = access.organization.workspaceId;
       const databases = createDatabaseClient(req);
-      const result = await revertImportedCentralStations(databases, senderId, workspaceId);
+      const result = await revertImportedCentralStations(databases, senderId, access.organization);
       log('Importação de postos da Central revertida por ' + senderId + ': ' + JSON.stringify(result));
       return json(res, 200, { ok: true, ...result });
     }
@@ -1723,7 +1823,7 @@ export default async ({ req, res, log, error }) => {
         actorId: result.createdBy,
         action: 'users.create',
         targetId: result.user.id,
-        after: { name: result.user.name, email: result.user.email, role: result.user.role, status: result.user.status }, workspaceId: result.workspaceId
+        after: { name: result.user.name, email: result.user.email, role: result.user.role, status: result.user.status }, workspaceId: result.workspaceId, organization: result.organization
       });
       log('Conta WeFrotas criada por ' + result.createdBy + ': ' + result.user.id);
       return json(res, 200, { ok: true, user: result.user });
@@ -1736,17 +1836,16 @@ export default async ({ req, res, log, error }) => {
         action: payload.password ? 'users.updateWithPassword' : 'users.update',
         targetId: result.user.id,
         before: { name: result.before.name, email: result.before.email, role: result.before.role, status: result.before.status },
-        after: { name: result.user.name, email: result.user.email, role: result.user.role, status: result.user.status }, workspaceId: result.workspaceId
+        after: { name: result.user.name, email: result.user.email, role: result.user.role, status: result.user.status }, workspaceId: result.workspaceId, organization: result.organization
       });
       return json(res, 200, { ok: true, user: result.user });
     }
 
     if (action === 'harden-permissions') {
       const access = await assertAdmin(req); const senderId = access.userId; const workspaceId = access.organization.workspaceId;
-      await ensureAdminAppwriteLabel(req, senderId);
       const databases = createDatabaseClient(req);
-      const hardened = await hardenWefrotasPermissions(databases);
-      await writeWefrotasAudit(databases, { actorId: senderId, action: 'permissions.harden', targetId: workspaceId, after: hardened, workspaceId });
+      const hardened = await hardenWefrotasPermissions(databases, access.organization);
+      await writeWefrotasAudit(databases, { actorId: senderId, action: 'permissions.harden', targetId: workspaceId, after: hardened, workspaceId, organization: access.organization });
       log('Permissões de ponta a ponta reforçadas por ' + senderId + ': ' + JSON.stringify(hardened));
       return json(res, 200, { ok: true, hardened });
     }
@@ -1754,15 +1853,21 @@ export default async ({ req, res, log, error }) => {
     if (action === 'central-finance-append') {
       const access = await assertCentralApprover(req); const senderId = access.userId; const workspaceId = access.organization.workspaceId;
       const databases = createDatabaseClient(req);
-      const result = await appendApprovedFinanceEntry(databases, senderId, payload, workspaceId);
+      const result = await appendApprovedFinanceEntry(databases, senderId, payload, access.organization);
       return json(res, 200, { ok: true, ...result });
     }
 
     if (action === 'central-record-update') {
       const access = await assertCentralApprover(req); const senderId = access.userId; const workspaceId = access.organization.workspaceId;
       const databases = createDatabaseClient(req);
-      const record = await updateCentralRecordStatus(databases, senderId, payload, workspaceId);
+      const record = await updateCentralRecordStatus(databases, senderId, payload, access.organization);
       return json(res, 200, { ok: true, record });
+    }
+
+    if (action === 'central-record-delete') {
+      const access = await assertAdmin(req); const senderId = access.userId;
+      const result = await deleteCentralRecord(createDatabaseClient(req), senderId, payload, access.organization);
+      return json(res, 200, { ok: true, ...result });
     }
 
     if (action === 'stats') {
@@ -1803,7 +1908,7 @@ export default async ({ req, res, log, error }) => {
     if (action === 'reset-onboarding') {
       const access = await assertAdmin(req); const senderId = access.userId; const workspaceId = access.organization.workspaceId;
       const databases = createDatabaseClient(req);
-      const config = await resetCentralOnboarding(databases, senderId, workspaceId);
+      const config = await resetCentralOnboarding(databases, senderId, access.organization);
       log('Nova configuração obrigatória da Central criada por ' + senderId + ': ' + config.version);
       return json(res, 200, { ok: true, ...config });
     }

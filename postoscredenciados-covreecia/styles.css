@@ -7,6 +7,28 @@
   -webkit-backface-visibility: hidden;
 }
 
+:root {
+  --tenant-primary: #2563eb;
+  --tenant-secondary: #7c3aed;
+}
+
+.home-notification-button,
+.driver-profile-dialog-header p,
+.profile-page-section-heading > div > span,
+.profile-page-section-heading > div > button,
+.profile-page-card-heading button,
+.submission-receipt,
+.about-action-button:not(.about-action-primary) {
+  color: var(--tenant-primary);
+}
+
+.onboarding-progress-bar > span,
+.about-notification-toggle.is-active,
+.mobile-nav-item.active .mobile-nav-fab,
+.profile-page-primary-button {
+  background: linear-gradient(135deg, var(--tenant-primary), var(--tenant-secondary));
+}
+
 html,
 body {
   width: 100%;

@@ -176,5 +176,16 @@ select o.id, p.id, 'active' from public.organizations o cross join public.plans 
 where o.slug = 'covre-e-cia' and p.code = 'business'
 on conflict (organization_id) do nothing;
 
+-- Mantém o administrador operacional atual autorizado no instante em que a
+-- Function passar a consultar o Supabase. O vínculo com Supabase Auth pode ser
+-- preenchido posteriormente, sem interromper o login existente do Appwrite.
+insert into public.organization_members (organization_id, email, appwrite_user_id, role, status)
+select id, 'adm01@covreecia.com.br', '6a908b74003ccf52ceb6', 'admin', 'active'
+from public.organizations where slug = 'covre-e-cia'
+on conflict (organization_id, email) do update set
+  appwrite_user_id = excluded.appwrite_user_id,
+  role = 'admin',
+  status = 'active';
+
 comment on table public.organizations is 'Empresas clientes da plataforma GaveBlue; fonte oficial do tenant.';
 comment on table public.organization_members is 'Vínculo entre Supabase Auth, Appwrite Auth e a empresa autorizada.';
