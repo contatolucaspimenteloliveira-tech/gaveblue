@@ -792,6 +792,18 @@ function getSubscriptionPresence(updatedAt, active = true) {
 }
 
 async function listDriverDirectory(databases, workspaceId = WEFROTAS_COMPANY_ID) {
+  if (workspaceId !== WEFROTAS_COMPANY_ID) {
+    let row;
+    try {
+      row = await databases.getDocument({ databaseId: DATABASE_ID, collectionId: WEFROTAS_TABLE_ID, documentId: wefrotasSnapshotDocumentId(workspaceId) });
+    } catch (error) {
+      if (Number(error?.code) === 404) return [];
+      throw error;
+    }
+    if (row.workspaceId !== workspaceId) throw Object.assign(new Error('Diretório de outra empresa.'), { status: 403 });
+    const snapshot = await decodeWefrotasSnapshot(databases, row.snapshot, workspaceId);
+    return buildTenantDriverDirectory(snapshot);
+  }
   const rows = [];
   let offset = 0;
   while (true) {
@@ -1114,6 +1126,52 @@ async function persistWefrotasSnapshot(databases, snapshot, senderId, tenant = W
     updatedAt,
     updatedBy: senderId
   }, snapshotPermissions);
+}
+
+function buildTenantDriverDirectory(snapshot = {}) {
+  const active = item => item?.ativo !== false && item?.active !== false;
+  const vehicles = (Array.isArray(snapshot.vehicles) ? snapshot.vehicles : []).filter(active);
+  return (Array.isArray(snapshot.drivers) ? snapshot.drivers : []).filter(active).flatMap(driver => {
+    const driverId = String(driver?.id || '').trim();
+    const driverName = String(driver?.nome || driver?.name || '').trim();
+    if (!driverId || !driverName) return [];
+    const canonical = Array.isArray(driver.vehicleIds) || Boolean(driver.vehicleId);
+    const ids = new Set((Array.isArray(driver.vehicleIds) ? driver.vehicleIds : driver.vehicleId ? [driver.vehicleId] : []).map(String));
+    const linked = vehicles.filter(vehicle => canonical ? ids.has(String(vehicle.id)) : String(vehicle.motoristaId || vehicle.driverId || '') === driverId);
+    return (linked.length ? linked : [null]).map(vehicle => ({
+      driverId, driverName, vehicleId: String(vehicle?.id || ''),
+      vehicleName: String(vehicle?.modelo || vehicle?.model || ''),
+      vehicleImageUrl: String(vehicle?.vehicleImageUrl || vehicle?.imageUrl || ''),
+      plate: String(vehicle?.placa || vehicle?.plate || '').toUpperCase(),
+      fleetNumber: String(vehicle?.numeroFrota || vehicle?.fleetNumber || '')
+    }));
+  }).sort((a, b) => a.driverName.localeCompare(b.driverName, 'pt-BR'));
+}
+
+async function saveTenantOperationalSnapshot(req, payload = {}) {
+  const access = await assertOperationalManager(req);
+  const organization = access.organization;
+  if (!organization?.id || !organization.appwriteLabel || !organization.modules?.includes('wefrotas')) {
+    throw Object.assign(new Error('Empresa não autorizada para o WeFrotas.'), { status: 403 });
+  }
+  if (payload.workspaceId !== organization.workspaceId) {
+    throw Object.assign(new Error('A empresa do salvamento não corresponde à sessão.'), { status: 403 });
+  }
+  const snapshot = payload.snapshot;
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)
+    || ['vehicles', 'drivers', 'suppliers', 'orders', 'finance'].some(key => !Array.isArray(snapshot[key]))) {
+    throw Object.assign(new Error('Cadastro incompleto. Nenhum dado foi substituído.'), { status: 400 });
+  }
+  if (Buffer.byteLength(JSON.stringify(snapshot), 'utf8') > 10 * 1024 * 1024) {
+    throw Object.assign(new Error('Os dados excedem o tamanho permitido para este envio.'), { status: 413 });
+  }
+  const maxVehicles = Number(organization.limits?.vehicles || 0);
+  const activeVehicles = snapshot.vehicles.filter(vehicle => vehicle?.ativo !== false && vehicle?.active !== false).length;
+  if (maxVehicles > 0 && activeVehicles > maxVehicles) {
+    throw Object.assign(new Error(`O plano desta empresa permite até ${maxVehicles} veículos ativos.`), { status: 409 });
+  }
+  await persistWefrotasSnapshot(createDatabaseClient(req), snapshot, access.userId, organization);
+  return { ok: true, workspaceId: organization.workspaceId };
 }
 
 async function appendApprovedFinanceEntry(databases, senderId, payload = {}, tenant = WEFROTAS_COMPANY_ID) {
@@ -1815,6 +1873,10 @@ export default async ({ req, res, log, error }) => {
       const databases = createDatabaseClient(req);
       const records = await listDeviceHistory(databases, payload, organization.workspaceId);
       return json(res, 200, { ok: true, records });
+    }
+
+    if (action === 'wefrotas-snapshot-save') {
+      return json(res, 200, await saveTenantOperationalSnapshot(req, payload));
     }
 
     if (action === 'my-access') {

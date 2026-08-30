@@ -34,7 +34,14 @@ async function harness() {
   context.window = context;
   vm.runInNewContext(source, context);
   const backend = context.WeFrotasBackend;
-  await backend.initialize({ getSnapshot: () => applied, applySnapshot: async s => { applied = clone(s); } });
+  await backend.initialize({ getSnapshot: () => applied, applySnapshot: async s => { applied = clone(s); },
+    persistSnapshot: async (snapshot, workspaceId) => {
+      if (writeError) throw writeError;
+      const rowId = await seed(workspaceId, snapshot);
+      writes.push({ rowId, viaFunction: true, data: rows.get(rowId), permissions: [`read:${backend.getOrganizationContext().appwriteLabel}`] });
+      return { ok: true, workspaceId };
+    }
+  });
   async function seed(name, snapshot) {
     const id = Buffer.from(await webcrypto.subtle.digest('SHA-256', new TextEncoder().encode(name))).toString('hex').slice(0,36);
     rows.set(id, { workspaceId: name, snapshot: JSON.stringify(snapshot) });
@@ -68,6 +75,7 @@ test('a tenant pending local write is recovered before an older remote snapshot 
   assert.deepEqual(h.snapshot().drivers, [{ id: 'GAVE-DRIVER' }]);
   assert.equal(h.local.has('wefrotas_online_sync_pending:gave-test'), false);
   assert.equal(h.writes.at(-1).data.workspaceId, 'gave-test');
+  assert.equal(h.writes.at(-1).viaFunction, true);
 });
 
 test('a pending tenant snapshot remains available when the server is offline', async () => {

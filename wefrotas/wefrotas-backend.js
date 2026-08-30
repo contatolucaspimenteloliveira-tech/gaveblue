@@ -11,6 +11,7 @@
   let currentSnapshotGetter = null;
   let currentSnapshotUpdatedAtGetter = null;
   let currentSnapshotPreparer = null;
+  let currentSnapshotWriter = null;
   let currentSnapshotApplier = null;
   let statusListener = null;
   let unsubscribeRealtime = null;
@@ -379,6 +380,19 @@
     const activeVehicles = (Array.isArray(preparedSnapshot.vehicles) ? preparedSnapshot.vehicles : []).filter((vehicle) => vehicle?.ativo !== false && vehicle?.active !== false).length;
     if (maxVehicles > 0 && activeVehicles > maxVehicles) throw new Error(`O plano desta empresa permite até ${maxVehicles} veículos ativos.`);
     const serialized = JSON.stringify(preparedSnapshot);
+    // Preserve the existing Covre flow. New organizations save through the
+    // authenticated Function, which can assign both tenant-manager ACLs safely.
+    if (organizationContext.workspaceId !== String(config.companyId || 'covre-e-cia')) {
+      if (!currentSnapshotWriter) throw new Error('O serviço de salvamento da empresa não está disponível. Atualize a página.');
+      const confirmation = await currentSnapshotWriter(preparedSnapshot, organizationContext.workspaceId);
+      if (confirmation?.ok !== true || confirmation.workspaceId !== organizationContext.workspaceId) {
+        throw new Error('O servidor não confirmou o salvamento desta empresa.');
+      }
+      lastSerializedSnapshot = serialized;
+      setPendingSync(false);
+      emitStatus('online', 'Dados sincronizados.');
+      return preparedSnapshot;
+    }
     const storedSnapshot = await encodeSnapshot(serialized);
     const rowId = await getPrimaryRowId();
     let previousManifest = null;
@@ -812,6 +826,7 @@
     currentSnapshotGetter = options.getSnapshot;
     currentSnapshotUpdatedAtGetter = options.getSnapshotUpdatedAt;
     currentSnapshotPreparer = options.prepareSnapshot;
+    currentSnapshotWriter = options.persistSnapshot;
     currentSnapshotApplier = options.applySnapshot;
     statusListener = options.onStatus;
     centralRecordsListener = options.onCentralRecordsChange;
