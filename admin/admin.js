@@ -15,7 +15,7 @@
   const moduleLabel = { wefrotas: 'WeFrotas', central: 'Central' };
   const initials = (value) => String(value || 'GB').split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 
-  function show(id) { ['setup-screen', 'login-screen', 'app'].forEach((key) => $('#' + key)?.classList.toggle('hidden', key !== id)); }
+  function show(id) { ['setup-screen', 'login-screen', 'reset-screen', 'app'].forEach((key) => $('#' + key)?.classList.toggle('hidden', key !== id)); }
   function toast(message) { const node = $('#toast'); node.textContent = message; node.classList.remove('hidden'); clearTimeout(toast.timer); toast.timer = setTimeout(() => node.classList.add('hidden'), 3500); }
   async function invoke(action, payload = {}) {
     const { data, error } = await state.client.functions.invoke(config.functionName || 'platform-admin', { body: { action, ...payload } });
@@ -36,8 +36,16 @@
   async function bootstrap() {
     if (!configured() || !window.supabase?.createClient) { show('setup-screen'); return; }
     state.client = window.supabase.createClient(config.url, config.anonKey, { auth: { persistSession: true, autoRefreshToken: true } });
+    state.client.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        state.session = session;
+        show('reset-screen');
+        setTimeout(() => $('#reset-password')?.focus(), 50);
+      }
+    });
     const { data } = await state.client.auth.getSession();
     state.session = data.session;
+    if (location.hash.includes('type=recovery')) { show('reset-screen'); return; }
     if (!state.session) { show('login-screen'); return; }
     show('app');
     await loadPlatform();
@@ -96,6 +104,40 @@
   function closeMemberForm() { $('#member-modal').classList.add('hidden'); $('#member-modal').setAttribute('aria-hidden', 'true'); }
 
   $('#login-form').addEventListener('submit', async (event) => { event.preventDefault(); const button = event.submitter; button.disabled = true; $('#login-error').textContent = ''; try { const { data, error } = await state.client.auth.signInWithPassword({ email: $('#login-email').value.trim(), password: $('#login-password').value }); if (error) throw error; state.session = data.session; show('app'); await loadPlatform(); } catch (error) { $('#login-error').textContent = error.message; } finally { button.disabled = false; } });
+  $('#forgot-password-btn').addEventListener('click', async () => {
+    const email = $('#login-email').value.trim().toLowerCase();
+    if (!email) { $('#login-error').textContent = 'Informe seu e-mail para receber o link de recuperação.'; $('#login-email').focus(); return; }
+    const button = $('#forgot-password-btn'); button.disabled = true; $('#login-error').textContent = '';
+    try {
+      const redirectTo = `${location.origin}${location.pathname}`;
+      const { error } = await state.client.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) throw error;
+      $('#login-error').textContent = 'Link enviado. Confira sua caixa de entrada e também o spam.';
+      $('#login-error').classList.add('success-message');
+    } catch (error) {
+      $('#login-error').classList.remove('success-message');
+      $('#login-error').textContent = error.message || 'Não foi possível enviar o link de recuperação.';
+    } finally { button.disabled = false; }
+  });
+  $('#reset-password-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = event.submitter; const password = $('#reset-password').value; const confirmation = $('#reset-password-confirm').value;
+    $('#reset-password-error').textContent = '';
+    if (password.length < 8) { $('#reset-password-error').textContent = 'A senha precisa ter pelo menos 8 caracteres.'; return; }
+    if (password !== confirmation) { $('#reset-password-error').textContent = 'As senhas informadas não são iguais.'; return; }
+    button.disabled = true;
+    try {
+      const { error } = await state.client.auth.updateUser({ password });
+      if (error) throw error;
+      await state.client.auth.signOut();
+      history.replaceState({}, document.title, location.pathname);
+      $('#login-password').value = '';
+      $('#login-error').classList.add('success-message');
+      $('#login-error').textContent = 'Senha alterada. Entre com a nova senha.';
+      show('login-screen');
+    } catch (error) { $('#reset-password-error').textContent = error.message || 'Não foi possível alterar a senha.'; }
+    finally { button.disabled = false; }
+  });
   $('#organization-form').addEventListener('submit', async (event) => { event.preventDefault(); const button = event.submitter; button.disabled = true; $('#org-form-error').textContent = ''; try { await invoke('organization-save', { id: $('#org-id').value, name: $('#org-name').value, slug: $('#org-slug').value, status: $('#org-status').value, legalName: $('#org-legal-name').value, document: $('#org-document').value, appwriteWorkspaceId: $('#org-workspace').value, logoUrl: $('#org-logo-url').value, primaryColor: $('#org-primary-color').value, secondaryColor: $('#org-secondary-color').value, address: $('#org-address').value, supportEmail: $('#org-support-email').value, whatsapp: $('#org-whatsapp').value, instagramUrl: $('#org-instagram').value, planId: $('#org-plan').value, subscriptionStatus: $('#org-status').value, modules: [$('#org-module-wefrotas').checked && 'wefrotas', $('#org-module-central').checked && 'central'].filter(Boolean) }); closeOrganizationForm(); await loadPlatform(); toast('Empresa salva com sucesso.'); } catch (error) { $('#org-form-error').textContent = error.message; } finally { button.disabled = false; } });
   $('#member-form').addEventListener('submit', async (event) => { event.preventDefault(); const button = event.submitter; button.disabled = true; $('#member-form-error').textContent = ''; try { await invoke('member-save', { organizationId: $('#member-organization-id').value, name: $('#member-name').value, email: $('#member-email').value, role: $('#member-role').value, status: $('#member-status').value, appwriteUserId: $('#member-appwrite-id').value, temporaryPassword: $('#member-temporary-password').value }); $('#member-temporary-password').value = ''; closeMemberForm(); await loadPlatform(); const org = state.organizations.find((item) => item.id === state.detailOrganizationId); if (org) openDetail(org); toast('Acesso salvo com sucesso.'); } catch (error) { $('#member-form-error').textContent = error.message; } finally { button.disabled = false; } });
   document.addEventListener('click', (event) => { const edit = event.target.closest('[data-edit-org]'); const open = event.target.closest('[data-open-org]'); const editMember = event.target.closest('[data-edit-member]'); if (edit) openOrganizationForm(state.organizations.find((org) => org.id === edit.dataset.editOrg)); if (open) openDetail(state.organizations.find((org) => org.id === open.dataset.openOrg)); if (event.target.closest('[data-new-member]')) openMemberForm(); if (editMember) { const org = state.organizations.find((item) => item.id === state.detailOrganizationId); openMemberForm((org?.organization_members || []).find((member) => member.id === editMember.dataset.editMember)); } if (event.target.closest('[data-close-modal]')) closeOrganizationForm(); if (event.target.closest('[data-close-member]')) closeMemberForm(); if (event.target.closest('[data-close-detail]')) $('#detail-modal').classList.add('hidden'); const nav = event.target.closest('[data-view]'); if (nav) { document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('active', item === nav)); document.querySelectorAll('.view').forEach((view) => view.classList.toggle('active', view.id === `${nav.dataset.view}-view`)); $('#page-title').textContent = nav.textContent.trim(); } });
