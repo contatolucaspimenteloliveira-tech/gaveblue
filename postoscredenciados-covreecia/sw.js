@@ -1,16 +1,23 @@
-const CENTRAL_RELEASE = '20260829-canonical-driver-links-1';
-const CACHE_NAME = `central-registros-static-v${CENTRAL_RELEASE}`;
+const CENTRAL_RELEASE = '20260830-neutral-multitenant-1';
+const CENTRAL_SCOPE_KEY = new URL(self.registration.scope).pathname.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'root';
+const CACHE_PREFIX = `central-registros-static-${CENTRAL_SCOPE_KEY}-v`;
+const CACHE_NAME = `${CACHE_PREFIX}${CENTRAL_RELEASE}`;
 const APPWRITE_AUTH_CACHE = 'central-registros-appwrite-auth-v1';
 const APPWRITE_ENDPOINT_ORIGIN = 'https://nyc.cloud.appwrite.io';
 const APPWRITE_PROJECT_ID = '6a68cb3e00312ec0a3fd';
 const APPWRITE_CENTRAL_ROWS_PATH = '/v1/tablesdb/6a68ce8c000a36a44d98/tables/central_registros_pendentes/rows';
 const APPWRITE_FALLBACK_CACHE_KEY = new URL('./__central_appwrite_fallback_cookie__', self.location.href).href;
-const STATIC_ASSETS = [
-  './',
-  './index.html',
+const CENTRAL_ASSET_BASE_URL = new URL(self.CENTRAL_ASSET_BASE || './', self.location.href);
+const CENTRAL_SHELL_URL = new URL(self.CENTRAL_SHELL_URL || './index.html', self.location.href).href;
+const CENTRAL_SOURCE_SHELL_URL = new URL(self.CENTRAL_SOURCE_SHELL_URL || './index.html', self.location.href).href;
+const CENTRAL_MANIFEST_URL = new URL(self.CENTRAL_MANIFEST_URL || './manifest.webmanifest', self.location.href).href;
+const centralAssetUrl = (path) => new URL(path, CENTRAL_ASSET_BASE_URL).href;
+const STATIC_ASSETS = Array.from(new Set([
+  CENTRAL_SHELL_URL,
+  CENTRAL_SOURCE_SHELL_URL,
+  CENTRAL_MANIFEST_URL,
   './styles.css?v=20260829-canonical-driver-links-1',
-  './app.js?v=20260829-canonical-driver-links-1',
-  './manifest.webmanifest',
+  './app.js?v=20260830-neutral-multitenant-1',
   './assets/brand/covre-e-cia.png',
   './assets/home/hero-posto.png',
   './assets/home/hero-revisao-km-desktop.jpeg',
@@ -39,7 +46,7 @@ const STATIC_ASSETS = [
   './assets/pwa/icon-central-192.png',
   './assets/pwa/icon-central-512.png',
   './assets/pwa/icon-central-maskable-512.png'
-];
+].map((asset) => /^https?:/i.test(asset) ? asset : centralAssetUrl(asset))));
 
 const OPTIONAL_REMOTE_ASSETS = [
   'https://cdn.tailwindcss.com/3.4.17',
@@ -122,7 +129,7 @@ self.addEventListener('activate', (event) => {
     caches.keys()
       .then((keys) => Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME && key !== APPWRITE_AUTH_CACHE)
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       ))
       .then(() => self.clients.claim())
@@ -168,17 +175,19 @@ self.addEventListener('push', (event) => {
     url: payload.url || './',
     tag: payload.tag || 'central-comunicado',
     createdAt: new Date().toISOString(),
-    read: false
+    read: false,
+    workspaceId: String(payload.workspaceId || 'covre-e-cia')
   };
   const options = {
     body: storedNotification.body,
-    icon: './assets/pwa/icon-192.png',
-    badge: './assets/pwa/icon-192.png',
+    icon: centralAssetUrl('./assets/pwa/icon-192.png'),
+    badge: centralAssetUrl('./assets/pwa/icon-192.png'),
     tag: payload.tag || 'central-comunicado',
     renotify: true,
     data: {
       url: storedNotification.url,
-      notificationId
+      notificationId,
+      workspaceId: storedNotification.workspaceId
     }
   };
 
@@ -392,10 +401,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(networkRequest)
         .then((response) => {
-          caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', response.clone()));
+          caches.open(CACHE_NAME).then((cache) => cache.put(CENTRAL_SHELL_URL, response.clone()));
           return response;
         })
-        .catch(() => caches.match('./index.html'))
+        .catch(() => caches.match(CENTRAL_SHELL_URL))
     );
     return;
   }

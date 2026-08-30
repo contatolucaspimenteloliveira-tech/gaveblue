@@ -43,6 +43,9 @@ function centralTenantStorageKey(baseKey) {
   const slug = centralOrganizationContext.slug || CENTRAL_DEFAULT_ORGANIZATION_SLUG;
   return slug === CENTRAL_DEFAULT_ORGANIZATION_SLUG ? baseKey : `${baseKey}:${slug}`;
 }
+function isNeutralCentralEntry() {
+  return /^\/central(?:\/|$)/i.test(window.location.pathname);
+}
 const CENTRAL_APPWRITE_ORIGIN = 'postoscredenciados-covreecia';
 const CENTRAL_APPWRITE_RETRY_KEY = 'postoscredenciados-covreecia:appwrite-pending-record';
 const CENTRAL_DRIVER_DIRECTORY_CACHE_KEY = 'postoscredenciados-covreecia:driver-directory-cache-v2';
@@ -340,7 +343,7 @@ function syncPwaInstallEntries() {
 function wasPwaPromptRecentlyDismissed() {
   if (pwaInstallDismissedThisSession) return true;
   try {
-    const dismissedAt = Number(localStorage.getItem(PWA_INSTALL_DISMISSED_KEY) || 0);
+    const dismissedAt = Number(localStorage.getItem(centralTenantStorageKey(PWA_INSTALL_DISMISSED_KEY)) || 0);
     return Boolean(dismissedAt && Date.now() - dismissedAt < PWA_DISMISS_DAYS * 24 * 60 * 60 * 1000);
   } catch (error) {
     return false;
@@ -485,7 +488,7 @@ function openPwaInstallFromMenu() {
   }
   pwaInstallDismissedThisSession = false;
   try {
-    localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
+    localStorage.removeItem(centralTenantStorageKey(PWA_INSTALL_DISMISSED_KEY));
   } catch (error) {
     // A sugestão continua funcionando mesmo sem armazenamento local.
   }
@@ -504,7 +507,7 @@ function hidePwaInstallModal() {
 function dismissPwaInstallModal() {
   pwaInstallDismissedThisSession = true;
   try {
-    localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, String(Date.now()));
+    localStorage.setItem(centralTenantStorageKey(PWA_INSTALL_DISMISSED_KEY), String(Date.now()));
   } catch (error) {
     // Fechar a sugestão nunca deve bloquear o uso pelo navegador.
   }
@@ -696,6 +699,13 @@ async function loadManagedCentralStations() {
     const stations = Array.isArray(result?.stations) ? result.stations : [];
     const cities = Array.isArray(result?.cities) ? result.cities : [];
     if (!stations.length && !cities.length) {
+      if (centralOrganizationContext.workspaceId !== CENTRAL_DEFAULT_ORGANIZATION_SLUG) {
+        postosPorCidade = {};
+        cityImageCards = [];
+        refreshCentralStationCityOptions();
+        renderCityImageCards();
+        return true;
+      }
       console.warn('O diretório administrado retornou sem cidades e postos; mantendo o último diretório válido.');
       return false;
     }
@@ -748,7 +758,7 @@ async function loadManagedCentralStations() {
 }
 
 function dismissCentralPushPrompt() {
-  localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
+  localStorage.setItem(centralTenantStorageKey(CENTRAL_PUSH_PROMPT_DISMISSED_KEY), String(Date.now()));
   document.getElementById('central-push-prompt')?.remove();
 }
 
@@ -925,7 +935,7 @@ async function enableCentralPushNotifications() {
     saveCentralPushSubscriptionId(result.subscriptionId);
     await syncCentralDeviceProfile({ silent: true });
     startCentralDeviceHeartbeat();
-    localStorage.removeItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY);
+    localStorage.removeItem(centralTenantStorageKey(CENTRAL_PUSH_PROMPT_DISMISSED_KEY));
     document.getElementById('central-push-prompt')?.remove();
     showSuccessMessage('Notificações ativadas neste celular.');
     return true;
@@ -1047,7 +1057,7 @@ async function disableCentralPushNotifications() {
     await subscription.unsubscribe();
   }
   saveCentralPushSubscriptionId('');
-  localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
+  localStorage.setItem(centralTenantStorageKey(CENTRAL_PUSH_PROMPT_DISMISSED_KEY), String(Date.now()));
   showSuccessMessage('Notificações desativadas neste celular.');
 }
 
@@ -1126,7 +1136,8 @@ function registerServiceWorker() {
   }
 
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+    const serviceWorkerUrl = isNeutralCentralEntry() ? '/central/sw.js' : './sw.js';
+    navigator.serviceWorker.register(serviceWorkerUrl, { updateViaCache: 'none' })
       .then((registration) => {
         registration.update();
 
@@ -1157,7 +1168,7 @@ window.addEventListener('appinstalled', () => {
   deferredPwaPrompt = null;
   pwaInstallDismissedThisSession = false;
   try {
-    localStorage.removeItem(PWA_INSTALL_DISMISSED_KEY);
+    localStorage.removeItem(centralTenantStorageKey(PWA_INSTALL_DISMISSED_KEY));
   } catch (error) {
     // A confirmação da instalação não depende do armazenamento local.
   }
@@ -1205,14 +1216,17 @@ async function refreshCentralApplication() {
 }
 
 function getStoredDriverNames() {
+  const tenantDefaults = centralOrganizationContext.workspaceId === CENTRAL_DEFAULT_ORGANIZATION_SLUG
+    ? DEFAULT_DRIVER_NAMES
+    : [OTHER_DRIVER_OPTION];
   try {
-    const storedNames = localStorage.getItem(DRIVER_NAMES_STORAGE_KEY);
+    const storedNames = localStorage.getItem(centralTenantStorageKey(DRIVER_NAMES_STORAGE_KEY));
     const parsedNames = storedNames ? JSON.parse(storedNames) : [];
     const validStoredNames = Array.isArray(parsedNames) ? parsedNames : [];
-    return Array.from(new Set([...DEFAULT_DRIVER_NAMES, ...validStoredNames]))
+    return Array.from(new Set([...tenantDefaults, ...validStoredNames]))
       .filter((name) => !REMOVED_DRIVER_NAMES.includes(String(name || '').trim().toUpperCase()));
   } catch (error) {
-    return [...DEFAULT_DRIVER_NAMES];
+    return [...tenantDefaults];
   }
 }
 
@@ -1283,7 +1297,7 @@ function saveDriverNameSuggestion(driverName) {
   const namesToPersist = filteredNames.slice(0, 25).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
   try {
-    localStorage.setItem(DRIVER_NAMES_STORAGE_KEY, JSON.stringify(namesToPersist));
+    localStorage.setItem(centralTenantStorageKey(DRIVER_NAMES_STORAGE_KEY), JSON.stringify(namesToPersist));
   } catch (error) {
     return;
   }
@@ -1292,7 +1306,7 @@ function saveDriverNameSuggestion(driverName) {
 
 function getLastFuelEntry() {
   try {
-    const storedEntry = localStorage.getItem(LAST_FUEL_ENTRY_STORAGE_KEY);
+    const storedEntry = localStorage.getItem(centralTenantStorageKey(LAST_FUEL_ENTRY_STORAGE_KEY));
     const parsedEntry = storedEntry ? JSON.parse(storedEntry) : null;
     return parsedEntry && typeof parsedEntry === 'object' ? parsedEntry : null;
   } catch (error) {
@@ -1303,7 +1317,7 @@ function getLastFuelEntry() {
 function saveLastFuelEntry(entry) {
   try {
     localStorage.setItem(
-      LAST_FUEL_ENTRY_STORAGE_KEY,
+      centralTenantStorageKey(LAST_FUEL_ENTRY_STORAGE_KEY),
       JSON.stringify({
         motorista: entry.motorista || '',
         cidade: entry.cidade || '',
@@ -1502,6 +1516,9 @@ function ensureCentralDeviceStateRestored() {
 }
 
 async function saveCentralOfflineSubmission(submission) {
+  const workspaceId = String(centralOrganizationContext.workspaceId || '').trim();
+  if (!workspaceId) throw new Error('A empresa ainda não foi confirmada.');
+  submission = { ...submission, workspaceId };
   const existingSubmissions = await getCentralOfflineSubmissions();
   if (existingSubmissions.length >= 20 && !existingSubmissions.some((item) => item.id === submission.id)) {
     throw new Error('Limite de 20 registros offline atingido. Conecte o aparelho para sincronizar.');
@@ -1521,7 +1538,8 @@ async function getCentralOfflineSubmissions() {
   const submissions = await new Promise((resolve, reject) => {
     const transaction = database.transaction(CENTRAL_PENDING_UPLOADS_STORE, 'readonly');
     const request = transaction.objectStore(CENTRAL_PENDING_UPLOADS_STORE).getAll();
-    request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : []);
+    request.onsuccess = () => resolve((Array.isArray(request.result) ? request.result : [])
+      .filter((item) => String(item?.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG) === centralOrganizationContext.workspaceId));
     request.onerror = () => reject(request.error);
   });
   database.close();
@@ -1607,7 +1625,7 @@ async function requireAuthorizedDriverProfile() {
 
 function getCentralLastSentRecord() {
   try {
-    const storedRecord = localStorage.getItem(CENTRAL_LAST_SENT_STORAGE_KEY);
+    const storedRecord = localStorage.getItem(centralTenantStorageKey(CENTRAL_LAST_SENT_STORAGE_KEY));
     const record = storedRecord ? JSON.parse(storedRecord) : null;
     return record && typeof record === 'object' ? record : null;
   } catch (error) {
@@ -1618,12 +1636,12 @@ function getCentralLastSentRecord() {
 function cacheCentralLastSentRecord(record) {
   try {
     if (!record) {
-      localStorage.removeItem(CENTRAL_LAST_SENT_STORAGE_KEY);
+      localStorage.removeItem(centralTenantStorageKey(CENTRAL_LAST_SENT_STORAGE_KEY));
       return;
     }
     const serialized = JSON.stringify(record);
-    if (localStorage.getItem(CENTRAL_LAST_SENT_STORAGE_KEY) !== serialized) {
-      localStorage.setItem(CENTRAL_LAST_SENT_STORAGE_KEY, serialized);
+    if (localStorage.getItem(centralTenantStorageKey(CENTRAL_LAST_SENT_STORAGE_KEY)) !== serialized) {
+      localStorage.setItem(centralTenantStorageKey(CENTRAL_LAST_SENT_STORAGE_KEY), serialized);
     }
   } catch (error) {
     console.warn('N\u00e3o foi poss\u00edvel atualizar o cache do \u00faltimo envio.', error);
@@ -2275,7 +2293,7 @@ async function activateOnboardingNotifications() {
 }
 
 async function finishGuidedOnboarding(options = {}) {
-  if (options.notificationsSkipped) localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
+  if (options.notificationsSkipped) localStorage.setItem(centralTenantStorageKey(CENTRAL_PUSH_PROMPT_DISMISSED_KEY), String(Date.now()));
   localStorage.setItem(centralTenantStorageKey(DRIVER_ONBOARDING_VERSION_KEY), centralRequiredOnboardingVersion);
   await persistCentralDeviceState();
   requestCentralPersistentStorage();
@@ -2296,7 +2314,7 @@ async function skipDriverOnboarding() {
     return;
   }
   localStorage.setItem(centralTenantStorageKey(DRIVER_ONBOARDING_VERSION_KEY), centralRequiredOnboardingVersion);
-  localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
+  localStorage.setItem(centralTenantStorageKey(CENTRAL_PUSH_PROMPT_DISMISSED_KEY), String(Date.now()));
   await persistCentralDeviceState();
   requestCentralPersistentStorage();
   closeDriverProfile();
@@ -2514,6 +2532,7 @@ async function getCentralNotifications() {
       request.onerror = () => reject(request.error);
     });
     return records
+      .filter((record) => String(record?.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG) === centralOrganizationContext.workspaceId)
       .sort((first, second) => new Date(second.createdAt || 0) - new Date(first.createdAt || 0))
       .slice(0, 100);
   } finally {
@@ -2531,7 +2550,10 @@ async function markAllCentralNotificationsRead() {
       request.onsuccess = () => {
         const cursor = request.result;
         if (!cursor) return;
-        if (!cursor.value.read) cursor.update({ ...cursor.value, read: true });
+        const workspaceId = String(cursor.value?.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG);
+        if (workspaceId === centralOrganizationContext.workspaceId && !cursor.value.read) {
+          cursor.update({ ...cursor.value, read: true });
+        }
         cursor.continue();
       };
       transaction.oncomplete = resolve;
@@ -2547,7 +2569,15 @@ async function deleteAllCentralNotifications() {
   try {
     await new Promise((resolve, reject) => {
       const transaction = database.transaction(CENTRAL_NOTIFICATIONS_STORE, 'readwrite');
-      transaction.objectStore(CENTRAL_NOTIFICATIONS_STORE).clear();
+      const store = transaction.objectStore(CENTRAL_NOTIFICATIONS_STORE);
+      const request = store.openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        const workspaceId = String(cursor.value?.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG);
+        if (workspaceId === centralOrganizationContext.workspaceId) cursor.delete();
+        cursor.continue();
+      };
       transaction.oncomplete = resolve;
       transaction.onerror = () => reject(transaction.error || new Error('Não foi possível limpar as notificações.'));
       transaction.onabort = () => reject(transaction.error || new Error('A limpeza das notificações foi interrompida.'));
@@ -2562,7 +2592,10 @@ async function closeCentralSystemNotifications() {
   try {
     const registration = await navigator.serviceWorker.ready;
     const notifications = await registration.getNotifications();
-    notifications.forEach((notification) => notification.close());
+    notifications.forEach((notification) => {
+      const workspaceId = String(notification?.data?.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG);
+      if (workspaceId === centralOrganizationContext.workspaceId) notification.close();
+    });
   } catch (error) {
     console.warn('Central: não foi possível fechar os avisos visíveis do sistema.', error);
   }
@@ -3504,9 +3537,12 @@ async function saveCentralRegistroWithRetry(payload) {
 }
 
 function getRequestedCentralOrganizationSlug() {
+  if (!isNeutralCentralEntry()) return CENTRAL_DEFAULT_ORGANIZATION_SLUG;
   const querySlug = new URLSearchParams(window.location.search).get('empresa');
+  // The existing Covre URL is permanently pinned above. Only the neutral
+  // entry may resume or select another company.
   const storedSlug = (() => { try { return localStorage.getItem(CENTRAL_ORGANIZATION_SLUG_KEY); } catch (error) { return ''; } })();
-  return String(querySlug || storedSlug || CENTRAL_DEFAULT_ORGANIZATION_SLUG).trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 48) || CENTRAL_DEFAULT_ORGANIZATION_SLUG;
+  return String(querySlug || storedSlug || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 48);
 }
 
 function applyCentralOrganizationBranding(organization = {}) {
@@ -3555,6 +3591,7 @@ async function loadCentralOrganizationContext() {
   if (centralOrganizationContextPromise) return centralOrganizationContextPromise;
   centralOrganizationContextPromise = (async () => {
   const organizationSlug = getRequestedCentralOrganizationSlug();
+  if (!organizationSlug) throw new Error('Abra a Central pelo link fornecido para sua empresa.');
   let verifiedOrganization;
   try {
     const result = await executeCentralPushFunction({ action: 'tenant-context', organizationSlug }, { attempts: 2, timeoutMs: 6000 });
@@ -5286,7 +5323,6 @@ window.addEventListener('DOMContentLoaded', function() {
     header.style.zIndex = '20';
   }
   setMobileNavActive('home');
-  populateDriverOptions();
 });
 
 async function onConfigChange(newConfig) {
@@ -5380,10 +5416,15 @@ if (window.elementSdk) {
 }
 
 window.addEventListener('DOMContentLoaded', async function() {
+  try {
+    await loadCentralOrganizationContext();
+  } catch (error) {
+    console.warn('Não foi possível validar a empresa agora.', error);
+    showErrorMessage(error?.message || 'Não foi possível identificar sua empresa.');
+    return;
+  }
   await ensureCentralDeviceStateRestored();
-  await loadCentralOrganizationContext().catch((error) => {
-    console.warn('Não foi possível validar a empresa agora; o modo offline continuará disponível.', error);
-  });
+  populateDriverOptions();
   if (window.lucide) {
     lucide.createIcons();
   }
@@ -5440,6 +5481,12 @@ let cityImageCards = [
   }
 ];
 
+function applyCentralTenantFallbacks() {
+  if (centralOrganizationContext.workspaceId === CENTRAL_DEFAULT_ORGANIZATION_SLUG) return;
+  postosPorCidade = {};
+  cityImageCards = [];
+}
+
 function renderCityImageCards() {
   const dashboard = document.getElementById('dashboard');
   const grid = dashboard?.querySelector('.grid');
@@ -5487,8 +5534,15 @@ function renderCityImageCards() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await loadCentralOrganizationContext();
+  } catch (error) {
+    console.warn('Contexto da empresa indisponível; usando cache offline.', error);
+    showErrorMessage(error?.message || 'Não foi possível identificar sua empresa.');
+    return;
+  }
+  applyCentralTenantFallbacks();
   await ensureCentralDeviceStateRestored();
-  await loadCentralOrganizationContext().catch((error) => console.warn('Contexto da empresa indisponível; usando cache offline.', error));
   updateCentralConnectivityStatus();
   restoreManagedCentralStationsCache();
   renderCityImageCards();
@@ -5573,7 +5627,10 @@ function getManagedBannerDuration(imageUrl) {
 
 async function loadManagedHomeBanners() {
   const slidesContainer = document.querySelector('#home-hero-carousel .home-hero-slides');
+  const carousel = document.getElementById('home-hero-carousel');
   if (!slidesContainer) return false;
+  const isLegacyTenant = centralOrganizationContext.workspaceId === CENTRAL_DEFAULT_ORGANIZATION_SLUG;
+  if (!isLegacyTenant) slidesContainer.replaceChildren();
   try {
     const payload = await executeCentralPushFunction({ action: 'banners' }, { attempts: 2, timeoutMs: 7000 });
     const rows = Array.isArray(payload?.banners) ? payload.banners : [];
@@ -5581,7 +5638,10 @@ async function loadManagedHomeBanners() {
     const banners = rows
       .filter((banner) => banner?.active && String(banner?.imageUrl || '').trim())
       .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
-    if (!banners.length) return false;
+    if (!banners.length) {
+      if (!isLegacyTenant && carousel) carousel.hidden = true;
+      return false;
+    }
 
     const fragment = document.createDocumentFragment();
     banners.forEach((banner, index) => {
@@ -5608,14 +5668,16 @@ async function loadManagedHomeBanners() {
       slide.appendChild(image);
       fragment.appendChild(slide);
     });
-    if (managesBuiltinBanners) {
+    if (managesBuiltinBanners || !isLegacyTenant) {
       slidesContainer.replaceChildren(fragment);
     } else {
       slidesContainer.appendChild(fragment);
     }
+    if (carousel) carousel.hidden = false;
     return true;
   } catch (error) {
     console.warn('Não foi possível carregar os banners administrados; usando os banners locais.', error);
+    if (!isLegacyTenant && carousel) carousel.hidden = true;
     return false;
   }
 }

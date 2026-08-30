@@ -42,3 +42,16 @@
 .success-message {
   color: #15803d;
 }
+
+.detail-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.detail-links a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}

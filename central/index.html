@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#2563eb">
+  <title>Central de Registros | GaveBlue</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="../postoscredenciados-covreecia/assets/pwa/icon-central-192.png">
+  <style>
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,sans-serif;background:#f8fafc;color:#0f172a}
+    body{display:grid;place-items:center}.loading{display:grid;gap:16px;text-align:center;padding:32px}.bar{width:min(320px,75vw);height:4px;background:#dbeafe;border-radius:999px;overflow:hidden}.bar::after{content:"";display:block;width:45%;height:100%;background:#2563eb;border-radius:inherit;animation:load 1s ease-in-out infinite alternate}@keyframes load{to{transform:translateX(125%)}}
+  </style>
+</head>
+<body>
+  <main class="loading" aria-live="polite">
+    <strong>Preparando a Central de Registros</strong>
+    <div class="bar" aria-hidden="true"></div>
+  </main>
+  <noscript>Ative o JavaScript para abrir a Central de Registros.</noscript>
+  <script>
+    (async () => {
+      try {
+        const response = await fetch('../postoscredenciados-covreecia/index.html', { cache: 'no-store' });
+        if (!response.ok) throw new Error('Não foi possível carregar a Central.');
+        let html = await response.text();
+        html = html.replace('<head>', '<head><base href="/postoscredenciados-covreecia/">');
+        html = html.replace('<link rel="manifest" href="./manifest.webmanifest">', '<link rel="manifest" href="/central/manifest.webmanifest">');
+        document.open();
+        document.write(html);
+        document.close();
+      } catch (error) {
+        document.querySelector('.loading').innerHTML = '<strong>Não foi possível abrir a Central</strong><span>Confira sua conexão e tente novamente.</span><button type="button" onclick="location.reload()">Tentar novamente</button>';
+      }
+    })();
+  </script>
+</body>
+</html>

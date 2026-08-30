@@ -91,7 +91,11 @@
   function openDetail(org) {
     state.detailOrganizationId = org.id;
     const sub = subscriptionFor(org); const members = org.organization_members || []; $('#detail-title').textContent = org.name;
-    $('#detail-content').innerHTML = `<div class="detail-grid"><article><span>Status</span><strong>${statusLabel[org.status] || org.status}</strong></article><article><span>Plano</span><strong>${escapeHtml(sub?.plans?.name || 'Sem plano')}</strong></article><article><span>Workspace</span><strong>${escapeHtml(org.appwrite_workspace_id)}</strong></article><article><span>Usuários</span><strong>${members.filter((m) => m.status === 'active').length}</strong></article><article><span>Veículos permitidos</span><strong>${sub?.max_vehicles || sub?.plans?.max_vehicles || '—'}</strong></article><article><span>Dispositivos permitidos</span><strong>${sub?.max_devices || sub?.plans?.max_devices || '—'}</strong></article></div><div class="member-list"><div class="member-list-head"><span class="eyebrow">EQUIPE</span><button type="button" class="primary" data-new-member>+ Usuário</button></div>${members.length ? members.map((member) => `<div class="member-row"><strong>${escapeHtml(member.email)}</strong><span>${escapeHtml(member.role)}</span><span><span class="status ${member.status === 'active' ? 'active' : 'archived'}">${escapeHtml(member.status)}</span> <button type="button" class="secondary member-edit" data-edit-member="${member.id}">Editar</button></span></div>`).join('') : '<p>Nenhum usuário vinculado.</p>'}</div>`;
+    const centralUrl = `/central/?empresa=${encodeURIComponent(org.slug)}`;
+    const centralLink = (org.organization_modules || []).some((item) => item.module_key === 'central' && item.enabled !== false)
+      ? `<div class="detail-links"><a class="secondary" href="${centralUrl}" target="_blank" rel="noopener">Abrir Central desta empresa</a><button type="button" class="secondary" data-copy-central="${escapeHtml(centralUrl)}">Copiar link da Central</button></div>`
+      : '';
+    $('#detail-content').innerHTML = `<div class="detail-grid"><article><span>Status</span><strong>${statusLabel[org.status] || org.status}</strong></article><article><span>Plano</span><strong>${escapeHtml(sub?.plans?.name || 'Sem plano')}</strong></article><article><span>Workspace</span><strong>${escapeHtml(org.appwrite_workspace_id)}</strong></article><article><span>Usuários</span><strong>${members.filter((m) => m.status === 'active').length}</strong></article><article><span>Veículos permitidos</span><strong>${sub?.max_vehicles || sub?.plans?.max_vehicles || '—'}</strong></article><article><span>Dispositivos permitidos</span><strong>${sub?.max_devices || sub?.plans?.max_devices || '—'}</strong></article></div>${centralLink}<div class="member-list"><div class="member-list-head"><span class="eyebrow">EQUIPE</span><button type="button" class="primary" data-new-member>+ Usuário</button></div>${members.length ? members.map((member) => `<div class="member-row"><strong>${escapeHtml(member.email)}</strong><span>${escapeHtml(member.role)}</span><span><span class="status ${member.status === 'active' ? 'active' : 'archived'}">${escapeHtml(member.status)}</span> <button type="button" class="secondary member-edit" data-edit-member="${member.id}">Editar</button></span></div>`).join('') : '<p>Nenhum usuário vinculado.</p>'}</div>`;
     $('#detail-modal').classList.remove('hidden'); $('#detail-modal').setAttribute('aria-hidden', 'false');
   }
 
@@ -140,7 +144,37 @@
   });
   $('#organization-form').addEventListener('submit', async (event) => { event.preventDefault(); const button = event.submitter; button.disabled = true; $('#org-form-error').textContent = ''; try { await invoke('organization-save', { id: $('#org-id').value, name: $('#org-name').value, slug: $('#org-slug').value, status: $('#org-status').value, legalName: $('#org-legal-name').value, document: $('#org-document').value, appwriteWorkspaceId: $('#org-workspace').value, logoUrl: $('#org-logo-url').value, primaryColor: $('#org-primary-color').value, secondaryColor: $('#org-secondary-color').value, address: $('#org-address').value, supportEmail: $('#org-support-email').value, whatsapp: $('#org-whatsapp').value, instagramUrl: $('#org-instagram').value, planId: $('#org-plan').value, subscriptionStatus: $('#org-status').value, modules: [$('#org-module-wefrotas').checked && 'wefrotas', $('#org-module-central').checked && 'central'].filter(Boolean) }); closeOrganizationForm(); await loadPlatform(); toast('Empresa salva com sucesso.'); } catch (error) { $('#org-form-error').textContent = error.message; } finally { button.disabled = false; } });
   $('#member-form').addEventListener('submit', async (event) => { event.preventDefault(); const button = event.submitter; button.disabled = true; $('#member-form-error').textContent = ''; try { await invoke('member-save', { organizationId: $('#member-organization-id').value, name: $('#member-name').value, email: $('#member-email').value, role: $('#member-role').value, status: $('#member-status').value, appwriteUserId: $('#member-appwrite-id').value, temporaryPassword: $('#member-temporary-password').value }); $('#member-temporary-password').value = ''; closeMemberForm(); await loadPlatform(); const org = state.organizations.find((item) => item.id === state.detailOrganizationId); if (org) openDetail(org); toast('Acesso salvo com sucesso.'); } catch (error) { $('#member-form-error').textContent = error.message; } finally { button.disabled = false; } });
-  document.addEventListener('click', (event) => { const edit = event.target.closest('[data-edit-org]'); const open = event.target.closest('[data-open-org]'); const editMember = event.target.closest('[data-edit-member]'); if (edit) openOrganizationForm(state.organizations.find((org) => org.id === edit.dataset.editOrg)); if (open) openDetail(state.organizations.find((org) => org.id === open.dataset.openOrg)); if (event.target.closest('[data-new-member]')) openMemberForm(); if (editMember) { const org = state.organizations.find((item) => item.id === state.detailOrganizationId); openMemberForm((org?.organization_members || []).find((member) => member.id === editMember.dataset.editMember)); } if (event.target.closest('[data-close-modal]')) closeOrganizationForm(); if (event.target.closest('[data-close-member]')) closeMemberForm(); if (event.target.closest('[data-close-detail]')) $('#detail-modal').classList.add('hidden'); const nav = event.target.closest('[data-view]'); if (nav) { document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('active', item === nav)); document.querySelectorAll('.view').forEach((view) => view.classList.toggle('active', view.id === `${nav.dataset.view}-view`)); $('#page-title').textContent = nav.textContent.trim(); } });
+  document.addEventListener('click', async (event) => {
+    const edit = event.target.closest('[data-edit-org]');
+    const open = event.target.closest('[data-open-org]');
+    const editMember = event.target.closest('[data-edit-member]');
+    const copyCentral = event.target.closest('[data-copy-central]');
+    if (edit) openOrganizationForm(state.organizations.find((org) => org.id === edit.dataset.editOrg));
+    if (open) openDetail(state.organizations.find((org) => org.id === open.dataset.openOrg));
+    if (event.target.closest('[data-new-member]')) openMemberForm();
+    if (editMember) {
+      const org = state.organizations.find((item) => item.id === state.detailOrganizationId);
+      openMemberForm((org?.organization_members || []).find((member) => member.id === editMember.dataset.editMember));
+    }
+    if (copyCentral) {
+      try {
+        const absoluteUrl = new URL(copyCentral.dataset.copyCentral, window.location.origin).href;
+        await navigator.clipboard.writeText(absoluteUrl);
+        toast('Link da Central copiado.');
+      } catch (error) {
+        toast('Não foi possível copiar o link.');
+      }
+    }
+    if (event.target.closest('[data-close-modal]')) closeOrganizationForm();
+    if (event.target.closest('[data-close-member]')) closeMemberForm();
+    if (event.target.closest('[data-close-detail]')) $('#detail-modal').classList.add('hidden');
+    const nav = event.target.closest('[data-view]');
+    if (nav) {
+      document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('active', item === nav));
+      document.querySelectorAll('.view').forEach((view) => view.classList.toggle('active', view.id === `${nav.dataset.view}-view`));
+      $('#page-title').textContent = nav.textContent.trim();
+    }
+  });
   $('#new-org-btn').addEventListener('click', () => openOrganizationForm()); $('#refresh-btn').addEventListener('click', loadPlatform); $('#search-input').addEventListener('input', (event) => { state.query = event.target.value; render(); }); $('#menu-btn').addEventListener('click', () => $('.sidebar').classList.toggle('open')); $('#logout-btn').addEventListener('click', async () => { await state.client.auth.signOut(); show('login-screen'); });
   bootstrap();
 })();

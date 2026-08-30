@@ -562,6 +562,29 @@ async function saveSubscription(databases, payload, workspaceId = WEFROTAS_COMPA
       data
     });
   }
+  // A neutral installation may be opened for another company in the same
+  // browser. Its Web Push endpoint must remain active for only one company.
+  let offset = 0;
+  while (true) {
+    const page = await databases.listDocuments({
+      databaseId: DATABASE_ID,
+      collectionId: COLLECTION_ID,
+      queries: [Query.limit(100), Query.offset(offset)]
+    });
+    const duplicates = page.documents.filter((document) => (
+      document.$id !== documentId
+      && document.active !== false
+      && String(document.endpoint || '') === endpoint
+    ));
+    await Promise.all(duplicates.map((document) => databases.updateDocument({
+      databaseId: DATABASE_ID,
+      collectionId: COLLECTION_ID,
+      documentId: document.$id,
+      data: { active: false, updatedAt: data.updatedAt }
+    })));
+    if (page.documents.length < 100) break;
+    offset += page.documents.length;
+  }
   return documentId;
 }
 
@@ -1539,7 +1562,8 @@ async function sendToSubscription(databases, document, payload, log, tagPrefix =
     body,
     url,
     tag: tagPrefix + '-' + notificationId,
-    notificationId
+    notificationId,
+    workspaceId: String(document.workspaceId || WEFROTAS_COMPANY_ID)
   });
   let lastError;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
@@ -1629,7 +1653,8 @@ async function broadcast(databases, payload, log, workspaceId = WEFROTAS_COMPANY
             title,
             body,
             url,
-            tag: 'central-comunicado-' + Date.now()
+            tag: 'central-comunicado-' + Date.now(),
+            workspaceId
           }),
           { TTL: 86400, urgency: 'normal' }
         );
