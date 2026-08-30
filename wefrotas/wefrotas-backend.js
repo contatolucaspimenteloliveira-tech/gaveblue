@@ -26,6 +26,17 @@
   const SNAPSHOT_CHUNK_SIZE = 600 * 1024;
   const CHUNK_REQUEST_BATCH_SIZE = 4;
   let primaryRowId = '';
+  let organizationContext = Object.freeze({
+    id: '',
+    slug: String(config.companyId || 'covre-e-cia'),
+    workspaceId: String(config.companyId || 'covre-e-cia'),
+    appwriteLabel: '',
+    appwriteRoleLabel: '',
+    appwriteManagerLabels: [],
+    role: '',
+    modules: ['wefrotas', 'central'],
+    limits: {}
+  });
 
   const ACCESS_ROLE_PERMISSIONS = Object.freeze({
     'wefrotas-admin': new Set(['read', 'syncSnapshot', 'manageOperations', 'approveRecords', 'manageSettings', 'manageUsers', 'manageDevices', 'sendNotifications', 'deleteRecords']),
@@ -67,6 +78,7 @@
   }
 
   function getCurrentAccessRole() {
+    if (organizationContext.role && ACCESS_ROLE_PERMISSIONS[organizationContext.role]) return organizationContext.role;
     const labels = Array.isArray(currentUser?.labels) ? currentUser.labels.map((label) => String(label).trim().toLowerCase()) : [];
     const roleByLabel = {
       admin: 'wefrotas-admin',
@@ -186,11 +198,32 @@
 
   function getPermissions() {
     const { Permission, Role } = global.Appwrite;
+    const organizationRole = organizationContext.appwriteLabel ? Role.label(organizationContext.appwriteLabel) : Role.users();
+    const managerLabels = organizationContext.appwriteManagerLabels?.length ? organizationContext.appwriteManagerLabels : ['admin'];
     return [
-      Permission.read(Role.users()),
-      Permission.update(Role.label('admin')),
-      Permission.delete(Role.label('admin'))
+      Permission.read(organizationRole),
+      ...managerLabels.map((label) => Permission.update(Role.label(label))),
+      ...managerLabels.map((label) => Permission.delete(Role.label(label)))
     ];
+  }
+
+  function setOrganizationContext(nextContext = {}) {
+    const workspaceId = String(nextContext.workspaceId || nextContext.appwriteWorkspaceId || '').trim();
+    if (!/^[a-zA-Z0-9_.-]{2,36}$/.test(workspaceId)) throw new Error('A empresa autorizada possui um identificador inválido.');
+    organizationContext = Object.freeze({
+      id: String(nextContext.id || ''),
+      slug: String(nextContext.slug || workspaceId),
+      workspaceId,
+      appwriteLabel: String(nextContext.appwriteLabel || ''),
+      appwriteRoleLabel: String(nextContext.appwriteRoleLabel || ''),
+      appwriteManagerLabels: Array.isArray(nextContext.appwriteManagerLabels) ? [...nextContext.appwriteManagerLabels] : [],
+      role: String(nextContext.role || ''),
+      modules: Array.isArray(nextContext.modules) ? [...nextContext.modules] : [],
+      limits: nextContext.limits && typeof nextContext.limits === 'object' ? { ...nextContext.limits } : {}
+    });
+    primaryRowId = '';
+    lastSerializedSnapshot = '';
+    return organizationContext;
   }
 
   async function updateAuthenticatedUserName(name) {
@@ -204,12 +237,12 @@
   }
 
   async function getPrimaryRowId() {
-    if (!primaryRowId) primaryRowId = await digestId(config.companyId);
+    if (!primaryRowId) primaryRowId = await digestId(organizationContext.workspaceId);
     return primaryRowId;
   }
 
   async function getChunkRowId(generation, index) {
-    return digestId(`${config.companyId}:snapshot:${generation}:${index}`);
+    return digestId(`${organizationContext.workspaceId}:snapshot:${generation}:${index}`);
   }
 
   function parseChunkManifest(value) {
@@ -296,6 +329,9 @@
     assertCanWrite();
     emitStatus('syncing', 'Preparando dados para sincronização...');
     const preparedSnapshot = await currentSnapshotPreparer?.(snapshot) || snapshot;
+    const maxVehicles = Number(organizationContext.limits?.vehicles || 0);
+    const activeVehicles = (Array.isArray(preparedSnapshot.vehicles) ? preparedSnapshot.vehicles : []).filter((vehicle) => vehicle?.ativo !== false && vehicle?.active !== false).length;
+    if (maxVehicles > 0 && activeVehicles > maxVehicles) throw new Error(`O plano desta empresa permite até ${maxVehicles} veículos ativos.`);
     const serialized = JSON.stringify(preparedSnapshot);
     const storedSnapshot = await encodeSnapshot(serialized);
     const rowId = await getPrimaryRowId();
@@ -314,7 +350,7 @@
         const end = Math.min(start + CHUNK_REQUEST_BATCH_SIZE, chunks.length);
         await Promise.all(Array.from({ length: end - start }, async (_, offset) => {
           const index = start + offset;
-          await createSnapshotChunk(await getChunkRowId(generation, index), { workspaceId: config.companyId, snapshot: chunks[index], updatedAt, updatedBy: currentUser.$id });
+          await createSnapshotChunk(await getChunkRowId(generation, index), { workspaceId: organizationContext.workspaceId, snapshot: chunks[index], updatedAt, updatedBy: currentUser.$id });
         }));
         emitStatus('syncing', `Enviando dados: ${end} de ${chunks.length} blocos...`);
       }
@@ -322,7 +358,7 @@
     } else {
       emitStatus('syncing', 'Enviando dados otimizados...');
     }
-    await updateOrCreateRow(rowId, { workspaceId: config.companyId, snapshot: valueForPrimaryRow, updatedAt, updatedBy: currentUser.$id });
+    await updateOrCreateRow(rowId, { workspaceId: organizationContext.workspaceId, snapshot: valueForPrimaryRow, updatedAt, updatedBy: currentUser.$id });
     await syncCentralDriverDirectory(preparedSnapshot).catch((error) => {
       console.warn('Não foi possível atualizar o diretório da Central.', error);
     });
@@ -357,7 +393,7 @@
     const expectedRowId = await getPrimaryRowId();
     const channel = `tablesdb.${config.databaseId}.tables.${config.tableId}.rows`;
     unsubscribeRealtime = client.subscribe(channel, event => {
-      if (event?.payload?.workspaceId !== config.companyId) return;
+      if (event?.payload?.workspaceId !== organizationContext.workspaceId) return;
       if (event?.payload?.$id && event.payload.$id !== expectedRowId) return;
       if (hasPendingSync()) return;
       clearTimeout(remoteApplyTimer);
@@ -503,6 +539,7 @@
         : String(vehicle?.motoristaId || vehicle?.driverId || '') === driverId);
       const candidates = linkedVehicles.length ? linkedVehicles : [null];
       candidates.forEach((vehicle) => rows.push({
+        workspaceId: organizationContext.workspaceId,
         driverId,
         driverName,
         vehicleId: String(vehicle?.id || ''),
@@ -521,7 +558,9 @@
     if (!currentUser || !config.centralDriverDirectoryTableId) return;
     assertPermission('manageOperations', 'Seu perfil não permite atualizar o diretório de motoristas.');
     const desiredRows = buildCentralDriverDirectoryRows(snapshot);
-    const queries = global.Appwrite?.Query?.limit ? [global.Appwrite.Query.limit(500)] : [];
+    const queries = [];
+    if (global.Appwrite?.Query?.equal) queries.push(global.Appwrite.Query.equal('workspaceId', [organizationContext.workspaceId]));
+    if (global.Appwrite?.Query?.limit) queries.push(global.Appwrite.Query.limit(500));
     const existingResult = await tablesDB.listRows({
       databaseId: config.databaseId,
       tableId: config.centralDriverDirectoryTableId,
@@ -530,7 +569,7 @@
     const existingRows = Array.isArray(existingResult?.rows) ? existingResult.rows : [];
     const desiredIds = new Set();
     for (const data of desiredRows) {
-      const rowId = await digestId(`central-driver:${data.driverId}:${data.vehicleId || 'without-vehicle'}`);
+      const rowId = await digestId(`${organizationContext.workspaceId}:central-driver:${data.driverId}:${data.vehicleId || 'without-vehicle'}`);
       desiredIds.add(rowId);
       const current = existingRows.find((row) => row.$id === rowId);
       const changed = !current || ['driverId', 'driverName', 'vehicleId', 'vehicleName', 'vehicleImageUrl', 'plate', 'fleetNumber', 'active']
@@ -639,6 +678,7 @@
     if (!currentUser) throw new Error('Entre no WeFrotas Online para administrar os banners.');
     if (!config.centralBannersTableId) throw new Error('Tabela de banners não configurada.');
     const queries = [];
+    if (global.Appwrite?.Query?.equal) queries.push(global.Appwrite.Query.equal('workspaceId', [organizationContext.workspaceId]));
     if (global.Appwrite?.Query?.limit) queries.push(global.Appwrite.Query.limit(100));
     const result = await tablesDB.listRows({ databaseId: config.databaseId, tableId: config.centralBannersTableId, queries });
     return Array.isArray(result?.rows) ? result.rows : [];
@@ -651,7 +691,7 @@
       databaseId: config.databaseId,
       tableId: config.centralBannersTableId,
       rowId: global.Appwrite.ID.unique(),
-      data,
+      data: { ...data, workspaceId: organizationContext.workspaceId },
       permissions: getPublicBannerFilePermissions()
     });
   }
@@ -660,17 +700,17 @@
     if (!currentUser) throw new Error('Entre no WeFrotas Online para cadastrar banners.');
     assertPermission('manageSettings', 'Seu perfil não permite alterar banners.');
     try {
-      return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data, permissions: getPublicBannerFilePermissions() });
+      return await tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data: { ...data, workspaceId: organizationContext.workspaceId }, permissions: getPublicBannerFilePermissions() });
     } catch (error) {
       if (error?.code !== 404 && error?.type !== 'row_not_found') throw error;
-      return tablesDB.createRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data, permissions: getPublicBannerFilePermissions() });
+      return tablesDB.createRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data: { ...data, workspaceId: organizationContext.workspaceId }, permissions: getPublicBannerFilePermissions() });
     }
   }
 
   async function updateCentralHomeBanner(rowId, data) {
     if (!currentUser) throw new Error('Entre no WeFrotas Online para alterar banners.');
     assertPermission('manageSettings', 'Seu perfil não permite alterar banners.');
-    return tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data, permissions: getPublicBannerFilePermissions() });
+    return tablesDB.updateRow({ databaseId: config.databaseId, tableId: config.centralBannersTableId, rowId, data: { ...data, workspaceId: organizationContext.workspaceId }, permissions: getPublicBannerFilePermissions() });
   }
 
   async function deleteCentralHomeBanner(rowId) {
@@ -688,6 +728,7 @@
     if (global.Appwrite?.Query?.limit) {
       queries.push(global.Appwrite.Query.limit(Number(limit) || 100));
     }
+    if (global.Appwrite?.Query?.equal) queries.push(global.Appwrite.Query.equal('workspaceId', [organizationContext.workspaceId]));
 
     const result = await tablesDB.listRows({
       databaseId: config.databaseId,
@@ -764,6 +805,8 @@
 
   global.WeFrotasBackend = Object.freeze({
     config, isConfigured, initialize, signIn, signOut,
+    setOrganizationContext,
+    getOrganizationContext: () => organizationContext,
     getUser: () => currentUser,
     updateAuthenticatedUserName,
     getAccessRole: getCurrentAccessRole,

@@ -13,6 +13,7 @@ Colunas da tabela:
 
 | Coluna | Tipo | Obrigatória |
 | --- | --- | --- |
+| `workspaceId` | text (36) | sim |
 | `title` | text | sim |
 | `imageUrl` | text | sim |
 | `fileId` | text | sim |

@@ -2121,6 +2121,7 @@
       setOnlineAuthStage('consulting');
       let preparingTimer = window.setTimeout(() => setOnlineAuthStage('preparing'), 700);
       try {
+        await loadAuthorizedOrganizationContext();
         const result = await backend.adoptRemoteOrUploadLocal();
         window.clearTimeout(preparingTimer);
         preparingTimer = null;
@@ -2174,6 +2175,7 @@
         setOnlineAuthStage('consulting');
         let preparingTimer = window.setTimeout(() => setOnlineAuthStage('preparing'), 700);
         try {
+          await loadAuthorizedOrganizationContext();
           await backend.adoptRemoteOrUploadLocal();
         } catch (syncError) {
           console.error('Login concluído com sincronização pendente.', syncError);
@@ -3650,6 +3652,17 @@
         throw new Error(result.error || execution.errors || 'A função de notificações não concluiu a operação.');
       }
       return result;
+    }
+
+    async function loadAuthorizedOrganizationContext() {
+      const result = await executeCentralPushAdmin({ action: 'my-access' });
+      if (!result.organization?.workspaceId) throw new Error('Seu usuário ainda não está vinculado a uma empresa ativa.');
+      if (!result.organization.modules?.includes('wefrotas')) throw new Error('A licença desta empresa não inclui o WeFrotas.');
+      window.WeFrotasBackend?.setOrganizationContext({
+        ...result.organization,
+        role: result.role
+      });
+      return result.organization;
     }
 
     const wefrotasRoleDefinitions = Object.freeze({
@@ -9594,7 +9607,7 @@
     function getCentralPendingSortedRows() {
       loadCentralPendingFilters();
       const rows = [...centralPendingRecords]
-        .filter(record => normalizeComparableText(record?.workspaceId || '') === normalizeComparableText(window.WeFrotasBackend?.config?.companyId || 'covre-e-cia'))
+        .filter(record => normalizeComparableText(record?.workspaceId || '') === normalizeComparableText(window.WeFrotasBackend?.getOrganizationContext?.().workspaceId || window.WeFrotasBackend?.config?.companyId || 'covre-e-cia'))
         .filter(record => {
           const className = getCentralPendingStatus(record).className;
           const statusMap = { pendente: 'pending', aprovado: 'approved', rejeitado: 'error' };

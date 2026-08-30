@@ -20,7 +20,21 @@ const CENTRAL_APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
 const CENTRAL_APPWRITE_PROJECT_ID = '6a68cb3e00312ec0a3fd';
 const CENTRAL_APPWRITE_DATABASE_ID = '6a68ce8c000a36a44d98';
 const CENTRAL_APPWRITE_TABLE_ID = 'central_registros_pendentes';
-const CENTRAL_APPWRITE_WORKSPACE_ID = 'covre-e-cia';
+const CENTRAL_DEFAULT_ORGANIZATION_SLUG = 'covre-e-cia';
+const CENTRAL_ORGANIZATION_SLUG_KEY = 'gaveblue:central-organization-slug';
+const CENTRAL_ORGANIZATION_CONTEXT_KEY_PREFIX = 'gaveblue:central-organization-context:';
+let centralOrganizationContext = {
+  slug: CENTRAL_DEFAULT_ORGANIZATION_SLUG,
+  workspaceId: CENTRAL_DEFAULT_ORGANIZATION_SLUG,
+  name: 'Covre & Cia',
+  modules: ['central'],
+  branding: {}
+};
+let centralOrganizationContextPromise = null;
+function centralTenantStorageKey(baseKey) {
+  const slug = centralOrganizationContext.slug || CENTRAL_DEFAULT_ORGANIZATION_SLUG;
+  return slug === CENTRAL_DEFAULT_ORGANIZATION_SLUG ? baseKey : `${baseKey}:${slug}`;
+}
 const CENTRAL_APPWRITE_ORIGIN = 'postoscredenciados-covreecia';
 const CENTRAL_APPWRITE_RETRY_KEY = 'postoscredenciados-covreecia:appwrite-pending-record';
 const CENTRAL_DRIVER_DIRECTORY_CACHE_KEY = 'postoscredenciados-covreecia:driver-directory-cache-v2';
@@ -628,7 +642,7 @@ async function executeCentralPushFunction(payload, retryOptions = {}) {
       'x-appwrite-project': CENTRAL_APPWRITE_PROJECT_ID
     },
     body: JSON.stringify({
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ organizationSlug: centralOrganizationContext.slug, ...payload }),
       async: false,
       method: 'POST',
       path: '/',
@@ -683,7 +697,7 @@ async function loadManagedCentralStations() {
     });
 
     try {
-      localStorage.setItem(CENTRAL_STATION_DIRECTORY_CACHE_KEY, JSON.stringify({
+      localStorage.setItem(centralTenantStorageKey(CENTRAL_STATION_DIRECTORY_CACHE_KEY), JSON.stringify({
         stations,
         cities,
         updatedAt: Date.now()
@@ -733,22 +747,22 @@ function dismissCentralPushPrompt() {
 function saveCentralPushSubscriptionId(subscriptionId) {
   const normalizedId = String(subscriptionId || '').trim();
   if (normalizedId) {
-    localStorage.setItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY, normalizedId);
+    localStorage.setItem(centralTenantStorageKey(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY), normalizedId);
   } else {
-    localStorage.removeItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY);
+    localStorage.removeItem(centralTenantStorageKey(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY));
   }
   persistCentralDeviceState();
 }
 
 function getCentralPushSubscriptionId() {
-  return String(localStorage.getItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY) || '').trim();
+  return String(localStorage.getItem(centralTenantStorageKey(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY)) || '').trim();
 }
 
 function getCentralDeviceId() {
-  let deviceId = String(localStorage.getItem(CENTRAL_DEVICE_ID_KEY) || '').trim();
+  let deviceId = String(localStorage.getItem(centralTenantStorageKey(CENTRAL_DEVICE_ID_KEY)) || '').trim();
   if (/^[a-f0-9-]{32,64}$/i.test(deviceId)) return deviceId;
   deviceId = globalThis.crypto?.randomUUID?.() || `${Date.now().toString(16)}-${Array.from(globalThis.crypto?.getRandomValues?.(new Uint8Array(16)) || []).map((value) => value.toString(16).padStart(2, '0')).join('')}`;
-  localStorage.setItem(CENTRAL_DEVICE_ID_KEY, deviceId);
+  localStorage.setItem(centralTenantStorageKey(CENTRAL_DEVICE_ID_KEY), deviceId);
   persistCentralDeviceState();
   return deviceId;
 }
@@ -800,10 +814,10 @@ async function applyCentralDeviceProfileSync(profileSync) {
   if (updatedAt && currentUpdatedAt && updatedAt <= currentUpdatedAt) return false;
 
   if (profileSync.linked !== true || !profileSync.profile) {
-    localStorage.removeItem(DRIVER_PROFILE_STORAGE_KEY);
+    localStorage.removeItem(centralTenantStorageKey(DRIVER_PROFILE_STORAGE_KEY));
   } else {
     const remote = profileSync.profile;
-    localStorage.setItem(DRIVER_PROFILE_STORAGE_KEY, JSON.stringify({
+    localStorage.setItem(centralTenantStorageKey(DRIVER_PROFILE_STORAGE_KEY), JSON.stringify({
       name: String(remote.name || '').trim(),
       vehicle: String(remote.vehicle || '').trim(),
       plate: String(remote.plate || '').trim().toUpperCase(),
@@ -1341,12 +1355,12 @@ function openCentralDeviceStateDb() {
 
 function getCentralDeviceStateSnapshot() {
   return {
-    key: CENTRAL_DEVICE_STATE_RECORD_KEY,
-    profile: localStorage.getItem(DRIVER_PROFILE_STORAGE_KEY) || '',
-    onboardingVersion: localStorage.getItem(DRIVER_ONBOARDING_VERSION_KEY) || '',
-    deviceId: localStorage.getItem(CENTRAL_DEVICE_ID_KEY) || '',
-    subscriptionId: localStorage.getItem(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY) || '',
-    pendingRecords: localStorage.getItem(CENTRAL_APPWRITE_RETRY_KEY) || '',
+    key: centralTenantStorageKey(CENTRAL_DEVICE_STATE_RECORD_KEY),
+    profile: localStorage.getItem(centralTenantStorageKey(DRIVER_PROFILE_STORAGE_KEY)) || '',
+    onboardingVersion: localStorage.getItem(centralTenantStorageKey(DRIVER_ONBOARDING_VERSION_KEY)) || '',
+    deviceId: localStorage.getItem(centralTenantStorageKey(CENTRAL_DEVICE_ID_KEY)) || '',
+    subscriptionId: localStorage.getItem(centralTenantStorageKey(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY)) || '',
+    pendingRecords: localStorage.getItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY)) || '',
     updatedAt: new Date().toISOString()
   };
 }
@@ -1360,7 +1374,7 @@ function persistCentralDeviceState() {
       await new Promise((resolve, reject) => {
         const transaction = database.transaction(CENTRAL_DEVICE_STATE_STORE, 'readwrite');
         const store = transaction.objectStore(CENTRAL_DEVICE_STATE_STORE);
-        const request = store.get(CENTRAL_DEVICE_STATE_RECORD_KEY);
+        const request = store.get(centralTenantStorageKey(CENTRAL_DEVICE_STATE_RECORD_KEY));
         request.onsuccess = () => {
           const previous = request.result || {};
           // Perfil, onboarding e identificador nunca devem ser apagados por uma
@@ -1400,7 +1414,7 @@ async function requestCentralPersistentStorage() {
 
 function restoreManagedCentralStationsCache() {
   try {
-    const cached = JSON.parse(localStorage.getItem(CENTRAL_STATION_DIRECTORY_CACHE_KEY) || 'null');
+    const cached = JSON.parse(localStorage.getItem(centralTenantStorageKey(CENTRAL_STATION_DIRECTORY_CACHE_KEY)) || 'null');
     const stations = Array.isArray(cached?.stations) ? cached.stations : [];
     const cities = Array.isArray(cached?.cities) ? cached.cities : [];
     if (!stations.length && !cities.length) return false;
@@ -1443,7 +1457,7 @@ async function restoreCentralDeviceState() {
     database = await openCentralDeviceStateDb();
     const state = await new Promise((resolve, reject) => {
       const transaction = database.transaction(CENTRAL_DEVICE_STATE_STORE, 'readonly');
-      const request = transaction.objectStore(CENTRAL_DEVICE_STATE_STORE).get(CENTRAL_DEVICE_STATE_RECORD_KEY);
+      const request = transaction.objectStore(CENTRAL_DEVICE_STATE_STORE).get(centralTenantStorageKey(CENTRAL_DEVICE_STATE_RECORD_KEY));
       request.onsuccess = () => resolve(request.result || null);
       request.onerror = () => reject(request.error);
     });
@@ -1455,12 +1469,12 @@ async function restoreCentralDeviceState() {
       }
     };
     if (!getDriverProfile() && String(state.profile || '').trim()) {
-      localStorage.setItem(DRIVER_PROFILE_STORAGE_KEY, String(state.profile));
+      localStorage.setItem(centralTenantStorageKey(DRIVER_PROFILE_STORAGE_KEY), String(state.profile));
     }
-    recover(DRIVER_ONBOARDING_VERSION_KEY, state.onboardingVersion);
-    recover(CENTRAL_DEVICE_ID_KEY, state.deviceId);
-    recover(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY, state.subscriptionId);
-    recover(CENTRAL_APPWRITE_RETRY_KEY, state.pendingRecords);
+    recover(centralTenantStorageKey(DRIVER_ONBOARDING_VERSION_KEY), state.onboardingVersion);
+    recover(centralTenantStorageKey(CENTRAL_DEVICE_ID_KEY), state.deviceId);
+    recover(centralTenantStorageKey(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY), state.subscriptionId);
+    recover(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY), state.pendingRecords);
     return true;
   } catch (error) {
     console.warn('Não foi possível recuperar a cópia de segurança do perfil.', error);
@@ -1519,7 +1533,7 @@ async function deleteCentralOfflineSubmission(id) {
 
 function getDriverProfile() {
   try {
-    const storedProfile = localStorage.getItem(DRIVER_PROFILE_STORAGE_KEY);
+    const storedProfile = localStorage.getItem(centralTenantStorageKey(DRIVER_PROFILE_STORAGE_KEY));
     const profile = storedProfile ? JSON.parse(storedProfile) : null;
     if (!profile || typeof profile !== 'object') return null;
 
@@ -1811,7 +1825,7 @@ function renderProfilePage() {
 }
 
 function shouldOpenDriverOnboarding() {
-  const completedVersion = String(localStorage.getItem(DRIVER_ONBOARDING_VERSION_KEY) || '').trim();
+  const completedVersion = String(localStorage.getItem(centralTenantStorageKey(DRIVER_ONBOARDING_VERSION_KEY)) || '').trim();
   if (!completedVersion) return true;
   // Uma queda na Function não pode invalidar um perfil já concluído. A versão
   // obrigatória só é comparada quando foi realmente recebida do servidor.
@@ -1860,7 +1874,7 @@ async function ensureDriverDirectoryLoaded({ force = false } = {}) {
         }
         try {
           centralDriverDirectoryLoadedAt = Date.now();
-          localStorage.setItem(CENTRAL_DRIVER_DIRECTORY_CACHE_KEY, JSON.stringify({
+          localStorage.setItem(centralTenantStorageKey(CENTRAL_DRIVER_DIRECTORY_CACHE_KEY), JSON.stringify({
             savedAt: Date.now(),
             directory: centralDriverDirectory
           }));
@@ -1871,7 +1885,7 @@ async function ensureDriverDirectoryLoaded({ force = false } = {}) {
       })
       .catch((error) => {
         try {
-          const cached = JSON.parse(localStorage.getItem(CENTRAL_DRIVER_DIRECTORY_CACHE_KEY) || 'null');
+          const cached = JSON.parse(localStorage.getItem(centralTenantStorageKey(CENTRAL_DRIVER_DIRECTORY_CACHE_KEY)) || 'null');
           const cacheAge = Date.now() - Number(cached?.savedAt || 0);
           if (Array.isArray(cached?.directory) && cached.directory.length && cacheAge >= 0 && cacheAge <= CENTRAL_DIRECTORY_CACHE_MAX_AGE) {
             centralDriverDirectory = cached.directory;
@@ -2164,7 +2178,7 @@ async function confirmSuggestedDriverVehicle() {
   const vehicle = selectedDirectoryVehicles[selectedDirectoryVehicleIndex];
   if (!selectedDirectoryDriver || !vehicle) return;
   try {
-    localStorage.setItem(DRIVER_PROFILE_STORAGE_KEY, JSON.stringify({
+    localStorage.setItem(centralTenantStorageKey(DRIVER_PROFILE_STORAGE_KEY), JSON.stringify({
       name: selectedDirectoryDriver.name,
       vehicle: vehicle.vehicleName,
       plate: vehicle.plate,
@@ -2186,7 +2200,7 @@ async function confirmSuggestedDriverVehicle() {
     openOnboardingPermissionsStep();
     return;
   }
-  localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
+  localStorage.setItem(centralTenantStorageKey(DRIVER_ONBOARDING_VERSION_KEY), centralRequiredOnboardingVersion);
   await persistCentralDeviceState();
   closeDriverProfile();
   showSuccessMessage('Motorista e veículo confirmados.');
@@ -2254,7 +2268,7 @@ async function activateOnboardingNotifications() {
 
 async function finishGuidedOnboarding(options = {}) {
   if (options.notificationsSkipped) localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
-  localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
+  localStorage.setItem(centralTenantStorageKey(DRIVER_ONBOARDING_VERSION_KEY), centralRequiredOnboardingVersion);
   await persistCentralDeviceState();
   requestCentralPersistentStorage();
   const title = document.getElementById('driver-profile-title');
@@ -2273,7 +2287,7 @@ async function skipDriverOnboarding() {
     showErrorMessage('Identifique o motorista e o veículo para continuar.');
     return;
   }
-  localStorage.setItem(DRIVER_ONBOARDING_VERSION_KEY, centralRequiredOnboardingVersion);
+  localStorage.setItem(centralTenantStorageKey(DRIVER_ONBOARDING_VERSION_KEY), centralRequiredOnboardingVersion);
   localStorage.setItem(CENTRAL_PUSH_PROMPT_DISMISSED_KEY, String(Date.now()));
   await persistCentralDeviceState();
   requestCentralPersistentStorage();
@@ -3376,7 +3390,7 @@ function buildCentralRegistroPayload({ type, formData, receiptUrl, mensagem }) {
   const protocol = createCentralProtocol();
   const now = new Date();
   const basePayload = {
-    workspaceId: CENTRAL_APPWRITE_WORKSPACE_ID,
+    workspaceId: centralOrganizationContext.workspaceId,
     tipo: type,
     status: 'pendente',
     protocolo: protocol,
@@ -3427,45 +3441,17 @@ async function saveCentralRegistroToAppwrite(payload) {
     return { ok: false, skipped: true };
   }
 
-  const url = `${CENTRAL_APPWRITE_ENDPOINT}/tablesdb/${encodeURIComponent(CENTRAL_APPWRITE_DATABASE_ID)}/tables/${encodeURIComponent(CENTRAL_APPWRITE_TABLE_ID)}/rows`;
-  const response = await fetchCentralWithRetry(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Appwrite-Project': CENTRAL_APPWRITE_PROJECT_ID,
-      'X-Appwrite-Response-Format': '1.8.0'
-    },
-    body: JSON.stringify({
-      rowId: payload.rowId,
-      data: payload.data
-    })
-  }, { attempts: 3, timeoutMs: 10000 });
-
-  if (response.status === 409) {
-    return { alreadyExists: true };
-  }
-
-  if (!response.ok) {
-    let message = `Erro ${response.status}`;
-    try {
-      const errorPayload = await response.json();
-      message = errorPayload?.message || message;
-    } catch (error) {
-      message = await response.text().catch(() => message);
-    }
-    throw new Error(message);
-  }
-
-  return response.json();
+  const result = await executeCentralPushFunction({ action: 'central-record-create', rowId: payload.rowId, data: payload.data }, { attempts: 3, timeoutMs: 10000 });
+  return result.record || { alreadyExists: result.alreadyExists === true };
 }
 
 async function saveCentralRetryPayload(payload) {
   try {
-    const stored = JSON.parse(localStorage.getItem(CENTRAL_APPWRITE_RETRY_KEY) || '[]');
+    const stored = JSON.parse(localStorage.getItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY)) || '[]');
     const queue = Array.isArray(stored) ? stored : (stored && typeof stored === 'object' ? [stored] : []);
     const nextQueue = queue.filter((item) => String(item?.rowId || '') !== String(payload?.rowId || ''));
     nextQueue.push(payload);
-    localStorage.setItem(CENTRAL_APPWRITE_RETRY_KEY, JSON.stringify(nextQueue.slice(-20)));
+    localStorage.setItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY), JSON.stringify(nextQueue.slice(-20)));
     await persistCentralDeviceState();
     return true;
   } catch (error) {
@@ -3476,7 +3462,7 @@ async function saveCentralRetryPayload(payload) {
 
 function getCentralRetryPayloads() {
   try {
-    const stored = JSON.parse(localStorage.getItem(CENTRAL_APPWRITE_RETRY_KEY) || '[]');
+    const stored = JSON.parse(localStorage.getItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY)) || '[]');
     return Array.isArray(stored) ? stored : (stored && typeof stored === 'object' ? [stored] : []);
   } catch (error) {
     return [];
@@ -3486,13 +3472,13 @@ function getCentralRetryPayloads() {
 async function clearCentralRetryPayload(rowId = '') {
   try {
     if (!rowId) {
-      localStorage.removeItem(CENTRAL_APPWRITE_RETRY_KEY);
+      localStorage.removeItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY));
       await persistCentralDeviceState();
       return true;
     }
     const nextQueue = getCentralRetryPayloads().filter((item) => String(item?.rowId || '') !== String(rowId));
-    if (nextQueue.length) localStorage.setItem(CENTRAL_APPWRITE_RETRY_KEY, JSON.stringify(nextQueue));
-    else localStorage.removeItem(CENTRAL_APPWRITE_RETRY_KEY);
+    if (nextQueue.length) localStorage.setItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY), JSON.stringify(nextQueue));
+    else localStorage.removeItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY));
     await persistCentralDeviceState();
     return true;
   } catch (error) {
@@ -3507,6 +3493,41 @@ async function saveCentralRegistroWithRetry(payload) {
   const result = await saveCentralRegistroToAppwrite(payload);
   await clearCentralRetryPayload(payload.rowId);
   return result;
+}
+
+function getRequestedCentralOrganizationSlug() {
+  const querySlug = new URLSearchParams(window.location.search).get('empresa');
+  const storedSlug = (() => { try { return localStorage.getItem(CENTRAL_ORGANIZATION_SLUG_KEY); } catch (error) { return ''; } })();
+  return String(querySlug || storedSlug || CENTRAL_DEFAULT_ORGANIZATION_SLUG).trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 48) || CENTRAL_DEFAULT_ORGANIZATION_SLUG;
+}
+
+async function loadCentralOrganizationContext() {
+  if (centralOrganizationContextPromise) return centralOrganizationContextPromise;
+  centralOrganizationContextPromise = (async () => {
+  const organizationSlug = getRequestedCentralOrganizationSlug();
+  let verifiedOrganization;
+  try {
+    const result = await executeCentralPushFunction({ action: 'tenant-context', organizationSlug }, { attempts: 2, timeoutMs: 6000 });
+    if (!result.organization?.workspaceId) throw new Error('A empresa da Central não pôde ser identificada.');
+    verifiedOrganization = result.organization;
+    try { localStorage.setItem(`${CENTRAL_ORGANIZATION_CONTEXT_KEY_PREFIX}${organizationSlug}`, JSON.stringify(verifiedOrganization)); } catch (error) {}
+  } catch (networkError) {
+    try {
+      const cached = JSON.parse(localStorage.getItem(`${CENTRAL_ORGANIZATION_CONTEXT_KEY_PREFIX}${organizationSlug}`) || 'null');
+      if (cached?.slug === organizationSlug && cached?.workspaceId) verifiedOrganization = cached;
+    } catch (error) {}
+    if (!verifiedOrganization && organizationSlug === CENTRAL_DEFAULT_ORGANIZATION_SLUG) verifiedOrganization = { ...centralOrganizationContext };
+    if (!verifiedOrganization) throw new Error('Não foi possível validar esta empresa sem conexão. Conecte-se uma vez antes de usar a Central offline.');
+  }
+  centralOrganizationContext = { ...centralOrganizationContext, ...verifiedOrganization };
+  try { localStorage.setItem(CENTRAL_ORGANIZATION_SLUG_KEY, centralOrganizationContext.slug); } catch (error) {}
+  const primaryColor = centralOrganizationContext.branding?.primaryColor;
+  const secondaryColor = centralOrganizationContext.branding?.secondaryColor;
+  if (/^#[0-9a-f]{6}$/i.test(primaryColor || '')) document.documentElement.style.setProperty('--tenant-primary', primaryColor);
+  if (/^#[0-9a-f]{6}$/i.test(secondaryColor || '')) document.documentElement.style.setProperty('--tenant-secondary', secondaryColor);
+  return centralOrganizationContext;
+  })().catch((error) => { centralOrganizationContextPromise = null; throw error; });
+  return centralOrganizationContextPromise;
 }
 
 async function retryPendingCentralRegistro() {
@@ -5309,6 +5330,9 @@ if (window.elementSdk) {
 
 window.addEventListener('DOMContentLoaded', async function() {
   await ensureCentralDeviceStateRestored();
+  await loadCentralOrganizationContext().catch((error) => {
+    console.warn('Não foi possível validar a empresa agora; o modo offline continuará disponível.', error);
+  });
   if (window.lucide) {
     lucide.createIcons();
   }
@@ -5413,6 +5437,7 @@ function renderCityImageCards() {
 
 window.addEventListener('DOMContentLoaded', async () => {
   await ensureCentralDeviceStateRestored();
+  await loadCentralOrganizationContext().catch((error) => console.warn('Contexto da empresa indisponível; usando cache offline.', error));
   updateCentralConnectivityStatus();
   restoreManagedCentralStationsCache();
   renderCityImageCards();
@@ -5511,7 +5536,9 @@ async function loadManagedHomeBanners() {
     });
     if (!response.ok) throw new Error(`Appwrite respondeu ${response.status}`);
     const payload = await response.json();
-    const rows = Array.isArray(payload?.rows) ? payload.rows : [];
+    const rows = (Array.isArray(payload?.rows) ? payload.rows : []).filter((banner) => (
+      String(banner.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG) === centralOrganizationContext.workspaceId
+    ));
     const managesBuiltinBanners = rows.some((banner) => String(banner?.fileId || '').startsWith('builtin:'));
     const banners = rows
       .filter((banner) => banner?.active && String(banner?.imageUrl || '').trim())

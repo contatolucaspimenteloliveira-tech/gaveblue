@@ -1,0 +1,18 @@
+.member-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.member-list-head button {
+  min-height: 36px;
+}
+
+@media (max-width: 540px) {
+  .member-list-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

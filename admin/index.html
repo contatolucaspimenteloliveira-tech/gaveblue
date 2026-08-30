@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Painel GaveBlue</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./admin.css?v=20260830-multitenant-1">
+  <link rel="stylesheet" href="./member.css?v=20260830-multitenant-1">
+</head>
+<body>
+  <div id="setup-screen" class="center-screen hidden">
+    <div class="setup-card"><span class="eyebrow">CONFIGURAÇÃO INICIAL</span><h1>Conecte o Supabase</h1><p>O painel está instalado, mas falta informar a URL pública e a chave <code>anon</code> em <code>admin/supabase-config.js</code>.</p><a href="../supabase/README.md">Ver instruções de implantação</a></div>
+  </div>
+  <div id="login-screen" class="center-screen hidden">
+    <form id="login-form" class="login-card">
+      <img src="https://i.imgur.com/Zih5jH8.png" alt="GaveBlue">
+      <span class="eyebrow">GESTÃO DA PLATAFORMA</span><h1>Painel GaveBlue</h1><p>Empresas, licenças e acessos em um só lugar.</p>
+      <label>E-mail<input id="login-email" type="email" autocomplete="username" required></label>
+      <label>Senha<input id="login-password" type="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit">Entrar</button><span id="login-error" class="form-error"></span>
+    </form>
+  </div>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <a class="brand" href="../"><img src="https://i.imgur.com/Zih5jH8.png" alt="GaveBlue"></a>
+      <nav>
+        <button class="nav-item active" data-view="organizations"><span>▦</span> Empresas</button>
+        <button class="nav-item" data-view="plans"><span>◇</span> Planos</button>
+        <button class="nav-item" data-view="audit"><span>≡</span> Auditoria</button>
+      </nav>
+      <div class="sidebar-user"><div id="user-avatar">GB</div><p><strong id="user-name">Administrador</strong><span id="user-role">GaveBlue</span></p></div>
+      <button id="logout-btn" class="logout">↪ <span>Sair</span></button>
+    </aside>
+
+    <div class="main-shell">
+      <header class="topbar"><button id="menu-btn" aria-label="Abrir menu">☰</button><div><span class="eyebrow">GAVEBLUE ADMIN</span><h1 id="page-title">Empresas</h1></div><div class="top-actions"><label class="search">⌕<input id="search-input" placeholder="Pesquisar empresa..."></label><button id="refresh-btn" class="icon-button" title="Atualizar">↻</button><button id="new-org-btn" class="primary compact">+ Nova empresa</button></div></header>
+      <main>
+        <section id="organizations-view" class="view active">
+          <div class="stats-grid"><article><span>Empresas</span><strong id="stat-organizations">0</strong><small>cadastradas</small></article><article><span>Ativas</span><strong id="stat-active">0</strong><small>em operação</small></article><article><span>Em teste</span><strong id="stat-trial">0</strong><small>período de avaliação</small></article><article><span>Atenção</span><strong id="stat-attention">0</strong><small>vencidas ou suspensas</small></article></div>
+          <section class="panel"><div class="panel-head"><div><span class="eyebrow">CARTEIRA DE CLIENTES</span><h2>Empresas gerenciadas</h2><p>Abra uma empresa para controlar módulos, contrato e equipe.</p></div></div><div id="organizations-list" class="organization-list"></div></section>
+        </section>
+        <section id="plans-view" class="view"><section class="panel"><div class="panel-head"><div><span class="eyebrow">LICENCIAMENTO</span><h2>Planos disponíveis</h2></div></div><div id="plans-list" class="plans-grid"></div></section></section>
+        <section id="audit-view" class="view"><section class="panel empty"><span>Auditoria detalhada</span><p>Os eventos administrativos já são registrados no Supabase. A consulta paginada entra na próxima tela operacional.</p></section></section>
+      </main>
+    </div>
+  </div>
+
+  <div id="organization-modal" class="modal hidden" aria-hidden="true"><form id="organization-form" class="modal-card">
+    <header><div><span class="eyebrow">EMPRESA CLIENTE</span><h2 id="org-modal-title">Nova empresa</h2></div><button type="button" data-close-modal aria-label="Fechar">×</button></header>
+    <div class="form-grid">
+      <input id="org-id" type="hidden"><label class="wide">Nome da empresa *<input id="org-name" required maxlength="120"></label><label>Identificador *<input id="org-slug" required maxlength="48" placeholder="empresa-exemplo"></label><label>Status<select id="org-status"><option value="trial">Em teste</option><option value="active">Ativa</option><option value="past_due">Pagamento pendente</option><option value="suspended">Suspensa</option><option value="archived">Arquivada</option></select></label>
+      <label>Razão social<input id="org-legal-name" maxlength="180"></label><label>CNPJ/Documento<input id="org-document" maxlength="32"></label><label>Workspace Appwrite<input id="org-workspace" maxlength="36"></label><label>Plano<select id="org-plan"></select></label>
+      <fieldset class="wide"><legend>Módulos contratados</legend><label class="check"><input id="org-module-wefrotas" type="checkbox" checked> WeFrotas</label><label class="check"><input id="org-module-central" type="checkbox" checked> Central de Registros</label></fieldset>
+      <label>Cor principal<input id="org-primary-color" type="color" value="#2563eb"></label><label>Cor secundária<input id="org-secondary-color" type="color" value="#7c3aed"></label><label class="wide">Logo (URL)<input id="org-logo-url" type="url"></label>
+    </div><span id="org-form-error" class="form-error"></span><footer><button type="button" class="secondary" data-close-modal>Cancelar</button><button type="submit" class="primary">Salvar empresa</button></footer>
+  </form></div>
+
+  <div id="detail-modal" class="modal hidden" aria-hidden="true"><section class="modal-card detail-card"><header><div><span class="eyebrow">GESTÃO DO CLIENTE</span><h2 id="detail-title">Empresa</h2></div><button type="button" data-close-detail aria-label="Fechar">×</button></header><div id="detail-content"></div></section></div>
+
+  <div id="member-modal" class="modal hidden" aria-hidden="true"><form id="member-form" class="modal-card">
+    <header><div><span class="eyebrow">ACESSO DA EMPRESA</span><h2>Adicionar usuário</h2></div><button type="button" data-close-member aria-label="Fechar">×</button></header>
+    <div class="form-grid"><input id="member-organization-id" type="hidden"><label>Nome<input id="member-name" maxlength="128"></label><label>E-mail *<input id="member-email" type="email" required maxlength="320"></label><label>Perfil<select id="member-role"><option value="admin">Administrador</option><option value="manager">Gestor</option><option value="approver">Aprovador</option><option value="viewer">Consulta</option><option value="driver">Motorista</option></select></label><label>Status<select id="member-status"><option value="active">Ativo</option><option value="disabled">Desativado</option></select></label><label>ID do usuário no Appwrite<input id="member-appwrite-id" maxlength="36" placeholder="Se a conta já existir"></label><label>Senha temporária<input id="member-temporary-password" type="password" minlength="8" maxlength="256" placeholder="Obrigatória para conta nova"></label></div>
+    <span id="member-form-error" class="form-error"></span><footer><button type="button" class="secondary" data-close-member>Cancelar</button><button type="submit" class="primary">Salvar acesso</button></footer>
+  </form></div>
+  <div id="toast" class="toast hidden"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js?v=20260830-multitenant-1"></script>
+  <script src="./admin.js?v=20260830-multitenant-1"></script>
+</body>
+</html>

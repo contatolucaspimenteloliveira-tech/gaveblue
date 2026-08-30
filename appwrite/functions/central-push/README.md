@@ -16,6 +16,8 @@ Variáveis:
 - `ADMIN_USER_IDS` — IDs Appwrite autorizados, separados por vírgula
 - `CENTRAL_RECORDS_COLLECTION_ID=central_registros_pendentes`
 - `DRIVER_DIRECTORY_COLLECTION_ID=central_driver_directory`
+- `SUPABASE_URL` — URL do projeto que controla empresas e licenças
+- `SUPABASE_SERVICE_ROLE_KEY` — segredo somente da Function
 
 Escopos da chave dinâmica: `databases.read`, `databases.write`, `documents.read`, `documents.write`, `users.read` e `users.write`. Os dois últimos são usados exclusivamente pela gestão autenticada de contas do WeFrotas.
 
@@ -32,6 +34,7 @@ Criar no database acima, sem permissões públicas, com Document Security desati
 | atributo | tipo | tamanho | obrigatório |
 | --- | --- | ---: | --- |
 | endpoint | string | 2048 | sim |
+| workspaceId | string | 36 | sim |
 | p256dh | string | 512 | sim |
 | auth | string | 512 | sim |
 | userAgent | string | 1024 | não |
@@ -59,5 +62,5 @@ As ações `stats`, `broadcast` e `notify` continuam administrativas. `stats` re
 
 ## Diretório da Central
 
-A tabela `central_driver_directory` não tem permissão pública e é mantida pelo usuário autenticado no WeFrotas. Ela contém somente `driverId`, `driverName`, `vehicleId`, `vehicleName`, `vehicleImageUrl`, `plate`, `fleetNumber`, `active` e `updatedAt`. `vehicleImageUrl` é uma string opcional de até 2048 caracteres. A Central consulta uma versão saneada pela Function, sem acesso direto ao restante do snapshot administrativo.
+A tabela `central_driver_directory` não tem permissão pública e é mantida pelo usuário autenticado no WeFrotas. Ela contém `workspaceId`, `driverId`, `driverName`, `vehicleId`, `vehicleName`, `vehicleImageUrl`, `plate`, `fleetNumber`, `active` e `updatedAt`. `vehicleImageUrl` é uma string opcional de até 2048 caracteres. A Central consulta uma versão saneada e filtrada pela Function, sem acesso direto ao restante do snapshot administrativo.
 
