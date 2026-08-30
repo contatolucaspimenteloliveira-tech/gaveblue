@@ -827,8 +827,33 @@
     // The Appwrite copy is authoritative whenever it exists. A fresh browser starts
     // with an empty/default local snapshot, and must NEVER upload that snapshot
     // before first downloading the company data.
+    // A gravação local pendente pertence à chave isolada da empresa que acabou de
+    // ser confirmada. Ela representa uma alteração que o navegador já aceitou,
+    // mas que ainda não recebeu confirmação do servidor. Nesse caso tentamos
+    // concluir o envio antes até da leitura remota; assim uma queda de conexão não
+    // bloqueia o acesso nem permite que uma cópia antiga substitua o dado local.
+    if (hasPendingSync()) {
+      const localSnapshot = currentSnapshotGetter?.();
+      if (localSnapshot && typeof localSnapshot === 'object' && !Array.isArray(localSnapshot)) {
+        snapshotReady = true;
+        try {
+          const recoveredSnapshot = await persistSnapshot(localSnapshot);
+          if (revision !== contextRevision) throw new Error('A empresa mudou durante a sincronização.');
+          await subscribeRealtime();
+          emitStatus('online', 'Alterações pendentes recuperadas e sincronizadas.');
+          return { mode: 'recovered-local-pending', snapshot: recoveredSnapshot };
+        } catch (error) {
+          if (revision !== contextRevision) throw error;
+          await subscribeRealtime();
+          emitStatus('error', `Alterações preservadas neste dispositivo. Falha ao confirmar no servidor: ${describeError(error)}.`, { error });
+          return { mode: 'local-pending', snapshot: localSnapshot, error };
+        }
+      }
+    }
+
     const remoteRecord = await loadRemoteRecord();
     if (revision !== contextRevision) throw new Error('A empresa mudou durante o carregamento.');
+
     if (remoteRecord?.snapshot) {
       const remoteSerialized = JSON.stringify(remoteRecord.snapshot);
       lastSerializedSnapshot = remoteSerialized;

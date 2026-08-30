@@ -13,7 +13,7 @@ const missing = () => Object.assign(new Error('not found'), { code: 404 });
 async function harness() {
   const rows = new Map(), writes = [], local = new Map(), timers = new Map();
   let nextTimer = 0, applied = { vehicles: [{ id: 'COVRE-PRIVATE' }], orders: [{ id: 'COVRE-ORDER' }] };
-  let getError, pendingRead;
+  let getError, writeError, pendingRead;
   const context = { console, TextEncoder, Uint8Array, crypto: webcrypto,
     setTimeout: fn => { timers.set(++nextTimer, fn); return nextTimer; }, clearTimeout: id => timers.delete(id),
     localStorage: { getItem: k => local.get(k) ?? null, setItem: (k,v) => local.set(k,v), removeItem: k => local.delete(k) },
@@ -24,8 +24,8 @@ async function harness() {
       Storage: class {},
       TablesDB: class {
         async getRow({ rowId }) { if (pendingRead) await pendingRead; if (getError) throw getError; if (!rows.has(rowId)) throw missing(); return rows.get(rowId); }
-        async updateRow(args) { if (!rows.has(args.rowId)) throw missing(); writes.push(clone(args)); rows.set(args.rowId, clone(args.data)); return args.data; }
-        async createRow(args) { writes.push(clone(args)); rows.set(args.rowId, clone(args.data)); return args.data; }
+        async updateRow(args) { if (writeError) throw writeError; if (!rows.has(args.rowId)) throw missing(); writes.push(clone(args)); rows.set(args.rowId, clone(args.data)); return args.data; }
+        async createRow(args) { if (writeError) throw writeError; writes.push(clone(args)); rows.set(args.rowId, clone(args.data)); return args.data; }
       },
       Permission: { read: x => `read:${x}`, update: x => `update:${x}`, delete: x => `delete:${x}` },
       Role: { label: x => x, users: () => 'users' }
@@ -40,8 +40,8 @@ async function harness() {
     rows.set(id, { workspaceId: name, snapshot: JSON.stringify(snapshot) });
     return id;
   }
-  return { backend, rows, writes, local, timers, seed, snapshot: () => applied,
-    fail: e => { getError = e; }, hold: promise => { pendingRead = promise; } };
+  return { backend, rows, writes, local, timers, seed, snapshot: () => applied, setSnapshot: value => { applied = clone(value); },
+    fail: e => { getError = e; }, failWrites: e => { writeError = e; }, hold: promise => { pendingRead = promise; } };
 }
 
 test('new tenant never uploads or adopts the previous company cache', async () => {
@@ -53,6 +53,33 @@ test('new tenant never uploads or adopts the previous company cache', async () =
   assert.deepEqual(h.snapshot().orders, []);
   assert.deepEqual(h.snapshot().centralCities, []);
   assert.equal(h.writes.length, 0);
+  assert.equal(h.backend.isSnapshotReady(), true);
+});
+
+test('a tenant pending local write is recovered before an older remote snapshot can replace it', async () => {
+  const h = await harness();
+  await h.seed('gave-test', { vehicles: [], drivers: [] });
+  h.backend.setOrganizationContext(tenant('gave-test'));
+  h.setSnapshot({ vehicles: [{ id: 'GAVE-VEHICLE' }], drivers: [{ id: 'GAVE-DRIVER' }] });
+  h.local.set('wefrotas_online_sync_pending:gave-test', '1');
+  const result = await h.backend.adoptRemoteOrUploadLocal();
+  assert.equal(result.mode, 'recovered-local-pending');
+  assert.deepEqual(h.snapshot().vehicles, [{ id: 'GAVE-VEHICLE' }]);
+  assert.deepEqual(h.snapshot().drivers, [{ id: 'GAVE-DRIVER' }]);
+  assert.equal(h.local.has('wefrotas_online_sync_pending:gave-test'), false);
+  assert.equal(h.writes.at(-1).data.workspaceId, 'gave-test');
+});
+
+test('a pending tenant snapshot remains available when the server is offline', async () => {
+  const h = await harness();
+  h.backend.setOrganizationContext(tenant('gave-test'));
+  h.setSnapshot({ vehicles: [{ id: 'OFFLINE-VEHICLE' }], drivers: [{ id: 'OFFLINE-DRIVER' }] });
+  h.local.set('wefrotas_online_sync_pending:gave-test', '1');
+  h.failWrites(Object.assign(new Error('Failed to fetch'), { code: 500 }));
+  const result = await h.backend.adoptRemoteOrUploadLocal();
+  assert.equal(result.mode, 'local-pending');
+  assert.deepEqual(h.snapshot().vehicles, [{ id: 'OFFLINE-VEHICLE' }]);
+  assert.equal(h.local.get('wefrotas_online_sync_pending:gave-test'), '1');
   assert.equal(h.backend.isSnapshotReady(), true);
 });
 
@@ -137,6 +164,9 @@ test('frontend cache has no shared startup key and auth errors stay behind login
   assert.match(ui, /await activateOrganizationStorage\(result.organization\)/);
   const flow = ui.slice(ui.indexOf('async function loginWeFrotasOnline'), ui.indexOf('async function logoutWeFrotasOnline'));
   assert.match(flow, /throw syncError/);
+  assert.match(ui, /await persistOperationalDataImmediately\(\)/);
+  assert.match(ui, /Veículo cadastrado e sincronizado/);
+  assert.match(ui, /Motorista cadastrado e sincronizado/);
 });
 
 function storageHarness(indexedDbAvailable = true) {

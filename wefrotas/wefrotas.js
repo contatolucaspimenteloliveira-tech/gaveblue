@@ -1842,6 +1842,14 @@
       }
     }
 
+    async function persistOperationalDataImmediately() {
+      await saveToLocalStorage();
+      const backend = window.WeFrotasBackend;
+      if (backend?.getUser?.() && backend?.syncNow) {
+        await backend.syncNow(buildStorageSnapshot());
+      }
+    }
+
     async function persistFinanceImmediately() {
       await saveToLocalStorage();
       const backend = window.WeFrotasBackend;
@@ -13653,20 +13661,29 @@
             return;
           }
         }
+        const vehicleWasEdited = Boolean(currentEditingId);
         if (currentEditingId) {
           allVehicles = allVehicles.map(vehicle => vehicle.id === currentEditingId
             ? { ...vehicle, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo, vehicleImageUrl, vehicleImageFileId }
             : vehicle);
           syncDriversWithVehicle(currentEditingId, motoristaId);
-          showToast('Veículo atualizado com sucesso.');
         } else {
           const newVehicleId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
           allVehicles.unshift({ id: newVehicleId, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo, vehicleImageUrl, vehicleImageFileId });
           syncDriversWithVehicle(newVehicleId, motoristaId);
-          showToast('Veículo cadastrado com sucesso.');
         }
-        saveToLocalStorage();
         renderAll();
+        const submitButton = document.getElementById('modal-submit-btn');
+        const submitLabel = submitButton?.querySelector('span');
+        if (submitButton) submitButton.disabled = true;
+        if (submitLabel) submitLabel.textContent = 'Salvando e sincronizando...';
+        try {
+          await persistOperationalDataImmediately();
+          showToast(vehicleWasEdited ? 'Veículo atualizado e sincronizado.' : 'Veículo cadastrado e sincronizado.');
+        } catch (error) {
+          console.error('O veículo foi preservado localmente, mas a confirmação online falhou.', error);
+          showToast('Veículo salvo neste dispositivo. A sincronização online continua pendente.');
+        }
         closeCadastroModal();
       }
 
@@ -13691,20 +13708,29 @@
           showToast('Já existe um motorista com esse CPF ou CNH cadastrado.');
           return;
         }
+        const driverWasEdited = Boolean(currentEditingId);
         if (currentEditingId) {
           allDrivers = allDrivers.map(driver => driver.id === currentEditingId
             ? { ...driver, nome, cpf, cnh, categoria, telefone, validade, vehicleIds, ativo }
             : driver);
           syncVehiclesWithDriver(currentEditingId, vehicleIds);
-          showToast('Motorista atualizado com sucesso.');
         } else {
           const newDriverId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
           allDrivers.unshift({ id: newDriverId, nome, cpf, cnh, categoria, telefone, validade, vehicleIds, ativo });
           syncVehiclesWithDriver(newDriverId, vehicleIds);
-          showToast('Motorista cadastrado com sucesso.');
         }
-        saveToLocalStorage();
         renderAll();
+        const submitButton = document.getElementById('modal-submit-btn');
+        const submitLabel = submitButton?.querySelector('span');
+        if (submitButton) submitButton.disabled = true;
+        if (submitLabel) submitLabel.textContent = 'Salvando e sincronizando...';
+        try {
+          await persistOperationalDataImmediately();
+          showToast(driverWasEdited ? 'Motorista atualizado e sincronizado.' : 'Motorista cadastrado e sincronizado.');
+        } catch (error) {
+          console.error('O motorista foi preservado localmente, mas a confirmação online falhou.', error);
+          showToast('Motorista salvo neste dispositivo. A sincronização online continua pendente.');
+        }
         closeCadastroModal();
       }
 
