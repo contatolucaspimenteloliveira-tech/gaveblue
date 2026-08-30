@@ -255,6 +255,20 @@
     }
 
     function getAuthenticatedUserRoleLabel(user) {
+      // The server-resolved company membership replaces legacy global labels.
+      // Never infer privileges from an org label belonging to another company.
+      const backend = window.WeFrotasBackend;
+      const organizationRole = user?.$id && backend?.getUser?.()?.$id === user.$id
+        ? backend?.getOrganizationContext?.()?.role
+        : '';
+      if (organizationRole) {
+        return ({
+          'wefrotas-admin': 'Administrador',
+          'wefrotas-gestor': 'Gestor',
+          'wefrotas-aprovador': 'Aprovador',
+          'wefrotas-consulta': 'Consulta'
+        })[organizationRole] || 'Consulta';
+      }
       const labels = Array.isArray(user?.labels)
         ? user.labels.map((label) => String(label).trim().toLowerCase())
         : [];
@@ -3662,6 +3676,7 @@
         ...result.organization,
         role: result.role
       });
+      updateManagerIdentityUi();
       const tenantLogo = document.getElementById('wefrotas-tenant-logo');
       if (tenantLogo && result.organization.branding?.logoUrl) {
         tenantLogo.src = result.organization.branding.logoUrl;

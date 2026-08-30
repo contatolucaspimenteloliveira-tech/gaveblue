@@ -180,7 +180,8 @@ on conflict (organization_id) do nothing;
 -- Function passar a consultar o Supabase. O vínculo com Supabase Auth pode ser
 -- preenchido posteriormente, sem interromper o login existente do Appwrite.
 insert into public.organization_members (organization_id, email, appwrite_user_id, role, status)
-select id, 'adm01@covreecia.com.br', '6a908b74003ccf52ceb6', 'admin', 'active'
+-- ID conferido no Appwrite: não usar o ID da conta Codex Técnico.
+select id, 'adm01@covreecia.com.br', '6a904e7e001d59424e66', 'admin', 'active'
 from public.organizations where slug = 'covre-e-cia'
 on conflict (organization_id, email) do update set
   appwrite_user_id = excluded.appwrite_user_id,
