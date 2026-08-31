@@ -11,7 +11,7 @@ const tenant = (name) => ({ id: name, workspaceId: name, appwriteLabel: `org${na
 const missing = () => Object.assign(new Error('not found'), { code: 404 });
 
 async function harness() {
-  const rows = new Map(), writes = [], appliedSnapshots = [], local = new Map(), timers = new Map();
+  const rows = new Map(), writes = [], storageWrites = [], appliedSnapshots = [], local = new Map(), timers = new Map();
   let nextTimer = 0, applied = { vehicles: [{ id: 'COVRE-PRIVATE' }], orders: [{ id: 'COVRE-ORDER' }] };
   let getError, writeError, pendingRead;
   const context = { console, TextEncoder, Uint8Array, crypto: webcrypto,
@@ -21,14 +21,18 @@ async function harness() {
     Appwrite: {
       Client: class { setEndpoint() { return this; } setProject() { return this; } subscribe() { return () => {}; } },
       Account: class { async get() { return { $id: 'user', email: 'test@example.test', labels: ['admin'] }; } async deleteSession() {} },
-      Storage: class {},
+      Storage: class {
+        async createFile(args) { storageWrites.push(clone({ ...args, file: { type: args.file?.type, size: args.file?.size } })); return { $id: args.fileId }; }
+        getFileView({ fileId }) { return `https://files.example.test/${fileId}`; }
+      },
+      ID: { unique: () => 'test-file-id' },
       TablesDB: class {
         async getRow({ rowId }) { if (pendingRead) await pendingRead; if (getError) throw getError; if (!rows.has(rowId)) throw missing(); return rows.get(rowId); }
         async updateRow(args) { if (writeError) throw writeError; if (!rows.has(args.rowId)) throw missing(); writes.push(clone(args)); rows.set(args.rowId, clone(args.data)); return args.data; }
         async createRow(args) { if (writeError) throw writeError; writes.push(clone(args)); rows.set(args.rowId, clone(args.data)); return args.data; }
       },
       Permission: { read: x => `read:${x}`, update: x => `update:${x}`, delete: x => `delete:${x}` },
-      Role: { label: x => x, users: () => 'users' }
+      Role: { label: x => x, users: () => 'users', any: () => 'any' }
     }
   };
   context.window = context;
@@ -47,7 +51,7 @@ async function harness() {
     rows.set(id, { workspaceId: name, snapshot: JSON.stringify(snapshot) });
     return id;
   }
-  return { backend, rows, writes, appliedSnapshots, local, timers, seed, snapshot: () => applied, setSnapshot: value => { applied = clone(value); },
+  return { backend, rows, writes, storageWrites, appliedSnapshots, local, timers, seed, snapshot: () => applied, setSnapshot: value => { applied = clone(value); },
     fail: e => { getError = e; }, failWrites: e => { writeError = e; }, hold: promise => { pendingRead = promise; } };
 }
 
@@ -165,10 +169,22 @@ test('without an authorized tenant no upload is allowed, even with legacy admin 
   assert.equal(h.writes.length, 0);
 });
 
-test('browser-side ACLs grant only the authenticated organization role', () => {
-  assert.match(source, /const managerLabels = getAssignableManagerLabels\(\)/);
-  assert.match(source, /if \(roleLabel && configured\.includes\(roleLabel\)\) return \[roleLabel\]/);
-  assert.doesNotMatch(source, /const managerLabels = organizationContext\.appwriteManagerLabels\?\.length \? organizationContext\.appwriteManagerLabels : \['admin'\]/);
+test('browser-side ACLs grant only the authenticated organization role', async () => {
+  const h = await harness();
+  h.backend.setOrganizationContext({
+    ...tenant('gave-test'),
+    appwriteRoleLabel: 'orggave-testadm',
+    appwriteManagerLabels: ['orggave-testadm', 'orggave-testmgr']
+  });
+  await h.seed('gave-test', { vehicles: [] });
+  await h.backend.adoptRemoteOrUploadLocal();
+  await h.backend.uploadVehicleImage({ type: 'image/png', size: 128 });
+  assert.deepEqual(h.storageWrites[0].permissions, [
+    'read:any',
+    'update:orggave-testadm',
+    'delete:orggave-testadm'
+  ]);
+  assert.ok(h.storageWrites[0].permissions.every(permission => !permission.includes('orggave-testmgr')));
 });
 
 test('a delayed response cannot be applied to a different company', async () => {
