@@ -4596,7 +4596,7 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
   gap: 8px;
 }
 
-.central-pending-summary > div {
+.central-pending-summary > div:not(.central-pending-date-range):not(.central-pending-bulk-actions) {
   display: inline-flex;
   align-items: baseline;
   gap: 6px;
@@ -4647,7 +4647,8 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
 
 .central-pending-filter input { padding-right: 8px; }
 
-.central-pending-start-date {
+.central-pending-status-filter,
+.central-pending-date-range-button {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -4657,11 +4658,16 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
   border-radius: 999px;
   background: #fff;
 }
-.central-pending-start-date span {
+.central-pending-status-filter span,
+.central-pending-date-range-button span {
+  color: #7b88a1;
   font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
-.central-pending-start-date input {
-  width: 118px;
+.central-pending-status-filter select {
+  width: 82px;
   min-width: 0;
   border: 0;
   outline: 0;
@@ -4671,14 +4677,152 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
   font-size: 11px;
   font-weight: 700;
 }
-body.dark-mode .central-pending-start-date {
+.central-pending-date-range {
+  position: relative;
+}
+.central-pending-date-range-button {
+  min-width: 192px;
+  cursor: pointer;
+}
+.central-pending-date-range-button strong {
+  flex: 1;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
+  white-space: nowrap;
+}
+.central-pending-date-range-button svg {
+  flex: 0 0 auto;
+  color: #3157df;
+}
+.central-pending-date-range-button[aria-expanded="true"] {
+  border-color: #6b82ef;
+  box-shadow: 0 0 0 3px rgba(49, 87, 223, .12);
+}
+.central-pending-calendar {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 10px);
+  left: 50%;
+  display: none;
+  width: min(620px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid #dbe5f3;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .2);
+  transform: translateX(-50%);
+}
+.central-pending-calendar.is-open { display: block; }
+.central-pending-calendar-head,
+.central-pending-calendar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.central-pending-calendar-head { margin-bottom: 12px; }
+.central-pending-calendar-head > button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #dbe5f3;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: #3157df;
+  font-size: 23px;
+  line-height: 1;
+  cursor: pointer;
+}
+.central-pending-calendar-head strong {
+  color: #17233c;
+  font-size: 13px;
+  font-weight: 900;
+}
+.central-pending-calendar-months {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.central-pending-calendar-month h4 {
+  margin: 0 0 9px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+  text-transform: capitalize;
+}
+.central-pending-calendar-weekdays,
+.central-pending-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.central-pending-calendar-weekdays span {
+  padding: 4px 0;
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+.central-pending-calendar-day {
+  min-width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.central-pending-calendar-day:hover { background: #eef4ff; color: #3157df; }
+.central-pending-calendar-day.is-in-range { border-radius: 5px; background: #e9efff; color: #2947bf; }
+.central-pending-calendar-day.is-start,
+.central-pending-calendar-day.is-end { border-radius: 9px; background: #3157df; color: #fff; }
+.central-pending-calendar-day.is-today { box-shadow: inset 0 0 0 1px #6b82ef; }
+.central-pending-calendar-day.is-placeholder { pointer-events: none; visibility: hidden; }
+.central-pending-calendar-footer {
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid #edf2f8;
+}
+.central-pending-calendar-footer span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.central-pending-calendar-footer button {
+  border: 0;
+  background: transparent;
+  color: #3157df;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+body.dark-mode .central-pending-status-filter,
+body.dark-mode .central-pending-date-range-button {
   border-color: #334155;
   background: #111c30;
 }
-body.dark-mode .central-pending-start-date input {
+body.dark-mode .central-pending-status-filter select,
+body.dark-mode .central-pending-date-range-button strong {
   color: #dbeafe;
   color-scheme: dark;
 }
+body.dark-mode .central-pending-calendar { border-color: #334155; background: #111c30; }
+body.dark-mode .central-pending-calendar-head strong,
+body.dark-mode .central-pending-calendar-month h4,
+body.dark-mode .central-pending-calendar-day { color: #dbeafe; }
+body.dark-mode .central-pending-calendar-head > button { border-color: #334155; background: #17243b; }
+body.dark-mode .central-pending-calendar-day:hover { background: #1e3154; }
+body.dark-mode .central-pending-calendar-day.is-in-range { background: #22386b; color: #dbeafe; }
+body.dark-mode .central-pending-calendar-day.is-start,
+body.dark-mode .central-pending-calendar-day.is-end { background: #5b6ff0; color: #fff; }
+body.dark-mode .central-pending-calendar-footer { border-color: #334155; }
 
 .central-pending-bulk-actions { display: inline-flex; gap: 6px; }
 .central-pending-bulk-actions { margin-left: auto; }
@@ -4730,7 +4874,7 @@ body.dark-mode .central-pending-start-date input {
 
 .central-pending-table {
   width: 100%;
-  min-width: 1120px;
+  min-width: 980px;
   border-collapse: collapse;
 }
 
@@ -6784,13 +6928,13 @@ svg.h-8 { height: 2rem; }
     gap: 6px;
   }
 
-  .central-pending-summary > div {
+  .central-pending-summary > div:not(.central-pending-date-range):not(.central-pending-bulk-actions) {
     min-width: 0;
     justify-content: center;
     padding: 7px 5px;
   }
 
-  .central-pending-summary > div span {
+  .central-pending-summary > div:not(.central-pending-date-range):not(.central-pending-bulk-actions) span {
     overflow: hidden;
     font-size: 8px;
     text-overflow: ellipsis;
@@ -6814,9 +6958,16 @@ svg.h-8 { height: 2rem; }
     grid-column: 1 / -1;
   }
 
-  .central-pending-start-date {
-    grid-column: 1 / -1;
-    justify-self: start;
+  .central-pending-status-filter { grid-column: 1; }
+  .central-pending-date-range { grid-column: 2 / -1; }
+  .central-pending-date-range-button { width: 100%; }
+  .central-pending-calendar {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    transform: translate(-50%, -50%);
   }
 
   .central-pending-bulk-actions {
@@ -6824,6 +6975,9 @@ svg.h-8 { height: 2rem; }
     justify-content: flex-end;
     margin-left: 0;
   }
+
+  .central-pending-calendar-months { grid-template-columns: 1fr; }
+  .central-pending-calendar-month:nth-child(2) { display: none; }
 
   .central-pending-table-shell {
     border-radius: 15px;

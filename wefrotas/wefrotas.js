@@ -52,6 +52,8 @@
     let centralPendingStatusFilter = 'todos';
     let centralPendingDateStart = '';
     let centralPendingDateEnd = '';
+    let centralPendingCalendarMonth = null;
+    let centralPendingCalendarSelectingEnd = false;
     let centralPendingSearchFilter = '';
     let centralPendingValueFilter = '';
     let centralPendingVehicleFilter = '';
@@ -9643,6 +9645,7 @@
         .filter(record => {
           const className = getCentralPendingStatus(record).className;
           const statusMap = { pendente: 'pending', aprovado: 'approved', rejeitado: 'error' };
+          if (centralPendingStatusFilter === 'aprovado') return className === 'approved' || className === 'imported';
           return centralPendingStatusFilter === 'todos' || className === statusMap[centralPendingStatusFilter];
         })
         .filter(record => {
@@ -9754,9 +9757,10 @@
       centralPendingFiltersLoaded = true;
       try {
         const saved = JSON.parse(localStorage.getItem(CENTRAL_PENDING_FILTERS_KEY) || '{}');
-        centralPendingStatusFilter = 'todos';
-        centralPendingDateStart = saved.start || '';
-        centralPendingDateEnd = '';
+        centralPendingStatusFilter = ['todos', 'pendente', 'aprovado', 'rejeitado'].includes(saved.status) ? saved.status : 'todos';
+        centralPendingDateStart = centralPendingCalendarIso(parseCentralPendingCalendarDate(saved.start));
+        centralPendingDateEnd = centralPendingCalendarIso(parseCentralPendingCalendarDate(saved.end));
+        if (centralPendingDateEnd && (!centralPendingDateStart || centralPendingDateEnd < centralPendingDateStart)) centralPendingDateEnd = '';
         centralPendingSearchFilter = normalizeComparableText(saved.search || '');
         centralPendingValueFilter = '';
         centralPendingVehicleFilter = '';
@@ -9765,17 +9769,16 @@
         centralPendingNfFilter = '';
         centralPendingDueStart = '';
         centralPendingDueEnd = '';
-        if (['date', 'type', 'driver', 'supplier', 'km', 'value', 'status'].includes(saved.sortKey)) {
+        if (['date', 'driver', 'supplier', 'km', 'value', 'status'].includes(saved.sortKey)) {
           centralPendingSortState = { key: saved.sortKey, direction: saved.sortDirection === 'asc' ? 'asc' : 'desc' };
         }
       } catch (error) {}
-      const values = {
-        'central-pending-date-start-inline': centralPendingDateStart
-      };
+      const values = { 'central-pending-status-inline': centralPendingStatusFilter };
       Object.entries(values).forEach(([id, value]) => {
         const node = document.getElementById(id);
         if (node) node.value = value;
       });
+      renderCentralPendingDateControls();
     }
 
     function saveCentralPendingFilters() {
@@ -9799,8 +9802,6 @@
     }
 
     function applyCentralPendingFilters() {
-      centralPendingStatusFilter = 'todos';
-      centralPendingDateEnd = '';
       centralPendingSearchFilter = normalizeComparableText(globalSearchInputEl?.value || '');
       centralPendingValueFilter = '';
       centralPendingVehicleFilter = '';
@@ -9833,8 +9834,127 @@
       renderCentralPendingRecords();
     }
 
-    function setCentralPendingStartDate(value) {
-      centralPendingDateStart = String(value || '').slice(0, 10);
+    function parseCentralPendingCalendarDate(value) {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+      if (!match) return null;
+      const year = Number(match[1]);
+      const month = Number(match[2]) - 1;
+      const day = Number(match[3]);
+      if (year < 1000 || year > 9999) return null;
+      const date = new Date(year, month, day);
+      return date.getFullYear() === year && date.getMonth() === month && date.getDate() === day ? date : null;
+    }
+
+    function centralPendingCalendarIso(date) {
+      if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+      return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    function formatCentralPendingCalendarDate(value) {
+      const date = parseCentralPendingCalendarDate(value);
+      return date ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date) : '';
+    }
+
+    function renderCentralPendingDateControls() {
+      const status = document.getElementById('central-pending-status-inline');
+      if (status && status.value !== centralPendingStatusFilter) status.value = centralPendingStatusFilter;
+      const label = document.getElementById('central-pending-date-range-label');
+      if (label) {
+        const start = formatCentralPendingCalendarDate(centralPendingDateStart);
+        const end = formatCentralPendingCalendarDate(centralPendingDateEnd);
+        label.textContent = start ? `${start}${end ? ` – ${end}` : ' – …'}` : 'Todas as datas';
+      }
+      const hint = document.getElementById('central-pending-calendar-hint');
+      if (hint) {
+        hint.textContent = centralPendingCalendarSelectingEnd && centralPendingDateStart && !centralPendingDateEnd
+          ? 'Agora escolha a data final.'
+          : (centralPendingDateStart && centralPendingDateEnd ? 'Período aplicado aos registros.' : 'Escolha a data inicial.');
+      }
+    }
+
+    function renderCentralPendingCalendar() {
+      const months = document.getElementById('central-pending-calendar-months');
+      if (!months) return;
+      if (!(centralPendingCalendarMonth instanceof Date)) {
+        const selected = parseCentralPendingCalendarDate(centralPendingDateStart) || new Date();
+        centralPendingCalendarMonth = new Date(selected.getFullYear(), selected.getMonth(), 1);
+      }
+      const startIso = centralPendingDateStart;
+      const endIso = centralPendingDateEnd;
+      const todayIso = centralPendingCalendarIso(new Date());
+      const weekdays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+      months.innerHTML = [0, 1].map((offset) => {
+        const monthDate = new Date(centralPendingCalendarMonth.getFullYear(), centralPendingCalendarMonth.getMonth() + offset, 1);
+        const year = monthDate.getFullYear();
+        const month = monthDate.getMonth();
+        const firstWeekday = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const blanks = Array.from({ length: firstWeekday }, () => '<span class="central-pending-calendar-day is-placeholder"></span>').join('');
+        const days = Array.from({ length: daysInMonth }, (_, index) => {
+          const date = new Date(year, month, index + 1);
+          const iso = centralPendingCalendarIso(date);
+          const classes = ['central-pending-calendar-day'];
+          if (iso === todayIso) classes.push('is-today');
+          if (iso === startIso) classes.push('is-start');
+          if (iso === endIso) classes.push('is-end');
+          if (startIso && endIso && iso > startIso && iso < endIso) classes.push('is-in-range');
+          return `<button type="button" class="${classes.join(' ')}" data-date="${iso}" aria-label="${formatCentralPendingCalendarDate(iso)}" onclick="selectCentralPendingCalendarDate('${iso}')">${index + 1}</button>`;
+        }).join('');
+        const title = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(monthDate);
+        return `<section class="central-pending-calendar-month"><h4>${title}</h4><div class="central-pending-calendar-weekdays">${weekdays.map(day => `<span>${day}</span>`).join('')}</div><div class="central-pending-calendar-days">${blanks}${days}</div></section>`;
+      }).join('');
+      renderCentralPendingDateControls();
+    }
+
+    function toggleCentralPendingCalendar(forceOpen) {
+      const calendar = document.getElementById('central-pending-calendar');
+      const button = document.getElementById('central-pending-date-range-button');
+      if (!calendar || !button) return;
+      const open = typeof forceOpen === 'boolean' ? forceOpen : !calendar.classList.contains('is-open');
+      calendar.classList.toggle('is-open', open);
+      calendar.setAttribute('aria-hidden', open ? 'false' : 'true');
+      button.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        centralPendingCalendarSelectingEnd = Boolean(centralPendingDateStart && !centralPendingDateEnd);
+        renderCentralPendingCalendar();
+      }
+    }
+
+    function moveCentralPendingCalendar(offset) {
+      if (!(centralPendingCalendarMonth instanceof Date)) centralPendingCalendarMonth = new Date();
+      centralPendingCalendarMonth = new Date(centralPendingCalendarMonth.getFullYear(), centralPendingCalendarMonth.getMonth() + Number(offset || 0), 1);
+      renderCentralPendingCalendar();
+    }
+
+    function selectCentralPendingCalendarDate(value) {
+      const iso = centralPendingCalendarIso(parseCentralPendingCalendarDate(value));
+      if (!iso) return;
+      if (!centralPendingDateStart || centralPendingDateEnd || !centralPendingCalendarSelectingEnd) {
+        centralPendingDateStart = iso;
+        centralPendingDateEnd = '';
+        centralPendingCalendarSelectingEnd = true;
+      } else if (iso < centralPendingDateStart) {
+        centralPendingDateStart = iso;
+      } else {
+        centralPendingDateEnd = iso;
+        centralPendingCalendarSelectingEnd = false;
+      }
+      saveCentralPendingFilters();
+      renderCentralPendingCalendar();
+      renderCentralPendingRecords();
+    }
+
+    function clearCentralPendingDateRange() {
+      centralPendingDateStart = '';
+      centralPendingDateEnd = '';
+      centralPendingCalendarSelectingEnd = false;
+      saveCentralPendingFilters();
+      renderCentralPendingCalendar();
+      renderCentralPendingRecords();
+    }
+
+    function setCentralPendingStatus(value) {
+      centralPendingStatusFilter = ['todos', 'pendente', 'aprovado', 'rejeitado'].includes(value) ? value : 'todos';
       saveCentralPendingFilters();
       renderCentralPendingRecords();
     }
@@ -9852,7 +9972,7 @@
     }
 
     function toggleCentralPendingSort(key) {
-      if (!['date', 'type', 'driver', 'supplier', 'km', 'value', 'status'].includes(key)) return;
+      if (!['date', 'driver', 'supplier', 'km', 'value', 'status'].includes(key)) return;
       if (centralPendingSortState.key === key) {
         centralPendingSortState.direction = centralPendingSortState.direction === 'asc' ? 'desc' : 'asc';
       } else {
@@ -9886,26 +10006,27 @@
       selectedCentralPending = new Set(Array.from(selectedCentralPending).filter(id => visibleIds.has(id)));
       renderCentralPendingSummary(rows);
       updateCentralPendingSortIndicators();
+      renderCentralPendingDateControls();
 
       // Uma atualização silenciosa/realtime nunca deve apagar a tabela que já
       // está na tela. O estado de carregamento vazio é reservado somente para
       // a primeira consulta; nas seguintes, a barra superior sinaliza o sync.
       if (centralPendingLoading && !centralPendingLoaded) {
-        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Buscando registros enviados pela Central...</td></tr>';
+        list.innerHTML = '<tr><td colspan="7" class="central-pending-empty">Buscando registros enviados pela Central...</td></tr>';
         return;
       }
       // Oscilações de rede também não substituem dados já confirmados. Se ainda
       // não existe cópia carregada, exibimos o erro no corpo da tabela.
       if (centralPendingError && (!centralPendingLoaded || !centralPendingRecords.length)) {
-        list.innerHTML = `<tr><td colspan="8" class="central-pending-empty central-pending-error">${escapeHtml(centralPendingError)}</td></tr>`;
+        list.innerHTML = `<tr><td colspan="7" class="central-pending-empty central-pending-error">${escapeHtml(centralPendingError)}</td></tr>`;
         return;
       }
       if (!centralPendingLoaded) {
-        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Aguardando a primeira atualização automática.</td></tr>';
+        list.innerHTML = '<tr><td colspan="7" class="central-pending-empty">Aguardando a primeira atualização automática.</td></tr>';
         return;
       }
       if (!rows.length) {
-        list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Nenhum registro recebido da Central até agora.</td></tr>';
+        list.innerHTML = '<tr><td colspan="7" class="central-pending-empty">Nenhum registro recebido da Central até agora.</td></tr>';
         return;
       }
 
@@ -9916,7 +10037,6 @@
         return `
           <tr class="${selectedCentralPending.has(getCentralPendingRecordId(record)) ? 'is-selected' : ''}" onclick="toggleCentralPendingRecord('${rowId}')">
             <td>${getCentralPendingDate(record)}</td>
-            <td><span class="central-pending-type">${escapeHtml(getCentralPendingRecordType(record))}</span></td>
             <td>${escapeHtml(record?.motorista || '-')}</td>
             <td>${escapeHtml(getCentralPendingSupplier(record))}</td>
             <td>${escapeHtml(record?.km || '-')}</td>
@@ -10288,7 +10408,11 @@
 
     window.refreshCentralPendingRecords = refreshCentralPendingRecords;
     window.toggleCentralPendingSort = toggleCentralPendingSort;
-    window.setCentralPendingStartDate = setCentralPendingStartDate;
+    window.toggleCentralPendingCalendar = toggleCentralPendingCalendar;
+    window.moveCentralPendingCalendar = moveCentralPendingCalendar;
+    window.selectCentralPendingCalendarDate = selectCentralPendingCalendarDate;
+    window.clearCentralPendingDateRange = clearCentralPendingDateRange;
+    window.setCentralPendingStatus = setCentralPendingStatus;
     window.prepareCentralPendingRecord = prepareCentralPendingRecord;
     window.approveCentralPendingRecord = approveCentralPendingRecord;
     window.rejectCentralPendingRecord = rejectCentralPendingRecord;
@@ -14360,6 +14484,10 @@
     }
 
     document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && document.getElementById('central-pending-calendar')?.classList.contains('is-open')) {
+        toggleCentralPendingCalendar(false);
+        return;
+      }
       const openModal = document.querySelector('.module-filters-modal.is-open');
       if (!openModal?.dataset.filterModule) return;
       if (event.key === 'Escape') {
@@ -14370,6 +14498,12 @@
         event.preventDefault();
         applyModuleFilters(openModal.dataset.filterModule);
       }
+    });
+
+    document.addEventListener('click', (event) => {
+      const calendar = document.getElementById('central-pending-calendar');
+      if (!calendar?.classList.contains('is-open')) return;
+      if (!event.target?.closest?.('.central-pending-date-range')) toggleCentralPendingCalendar(false);
     });
 
     registerOnlineIdleListeners();

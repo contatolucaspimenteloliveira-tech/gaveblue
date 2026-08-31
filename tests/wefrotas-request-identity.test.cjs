@@ -14,7 +14,7 @@ test('silent Central refresh preserves rendered rows while syncing or briefly of
     getCentralPendingSortedRows: () => [{ $id: 'record-1', motorista: 'Motorista', comprovanteUrl: '' }],
     getCentralPendingRecordId: record => record.$id,
     selectedCentralPending: new Set(),
-    renderCentralPendingSummary() {}, updateCentralPendingSortIndicators() {},
+    renderCentralPendingSummary() {}, updateCentralPendingSortIndicators() {}, renderCentralPendingDateControls() {},
     getCentralPendingStatus: () => ({ className: 'pending', label: 'Pendente' }),
     getCentralPendingDate: () => '31/08/2026', getCentralPendingRecordType: () => 'Abastecimento',
     getCentralPendingSupplier: () => 'Posto', getCentralPendingValue: () => 'R$ 10,00',
@@ -45,13 +45,19 @@ test('Central uses one global field across record content and ignores legacy hid
   const ui = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.js'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'wefrotas/index.html'), 'utf8');
   assert.match(html, /input id="global-search-input"/);
-  assert.match(html, /input id="central-pending-date-start-inline" type="date"/);
+  assert.match(html, /button id="central-pending-date-range-button"/);
+  assert.match(html, /div id="central-pending-calendar"[^>]+role="dialog"/);
+  assert.match(html, /select id="central-pending-status-inline"/);
+  assert.doesNotMatch(html, /data-sort-key="type"/);
+  assert.doesNotMatch(html, /central-pending-date-start-inline/);
   assert.doesNotMatch(html, /data-filter-module="documentos"/);
   assert.doesNotMatch(html, /central-pending-filter-controls/);
   for (const legacyId of ['central-pending-status-filter', 'central-pending-date-start', 'central-pending-value-filter', 'central-pending-vehicle-filter', 'central-pending-supplier-filter', 'central-pending-order-filter', 'central-pending-nf-filter', 'central-pending-due-start']) {
     assert.doesNotMatch(html, new RegExp(`id="${legacyId}"`));
   }
   assert.match(ui, /centralPendingStatusFilter = 'todos';[\s\S]*centralPendingDateStart = '';[\s\S]*centralPendingValueFilter = '';/);
+  assert.match(ui, /centralPendingCalendarSelectingEnd[\s\S]*Agora escolha a data final/);
+  assert.match(ui, /\^\(\\d\{4\}\)-\(\\d\{2\}\)-\(\\d\{2\}\)\$/);
   assert.match(ui, /getCentralPendingDate\(record\)[\s\S]*getCentralPendingValue\(record\)[\s\S]*getCentralPendingStatus\(record\)\.label/);
   assert.match(ui, /centralPendingSearchFilter\.split\(\/\\s\+\/\)\.map\(normalizeSearchText\)\.filter\(Boolean\)/);
   assert.match(ui, /terms\.every\(term => haystack\.includes\(term\)\)/);
@@ -65,6 +71,13 @@ test('Central uses one global field across record content and ignores legacy hid
   const terms = query.split(/\s+/).map(context.normalizeSearchText).filter(Boolean);
   const haystack = context.normalizeSearchText('26/08/2026 JOAO DOS SANTOS SILVA Rejeitado');
   assert.equal(terms.every(term => haystack.includes(term)), true);
+
+  const calendarContext = { Date, Intl };
+  vm.createContext(calendarContext);
+  vm.runInContext(ui.slice(ui.indexOf('    function parseCentralPendingCalendarDate('), ui.indexOf('    function updateCentralPendingSortIndicators(')), calendarContext);
+  assert.equal(calendarContext.parseCentralPendingCalendarDate('275-05-15'), null);
+  assert.equal(calendarContext.parseCentralPendingCalendarDate('2026-02-30'), null);
+  assert.equal(calendarContext.centralPendingCalendarIso(calendarContext.parseCentralPendingCalendarDate('2026-08-31')), '2026-08-31');
 });
 
 test('deletion success waits for server confirmation and failures remain pending', async () => {

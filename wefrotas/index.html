@@ -1028,10 +1028,34 @@
                 <span>Serviços</span>
                 <strong id="central-pending-service-count">0</strong>
               </div>
-              <label class="central-pending-start-date" title="Mostrar registros a partir desta data">
-                <span>Desde</span>
-                <input id="central-pending-date-start-inline" type="date" aria-label="Data inicial dos registros" onchange="setCentralPendingStartDate(this.value)">
+              <label class="central-pending-status-filter" title="Filtrar registros por status">
+                <span>Status</span>
+                <select id="central-pending-status-inline" aria-label="Status dos registros" onchange="setCentralPendingStatus(this.value)">
+                  <option value="todos">Todos</option>
+                  <option value="pendente">Pendentes</option>
+                  <option value="aprovado">Aprovados</option>
+                  <option value="rejeitado">Rejeitados</option>
+                </select>
               </label>
+              <div class="central-pending-date-range">
+                <button id="central-pending-date-range-button" class="central-pending-date-range-button" type="button" aria-haspopup="dialog" aria-expanded="false" onclick="toggleCentralPendingCalendar()">
+                  <span>Período</span>
+                  <strong id="central-pending-date-range-label">Todas as datas</strong>
+                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 3v3M17 3v3M4 8h16M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg>
+                </button>
+                <div id="central-pending-calendar" class="central-pending-calendar" role="dialog" aria-label="Selecionar período dos registros" aria-hidden="true">
+                  <div class="central-pending-calendar-head">
+                    <button type="button" aria-label="Mês anterior" onclick="moveCentralPendingCalendar(-1)">‹</button>
+                    <strong id="central-pending-calendar-title">Selecionar período</strong>
+                    <button type="button" aria-label="Próximo mês" onclick="moveCentralPendingCalendar(1)">›</button>
+                  </div>
+                  <div id="central-pending-calendar-months" class="central-pending-calendar-months"></div>
+                  <div class="central-pending-calendar-footer">
+                    <span id="central-pending-calendar-hint">Escolha a data inicial.</span>
+                    <button type="button" onclick="clearCentralPendingDateRange()">Limpar</button>
+                  </div>
+                </div>
+              </div>
               <span id="central-pending-loading-indicator" class="central-pending-loading-indicator hidden" role="status">
                 <span aria-hidden="true"></span> Recebendo registros da Central
               </span>
@@ -1054,7 +1078,6 @@
                   <thead>
                     <tr>
                       <th><button type="button" class="central-pending-sort-head is-active" data-sort-key="date" onclick="toggleCentralPendingSort('date')">Data <span data-central-sort-indicator="date">↓</span></button></th>
-                      <th><button type="button" class="central-pending-sort-head" data-sort-key="type" onclick="toggleCentralPendingSort('type')">Tipo <span data-central-sort-indicator="type"></span></button></th>
                       <th><button type="button" class="central-pending-sort-head" data-sort-key="driver" onclick="toggleCentralPendingSort('driver')">Motorista <span data-central-sort-indicator="driver"></span></button></th>
                       <th><button type="button" class="central-pending-sort-head" data-sort-key="supplier" onclick="toggleCentralPendingSort('supplier')">Fornecedor/Posto <span data-central-sort-indicator="supplier"></span></button></th>
                       <th><button type="button" class="central-pending-sort-head" data-sort-key="km" onclick="toggleCentralPendingSort('km')">KM <span data-central-sort-indicator="km"></span></button></th>
@@ -1065,7 +1088,7 @@
                   </thead>
                   <tbody id="central-pending-list">
                     <tr>
-                      <td colspan="8" class="central-pending-empty">Os registros da Central aparecem aqui automaticamente.</td>
+                      <td colspan="7" class="central-pending-empty">Os registros da Central aparecem aqui automaticamente.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1749,7 +1772,7 @@
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260831-session-company-1"></script>
-  <script src="./wefrotas.js?v=20260831-central-header-search-1"></script>
+  <script src="./wefrotas.js?v=20260831-central-range-filter-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
