@@ -220,7 +220,7 @@
   function getPermissions() {
     const { Permission, Role } = global.Appwrite;
     const organizationRole = organizationContext.appwriteLabel ? Role.label(organizationContext.appwriteLabel) : Role.users();
-    const managerLabels = organizationContext.appwriteManagerLabels?.length ? organizationContext.appwriteManagerLabels : ['admin'];
+    const managerLabels = getAssignableManagerLabels();
     return [
       Permission.read(organizationRole),
       ...managerLabels.map((label) => Permission.update(Role.label(label))),
@@ -230,12 +230,27 @@
 
   function getTenantManagedPermissions({ publicRead = false } = {}) {
     const { Permission, Role } = global.Appwrite;
-    const managerLabels = organizationContext.appwriteManagerLabels?.length ? organizationContext.appwriteManagerLabels : ['admin'];
+    const managerLabels = getAssignableManagerLabels();
     return [
       Permission.read(publicRead ? Role.any() : (organizationContext.appwriteLabel ? Role.label(organizationContext.appwriteLabel) : Role.users())),
       ...managerLabels.map((label) => Permission.update(Role.label(label))),
       ...managerLabels.map((label) => Permission.delete(Role.label(label)))
     ];
+  }
+
+  function getAssignableManagerLabels() {
+    const configured = organizationContext.appwriteManagerLabels?.length
+      ? organizationContext.appwriteManagerLabels.map((label) => String(label || '').trim()).filter(Boolean)
+      : ['admin'];
+    const roleLabel = String(organizationContext.appwriteRoleLabel || '').trim();
+    // Appwrite only lets a browser grant a label permission that belongs to the
+    // authenticated user. The Function assigns this exact role label before the
+    // organization context reaches the client, so never grant the sibling role
+    // (admin vs. manager) from a browser-side upload.
+    if (roleLabel && configured.includes(roleLabel)) return [roleLabel];
+    const owned = new Set((Array.isArray(currentUser?.labels) ? currentUser.labels : []).map((label) => String(label || '').trim()));
+    const assignable = configured.filter((label) => owned.has(label));
+    return assignable.length ? assignable : configured.slice(0, 1);
   }
 
   function setOrganizationContext(nextContext = {}) {

@@ -165,6 +165,12 @@ test('without an authorized tenant no upload is allowed, even with legacy admin 
   assert.equal(h.writes.length, 0);
 });
 
+test('browser-side ACLs grant only the authenticated organization role', () => {
+  assert.match(source, /const managerLabels = getAssignableManagerLabels\(\)/);
+  assert.match(source, /if \(roleLabel && configured\.includes\(roleLabel\)\) return \[roleLabel\]/);
+  assert.doesNotMatch(source, /const managerLabels = organizationContext\.appwriteManagerLabels\?\.length \? organizationContext\.appwriteManagerLabels : \['admin'\]/);
+});
+
 test('a delayed response cannot be applied to a different company', async () => {
   const h = await harness();
   await h.seed('covre', { vehicles: [{ id: 'SECRET' }] });
