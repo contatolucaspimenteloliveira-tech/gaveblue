@@ -63,6 +63,17 @@ test('new tenant never uploads or adopts the previous company cache', async () =
   assert.equal(h.backend.isSnapshotReady(), true);
 });
 
+test('Covre also saves through the authenticated Function, not browser-assigned ACLs', async () => {
+  const h = await harness();
+  await h.seed('covre-e-cia', { vehicles: [{ id: 'EXISTING' }] });
+  h.backend.setOrganizationContext(tenant('covre-e-cia'));
+  await h.backend.adoptRemoteOrUploadLocal();
+  await h.backend.syncNow({ vehicles: [{ id: 'EXISTING' }, { id: 'NEW' }] });
+  assert.equal(h.writes.length, 1);
+  assert.equal(h.writes[0].viaFunction, true);
+  assert.equal(h.writes[0].data.workspaceId, 'covre-e-cia');
+});
+
 test('a tenant pending local write is recovered before an older remote snapshot can replace it', async () => {
   const h = await harness();
   await h.seed('gave-test', { vehicles: [], drivers: [] });

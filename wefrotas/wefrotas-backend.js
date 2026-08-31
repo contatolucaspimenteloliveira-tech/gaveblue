@@ -380,9 +380,9 @@
     const activeVehicles = (Array.isArray(preparedSnapshot.vehicles) ? preparedSnapshot.vehicles : []).filter((vehicle) => vehicle?.ativo !== false && vehicle?.active !== false).length;
     if (maxVehicles > 0 && activeVehicles > maxVehicles) throw new Error(`O plano desta empresa permite até ${maxVehicles} veículos ativos.`);
     const serialized = JSON.stringify(preparedSnapshot);
-    // Preserve the existing Covre flow. New organizations save through the
-    // authenticated Function, which can assign both tenant-manager ACLs safely.
-    if (organizationContext.workspaceId !== String(config.companyId || 'covre-e-cia')) {
+    // Every authorized company, including Covre, needs the server writer:
+    // a browser admin cannot grant another manager's label permissions.
+    if (organizationContext.id) {
       if (!currentSnapshotWriter) throw new Error('O serviço de salvamento da empresa não está disponível. Atualize a página.');
       const confirmation = await currentSnapshotWriter(preparedSnapshot, organizationContext.workspaceId);
       if (confirmation?.ok !== true || confirmation.workspaceId !== organizationContext.workspaceId) {

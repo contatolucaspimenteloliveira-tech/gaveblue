@@ -1170,8 +1170,44 @@ async function saveTenantOperationalSnapshot(req, payload = {}) {
   if (maxVehicles > 0 && activeVehicles > maxVehicles) {
     throw Object.assign(new Error(`O plano desta empresa permite até ${maxVehicles} veículos ativos.`), { status: 409 });
   }
-  await persistWefrotasSnapshot(createDatabaseClient(req), snapshot, access.userId, organization);
+  const databases = createDatabaseClient(req);
+  await persistWefrotasSnapshot(databases, snapshot, access.userId, organization);
+  await syncTenantDriverDirectory(databases, snapshot, organization);
   return { ok: true, workspaceId: organization.workspaceId };
+}
+
+async function syncTenantDriverDirectory(databases, snapshot, organization) {
+  const workspaceId = organization.workspaceId;
+  const desired = buildTenantDriverDirectory(snapshot);
+  const desiredIds = new Set();
+  const updatedAt = new Date().toISOString();
+  const permissions = tenantManagedPermissions(organization);
+  const existing = new Map();
+  let offset = 0;
+  while (true) {
+    const page = await databases.listDocuments({ databaseId: DATABASE_ID, collectionId: DRIVER_DIRECTORY_COLLECTION_ID,
+      queries: [Query.equal('workspaceId', [workspaceId]), Query.limit(100), Query.offset(offset)] });
+    for (const row of page.documents) if (row.workspaceId === workspaceId) existing.set(row.$id, row);
+    if (page.documents.length < 100) break;
+    offset += page.documents.length;
+  }
+  for (const row of desired) {
+    const documentId = crypto.createHash('sha256').update(`${workspaceId}:central-driver:${row.driverId}:${row.vehicleId || 'without-vehicle'}`).digest('hex').slice(0, 36);
+    desiredIds.add(documentId);
+    const current = existing.get(documentId);
+    if (current && current.active !== false && Object.keys(row).every(key => String(current[key] ?? '') === String(row[key] ?? ''))) continue;
+    const args = { databaseId: DATABASE_ID, collectionId: DRIVER_DIRECTORY_COLLECTION_ID, documentId,
+      data: { ...row, workspaceId, active: true, updatedAt }, permissions };
+    try { await databases.updateDocument(args); } catch (error) {
+      if (Number(error?.code) !== 404) throw error;
+      await databases.createDocument(args);
+    }
+  }
+  for (const row of existing.values()) {
+    if (desiredIds.has(row.$id) || row.active === false) continue;
+    await databases.updateDocument({ databaseId: DATABASE_ID, collectionId: DRIVER_DIRECTORY_COLLECTION_ID,
+      documentId: row.$id, data: { active: false, updatedAt }, permissions });
+  }
 }
 
 async function appendApprovedFinanceEntry(databases, senderId, payload = {}, tenant = WEFROTAS_COMPANY_ID) {

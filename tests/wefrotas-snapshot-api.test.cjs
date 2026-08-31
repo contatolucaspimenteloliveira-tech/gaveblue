@@ -9,16 +9,19 @@ const snapshot = () => ({ vehicles: [{ id: 'vehicle-a' }], drivers: [{ id: 'driv
 function harness(role = 'wefrotas-admin') {
   const writes = [];
   const organization = { id: 'gave', workspaceId: 'gave-workspace', appwriteLabel: 'orggave', modules: ['wefrotas'], limits: { vehicles: 2 } };
-  const context = { Buffer,
+  const directoryWrites = [];
+  const context = { Buffer, crypto: require('node:crypto'), DATABASE_ID: 'db', DRIVER_DIRECTORY_COLLECTION_ID: 'directory',
+    Query: { equal: (key, values) => ({ key, values }), limit: value => ({ limit: value }), offset: value => ({ offset: value }) },
+    tenantManagedPermissions: organization => [`read:${organization.appwriteLabel}`],
     assertOperationalManager: async () => {
       if (!['wefrotas-admin', 'wefrotas-gestor'].includes(role)) throw Object.assign(new Error('Forbidden'), { status: 403 });
       return { userId: 'actor', organization };
     },
-    createDatabaseClient: () => ({}),
+    createDatabaseClient: () => ({ updateDocument: async args => { directoryWrites.push(args); }, listDocuments: async () => ({ documents: [] }) }),
     persistWefrotasSnapshot: async (...args) => { writes.push(args); }
   };
   vm.createContext(context); vm.runInContext(block, context);
-  return { ...context, writes, organization };
+  return { ...context, writes, directoryWrites, organization };
 }
 for (const role of ['wefrotas-admin', 'wefrotas-gestor']) test(`${role} saves only with the server-authorized company`, async () => {
   const h = harness(role);
@@ -28,6 +31,17 @@ for (const role of ['wefrotas-admin', 'wefrotas-gestor']) test(`${role} saves on
   assert.equal(h.writes[0][3], h.organization);
   assert.equal(h.writes[0][2], 'actor');
   assert.equal(h.writes[0][1], data);
+  assert.equal(h.directoryWrites[0].data.workspaceId, 'gave-workspace');
+});
+
+test('directory cleanup cannot deactivate a row belonging to another company', async () => {
+  const h = harness(); const changed = [];
+  const db = { updateDocument: async args => changed.push(args), listDocuments: async () => ({ documents: [
+    { $id: 'stale-own', workspaceId: 'gave-workspace', active: true },
+    { $id: 'covre-private', workspaceId: 'covre-e-cia', active: true }
+  ] }) };
+  await h.syncTenantDriverDirectory(db, { drivers: [], vehicles: [] }, h.organization);
+  assert.deepEqual(changed.map(row => row.documentId), ['stale-own']);
 });
 for (const role of ['wefrotas-consulta', 'wefrotas-aprovador', 'unknown']) test(`${role} cannot save snapshots`, async () => {
   const h = harness(role);
