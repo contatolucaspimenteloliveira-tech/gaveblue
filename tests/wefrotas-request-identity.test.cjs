@@ -48,6 +48,7 @@ test('Central uses one global field across record content and ignores legacy hid
   assert.match(html, /button id="central-pending-date-range-button"/);
   assert.match(html, /div id="central-pending-calendar"[^>]+role="dialog"/);
   assert.match(html, /select id="central-pending-status-inline"/);
+  assert.match(html, />Filtrar<\/button>/);
   assert.doesNotMatch(html, /data-sort-key="type"/);
   assert.doesNotMatch(html, /central-pending-date-start-inline/);
   assert.doesNotMatch(html, /data-filter-module="documentos"/);
@@ -57,7 +58,10 @@ test('Central uses one global field across record content and ignores legacy hid
   }
   assert.match(ui, /centralPendingStatusFilter = 'todos';[\s\S]*centralPendingDateStart = '';[\s\S]*centralPendingValueFilter = '';/);
   assert.match(ui, /centralPendingCalendarSelectingEnd[\s\S]*Agora escolha a data final/);
-  assert.match(ui, /months\.innerHTML = \[0\]\.map/);
+  assert.match(ui, /setCentralPendingCalendarView\('months'\)/);
+  assert.match(ui, /setCentralPendingCalendarView\('years'\)/);
+  assert.match(ui, /centralPendingDateStart = centralPendingDraftDateStart/);
+  assert.match(ui, /document\.body\.classList\.toggle\('central-calendar-open', open\)/);
   assert.match(ui, /\^\(\\d\{4\}\)-\(\\d\{2\}\)-\(\\d\{2\}\)\$/);
   assert.match(ui, /getCentralPendingDate\(record\)[\s\S]*getCentralPendingValue\(record\)[\s\S]*getCentralPendingStatus\(record\)\.label/);
   assert.match(ui, /centralPendingSearchFilter\.split\(\/\\s\+\/\)\.map\(normalizeSearchText\)\.filter\(Boolean\)/);

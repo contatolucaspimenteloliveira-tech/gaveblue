@@ -54,6 +54,9 @@
     let centralPendingDateEnd = '';
     let centralPendingCalendarMonth = null;
     let centralPendingCalendarSelectingEnd = false;
+    let centralPendingCalendarView = 'days';
+    let centralPendingDraftDateStart = '';
+    let centralPendingDraftDateEnd = '';
     let centralPendingSearchFilter = '';
     let centralPendingValueFilter = '';
     let centralPendingVehicleFilter = '';
@@ -9866,9 +9869,9 @@
       }
       const hint = document.getElementById('central-pending-calendar-hint');
       if (hint) {
-        hint.textContent = centralPendingCalendarSelectingEnd && centralPendingDateStart && !centralPendingDateEnd
+        hint.textContent = centralPendingCalendarSelectingEnd && centralPendingDraftDateStart && !centralPendingDraftDateEnd
           ? 'Agora escolha a data final.'
-          : (centralPendingDateStart && centralPendingDateEnd ? 'Período aplicado aos registros.' : 'Escolha a data inicial.');
+          : (centralPendingDraftDateStart && centralPendingDraftDateEnd ? 'Período pronto para filtrar.' : 'Escolha a data inicial.');
       }
     }
 
@@ -9879,14 +9882,22 @@
         const selected = parseCentralPendingCalendarDate(centralPendingDateStart) || new Date();
         centralPendingCalendarMonth = new Date(selected.getFullYear(), selected.getMonth(), 1);
       }
-      const startIso = centralPendingDateStart;
-      const endIso = centralPendingDateEnd;
+      const startIso = centralPendingDraftDateStart;
+      const endIso = centralPendingDraftDateEnd;
       const todayIso = centralPendingCalendarIso(new Date());
       const weekdays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-      months.innerHTML = [0].map((offset) => {
-        const monthDate = new Date(centralPendingCalendarMonth.getFullYear(), centralPendingCalendarMonth.getMonth() + offset, 1);
-        const year = monthDate.getFullYear();
-        const month = monthDate.getMonth();
+      const year = centralPendingCalendarMonth.getFullYear();
+      const month = centralPendingCalendarMonth.getMonth();
+      const monthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(centralPendingCalendarMonth);
+      const pickerHead = `<div class="central-pending-calendar-picker-head"><button type="button" onclick="event.stopPropagation(); setCentralPendingCalendarView('months')">${monthName}</button><button type="button" onclick="event.stopPropagation(); setCentralPendingCalendarView('years')">${year}</button></div>`;
+
+      if (centralPendingCalendarView === 'months') {
+        const monthNames = Array.from({ length: 12 }, (_, index) => new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(new Date(year, index, 1)).replace('.', ''));
+        months.innerHTML = `<section class="central-pending-calendar-month">${pickerHead}<div class="central-pending-calendar-options is-months">${monthNames.map((name, index) => `<button type="button" class="${index === month ? 'is-selected' : ''}" onclick="event.stopPropagation(); chooseCentralPendingCalendarMonth(${index})">${name}</button>`).join('')}</div></section>`;
+      } else if (centralPendingCalendarView === 'years') {
+        const firstYear = Math.floor(year / 12) * 12;
+        months.innerHTML = `<section class="central-pending-calendar-month">${pickerHead}<div class="central-pending-calendar-options is-years">${Array.from({ length: 12 }, (_, index) => firstYear + index).map(optionYear => `<button type="button" class="${optionYear === year ? 'is-selected' : ''}" onclick="event.stopPropagation(); chooseCentralPendingCalendarYear(${optionYear})">${optionYear}</button>`).join('')}</div></section>`;
+      } else {
         const firstWeekday = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const blanks = Array.from({ length: firstWeekday }, () => '<span class="central-pending-calendar-day is-placeholder"></span>').join('');
@@ -9900,9 +9911,8 @@
           if (startIso && endIso && iso > startIso && iso < endIso) classes.push('is-in-range');
           return `<button type="button" class="${classes.join(' ')}" data-date="${iso}" aria-label="${formatCentralPendingCalendarDate(iso)}" onclick="event.stopPropagation(); selectCentralPendingCalendarDate('${iso}')">${index + 1}</button>`;
         }).join('');
-        const title = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(monthDate);
-        return `<section class="central-pending-calendar-month"><h4>${title}</h4><div class="central-pending-calendar-weekdays">${weekdays.map(day => `<span>${day}</span>`).join('')}</div><div class="central-pending-calendar-days">${blanks}${days}</div></section>`;
-      }).join('');
+        months.innerHTML = `<section class="central-pending-calendar-month">${pickerHead}<div class="central-pending-calendar-weekdays">${weekdays.map(day => `<span>${day}</span>`).join('')}</div><div class="central-pending-calendar-days">${blanks}${days}</div></section>`;
+      }
       renderCentralPendingDateControls();
     }
 
@@ -9914,43 +9924,75 @@
       calendar.classList.toggle('is-open', open);
       calendar.setAttribute('aria-hidden', open ? 'false' : 'true');
       button.setAttribute('aria-expanded', open ? 'true' : 'false');
+      document.body.classList.toggle('central-calendar-open', open);
       if (open) {
-        centralPendingCalendarSelectingEnd = Boolean(centralPendingDateStart && !centralPendingDateEnd);
+        centralPendingDraftDateStart = centralPendingDateStart;
+        centralPendingDraftDateEnd = centralPendingDateEnd;
+        centralPendingCalendarSelectingEnd = Boolean(centralPendingDraftDateStart && !centralPendingDraftDateEnd);
+        centralPendingCalendarView = 'days';
+        const selected = parseCentralPendingCalendarDate(centralPendingDraftDateStart) || new Date();
+        centralPendingCalendarMonth = new Date(selected.getFullYear(), selected.getMonth(), 1);
         renderCentralPendingCalendar();
       }
     }
 
     function moveCentralPendingCalendar(offset) {
       if (!(centralPendingCalendarMonth instanceof Date)) centralPendingCalendarMonth = new Date();
-      centralPendingCalendarMonth = new Date(centralPendingCalendarMonth.getFullYear(), centralPendingCalendarMonth.getMonth() + Number(offset || 0), 1);
+      const step = centralPendingCalendarView === 'years' ? 12 : (centralPendingCalendarView === 'months' ? 1 : 0);
+      centralPendingCalendarMonth = step
+        ? new Date(centralPendingCalendarMonth.getFullYear() + (Number(offset || 0) * step), centralPendingCalendarMonth.getMonth(), 1)
+        : new Date(centralPendingCalendarMonth.getFullYear(), centralPendingCalendarMonth.getMonth() + Number(offset || 0), 1);
+      renderCentralPendingCalendar();
+    }
+
+    function setCentralPendingCalendarView(view) {
+      centralPendingCalendarView = ['days', 'months', 'years'].includes(view) ? view : 'days';
+      renderCentralPendingCalendar();
+    }
+
+    function chooseCentralPendingCalendarMonth(month) {
+      centralPendingCalendarMonth = new Date(centralPendingCalendarMonth.getFullYear(), Math.max(0, Math.min(11, Number(month))), 1);
+      centralPendingCalendarView = 'days';
+      renderCentralPendingCalendar();
+    }
+
+    function chooseCentralPendingCalendarYear(year) {
+      const normalizedYear = Math.max(1000, Math.min(9999, Number(year)));
+      centralPendingCalendarMonth = new Date(normalizedYear, centralPendingCalendarMonth.getMonth(), 1);
+      centralPendingCalendarView = 'months';
       renderCentralPendingCalendar();
     }
 
     function selectCentralPendingCalendarDate(value) {
       const iso = centralPendingCalendarIso(parseCentralPendingCalendarDate(value));
       if (!iso) return;
-      if (!centralPendingDateStart || centralPendingDateEnd || !centralPendingCalendarSelectingEnd) {
-        centralPendingDateStart = iso;
-        centralPendingDateEnd = '';
+      if (!centralPendingDraftDateStart || centralPendingDraftDateEnd || !centralPendingCalendarSelectingEnd) {
+        centralPendingDraftDateStart = iso;
+        centralPendingDraftDateEnd = '';
         centralPendingCalendarSelectingEnd = true;
-      } else if (iso < centralPendingDateStart) {
-        centralPendingDateStart = iso;
+      } else if (iso < centralPendingDraftDateStart) {
+        centralPendingDraftDateStart = iso;
       } else {
-        centralPendingDateEnd = iso;
+        centralPendingDraftDateEnd = iso;
         centralPendingCalendarSelectingEnd = false;
       }
-      saveCentralPendingFilters();
       renderCentralPendingCalendar();
-      renderCentralPendingRecords();
     }
 
     function clearCentralPendingDateRange() {
-      centralPendingDateStart = '';
-      centralPendingDateEnd = '';
+      centralPendingDraftDateStart = '';
+      centralPendingDraftDateEnd = '';
       centralPendingCalendarSelectingEnd = false;
-      saveCentralPendingFilters();
+      centralPendingCalendarView = 'days';
       renderCentralPendingCalendar();
+    }
+
+    function applyCentralPendingDateRange() {
+      centralPendingDateStart = centralPendingDraftDateStart;
+      centralPendingDateEnd = centralPendingDraftDateEnd || centralPendingDraftDateStart;
+      saveCentralPendingFilters();
       renderCentralPendingRecords();
+      toggleCentralPendingCalendar(false);
     }
 
     function setCentralPendingStatus(value) {
@@ -10410,8 +10452,12 @@
     window.toggleCentralPendingSort = toggleCentralPendingSort;
     window.toggleCentralPendingCalendar = toggleCentralPendingCalendar;
     window.moveCentralPendingCalendar = moveCentralPendingCalendar;
+    window.setCentralPendingCalendarView = setCentralPendingCalendarView;
+    window.chooseCentralPendingCalendarMonth = chooseCentralPendingCalendarMonth;
+    window.chooseCentralPendingCalendarYear = chooseCentralPendingCalendarYear;
     window.selectCentralPendingCalendarDate = selectCentralPendingCalendarDate;
     window.clearCentralPendingDateRange = clearCentralPendingDateRange;
+    window.applyCentralPendingDateRange = applyCentralPendingDateRange;
     window.setCentralPendingStatus = setCentralPendingStatus;
     window.prepareCentralPendingRecord = prepareCentralPendingRecord;
     window.approveCentralPendingRecord = approveCentralPendingRecord;
