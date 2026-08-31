@@ -138,6 +138,7 @@
     let customLogoScale = 60;
     let receiptViewerZoomLevel = 1;
     const ONLINE_IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+    const ONLINE_LAST_ACTIVITY_STORAGE_KEY = 'wefrotas_online_last_activity_v1';
     let onlineIdleTimer = null;
     let onlineIdleListenersRegistered = false;
     let onlineLoginInProgress = false;
@@ -2029,14 +2030,38 @@
       onlineIdleTimer = null;
     }
 
-    function scheduleOnlineIdleLogout() {
+    function readOnlineLastActivityAt() {
+      try {
+        const value = Number(localStorage.getItem(ONLINE_LAST_ACTIVITY_STORAGE_KEY));
+        return Number.isFinite(value) && value > 0 ? value : 0;
+      } catch (error) {
+        return 0;
+      }
+    }
+
+    function markOnlineActivity() {
+      const activityAt = Date.now();
+      try {
+        localStorage.setItem(ONLINE_LAST_ACTIVITY_STORAGE_KEY, String(activityAt));
+      } catch (error) {}
+      return activityAt;
+    }
+
+    function scheduleOnlineIdleLogout({ touch = true, delayMs = ONLINE_IDLE_TIMEOUT_MS } = {}) {
       stopOnlineIdleTimer();
       if (!window.WeFrotasBackend?.getUser() || document.body.classList.contains('auth-locked')) return;
-      onlineIdleTimer = window.setTimeout(expireOnlineSessionByInactivity, ONLINE_IDLE_TIMEOUT_MS);
+      if (touch) markOnlineActivity();
+      onlineIdleTimer = window.setTimeout(expireOnlineSessionByInactivity, Math.max(250, Number(delayMs) || ONLINE_IDLE_TIMEOUT_MS));
     }
 
     async function expireOnlineSessionByInactivity() {
       if (onlineLogoutInProgress || !window.WeFrotasBackend?.getUser()) return;
+      const lastActivityAt = readOnlineLastActivityAt();
+      const inactiveForMs = lastActivityAt > 0 ? Date.now() - lastActivityAt : ONLINE_IDLE_TIMEOUT_MS;
+      if (inactiveForMs < ONLINE_IDLE_TIMEOUT_MS) {
+        scheduleOnlineIdleLogout({ touch: false, delayMs: ONLINE_IDLE_TIMEOUT_MS - inactiveForMs });
+        return;
+      }
       onlineLogoutInProgress = true;
       stopOnlineIdleTimer();
       toggleOnlinePlatformLoading(true, 'Encerrando sessão por inatividade...');
