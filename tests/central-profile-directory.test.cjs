@@ -5,6 +5,22 @@ const vm = require('node:vm');
 const path = require('node:path');
 const source = fs.readFileSync(path.join(__dirname, '../postoscredenciados-covreecia/app.js'), 'utf8');
 
+test('neutral company never inherits Covre logo, while Covre and custom brands are preserved', () => {
+  const images = { 'central-brand-logo': { src: 'covre.png' }, 'central-about-logo': { src: 'covre.png' } };
+  const ctx = { CENTRAL_DEFAULT_ORGANIZATION_SLUG: 'covre-e-cia', document: {
+    getElementById: id => images[id] || null, querySelector: () => null
+  } };
+  vm.createContext(ctx);
+  vm.runInContext(source.slice(source.indexOf('function applyCentralOrganizationBranding('), source.indexOf('async function loadCentralOrganizationContext(')), ctx);
+  ctx.applyCentralOrganizationBranding({ workspaceId: 'covre-e-cia', name: 'Covre' });
+  assert.equal(images['central-brand-logo'].src, 'covre.png');
+  ctx.applyCentralOrganizationBranding({ workspaceId: 'gave-blue-technologies', name: 'Gave' });
+  assert.equal(images['central-brand-logo'].src, 'https://i.imgur.com/Zih5jH8.png');
+  assert.equal(images['central-about-logo'].src, 'https://i.imgur.com/Zih5jH8.png');
+  ctx.applyCentralOrganizationBranding({ workspaceId: 'other', branding: { logoUrl: 'custom.png' } });
+  assert.equal(images['central-brand-logo'].src, 'custom.png');
+});
+
 test('confirmed directory hides removed vehicle without erasing driver or onboarding', () => {
   const profile = { driverId: 'd1', name: 'Driver', vehicleId: 'v1', vehicle: 'Old car', plate: 'TEST001', vehicleImageUrl: 'old.jpg' };
   const ctx = { getDriverProfile: () => profile, centralDriverDirectoryVerified: false, centralDriverDirectory: [] };

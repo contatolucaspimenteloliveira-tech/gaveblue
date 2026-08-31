@@ -3564,7 +3564,9 @@ function applyCentralOrganizationBranding(organization = {}) {
   const name = String(organization.name || 'Central de Registros').trim();
   const branding = organization.branding || {};
   const institutional = organization.institutional || {};
-  const logoUrl = String(branding.logoUrl || '').trim();
+  const defaultLogo = organization.workspaceId === CENTRAL_DEFAULT_ORGANIZATION_SLUG
+    ? '' : 'https://i.imgur.com/Zih5jH8.png';
+  const logoUrl = String(branding.logoUrl || defaultLogo).trim();
   const primaryColor = String(branding.primaryColor || '');
   const secondaryColor = String(branding.secondaryColor || '');
   if (/^#[0-9a-f]{6}$/i.test(primaryColor)) {
