@@ -119,6 +119,7 @@ let pendingReceiptCameraFile = null;
 let pendingReceiptCameraPreviewUrl = '';
 let centralDriverDirectory = [];
 let centralDriverDirectoryLoadedAt = 0;
+let centralDriverDirectoryVerified = false;
 let selectedDirectoryDriver = null;
 let selectedDirectoryVehicles = [];
 let selectedDirectoryVehicleIndex = 0;
@@ -1724,8 +1725,22 @@ function renderHomeVehicleImage(imageUrl) {
   image.src = url;
 }
 
-function renderHomeDriverArea() {
+function getDriverProfileForDisplay() {
   const profile = getDriverProfile();
+  // A failed/offline lookup must never erase a completed device profile.
+  if (!profile || !centralDriverDirectoryVerified) return profile;
+  const row = centralDriverDirectory.find(item =>
+    String(item.driverId || '') === profile.driverId &&
+    String(item.vehicleId || '') === profile.vehicleId && item.active !== false);
+  if (!row || !row.vehicleId) {
+    return { ...profile, vehicle: 'Veículo não vinculado', plate: '', vehicleImageUrl: '' };
+  }
+  return { ...profile, name: row.driverName || profile.name, vehicle: row.vehicleName,
+    plate: row.plate, vehicleImageUrl: row.vehicleImageUrl || '' };
+}
+
+function renderHomeDriverArea() {
+  const profile = getDriverProfileForDisplay();
   const lastSent = centralSubmissionHistoryLoaded ? centralSubmissionHistory[0] || null : getCentralLastSentRecord();
   const name = document.getElementById('home-driver-name');
   const greeting = document.getElementById('home-greeting-prefix');
@@ -1740,8 +1755,8 @@ function renderHomeDriverArea() {
     if (summary) summary.textContent = `${profile.vehicle} \u2022 ${profile.plate}`;
     if (vehicleName) vehicleName.textContent = profile.vehicle;
     if (vehiclePlate) {
-      vehiclePlate.textContent = profile.plate;
-      vehiclePlate.classList.remove('is-empty');
+      vehiclePlate.textContent = profile.plate || 'SEM PLACA';
+      vehiclePlate.classList.toggle('is-empty', !profile.plate);
     }
     renderHomeVehicleImage(profile.vehicleImageUrl);
     setupButton?.classList.add('hidden');
@@ -1806,18 +1821,18 @@ function renderProfilePageVehicleImage(imageUrl) {
 }
 
 function renderProfilePage() {
-  const profile = getDriverProfile();
+  const profile = getDriverProfileForDisplay();
   const driverName = document.getElementById('profile-page-driver-name');
   const driverDetail = document.getElementById('profile-page-driver-detail');
   const vehicleName = document.getElementById('profile-page-vehicle-name');
   const vehiclePlate = document.getElementById('profile-page-vehicle-plate');
   if (profile) {
     if (driverName) driverName.textContent = profile.name;
-    if (driverDetail) driverDetail.textContent = `Perfil vinculado a este aparelho • ${profile.plate}`;
+    if (driverDetail) driverDetail.textContent = profile.plate ? `Perfil vinculado a este aparelho • ${profile.plate}` : 'Perfil preservado. Selecione um veículo autorizado.';
     if (vehicleName) vehicleName.textContent = profile.vehicle;
     if (vehiclePlate) {
-      vehiclePlate.textContent = profile.plate;
-      vehiclePlate.classList.remove('is-empty');
+      vehiclePlate.textContent = profile.plate || 'SEM PLACA';
+      vehiclePlate.classList.toggle('is-empty', !profile.plate);
     }
     renderProfilePageVehicleImage(profile.vehicleImageUrl);
   } else {
@@ -1894,10 +1909,9 @@ async function ensureDriverDirectoryLoaded({ force = false } = {}) {
       { attempts: 1, timeoutMs: 4500 }
     )
       .then((result) => {
-        centralDriverDirectory = Array.isArray(result?.directory) ? result.directory : [];
-        if (!centralDriverDirectory.length) {
-          throw new Error('O diretório ainda está vazio. Abra o WeFrotas e sincronize os dados para publicar os vínculos ativos.');
-        }
+        if (!Array.isArray(result?.directory)) throw new Error('Não foi possível validar o diretório de motoristas.');
+        centralDriverDirectory = result.directory;
+        centralDriverDirectoryVerified = true;
         try {
           centralDriverDirectoryLoadedAt = Date.now();
           localStorage.setItem(centralTenantStorageKey(CENTRAL_DRIVER_DIRECTORY_CACHE_KEY), JSON.stringify({
@@ -1907,6 +1921,7 @@ async function ensureDriverDirectoryLoaded({ force = false } = {}) {
         } catch (error) {
           console.warn('Não foi possível guardar o diretório validado neste aparelho.', error);
         }
+        renderHomeDriverArea();
         return centralDriverDirectory;
       })
       .catch((error) => {
