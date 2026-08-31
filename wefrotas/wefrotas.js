@@ -9865,11 +9865,16 @@
       renderCentralPendingSummary(rows);
       updateCentralPendingSortIndicators();
 
-      if (centralPendingLoading) {
+      // Uma atualização silenciosa/realtime nunca deve apagar a tabela que já
+      // está na tela. O estado de carregamento vazio é reservado somente para
+      // a primeira consulta; nas seguintes, a barra superior sinaliza o sync.
+      if (centralPendingLoading && !centralPendingLoaded) {
         list.innerHTML = '<tr><td colspan="8" class="central-pending-empty">Buscando registros enviados pela Central...</td></tr>';
         return;
       }
-      if (centralPendingError) {
+      // Oscilações de rede também não substituem dados já confirmados. Se ainda
+      // não existe cópia carregada, exibimos o erro no corpo da tabela.
+      if (centralPendingError && (!centralPendingLoaded || !centralPendingRecords.length)) {
         list.innerHTML = `<tr><td colspan="8" class="central-pending-empty central-pending-error">${escapeHtml(centralPendingError)}</td></tr>`;
         return;
       }

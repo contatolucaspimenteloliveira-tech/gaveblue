@@ -6,6 +6,41 @@ const vm = require('node:vm');
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'appwrite/functions/central-push/src/main.js'), 'utf8');
 
+test('silent Central refresh preserves rendered rows while syncing or briefly offline', () => {
+  const ui = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.js'), 'utf8');
+  const list = { innerHTML: '' };
+  const context = {
+    document: { getElementById: id => id === 'central-pending-list' ? list : null },
+    getCentralPendingSortedRows: () => [{ $id: 'record-1', motorista: 'Motorista', comprovanteUrl: '' }],
+    getCentralPendingRecordId: record => record.$id,
+    selectedCentralPending: new Set(),
+    renderCentralPendingSummary() {}, updateCentralPendingSortIndicators() {},
+    getCentralPendingStatus: () => ({ className: 'pending', label: 'Pendente' }),
+    getCentralPendingDate: () => '31/08/2026', getCentralPendingRecordType: () => 'Abastecimento',
+    getCentralPendingSupplier: () => 'Posto', getCentralPendingValue: () => 'R$ 10,00',
+    escapeHtml: value => String(value),
+    centralPendingRecords: [{ $id: 'record-1' }], centralPendingLoading: true,
+    centralPendingLoaded: true, centralPendingError: ''
+  };
+  vm.createContext(context);
+  vm.runInContext(ui.slice(ui.indexOf('    function renderCentralPendingRecords('), ui.indexOf('    async function refreshCentralPendingRecords(')), context);
+
+  context.renderCentralPendingRecords();
+  assert.match(list.innerHTML, /Motorista/);
+  assert.doesNotMatch(list.innerHTML, /Buscando registros/);
+
+  context.centralPendingLoading = false;
+  context.centralPendingError = 'Falha temporária';
+  context.renderCentralPendingRecords();
+  assert.match(list.innerHTML, /Motorista/);
+  assert.doesNotMatch(list.innerHTML, /Falha temporária/);
+
+  context.centralPendingLoaded = false;
+  context.centralPendingLoading = true;
+  context.renderCentralPendingRecords();
+  assert.match(list.innerHTML, /Buscando registros/);
+});
+
 test('deletion success waits for server confirmation and failures remain pending', async () => {
   const ui = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.js'), 'utf8');
   for (const fail of [false, true]) {
