@@ -57,6 +57,7 @@ test('Central uses one global field across record content and ignores legacy hid
   }
   assert.match(ui, /centralPendingStatusFilter = 'todos';[\s\S]*centralPendingDateStart = '';[\s\S]*centralPendingValueFilter = '';/);
   assert.match(ui, /centralPendingCalendarSelectingEnd[\s\S]*Agora escolha a data final/);
+  assert.match(ui, /months\.innerHTML = \[0\]\.map/);
   assert.match(ui, /\^\(\\d\{4\}\)-\(\\d\{2\}\)-\(\\d\{2\}\)\$/);
   assert.match(ui, /getCentralPendingDate\(record\)[\s\S]*getCentralPendingValue\(record\)[\s\S]*getCentralPendingStatus\(record\)\.label/);
   assert.match(ui, /centralPendingSearchFilter\.split\(\/\\s\+\/\)\.map\(normalizeSearchText\)\.filter\(Boolean\)/);

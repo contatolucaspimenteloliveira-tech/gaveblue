@@ -9883,7 +9883,7 @@
       const endIso = centralPendingDateEnd;
       const todayIso = centralPendingCalendarIso(new Date());
       const weekdays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-      months.innerHTML = [0, 1].map((offset) => {
+      months.innerHTML = [0].map((offset) => {
         const monthDate = new Date(centralPendingCalendarMonth.getFullYear(), centralPendingCalendarMonth.getMonth() + offset, 1);
         const year = monthDate.getFullYear();
         const month = monthDate.getMonth();
