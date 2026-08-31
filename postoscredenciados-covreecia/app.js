@@ -3580,6 +3580,9 @@ function applyCentralOrganizationBranding(organization = {}) {
     const image = document.getElementById(id);
     if (!image) return;
     if (logoUrl) image.src = logoUrl;
+    image.style.filter = defaultLogo && logoUrl === defaultLogo
+      ? 'brightness(0) saturate(100%) invert(32%) sepia(94%) saturate(2038%) hue-rotate(211deg) brightness(97%) contrast(101%)'
+      : '';
     image.alt = `Logo ${name}`;
   });
   const legalName = document.getElementById('central-about-legal-name');
