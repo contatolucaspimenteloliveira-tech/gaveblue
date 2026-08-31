@@ -9898,7 +9898,7 @@
           if (iso === startIso) classes.push('is-start');
           if (iso === endIso) classes.push('is-end');
           if (startIso && endIso && iso > startIso && iso < endIso) classes.push('is-in-range');
-          return `<button type="button" class="${classes.join(' ')}" data-date="${iso}" aria-label="${formatCentralPendingCalendarDate(iso)}" onclick="selectCentralPendingCalendarDate('${iso}')">${index + 1}</button>`;
+          return `<button type="button" class="${classes.join(' ')}" data-date="${iso}" aria-label="${formatCentralPendingCalendarDate(iso)}" onclick="event.stopPropagation(); selectCentralPendingCalendarDate('${iso}')">${index + 1}</button>`;
         }).join('');
         const title = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(monthDate);
         return `<section class="central-pending-calendar-month"><h4>${title}</h4><div class="central-pending-calendar-weekdays">${weekdays.map(day => `<span>${day}</span>`).join('')}</div><div class="central-pending-calendar-days">${blanks}${days}</div></section>`;

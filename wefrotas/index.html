@@ -1045,14 +1045,14 @@
                 </button>
                 <div id="central-pending-calendar" class="central-pending-calendar" role="dialog" aria-label="Selecionar período dos registros" aria-hidden="true">
                   <div class="central-pending-calendar-head">
-                    <button type="button" aria-label="Mês anterior" onclick="moveCentralPendingCalendar(-1)">‹</button>
+                    <button type="button" aria-label="Mês anterior" onclick="event.stopPropagation(); moveCentralPendingCalendar(-1)">‹</button>
                     <strong id="central-pending-calendar-title">Selecionar período</strong>
-                    <button type="button" aria-label="Próximo mês" onclick="moveCentralPendingCalendar(1)">›</button>
+                    <button type="button" aria-label="Próximo mês" onclick="event.stopPropagation(); moveCentralPendingCalendar(1)">›</button>
                   </div>
                   <div id="central-pending-calendar-months" class="central-pending-calendar-months"></div>
                   <div class="central-pending-calendar-footer">
                     <span id="central-pending-calendar-hint">Escolha a data inicial.</span>
-                    <button type="button" onclick="clearCentralPendingDateRange()">Limpar</button>
+                    <button type="button" onclick="event.stopPropagation(); clearCentralPendingDateRange()">Limpar</button>
                   </div>
                 </div>
               </div>
