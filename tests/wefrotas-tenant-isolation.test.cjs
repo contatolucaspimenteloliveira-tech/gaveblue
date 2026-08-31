@@ -169,7 +169,7 @@ test('without an authorized tenant no upload is allowed, even with legacy admin 
   assert.equal(h.writes.length, 0);
 });
 
-test('browser-side ACLs grant only the authenticated organization role', async () => {
+test('vehicle, banner and city uploads grant only the authenticated organization role', async () => {
   const h = await harness();
   h.backend.setOrganizationContext({
     ...tenant('gave-test'),
@@ -178,13 +178,20 @@ test('browser-side ACLs grant only the authenticated organization role', async (
   });
   await h.seed('gave-test', { vehicles: [] });
   await h.backend.adoptRemoteOrUploadLocal();
-  await h.backend.uploadVehicleImage({ type: 'image/png', size: 128 });
-  assert.deepEqual(h.storageWrites[0].permissions, [
+  const image = { type: 'image/png', size: 128 };
+  await h.backend.uploadVehicleImage(image);
+  await h.backend.uploadCentralBanner(image);
+  await h.backend.uploadCentralCityImage(image);
+  const expected = [
     'read:any',
     'update:orggave-testadm',
     'delete:orggave-testadm'
-  ]);
-  assert.ok(h.storageWrites[0].permissions.every(permission => !permission.includes('orggave-testmgr')));
+  ];
+  assert.equal(h.storageWrites.length, 3);
+  h.storageWrites.forEach((write) => {
+    assert.deepEqual(write.permissions, expected);
+    assert.ok(write.permissions.every(permission => !permission.includes('orggave-testmgr')));
+  });
 });
 
 test('a delayed response cannot be applied to a different company', async () => {
