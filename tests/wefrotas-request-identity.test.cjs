@@ -44,7 +44,10 @@ test('silent Central refresh preserves rendered rows while syncing or briefly of
 test('Central uses one global field across record content and ignores legacy hidden filters', () => {
   const ui = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.js'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'wefrotas/index.html'), 'utf8');
-  assert.match(html, /<label>Pesquisa global<\/label><input id="central-pending-search-filter"/);
+  assert.match(html, /input id="global-search-input"/);
+  assert.match(html, /input id="central-pending-date-start-inline" type="date"/);
+  assert.doesNotMatch(html, /data-filter-module="documentos"/);
+  assert.doesNotMatch(html, /central-pending-filter-controls/);
   for (const legacyId of ['central-pending-status-filter', 'central-pending-date-start', 'central-pending-value-filter', 'central-pending-vehicle-filter', 'central-pending-supplier-filter', 'central-pending-order-filter', 'central-pending-nf-filter', 'central-pending-due-start']) {
     assert.doesNotMatch(html, new RegExp(`id="${legacyId}"`));
   }
@@ -52,6 +55,9 @@ test('Central uses one global field across record content and ignores legacy hid
   assert.match(ui, /getCentralPendingDate\(record\)[\s\S]*getCentralPendingValue\(record\)[\s\S]*getCentralPendingStatus\(record\)\.label/);
   assert.match(ui, /centralPendingSearchFilter\.split\(\/\\s\+\/\)\.map\(normalizeSearchText\)\.filter\(Boolean\)/);
   assert.match(ui, /terms\.every\(term => haystack\.includes\(term\)\)/);
+  assert.match(ui, /activeModule === 'central' && activeCentralSection === 'registros'/);
+  assert.match(ui, /centralPendingSearchFilter = normalizeComparableText\(value\);[\s\S]*renderCentralPendingRecords\(\)/);
+  assert.match(ui, /Pesquisar nos registros da Central\.\.\./);
   const context = {};
   vm.createContext(context);
   vm.runInContext(ui.slice(ui.indexOf('    function normalizeComparableText('), ui.indexOf('    function parseBrazilianDateToIso(')), context);

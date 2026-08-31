@@ -3453,10 +3453,6 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
     .module-filters-modal .orders-filter-actions { display:none !important; }
     .module-filter-apply-row { grid-column:1/-1; display:flex; justify-content:flex-end; padding-top:4px; }
     .module-filter-apply-row button { height:38px; padding:0 20px; border:0; border-radius:11px; background:#6657e8; color:#fff; font-weight:800; cursor:pointer; }
-    .module-filters-modal.is-open .central-global-search-grid {
-      width: min(680px, calc(100vw - 40px));
-      grid-template-columns: 1fr !important;
-    }
     body.module-filters-open { overflow:hidden; }
     @media (max-width:720px) { .module-filters-modal.is-open .orders-filter-grid { grid-template-columns:1fr !important; } }
     .mini-badge--status-pendente,
@@ -4651,10 +4647,37 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
 
 .central-pending-filter input { padding-right: 8px; }
 
-.central-pending-filter-controls {
-  flex: 0 0 auto;
-  order: 0;
-  margin: 0;
+.central-pending-start-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 8px 0 11px;
+  border: 1px solid #e3ebf7;
+  border-radius: 999px;
+  background: #fff;
+}
+.central-pending-start-date span {
+  font-size: 9px;
+}
+.central-pending-start-date input {
+  width: 118px;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #475569;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+body.dark-mode .central-pending-start-date {
+  border-color: #334155;
+  background: #111c30;
+}
+body.dark-mode .central-pending-start-date input {
+  color: #dbeafe;
+  color-scheme: dark;
 }
 
 .central-pending-bulk-actions { display: inline-flex; gap: 6px; }
@@ -6791,9 +6814,9 @@ svg.h-8 { height: 2rem; }
     grid-column: 1 / -1;
   }
 
-  .central-pending-filter-controls {
+  .central-pending-start-date {
     grid-column: 1 / -1;
-    justify-content: flex-start;
+    justify-self: start;
   }
 
   .central-pending-bulk-actions {

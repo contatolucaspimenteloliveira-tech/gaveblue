@@ -4798,6 +4798,7 @@
       });
       if (button) button.focus({ preventScroll: true });
       if (activeModule === 'central') updateModuleHeader('central');
+      if (activeModule === 'central') updateContextualSearchUi();
       if (activeCentralSection === 'registros') {
         refreshCentralPendingRecords({ silent: true });
         renderDocuments();
@@ -5086,11 +5087,22 @@
       fornecedores: 'supplier-filter-search'
     };
 
+    function isCentralRecordsSearchContext() {
+      return activeModule === 'central' && activeCentralSection === 'registros';
+    }
+
     function isContextualSearchModule() {
-      return Boolean(contextualModuleSearchFields[activeModule]);
+      return isCentralRecordsSearchContext() || Boolean(contextualModuleSearchFields[activeModule]);
     }
 
     function syncContextualModuleSearch(value) {
+      if (isCentralRecordsSearchContext()) {
+        centralPendingSearchFilter = normalizeComparableText(value);
+        saveCentralPendingFilters();
+        renderCentralPendingRecords();
+        hideGlobalSearchResults();
+        return true;
+      }
       const targetId = contextualModuleSearchFields[activeModule];
       if (!targetId) return false;
       const target = document.getElementById(targetId);
@@ -5104,10 +5116,13 @@
     function updateContextualSearchUi() {
       const targetId = contextualModuleSearchFields[activeModule];
       const target = targetId ? document.getElementById(targetId) : null;
-      const placeholder = target ? `Pesquisar em ${document.getElementById('module-header-title')?.textContent || 'este módulo'}...` : 'Pesquisar módulo, atalho ou recurso...';
+      const centralRecordsContext = isCentralRecordsSearchContext();
+      const placeholder = centralRecordsContext
+        ? 'Pesquisar nos registros da Central...'
+        : (target ? `Pesquisar em ${document.getElementById('module-header-title')?.textContent || 'este módulo'}...` : 'Pesquisar módulo, atalho ou recurso...');
       [globalSearchInputEl, mobileGlobalSearchInputEl].forEach((input) => {
         if (!input) return;
-        input.value = target?.value || '';
+        input.value = centralRecordsContext ? centralPendingSearchFilter : (target?.value || '');
         input.placeholder = placeholder;
         input.setAttribute('aria-label', placeholder);
       });
@@ -9740,7 +9755,7 @@
       try {
         const saved = JSON.parse(localStorage.getItem(CENTRAL_PENDING_FILTERS_KEY) || '{}');
         centralPendingStatusFilter = 'todos';
-        centralPendingDateStart = '';
+        centralPendingDateStart = saved.start || '';
         centralPendingDateEnd = '';
         centralPendingSearchFilter = normalizeComparableText(saved.search || '');
         centralPendingValueFilter = '';
@@ -9755,17 +9770,7 @@
         }
       } catch (error) {}
       const values = {
-        'central-pending-status-filter': centralPendingStatusFilter,
-        'central-pending-date-start': centralPendingDateStart,
-        'central-pending-date-end': centralPendingDateEnd,
-        'central-pending-search-filter': centralPendingSearchFilter,
-        'central-pending-value-filter': centralPendingValueFilter,
-        'central-pending-vehicle-filter': centralPendingVehicleFilter,
-        'central-pending-supplier-filter': centralPendingSupplierFilter,
-        'central-pending-order-filter': centralPendingOrderFilter,
-        'central-pending-nf-filter': centralPendingNfFilter,
-        'central-pending-due-start': centralPendingDueStart,
-        'central-pending-due-end': centralPendingDueEnd
+        'central-pending-date-start-inline': centralPendingDateStart
       };
       Object.entries(values).forEach(([id, value]) => {
         const node = document.getElementById(id);
@@ -9795,9 +9800,8 @@
 
     function applyCentralPendingFilters() {
       centralPendingStatusFilter = 'todos';
-      centralPendingDateStart = '';
       centralPendingDateEnd = '';
-      centralPendingSearchFilter = normalizeComparableText(document.getElementById('central-pending-search-filter')?.value || '');
+      centralPendingSearchFilter = normalizeComparableText(globalSearchInputEl?.value || '');
       centralPendingValueFilter = '';
       centralPendingVehicleFilter = '';
       centralPendingSupplierFilter = '';
@@ -9825,6 +9829,13 @@
       centralPendingFiltersLoaded = false;
       try { localStorage.removeItem(CENTRAL_PENDING_FILTERS_KEY); } catch (error) {}
       loadCentralPendingFilters();
+      updateContextualSearchUi();
+      renderCentralPendingRecords();
+    }
+
+    function setCentralPendingStartDate(value) {
+      centralPendingDateStart = String(value || '').slice(0, 10);
+      saveCentralPendingFilters();
       renderCentralPendingRecords();
     }
 
@@ -10277,13 +10288,7 @@
 
     window.refreshCentralPendingRecords = refreshCentralPendingRecords;
     window.toggleCentralPendingSort = toggleCentralPendingSort;
-    window.setCentralPendingStatusFilter = (value) => { centralPendingStatusFilter = value || 'pendente'; saveCentralPendingFilters(); renderCentralPendingRecords(); };
-    window.setCentralPendingDateFilter = () => {
-      centralPendingDateStart = document.getElementById('central-pending-date-start')?.value || '';
-      centralPendingDateEnd = document.getElementById('central-pending-date-end')?.value || '';
-      saveCentralPendingFilters();
-      renderCentralPendingRecords();
-    };
+    window.setCentralPendingStartDate = setCentralPendingStartDate;
     window.prepareCentralPendingRecord = prepareCentralPendingRecord;
     window.approveCentralPendingRecord = approveCentralPendingRecord;
     window.rejectCentralPendingRecord = rejectCentralPendingRecord;

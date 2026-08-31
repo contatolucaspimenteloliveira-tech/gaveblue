@@ -1028,14 +1028,10 @@
                 <span>Serviços</span>
                 <strong id="central-pending-service-count">0</strong>
               </div>
-              <div class="module-filter-controls central-pending-filter-controls" data-module="documentos">
-                <button class="module-filter-icon" type="button" title="Filtros" aria-label="Filtros" onclick="openModuleFilters('documentos')">
-                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5"/></svg>
-                </button>
-                <button class="filter-action-btn" type="button" title="Limpar filtros" aria-label="Limpar filtros" onclick="clearModuleFilters('documentos')">
-                  ⌫
-                </button>
-              </div>
+              <label class="central-pending-start-date" title="Mostrar registros a partir desta data">
+                <span>Desde</span>
+                <input id="central-pending-date-start-inline" type="date" aria-label="Data inicial dos registros" onchange="setCentralPendingStartDate(this.value)">
+              </label>
               <span id="central-pending-loading-indicator" class="central-pending-loading-indicator hidden" role="status">
                 <span aria-hidden="true"></span> Recebendo registros da Central
               </span>
@@ -1049,14 +1045,6 @@
                 <button type="button" title="Auditar" aria-label="Auditar" onclick="auditSelectedCentralPendingRecords()">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7l7-4zM9 12l2 2 4-4"/></svg>
                 </button>
-              </div>
-            </div>
-
-            <div class="orders-filter-shell module-filters-modal" data-filter-module="documentos">
-              <div class="orders-filter-grid central-global-search-grid">
-                <button class="module-filter-close" type="button" title="Fechar" aria-label="Fechar pesquisa" onclick="closeModuleFilters('documentos')"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6 6 18"/></svg></button>
-                <div class="orders-filter-field"><label>Pesquisa global</label><input id="central-pending-search-filter" class="soft-input w-full" placeholder="Pesquise qualquer informação do registro" autocomplete="off" aria-label="Pesquisa global da Central de Registros"></div>
-                <div class="module-filter-apply-row"><button type="button" onclick="applyModuleFilters('documentos')">Aplicar</button></div>
               </div>
             </div>
 
@@ -1761,7 +1749,7 @@
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260831-session-company-1"></script>
-  <script src="./wefrotas.js?v=20260831-central-global-search-2"></script>
+  <script src="./wefrotas.js?v=20260831-central-header-search-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
