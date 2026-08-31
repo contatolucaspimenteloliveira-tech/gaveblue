@@ -50,7 +50,15 @@ test('Central uses one global field across record content and ignores legacy hid
   }
   assert.match(ui, /centralPendingStatusFilter = 'todos';[\s\S]*centralPendingDateStart = '';[\s\S]*centralPendingValueFilter = '';/);
   assert.match(ui, /getCentralPendingDate\(record\)[\s\S]*getCentralPendingValue\(record\)[\s\S]*getCentralPendingStatus\(record\)\.label/);
+  assert.match(ui, /centralPendingSearchFilter\.split\(\/\\s\+\/\)\.map\(normalizeSearchText\)\.filter\(Boolean\)/);
   assert.match(ui, /terms\.every\(term => haystack\.includes\(term\)\)/);
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext(ui.slice(ui.indexOf('    function normalizeComparableText('), ui.indexOf('    function parseBrazilianDateToIso(')), context);
+  const query = context.normalizeComparableText('JOÃO REJEITADO');
+  const terms = query.split(/\s+/).map(context.normalizeSearchText).filter(Boolean);
+  const haystack = context.normalizeSearchText('26/08/2026 JOAO DOS SANTOS SILVA Rejeitado');
+  assert.equal(terms.every(term => haystack.includes(term)), true);
 });
 
 test('deletion success waits for server confirmation and failures remain pending', async () => {

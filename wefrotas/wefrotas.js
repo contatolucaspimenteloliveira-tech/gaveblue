@@ -9666,7 +9666,7 @@
             record?.observacoes,
             record?.mensagemWhatsapp
           ].join(' '));
-          const terms = centralPendingSearchFilter.split(/\s+/).filter(Boolean);
+          const terms = centralPendingSearchFilter.split(/\s+/).map(normalizeSearchText).filter(Boolean);
           return terms.every(term => haystack.includes(term));
         })
         .filter(record => {
@@ -9742,7 +9742,7 @@
         centralPendingStatusFilter = 'todos';
         centralPendingDateStart = '';
         centralPendingDateEnd = '';
-        centralPendingSearchFilter = normalizeSearchText(saved.search || '');
+        centralPendingSearchFilter = normalizeComparableText(saved.search || '');
         centralPendingValueFilter = '';
         centralPendingVehicleFilter = '';
         centralPendingSupplierFilter = '';
@@ -9797,7 +9797,7 @@
       centralPendingStatusFilter = 'todos';
       centralPendingDateStart = '';
       centralPendingDateEnd = '';
-      centralPendingSearchFilter = normalizeSearchText(document.getElementById('central-pending-search-filter')?.value || '');
+      centralPendingSearchFilter = normalizeComparableText(document.getElementById('central-pending-search-filter')?.value || '');
       centralPendingValueFilter = '';
       centralPendingVehicleFilter = '';
       centralPendingSupplierFilter = '';
