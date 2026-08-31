@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { Account, Client, Databases, ID, Permission, Query, Role, Users } from 'node-appwrite';
+import { Account, Client, Databases, ID, Permission, Query, Role, Storage, Users } from 'node-appwrite';
 import webpush from 'web-push';
 
 const DATABASE_ID = process.env.DATABASE_ID || '6a68ce8c000a36a44d98';
@@ -8,6 +8,7 @@ const COLLECTION_ID = process.env.COLLECTION_ID || 'central_push_subscriptions';
 const CENTRAL_RECORDS_COLLECTION_ID = process.env.CENTRAL_RECORDS_COLLECTION_ID || 'central_registros_pendentes';
 const DRIVER_DIRECTORY_COLLECTION_ID = process.env.DRIVER_DIRECTORY_COLLECTION_ID || 'central_driver_directory';
 const CENTRAL_BANNERS_COLLECTION_ID = process.env.CENTRAL_BANNERS_COLLECTION_ID || 'central_home_banners';
+const WEFROTAS_BUCKET_ID = process.env.WEFROTAS_BUCKET_ID || '6a6fce300023ca843972';
 const APPROVAL_LOCKS_COLLECTION_ID = process.env.APPROVAL_LOCKS_COLLECTION_ID || 'central_approval_locks';
 const WEFROTAS_TABLE_ID = process.env.WEFROTAS_TABLE_ID || 'gaveblue_wefrotas';
 const WEFROTAS_COMPANY_ID = process.env.WEFROTAS_COMPANY_ID || 'covre-e-cia';
@@ -78,6 +79,36 @@ function assertCentralRecordId(value) {
     throw error;
   }
   return recordId;
+}
+
+async function deleteTenantCentralBanner(req, payload = {}) {
+  const access = await assertOperationalManager(req);
+  const rowId = assertCentralRecordId(payload.rowId);
+  const databases = createDatabaseClient(req);
+  const banner = await databases.getDocument({
+    databaseId: DATABASE_ID,
+    collectionId: CENTRAL_BANNERS_COLLECTION_ID,
+    documentId: rowId
+  });
+  if (String(banner?.workspaceId || '') !== String(access.organization.workspaceId || '')) {
+    throw Object.assign(new Error('Este banner pertence a outra empresa.'), { status: 403 });
+  }
+  await databases.deleteDocument({
+    databaseId: DATABASE_ID,
+    collectionId: CENTRAL_BANNERS_COLLECTION_ID,
+    documentId: rowId
+  });
+  const fileId = String(banner?.fileId || '').trim();
+  let fileDeleted = false;
+  if (fileId && !fileId.startsWith('builtin:')) {
+    try {
+      await new Storage(createServerClient(req)).deleteFile({ bucketId: WEFROTAS_BUCKET_ID, fileId });
+      fileDeleted = true;
+    } catch (error) {
+      if (Number(error?.code || 0) !== 404) console.warn('Banner excluído, mas o arquivo não pôde ser removido:', error?.message || error);
+    }
+  }
+  return { rowId, fileId, fileDeleted, workspaceId: access.organization.workspaceId };
 }
 
 async function createCentralRecord(databases, payload, organization) {
@@ -1933,6 +1964,11 @@ export default async ({ req, res, log, error }) => {
           readOnly: access.role === 'wefrotas-consulta'
         }
       });
+    }
+
+    if (action === 'central-banner-delete') {
+      const result = await deleteTenantCentralBanner(req, payload);
+      return json(res, 200, { ok: true, ...result });
     }
 
     if (action === 'wefrotas-users-list') {

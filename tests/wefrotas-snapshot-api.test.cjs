@@ -85,3 +85,28 @@ test('empty new-company directory is allowed, but corruption and wrong company f
   await assert.rejects(h.listDriverDirectory({ getDocument: async () => ({ workspaceId: 'covre-e-cia' }) }, 'gave'));
   await assert.rejects(h.listDriverDirectory({ getDocument: async () => ({ workspaceId: 'gave', snapshot: 'broken' }) }, 'gave'), /Missing chunk/);
 });
+
+test('server-side banner deletion is tenant-scoped and also removes its uploaded file', async () => {
+  const section = source.slice(source.indexOf('async function deleteTenantCentralBanner('), source.indexOf('async function createCentralRecord('));
+  const deletedRows = [], deletedFiles = [];
+  let document = { $id: 'banner-test', workspaceId: 'gave-workspace', fileId: 'file-test' };
+  const context = {
+    DATABASE_ID: 'db', CENTRAL_BANNERS_COLLECTION_ID: 'banners', WEFROTAS_BUCKET_ID: 'bucket', console,
+    assertOperationalManager: async () => ({ organization: { workspaceId: 'gave-workspace' } }),
+    assertCentralRecordId: value => String(value),
+    createDatabaseClient: () => ({
+      getDocument: async () => document,
+      deleteDocument: async args => deletedRows.push(args)
+    }),
+    createServerClient: () => ({}),
+    Storage: class { async deleteFile(args) { deletedFiles.push(args); } }
+  };
+  vm.createContext(context); vm.runInContext(section, context);
+  const result = await context.deleteTenantCentralBanner({}, { rowId: 'banner-test' });
+  assert.equal(result.fileDeleted, true);
+  assert.equal(deletedRows[0].documentId, 'banner-test');
+  assert.equal(deletedFiles[0].fileId, 'file-test');
+  document = { ...document, workspaceId: 'covre-e-cia' };
+  await assert.rejects(context.deleteTenantCentralBanner({}, { rowId: 'banner-test' }), /outra empresa/);
+  assert.equal(deletedRows.length, 1);
+});

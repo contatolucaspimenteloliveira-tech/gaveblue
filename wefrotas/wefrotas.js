@@ -2630,8 +2630,7 @@
       const banner = centralHomeBanners.find(item => item.$id === rowId);
       if (!banner) return;
       try {
-        await window.WeFrotasBackend.deleteCentralHomeBanner(rowId);
-        await window.WeFrotasBackend.deleteCentralBannerFile(banner.fileId).catch(() => undefined);
+        await executeCentralPushAdmin({ action: 'central-banner-delete', rowId });
         centralHomeBanners = centralHomeBanners.filter(item => item.$id !== rowId);
         if (String(selectedCentralBannerId) === String(rowId)) selectedCentralBannerId = '';
         renderCentralBanners();
