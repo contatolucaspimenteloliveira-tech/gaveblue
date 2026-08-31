@@ -12321,6 +12321,18 @@
       document.getElementById('modal-title').textContent = 'Editar lançamento';
     }
 
+    async function confirmOperationalDeletion(successMessage) {
+      renderAll();
+      showToast('Sincronizando exclusão…');
+      try {
+        await persistOperationalDataImmediately();
+        showToast(successMessage);
+      } catch (error) {
+        // Keep the locally saved pending change for retry; never claim server success.
+        showToast(`Exclusão pendente de sincronização: ${error?.message || 'falha na conexão'}`);
+      }
+    }
+
     function deleteSelectedVehicles() {
       if (!selectedVehicles.size) {
         showToast('Selecione pelo menos um veículo para excluir.');
@@ -12343,9 +12355,7 @@
         onConfirm: () => {
           allVehicles = allVehicles.filter(vehicle => !selectedVehicles.has(vehicle.id));
           selectedVehicles.clear();
-          saveToLocalStorage();
-          renderAll();
-          showToast('Veículo(s) excluído(s) com sucesso.');
+          return confirmOperationalDeletion('Veículo(s) excluído(s) e sincronizado(s).');
         }
       });
     }
@@ -12372,9 +12382,7 @@
         onConfirm: () => {
           allDrivers = allDrivers.filter(driver => !selectedDrivers.has(driver.id));
           selectedDrivers.clear();
-          saveToLocalStorage();
-          renderAll();
-          showToast('Motorista(s) excluído(s) com sucesso.');
+          return confirmOperationalDeletion('Motorista(s) excluído(s) e sincronizado(s).');
         }
       });
     }
@@ -12396,9 +12404,7 @@
         onConfirm: () => {
           allSuppliers = allSuppliers.filter(supplier => !selectedSuppliers.has(supplier.id));
           selectedSuppliers.clear();
-          saveToLocalStorage();
-          renderAll();
-          showToast('Fornecedor(es) excluído(s) com sucesso.');
+          return confirmOperationalDeletion('Fornecedor(es) excluído(s) e sincronizado(s).');
         }
       });
     }

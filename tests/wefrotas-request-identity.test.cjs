@@ -6,6 +6,24 @@ const vm = require('node:vm');
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'appwrite/functions/central-push/src/main.js'), 'utf8');
 
+test('deletion success waits for server confirmation and failures remain pending', async () => {
+  const ui = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.js'), 'utf8');
+  for (const fail of [false, true]) {
+    const messages = [];
+    let resolve, reject;
+    const pending = new Promise((yes, no) => { resolve = yes; reject = no; });
+    const context = { renderAll() {}, showToast: message => messages.push(message), persistOperationalDataImmediately: () => pending };
+    vm.createContext(context);
+    vm.runInContext(ui.slice(ui.indexOf('    async function confirmOperationalDeletion('), ui.indexOf('    function deleteSelectedVehicles(')), context);
+    const operation = context.confirmOperationalDeletion('confirmed');
+    assert.deepEqual(messages, ['Sincronizando exclusão…']);
+    if (fail) reject(new Error('wrong session')); else resolve();
+    await operation;
+    assert.equal(messages.includes('confirmed'), !fail);
+    if (fail) assert.match(messages[1], /pendente de sincronização: wrong session/);
+  }
+});
+
 test('administrative execution uses the installed SDK session transport and synchronous arguments', async () => {
   const sent = [];
   const context = { URL, URLSearchParams, FormData, Headers,
