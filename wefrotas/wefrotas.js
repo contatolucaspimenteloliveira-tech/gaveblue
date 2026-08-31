@@ -49,7 +49,7 @@
       sortOrder: 0
     });
     const CENTRAL_PENDING_FILTERS_KEY = 'wefrotas:central-pending-filters';
-    let centralPendingStatusFilter = 'pendente';
+    let centralPendingStatusFilter = 'todos';
     let centralPendingDateStart = '';
     let centralPendingDateEnd = '';
     let centralPendingSearchFilter = '';
@@ -9654,9 +9654,20 @@
             record?.nf,
             record?.notaFiscal,
             record?.os,
-            record?.numeroOs
+            record?.numeroOs,
+            getCentralPendingDate(record),
+            getCentralRecordIsoDate(record),
+            getCentralPendingValue(record),
+            getCentralPendingStatus(record).label,
+            record?.status,
+            record?.resolucao,
+            record?.dataVencimento,
+            record?.vencimento,
+            record?.observacoes,
+            record?.mensagemWhatsapp
           ].join(' '));
-          return haystack.includes(centralPendingSearchFilter);
+          const terms = centralPendingSearchFilter.split(/\s+/).filter(Boolean);
+          return terms.every(term => haystack.includes(term));
         })
         .filter(record => {
           if (!centralPendingValueFilter) return true;
@@ -9728,17 +9739,17 @@
       centralPendingFiltersLoaded = true;
       try {
         const saved = JSON.parse(localStorage.getItem(CENTRAL_PENDING_FILTERS_KEY) || '{}');
-        centralPendingStatusFilter = saved.status || 'pendente';
-        centralPendingDateStart = saved.start || '';
-        centralPendingDateEnd = saved.end || '';
+        centralPendingStatusFilter = 'todos';
+        centralPendingDateStart = '';
+        centralPendingDateEnd = '';
         centralPendingSearchFilter = normalizeSearchText(saved.search || '');
-        centralPendingValueFilter = String(saved.value || '').trim();
-        centralPendingVehicleFilter = normalizeSearchText(saved.vehicle || '');
-        centralPendingSupplierFilter = normalizeSearchText(saved.supplier || '');
-        centralPendingOrderFilter = normalizeSearchText(saved.order || '');
-        centralPendingNfFilter = normalizeSearchText(saved.nf || '');
-        centralPendingDueStart = saved.dueStart || '';
-        centralPendingDueEnd = saved.dueEnd || '';
+        centralPendingValueFilter = '';
+        centralPendingVehicleFilter = '';
+        centralPendingSupplierFilter = '';
+        centralPendingOrderFilter = '';
+        centralPendingNfFilter = '';
+        centralPendingDueStart = '';
+        centralPendingDueEnd = '';
         if (['date', 'type', 'driver', 'supplier', 'km', 'value', 'status'].includes(saved.sortKey)) {
           centralPendingSortState = { key: saved.sortKey, direction: saved.sortDirection === 'asc' ? 'asc' : 'desc' };
         }
@@ -9783,23 +9794,23 @@
     }
 
     function applyCentralPendingFilters() {
-      centralPendingStatusFilter = document.getElementById('central-pending-status-filter')?.value || 'pendente';
-      centralPendingDateStart = document.getElementById('central-pending-date-start')?.value || '';
-      centralPendingDateEnd = document.getElementById('central-pending-date-end')?.value || '';
+      centralPendingStatusFilter = 'todos';
+      centralPendingDateStart = '';
+      centralPendingDateEnd = '';
       centralPendingSearchFilter = normalizeSearchText(document.getElementById('central-pending-search-filter')?.value || '');
-      centralPendingValueFilter = String(document.getElementById('central-pending-value-filter')?.value || '').trim();
-      centralPendingVehicleFilter = normalizeSearchText(document.getElementById('central-pending-vehicle-filter')?.value || '');
-      centralPendingSupplierFilter = normalizeSearchText(document.getElementById('central-pending-supplier-filter')?.value || '');
-      centralPendingOrderFilter = normalizeSearchText(document.getElementById('central-pending-order-filter')?.value || '');
-      centralPendingNfFilter = normalizeSearchText(document.getElementById('central-pending-nf-filter')?.value || '');
-      centralPendingDueStart = document.getElementById('central-pending-due-start')?.value || '';
-      centralPendingDueEnd = document.getElementById('central-pending-due-end')?.value || '';
+      centralPendingValueFilter = '';
+      centralPendingVehicleFilter = '';
+      centralPendingSupplierFilter = '';
+      centralPendingOrderFilter = '';
+      centralPendingNfFilter = '';
+      centralPendingDueStart = '';
+      centralPendingDueEnd = '';
       saveCentralPendingFilters();
       renderCentralPendingRecords();
     }
 
     function clearCentralPendingFilters() {
-      centralPendingStatusFilter = 'pendente';
+      centralPendingStatusFilter = 'todos';
       centralPendingDateStart = '';
       centralPendingDateEnd = '';
       centralPendingSearchFilter = '';

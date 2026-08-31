@@ -3453,6 +3453,10 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
     .module-filters-modal .orders-filter-actions { display:none !important; }
     .module-filter-apply-row { grid-column:1/-1; display:flex; justify-content:flex-end; padding-top:4px; }
     .module-filter-apply-row button { height:38px; padding:0 20px; border:0; border-radius:11px; background:#6657e8; color:#fff; font-weight:800; cursor:pointer; }
+    .module-filters-modal.is-open .central-global-search-grid {
+      width: min(680px, calc(100vw - 40px));
+      grid-template-columns: 1fr !important;
+    }
     body.module-filters-open { overflow:hidden; }
     @media (max-width:720px) { .module-filters-modal.is-open .orders-filter-grid { grid-template-columns:1fr !important; } }
     .mini-badge--status-pendente,

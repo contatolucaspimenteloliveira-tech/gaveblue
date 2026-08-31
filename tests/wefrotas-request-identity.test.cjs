@@ -41,6 +41,18 @@ test('silent Central refresh preserves rendered rows while syncing or briefly of
   assert.match(list.innerHTML, /Buscando registros/);
 });
 
+test('Central uses one global field across record content and ignores legacy hidden filters', () => {
+  const ui = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.js'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'wefrotas/index.html'), 'utf8');
+  assert.match(html, /<label>Pesquisa global<\/label><input id="central-pending-search-filter"/);
+  for (const legacyId of ['central-pending-status-filter', 'central-pending-date-start', 'central-pending-value-filter', 'central-pending-vehicle-filter', 'central-pending-supplier-filter', 'central-pending-order-filter', 'central-pending-nf-filter', 'central-pending-due-start']) {
+    assert.doesNotMatch(html, new RegExp(`id="${legacyId}"`));
+  }
+  assert.match(ui, /centralPendingStatusFilter = 'todos';[\s\S]*centralPendingDateStart = '';[\s\S]*centralPendingValueFilter = '';/);
+  assert.match(ui, /getCentralPendingDate\(record\)[\s\S]*getCentralPendingValue\(record\)[\s\S]*getCentralPendingStatus\(record\)\.label/);
+  assert.match(ui, /terms\.every\(term => haystack\.includes\(term\)\)/);
+});
+
 test('deletion success waits for server confirmation and failures remain pending', async () => {
   const ui = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.js'), 'utf8');
   for (const fail of [false, true]) {
