@@ -854,10 +854,14 @@
         try {
           const recoveredSnapshot = await persistSnapshot(localSnapshot);
           if (revision !== contextRevision) throw new Error('A empresa mudou durante a sincronização.');
+          await currentSnapshotApplier?.(recoveredSnapshot);
+          if (revision !== contextRevision) throw new Error('A empresa mudou durante a sincronização.');
           await subscribeRealtime();
           emitStatus('online', 'Alterações pendentes recuperadas e sincronizadas.');
           return { mode: 'recovered-local-pending', snapshot: recoveredSnapshot };
         } catch (error) {
+          if (revision !== contextRevision) throw error;
+          await currentSnapshotApplier?.(localSnapshot);
           if (revision !== contextRevision) throw error;
           await subscribeRealtime();
           emitStatus('error', `Alterações preservadas neste dispositivo. Falha ao confirmar no servidor: ${describeError(error)}.`, { error });

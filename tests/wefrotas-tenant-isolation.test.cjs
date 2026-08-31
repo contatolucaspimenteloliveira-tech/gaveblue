@@ -11,7 +11,7 @@ const tenant = (name) => ({ id: name, workspaceId: name, appwriteLabel: `org${na
 const missing = () => Object.assign(new Error('not found'), { code: 404 });
 
 async function harness() {
-  const rows = new Map(), writes = [], local = new Map(), timers = new Map();
+  const rows = new Map(), writes = [], appliedSnapshots = [], local = new Map(), timers = new Map();
   let nextTimer = 0, applied = { vehicles: [{ id: 'COVRE-PRIVATE' }], orders: [{ id: 'COVRE-ORDER' }] };
   let getError, writeError, pendingRead;
   const context = { console, TextEncoder, Uint8Array, crypto: webcrypto,
@@ -34,7 +34,7 @@ async function harness() {
   context.window = context;
   vm.runInNewContext(source, context);
   const backend = context.WeFrotasBackend;
-  await backend.initialize({ getSnapshot: () => applied, applySnapshot: async s => { applied = clone(s); },
+  await backend.initialize({ getSnapshot: () => applied, applySnapshot: async s => { applied = clone(s); appliedSnapshots.push(clone(s)); },
     persistSnapshot: async (snapshot, workspaceId) => {
       if (writeError) throw writeError;
       const rowId = await seed(workspaceId, snapshot);
@@ -47,7 +47,7 @@ async function harness() {
     rows.set(id, { workspaceId: name, snapshot: JSON.stringify(snapshot) });
     return id;
   }
-  return { backend, rows, writes, local, timers, seed, snapshot: () => applied, setSnapshot: value => { applied = clone(value); },
+  return { backend, rows, writes, appliedSnapshots, local, timers, seed, snapshot: () => applied, setSnapshot: value => { applied = clone(value); },
     fail: e => { getError = e; }, failWrites: e => { writeError = e; }, hold: promise => { pendingRead = promise; } };
 }
 
@@ -82,6 +82,7 @@ test('a tenant pending local write is recovered before an older remote snapshot 
   h.local.set('wefrotas_online_sync_pending:gave-test', '1');
   const result = await h.backend.adoptRemoteOrUploadLocal();
   assert.equal(result.mode, 'recovered-local-pending');
+  assert.deepEqual(h.appliedSnapshots.at(-1).vehicles, [{ id: 'GAVE-VEHICLE' }]);
   assert.deepEqual(h.snapshot().vehicles, [{ id: 'GAVE-VEHICLE' }]);
   assert.deepEqual(h.snapshot().drivers, [{ id: 'GAVE-DRIVER' }]);
   assert.equal(h.local.has('wefrotas_online_sync_pending:gave-test'), false);
@@ -97,6 +98,7 @@ test('a pending tenant snapshot remains available when the server is offline', a
   h.failWrites(Object.assign(new Error('Failed to fetch'), { code: 500 }));
   const result = await h.backend.adoptRemoteOrUploadLocal();
   assert.equal(result.mode, 'local-pending');
+  assert.deepEqual(h.appliedSnapshots.at(-1).vehicles, [{ id: 'OFFLINE-VEHICLE' }]);
   assert.deepEqual(h.snapshot().vehicles, [{ id: 'OFFLINE-VEHICLE' }]);
   assert.equal(h.local.get('wefrotas_online_sync_pending:gave-test'), '1');
   assert.equal(h.backend.isSnapshotReady(), true);
