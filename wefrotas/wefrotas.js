@@ -2192,6 +2192,8 @@
     async function logoutWeFrotasOnline() {
       if (onlineLogoutInProgress) return;
       onlineLogoutInProgress = true;
+      closeReceiptViewer();
+      updateFinanceReceiptPreview('');
       stopOnlineIdleTimer();
       const logoutButton = document.getElementById('online-logout-btn');
       const previousLabel = logoutButton?.textContent || 'Sair';
@@ -3647,6 +3649,11 @@
     }
 
     async function loadAuthorizedOrganizationContext() {
+      // A mesma aba pode autenticar outra empresa. Remova qualquer comprovante
+      // transitório antes de consultar/aplicar o novo contexto para não manter
+      // conteúdo visual da sessão anterior sobre a nova organização.
+      closeReceiptViewer();
+      updateFinanceReceiptPreview('');
       const result = await executeCentralPushAdmin({ action: 'my-access' });
       if (!result.organization?.workspaceId) throw new Error('Seu usuário ainda não está vinculado a uma empresa ativa.');
       if (!result.organization.modules?.includes('wefrotas')) throw new Error('A licença desta empresa não inclui o WeFrotas.');

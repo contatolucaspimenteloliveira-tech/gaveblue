@@ -190,6 +190,24 @@ test('frontend cache has no shared startup key and auth errors stay behind login
   assert.match(ui, /Motorista cadastrado e sincronizado/);
 });
 
+test('tenant changes clear transient receipt content before applying another company', () => {
+  const organizationFlow = ui.slice(
+    ui.indexOf('async function loadAuthorizedOrganizationContext'),
+    ui.indexOf('const wefrotasRoleDefinitions')
+  );
+  assert.ok(organizationFlow.indexOf('closeReceiptViewer();') >= 0);
+  assert.ok(organizationFlow.indexOf("updateFinanceReceiptPreview('');") >= 0);
+  assert.ok(organizationFlow.indexOf('closeReceiptViewer();') < organizationFlow.indexOf("action: 'my-access'"));
+  assert.ok(organizationFlow.indexOf("updateFinanceReceiptPreview('');") < organizationFlow.indexOf("action: 'my-access'"));
+
+  const logoutFlow = ui.slice(
+    ui.indexOf('async function logoutWeFrotasOnline'),
+    ui.indexOf('async function syncWeFrotasOnline')
+  );
+  assert.match(logoutFlow, /closeReceiptViewer\(\);/);
+  assert.match(logoutFlow, /updateFinanceReceiptPreview\(''\);/);
+});
+
 function storageHarness(indexedDbAvailable = true) {
   const local = new Map([['wefrotas_vehicles', '[{"id":"LEGACY-COVRE"}]']]);
   const rows = new Map([['current', { key: 'current', value: { vehicles: [{ id: 'LEGACY-COVRE' }] } }]]);
