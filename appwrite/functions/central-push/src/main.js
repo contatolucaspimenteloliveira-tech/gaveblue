@@ -338,7 +338,15 @@ async function authenticateManager(req) {
       .setJWT(userJwt);
     const authenticatedUser = await new Account(client).get();
     if (authenticatedUser?.$id !== userId) throw new Error('Identidade divergente.');
+    const expected = parseBody(req);
+    if (expected.expectedUserId && String(expected.expectedUserId) !== userId) {
+      throw Object.assign(new Error('O login mudou em outra aba. Atualize o WeFrotas e entre novamente na empresa desejada.'), { status: 409 });
+    }
     const membership = await resolveSupabaseMembership(userId);
+    const resolvedWorkspaceId = membership?.organization?.workspaceId || WEFROTAS_COMPANY_ID;
+    if (expected.expectedWorkspaceId && String(expected.expectedWorkspaceId) !== resolvedWorkspaceId) {
+      throw Object.assign(new Error('A empresa da tela não corresponde à sessão atual. Atualize o WeFrotas antes de continuar.'), { status: 409 });
+    }
     if (membership) await ensureMembershipAppwriteLabels(req, userId, membership);
     return {
       userId,

@@ -108,6 +108,7 @@
     let currentWefrotasRoleLabel = 'Consulta';
     let centralManagerUsers = [];
     let centralManagerUsersLoading = false;
+    let centralManagerUsersGeneration = 0;
     let wefrotasUsersSearchTimer = null;
     let orderViewerZoom = 1;
     let systemNotifications = [];
@@ -1825,7 +1826,7 @@
       centralPendingRecords = [];
       centralPushDevices = [];
       centralHomeBanners = [];
-      centralManagerUsers = [];
+      resetWefrotasUsers();
       centralPendingLoaded = false;
       centralPendingFiltersLoaded = false;
       centralPushSubscriberTotal = 0;
@@ -3630,35 +3631,24 @@
 
     async function executeCentralPushAdmin(payload) {
       const requestedUserId = window.WeFrotasBackend?.getUser?.()?.$id;
-      const config = window.WEFROTAS_APPWRITE_CONFIG || {};
-      const functionId = config.pushFunctionId || 'central-push';
-      if (!config.endpoint || !config.projectId) {
-        throw new Error('Configuração do Appwrite indisponível.');
+      const requestedWorkspaceId = window.WeFrotasBackend?.getOrganizationContext?.()?.workspaceId;
+      const backend = window.WeFrotasBackend;
+      if (!backend?.executeAdministrativeFunction) {
+        throw new Error('Atualize a página para carregar o serviço de acesso.');
       }
 
-      const response = await fetch(config.endpoint + '/functions/' + functionId + '/executions', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'content-type': 'application/json',
-          'x-appwrite-project': config.projectId
-        },
-        body: JSON.stringify({
-          body: JSON.stringify(payload),
-          async: false,
-          method: 'POST',
-          path: '/'
-        })
+      const execution = await backend.executeAdministrativeFunction({
+        ...payload,
+        expectedUserId: requestedUserId,
+        expectedWorkspaceId: payload.action === 'my-access' ? undefined : requestedWorkspaceId
       });
 
-      const execution = await response.json().catch(() => ({}));
       if (requestedUserId !== window.WeFrotasBackend?.getUser?.()?.$id) {
         throw new Error('A sessão mudou. A resposta da empresa anterior foi descartada.');
       }
-      if (!response.ok) {
-        throw new Error(execution?.message || 'Não foi possível acessar o canal de notificações.');
+      if (payload.action !== 'my-access' && requestedWorkspaceId !== window.WeFrotasBackend?.getOrganizationContext?.()?.workspaceId) {
+        throw new Error('A empresa mudou. A resposta da empresa anterior foi descartada.');
       }
-
       let result = {};
       try {
         result = JSON.parse(execution.responseBody || '{}');
@@ -3666,7 +3656,7 @@
         result = {};
       }
 
-      if (execution.status === 'failed' || result.ok === false) {
+      if (execution.status === 'failed' || execution.responseStatusCode >= 400 || result.ok === false) {
         throw new Error(result.error || execution.errors || 'A função de notificações não concluiu a operação.');
       }
       return result;
@@ -3738,21 +3728,34 @@
       }).join('');
     }
 
+    function resetWefrotasUsers() {
+      centralManagerUsersGeneration += 1;
+      window.clearTimeout(wefrotasUsersSearchTimer);
+      centralManagerUsers = [];
+      centralManagerUsersLoading = false;
+      const search = document.getElementById('central-users-search');
+      if (search) search.value = '';
+      renderWefrotasUsers();
+    }
+
     async function refreshWefrotasUsers() {
       if (centralManagerUsersLoading) return;
+      const generation = centralManagerUsersGeneration;
       centralManagerUsersLoading = true;
       renderWefrotasUsers();
       try {
         const search = document.getElementById('central-users-search')?.value.trim() || '';
         const result = await executeCentralPushAdmin({ action: 'wefrotas-users-list', search });
+        if (generation !== centralManagerUsersGeneration) return;
         centralManagerUsers = Array.isArray(result.users) ? result.users : [];
       } catch (error) {
+        if (generation !== centralManagerUsersGeneration) return;
         centralManagerUsers = [];
         const list = document.getElementById('central-users-list');
         if (list) list.innerHTML = `<div class="central-devices-empty is-error">${escapeHtml(error?.message || 'Não foi possível carregar os usuários.')}</div>`;
         return;
       } finally {
-        centralManagerUsersLoading = false;
+        if (generation === centralManagerUsersGeneration) centralManagerUsersLoading = false;
       }
       renderWefrotasUsers();
     }

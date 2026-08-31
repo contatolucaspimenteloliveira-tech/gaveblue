@@ -169,6 +169,17 @@
     return true;
   }
 
+  async function executeAdministrativeFunction(payload) {
+    if (!currentUser || !client) throw new Error('Entre no WeFrotas para continuar.');
+    // Use the same SDK client as Account, including its supported session fallback.
+    // A separate fetch can authenticate a different cookie session after switching accounts.
+    const functions = new global.Appwrite.Functions(client);
+    return functions.createExecution({
+      functionId: config.pushFunctionId || 'central-push',
+      body: JSON.stringify(payload), async: false, method: 'POST', xpath: '/'
+    });
+  }
+
   async function digestId(value) {
     const bytes = new TextEncoder().encode(String(value));
     const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -919,6 +930,7 @@
     getOrganizationContext: () => organizationContext,
     getUser: () => currentUser,
     updateAuthenticatedUserName,
+    executeAdministrativeFunction,
     getAccessRole: getCurrentAccessRole,
     hasPermission: hasCurrentPermission,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
