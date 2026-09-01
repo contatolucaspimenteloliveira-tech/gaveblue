@@ -4868,7 +4868,7 @@ body.standard-calendar-open { overflow: hidden; }
 }
 .standard-date-picker-current span {
   overflow: hidden;
-  max-width: 110px;
+  max-width: 160px;
   color: #66758d;
   font-size: 9px;
   font-weight: 900;
