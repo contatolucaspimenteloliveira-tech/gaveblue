@@ -165,6 +165,23 @@ test('Finance, OS and entity modules share contextual search, compact status and
   assert.equal(context.getEntityCreatedIsoDate({ createdAt: '2026-08-31T12:00:00.000Z' }), '2026-08-31');
 });
 
+test('all native WeFrotas date and month fields use the shared calendar', () => {
+  const html = fs.readFileSync(path.join(root, 'wefrotas/index.html'), 'utf8');
+  const picker = fs.readFileSync(path.join(root, 'wefrotas/wefrotas-date-picker.js'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.css'), 'utf8');
+  const batch = fs.readFileSync(path.join(root, 'wefrotas/wefrotas-batch-orders.js'), 'utf8');
+
+  assert.match(html, /wefrotas-batch-orders\.js[\s\S]*wefrotas-date-picker\.js/);
+  assert.match(picker, /input\[type="date"\], input\[type="month"\]/);
+  assert.match(picker, /new MutationObserver[\s\S]*childList: true, subtree: true/);
+  assert.match(picker, /input\.dispatchEvent\(new Event\('input'[\s\S]*input\.dispatchEvent\(new Event\('change'/);
+  assert.match(picker, /state\.view === 'years'[\s\S]*state\.view === 'months'/);
+  assert.match(picker, /closest\('\.contextual-module-filter-source'\)/);
+  assert.match(css, /\.standard-date-picker-backdrop[\s\S]*backdrop-filter: blur\(5px\)/);
+  assert.match(css, /\.standard-date-picker-month-grid[\s\S]*\.standard-date-picker-year-grid/);
+  assert.match(batch, /type="date"/);
+});
+
 test('deletion success waits for server confirmation and failures remain pending', async () => {
   const ui = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.js'), 'utf8');
   for (const fail of [false, true]) {
