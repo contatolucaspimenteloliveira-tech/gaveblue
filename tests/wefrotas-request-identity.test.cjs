@@ -57,6 +57,7 @@ test('Central uses one global field across record content and ignores legacy hid
   const css = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.css'), 'utf8');
   assert.match(css, /\.central-pending-table-shell \{[\s\S]*height: clamp\(430px, calc\(100dvh - 250px\), 680px\)/);
   assert.match(css, /\.central-pending-table \{[\s\S]*table-layout: fixed/);
+  assert.match(css, /\.central-pending-table-scroll \{[\s\S]*scrollbar-gutter: stable/);
   assert.doesNotMatch(html, /data-filter-module="documentos"/);
   assert.doesNotMatch(html, /central-pending-filter-controls/);
   for (const legacyId of ['central-pending-date-start', 'central-pending-value-filter', 'central-pending-vehicle-filter', 'central-pending-supplier-filter', 'central-pending-order-filter', 'central-pending-nf-filter', 'central-pending-due-start']) {

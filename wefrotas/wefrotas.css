@@ -4979,6 +4979,7 @@ body.dark-mode .central-pending-calendar-footer { border-color: #334155; }
   width: 100%;
   height: 100%;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .central-pending-table {
