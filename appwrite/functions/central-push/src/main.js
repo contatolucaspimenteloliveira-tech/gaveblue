@@ -458,6 +458,15 @@ function assertManagedRole(value) {
   return role;
 }
 
+async function findManagedUserByEmail(users, email) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail) return null;
+  const result = await users.list({
+    queries: [Query.equal('email', [normalizedEmail]), Query.limit(2)]
+  });
+  return (result?.users || []).find((item) => String(item?.email || '').trim().toLowerCase() === normalizedEmail) || null;
+}
+
 async function listWefrotasUsers(req, payload) {
   const access = await authenticateManager(req);
   if (access.role !== 'wefrotas-admin') throw Object.assign(new Error('Seu perfil não possui permissão administrativa.'), { status: 403 });
@@ -467,13 +476,23 @@ async function listWefrotasUsers(req, payload) {
     const users = (result?.users || []).map(normalizeManagedUser).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     return { users, total: Number(result?.total || 0) };
   }
-  const members = await supabaseRest(`organization_members?organization_id=eq.${encodeURIComponent(access.organization.id)}&select=appwrite_user_id,role,status&limit=1000`);
+  const members = await supabaseRest(`organization_members?organization_id=eq.${encodeURIComponent(access.organization.id)}&select=appwrite_user_id,email,role,status&limit=1000`);
   const usersApi = new Users(createServerClient(req));
   const resolved = await Promise.all((members || []).filter((item) => item.appwrite_user_id).map(async (member) => {
     try {
       const user = normalizeManagedUser(await usersApi.get({ userId: member.appwrite_user_id }));
       return { ...user, role: SUPABASE_MEMBER_ROLES[member.role] || user.role, status: member.status === 'active' && user.status };
-    } catch { return null; }
+    } catch (error) {
+      return {
+        id: member.appwrite_user_id,
+        name: String(member.email || '').split('@')[0] || 'Acesso pendente',
+        email: member.email || '',
+        role: SUPABASE_MEMBER_ROLES[member.role] || 'wefrotas-consulta',
+        status: false,
+        accessedAt: null,
+        syncError: Number(error?.code) === 404 ? 'Conta Appwrite ausente. Edite e informe uma senha temporária para reparar.' : 'Não foi possível validar a conta no Appwrite.'
+      };
+    }
   }));
   const normalizedSearch = search.toLocaleLowerCase('pt-BR');
   const users = resolved.filter(Boolean).filter((user) => !normalizedSearch || `${user.name} ${user.email}`.toLocaleLowerCase('pt-BR').includes(normalizedSearch));
@@ -488,14 +507,44 @@ async function createWefrotasUser(req, payload) {
   const email = String(payload.email || '').trim().toLowerCase().slice(0, 320);
   const password = String(payload.password || '');
   const role = assertManagedRole(payload.role);
-  if (supabaseConfigured() && access.organization.limits?.users) {
-    const members = await supabaseRest(`organization_members?organization_id=eq.${encodeURIComponent(access.organization.id)}&status=eq.active&select=id&limit=1000`);
-    if ((members || []).length >= access.organization.limits.users) throw Object.assign(new Error(`O limite de ${access.organization.limits.users} usuários deste plano foi atingido.`), { status: 409 });
-  }
   if (name.length < 2) throw Object.assign(new Error('Informe o nome do usuário.'), { status: 400 });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw Object.assign(new Error('Informe um e-mail válido.'), { status: 400 });
   if (password.length < 8) throw Object.assign(new Error('A senha temporária deve ter pelo menos 8 caracteres.'), { status: 400 });
   const users = new Users(createServerClient(req));
+  let currentMembership = null;
+  if (supabaseConfigured()) {
+    const memberships = await supabaseRest(`organization_members?organization_id=eq.${encodeURIComponent(access.organization.id)}&email=eq.${encodeURIComponent(email)}&select=id,email,appwrite_user_id,role,status&limit=1`);
+    currentMembership = memberships?.[0] || null;
+    if (access.organization.limits?.users && !currentMembership) {
+      const members = await supabaseRest(`organization_members?organization_id=eq.${encodeURIComponent(access.organization.id)}&status=eq.active&select=id&limit=1000`);
+      if ((members || []).length >= access.organization.limits.users) throw Object.assign(new Error(`O limite de ${access.organization.limits.users} usuários deste plano foi atingido.`), { status: 409 });
+    }
+  }
+  if (currentMembership?.appwrite_user_id) {
+    try {
+      await users.get({ userId: currentMembership.appwrite_user_id });
+      throw Object.assign(new Error('Este e-mail já está cadastrado. Atualize a lista e use Editar.'), { status: 409 });
+    } catch (error) {
+      if (Number(error?.status || error?.code) === 409) throw error;
+      if (Number(error?.code) !== 404) throw error;
+    }
+  }
+  const recoverable = currentMembership ? await findManagedUserByEmail(users, email) : null;
+  if (recoverable) {
+    await users.updateName({ userId: recoverable.$id, name });
+    await users.updatePassword({ userId: recoverable.$id, password });
+    await users.updateLabels({ userId: recoverable.$id, labels: normalizeAppwriteLabels([
+      ...(Array.isArray(recoverable.labels) ? recoverable.labels : []).filter((label) => !/^org[a-f0-9]{24}(?:adm|mgr|apr|view|drv)?$/.test(String(label || '').trim().toLowerCase())),
+      access.organization.appwriteLabel,
+      organizationAppwriteRoleLabel(access.organization.id, WEFROTAS_TO_MEMBER_ROLE[role])
+    ]) });
+    await users.updateStatus({ userId: recoverable.$id, status: true });
+    await supabaseRest(`organization_members?organization_id=eq.${encodeURIComponent(access.organization.id)}&email=eq.${encodeURIComponent(email)}`, {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ appwrite_user_id: recoverable.$id, role: WEFROTAS_TO_MEMBER_ROLE[role], status: 'active' })
+    });
+    return { user: normalizeManagedUser(await users.get({ userId: recoverable.$id })), createdBy: creatorId, workspaceId: access.organization.workspaceId, organization: access.organization, repaired: true };
+  }
   const created = await users.create({ userId: ID.unique(), email, password, name });
   let updated;
   try {
@@ -530,11 +579,49 @@ async function updateWefrotasUser(req, payload) {
     throw Object.assign(new Error('A nova senha deve ter no máximo 256 caracteres.'), { status: 400 });
   }
   const users = new Users(createServerClient(req));
+  let membership = null;
   if (supabaseConfigured()) {
-    const memberships = await supabaseRest(`organization_members?organization_id=eq.${encodeURIComponent(access.organization.id)}&appwrite_user_id=eq.${encodeURIComponent(userId)}&select=id&limit=1`);
+    const memberships = await supabaseRest(`organization_members?organization_id=eq.${encodeURIComponent(access.organization.id)}&appwrite_user_id=eq.${encodeURIComponent(userId)}&select=id,email,appwrite_user_id,role,status&limit=1`);
     if (!memberships?.length) throw Object.assign(new Error('Este usuário não pertence à sua empresa.'), { status: 403 });
+    membership = memberships[0];
   }
-  const before = normalizeManagedUser(await users.get({ userId }));
+  let before;
+  try {
+    before = normalizeManagedUser(await users.get({ userId }));
+  } catch (error) {
+    if (Number(error?.code) !== 404 || !membership) throw error;
+    if (!password) throw Object.assign(new Error('Esta conta perdeu o vínculo com o Appwrite. Informe uma nova senha de pelo menos 8 caracteres para repará-la.'), { status: 409 });
+    const email = String(membership.email || payload.email || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw Object.assign(new Error('O vínculo não possui um e-mail válido para recuperação.'), { status: 409 });
+    let recovered = await findManagedUserByEmail(users, email);
+    let createdForRepair = false;
+    if (!recovered) {
+      recovered = await users.create({ userId: ID.unique(), email, password, name: String(payload.name || email.split('@')[0]).trim().slice(0, 128) });
+      createdForRepair = true;
+    } else {
+      if (payload.name) await users.updateName({ userId: recovered.$id, name: String(payload.name).trim().slice(0, 128) });
+      await users.updatePassword({ userId: recovered.$id, password });
+    }
+    try {
+      const memberRole = payload.role !== undefined ? WEFROTAS_TO_MEMBER_ROLE[assertManagedRole(payload.role)] : membership.role;
+      const labels = normalizeAppwriteLabels([
+        ...(Array.isArray(recovered.labels) ? recovered.labels : []).filter((label) => !/^org[a-f0-9]{24}(?:adm|mgr|apr|view|drv)?$/.test(String(label || '').trim().toLowerCase())),
+        access.organization.appwriteLabel,
+        organizationAppwriteRoleLabel(access.organization.id, memberRole)
+      ]);
+      await users.updateLabels({ userId: recovered.$id, labels });
+      const repairedStatus = payload.status === undefined ? membership.status === 'active' : payload.status === true;
+      await users.updateStatus({ userId: recovered.$id, status: repairedStatus });
+      await supabaseRest(`organization_members?organization_id=eq.${encodeURIComponent(access.organization.id)}&id=eq.${encodeURIComponent(membership.id)}`, {
+        method: 'PATCH', headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ appwrite_user_id: recovered.$id, role: memberRole, status: repairedStatus ? 'active' : 'disabled' })
+      });
+    } catch (repairError) {
+      if (createdForRepair) await users.delete({ userId: recovered.$id }).catch(() => undefined);
+      throw repairError;
+    }
+    return { user: normalizeManagedUser(await users.get({ userId: recovered.$id })), before: { id: userId, email, status: false, role: SUPABASE_MEMBER_ROLES[membership.role] }, managerId, workspaceId: access.organization.workspaceId, organization: access.organization, repaired: true };
+  }
   if (payload.name !== undefined) {
     const name = String(payload.name || '').trim().slice(0, 128);
     if (name.length < 2) throw Object.assign(new Error('Informe o nome do usuário.'), { status: 400 });
@@ -1988,24 +2075,24 @@ export default async ({ req, res, log, error }) => {
       const result = await createWefrotasUser(req, payload);
       await writeWefrotasAudit(createDatabaseClient(req), {
         actorId: result.createdBy,
-        action: 'users.create',
+        action: result.repaired ? 'users.repair' : 'users.create',
         targetId: result.user.id,
         after: { name: result.user.name, email: result.user.email, role: result.user.role, status: result.user.status }, workspaceId: result.workspaceId, organization: result.organization
-      });
-      log('Conta WeFrotas criada por ' + result.createdBy + ': ' + result.user.id);
-      return json(res, 200, { ok: true, user: result.user });
+      }).catch((error) => console.error('Conta salva, mas a auditoria do usuário falhou: ' + (error?.message || error)));
+      log(`Conta WeFrotas ${result.repaired ? 'reparada' : 'criada'} por ${result.createdBy}: ${result.user.id}`);
+      return json(res, 200, { ok: true, user: result.user, repaired: result.repaired === true });
     }
 
     if (action === 'wefrotas-user-update') {
       const result = await updateWefrotasUser(req, payload);
       await writeWefrotasAudit(createDatabaseClient(req), {
         actorId: result.managerId,
-        action: payload.password ? 'users.updateWithPassword' : 'users.update',
+        action: result.repaired ? 'users.repair' : (payload.password ? 'users.updateWithPassword' : 'users.update'),
         targetId: result.user.id,
         before: { name: result.before.name, email: result.before.email, role: result.before.role, status: result.before.status },
         after: { name: result.user.name, email: result.user.email, role: result.user.role, status: result.user.status }, workspaceId: result.workspaceId, organization: result.organization
-      });
-      return json(res, 200, { ok: true, user: result.user });
+      }).catch((error) => console.error('Conta atualizada, mas a auditoria do usuário falhou: ' + (error?.message || error)));
+      return json(res, 200, { ok: true, user: result.user, repaired: result.repaired === true });
     }
 
     if (action === 'harden-permissions') {

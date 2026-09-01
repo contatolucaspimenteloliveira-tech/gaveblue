@@ -19,39 +19,82 @@ const orgLabel = (organizationId: string) => `org${organizationId.replace(/-/g, 
 const orgRoleLabel = (organizationId: string, role: string) => `${orgLabel(organizationId)}${({ admin: 'adm', manager: 'mgr', approver: 'apr', viewer: 'view', driver: 'drv' } as Record<string,string>)[role] || 'view'}`;
 const legacyRoleLabels = new Set(['admin', 'gestor', 'aprovador', 'consulta', 'motorista']);
 
-async function syncAppwriteLabels(appwriteUserId: string, organizationId: string, role: string, active = true) {
+function appwriteConnection() {
   const endpoint = Deno.env.get('APPWRITE_ENDPOINT');
   const project = Deno.env.get('APPWRITE_PROJECT_ID');
   const key = Deno.env.get('APPWRITE_API_KEY');
-  if (!appwriteUserId || !endpoint || !project || !key) return { skipped: true };
-  const headers = { 'content-type': 'application/json', 'x-appwrite-project': project, 'x-appwrite-key': key };
-  const userUrl = `${endpoint.replace(/\/$/, '')}/users/${encodeURIComponent(appwriteUserId)}`;
-  const currentResponse = await fetch(userUrl, { headers });
-  if (!currentResponse.ok) throw new Error('Usuário Appwrite não encontrado para sincronizar o acesso.');
-  const current = await currentResponse.json();
+  if (!endpoint || !project || !key) return null;
+  return {
+    baseUrl: endpoint.replace(/\/$/, ''),
+    headers: { 'content-type': 'application/json', 'x-appwrite-project': project, 'x-appwrite-key': key }
+  };
+}
+
+async function getAppwriteUser(appwriteUserId: string) {
+  const connection = appwriteConnection();
+  if (!connection || !appwriteUserId) return null;
+  const response = await fetch(`${connection.baseUrl}/users/${encodeURIComponent(appwriteUserId)}`, { headers: connection.headers });
+  if (response.status === 404) return null;
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result?.message || 'Falha ao validar o usuário no Appwrite.');
+  return result;
+}
+
+async function findAppwriteUserByEmail(email: string) {
+  const connection = appwriteConnection();
+  if (!connection) return null;
+  const url = new URL(`${connection.baseUrl}/users`);
+  url.searchParams.set('search', email);
+  const response = await fetch(url, { headers: connection.headers });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result?.message || 'Falha ao localizar o usuário no Appwrite.');
+  return (Array.isArray(result?.users) ? result.users : []).find((item: any) => String(item?.email || '').trim().toLowerCase() === email) || null;
+}
+
+async function deleteAppwriteUser(appwriteUserId: string) {
+  const connection = appwriteConnection();
+  if (!connection || !appwriteUserId) return;
+  const response = await fetch(`${connection.baseUrl}/users/${encodeURIComponent(appwriteUserId)}`, { method: 'DELETE', headers: connection.headers });
+  if (!response.ok && response.status !== 404) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(result?.message || 'Falha ao desfazer a criação incompleta no Appwrite.');
+  }
+}
+
+async function syncAppwriteLabels(appwriteUserId: string, organizationId: string, role: string, active = true) {
+  const connection = appwriteConnection();
+  if (!appwriteUserId || !connection) return { skipped: true };
+  const userUrl = `${connection.baseUrl}/users/${encodeURIComponent(appwriteUserId)}`;
+  const current = await getAppwriteUser(appwriteUserId);
+  if (!current) throw new Error('Usuário Appwrite não encontrado para sincronizar o acesso.');
   const preserved = (Array.isArray(current.labels) ? current.labels : []).filter((item: string) => !legacyRoleLabels.has(item) && !/^org[a-f0-9]{24}(?:adm|mgr|apr|view|drv)?$/.test(item));
   const labels = [...new Set(active ? [...preserved, orgLabel(organizationId), orgRoleLabel(organizationId, role)] : preserved)];
-  const response = await fetch(`${userUrl}/labels`, { method: 'PUT', headers, body: JSON.stringify({ labels }) });
+  const response = await fetch(`${userUrl}/labels`, { method: 'PUT', headers: connection.headers, body: JSON.stringify({ labels }) });
   if (!response.ok) throw new Error((await response.json().catch(() => ({})))?.message || 'Falha ao aplicar o acesso no Appwrite.');
   return { skipped: false, labels };
 }
 
 async function ensureAppwriteUser(input: { appwriteUserId?: string; email: string; name?: string; temporaryPassword?: string }) {
-  const endpoint = Deno.env.get('APPWRITE_ENDPOINT');
-  const project = Deno.env.get('APPWRITE_PROJECT_ID');
-  const key = Deno.env.get('APPWRITE_API_KEY');
-  if (!endpoint || !project || !key) return { id: input.appwriteUserId || '', skipped: true };
-  if (input.appwriteUserId) return { id: input.appwriteUserId, skipped: false };
+  const connection = appwriteConnection();
+  if (!connection) return { id: input.appwriteUserId || '', skipped: true, created: false };
+  if (input.appwriteUserId) {
+    const current = await getAppwriteUser(input.appwriteUserId);
+    if (current && String(current.email || '').trim().toLowerCase() === input.email) {
+      return { id: input.appwriteUserId, skipped: false, created: false };
+    }
+  }
+  const existing = await findAppwriteUserByEmail(input.email);
+  if (existing?.$id) return { id: String(existing.$id), skipped: false, created: false };
   const password = String(input.temporaryPassword || '');
-  if (password.length < 8 || password.length > 256) throw new Error('Informe uma senha temporária de 8 a 256 caracteres para criar o acesso no WeFrotas.');
-  const response = await fetch(`${endpoint.replace(/\/$/, '')}/users`, {
+  if (password.length < 8 || password.length > 256) throw new Error('O vínculo Appwrite está ausente ou inválido. Informe uma senha temporária de 8 a 256 caracteres para recriar o acesso no WeFrotas.');
+  const response = await fetch(`${connection.baseUrl}/users`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-appwrite-project': project, 'x-appwrite-key': key },
+    headers: connection.headers,
     body: JSON.stringify({ userId: 'unique()', email: input.email, password, name: String(input.name || input.email.split('@')[0]).slice(0, 128) })
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(result?.message || 'Falha ao criar o usuário no Appwrite. Se ele já existir, informe o ID Appwrite.');
-  return { id: String(result.$id || ''), skipped: false };
+  return { id: String(result.$id || ''), skipped: false, created: true };
 }
 
 Deno.serve(async (req) => {
@@ -134,9 +177,17 @@ Deno.serve(async (req) => {
       const user = usersData.users.find((item) => item.email?.toLowerCase() === email);
       const appwriteUser = await ensureAppwriteUser({ appwriteUserId: String(payload.appwriteUserId || currentMember?.appwrite_user_id || '').trim(), email, name: String(payload.name || ''), temporaryPassword: String(payload.temporaryPassword || '') });
       const member = { organization_id: organizationId, user_id: user?.id || null, email, appwrite_user_id: appwriteUser.id, role, status: payload.status === 'disabled' ? 'disabled' : 'active' };
-      const { data: saved, error } = await admin.from('organization_members').upsert(member, { onConflict: 'organization_id,email' }).select().single();
-      if (error) throw error;
-      const appwrite = await syncAppwriteLabels(member.appwrite_user_id, organizationId, role, member.status === 'active');
+      let appwrite;
+      let saved;
+      try {
+        appwrite = await syncAppwriteLabels(member.appwrite_user_id, organizationId, role, member.status === 'active');
+        const result = await admin.from('organization_members').upsert(member, { onConflict: 'organization_id,email' }).select().single();
+        if (result.error) throw result.error;
+        saved = result.data;
+      } catch (error) {
+        if (appwriteUser.created) await deleteAppwriteUser(appwriteUser.id).catch((rollbackError) => console.error('Falha ao desfazer usuário Appwrite:', rollbackError));
+        throw error;
+      }
       await admin.from('platform_audit_logs').insert({ actor_user_id: authData.user.id, organization_id: organizationId, action: 'member.save', target_type: 'member', target_id: saved.id, after_data: member });
       return json(200, { ok: true, member: saved, appwrite });
     }

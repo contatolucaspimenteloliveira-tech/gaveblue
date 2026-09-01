@@ -3724,11 +3724,12 @@
         const role = getWefrotasRoleDefinition(user.role);
         const active = user.status !== false;
         const isCurrent = user.id === currentUserId;
+        const syncError = String(user.syncError || '');
         return `<article class="central-user-card ${active ? '' : 'is-inactive'}">
           <span class="central-user-avatar">${escapeHtml(getNameInitials(user.name || user.email, 'U'))}</span>
-          <div class="central-user-copy"><div><strong>${escapeHtml(user.name || 'Usuário sem nome')}</strong>${isCurrent ? '<em>VOCÊ</em>' : ''}<span class="central-user-status ${active ? '' : 'is-inactive'}">${active ? 'Ativo' : 'Inativo'}</span></div><p>${escapeHtml(user.email || '')}</p><small>${escapeHtml(formatWefrotasUserAccessDate(user.accessedAt))}</small></div>
+          <div class="central-user-copy"><div><strong>${escapeHtml(user.name || 'Usuário sem nome')}</strong>${isCurrent ? '<em>VOCÊ</em>' : ''}<span class="central-user-status ${active ? '' : 'is-inactive'}">${syncError ? 'Requer reparo' : (active ? 'Ativo' : 'Inativo')}</span></div><p>${escapeHtml(user.email || '')}</p><small>${escapeHtml(syncError || formatWefrotasUserAccessDate(user.accessedAt))}</small></div>
           <div class="central-user-role"><strong>${escapeHtml(role.label)}</strong><span>${escapeHtml(role.description)}</span></div>
-          <div class="central-user-actions"><button type="button" onclick="openWefrotasUserModal('${escapeHtml(user.id)}')">Editar</button><button type="button" class="${active ? 'is-danger' : 'is-success'}" onclick="toggleWefrotasUserStatus('${escapeHtml(user.id)}')" ${isCurrent ? 'disabled title="Você não pode desativar a própria conta"' : ''}>${active ? 'Desativar' : 'Ativar'}</button></div>
+          <div class="central-user-actions"><button type="button" onclick="openWefrotasUserModal('${escapeHtml(user.id)}')">${syncError ? 'Reparar' : 'Editar'}</button>${syncError ? '' : `<button type="button" class="${active ? 'is-danger' : 'is-success'}" onclick="toggleWefrotasUserStatus('${escapeHtml(user.id)}')" ${isCurrent ? 'disabled title="Você não pode desativar a própria conta"' : ''}>${active ? 'Desativar' : 'Ativar'}</button>`}</div>
         </article>`;
       }).join('');
     }
@@ -3791,16 +3792,18 @@
       const passwordLabel = document.getElementById('wefrotas-user-password-label');
       const passwordHint = document.getElementById('wefrotas-user-password-hint');
       passwordInput.value = '';
-      passwordInput.required = !user;
+      passwordInput.required = !user || Boolean(user?.syncError);
       passwordField.classList.remove('hidden');
-      passwordLabel.textContent = user ? 'Nova senha (opcional)' : 'Senha temporária';
-      passwordHint.textContent = user
+      passwordLabel.textContent = user?.syncError ? 'Nova senha para reparar o acesso' : (user ? 'Nova senha (opcional)' : 'Senha temporária');
+      passwordHint.textContent = user?.syncError
+        ? 'Obrigatória para recriar ou religar a conta no Appwrite. Use pelo menos 8 caracteres.'
+        : user
         ? 'Deixe em branco para manter a senha atual. A nova senha deve ter pelo menos 8 caracteres.'
         : 'Mínimo de 8 caracteres. A senha não será exibida novamente.';
       document.getElementById('wefrotas-user-role').value = user?.role || 'wefrotas-consulta';
-      document.getElementById('wefrotas-user-modal-title').textContent = user ? 'Editar usuário' : 'Novo usuário';
-      document.getElementById('wefrotas-user-submit').textContent = user ? 'Salvar alterações' : 'Criar usuário';
-      document.getElementById('wefrotas-user-feedback').textContent = '';
+      document.getElementById('wefrotas-user-modal-title').textContent = user?.syncError ? 'Reparar usuário' : (user ? 'Editar usuário' : 'Novo usuário');
+      document.getElementById('wefrotas-user-submit').textContent = user?.syncError ? 'Reparar acesso' : (user ? 'Salvar alterações' : 'Criar usuário');
+      document.getElementById('wefrotas-user-feedback').textContent = user?.syncError || '';
       updateWefrotasUserPermissionSummary();
       document.getElementById('wefrotas-user-modal')?.classList.remove('hidden');
       window.setTimeout(() => document.getElementById('wefrotas-user-name')?.focus(), 50);
@@ -3836,10 +3839,10 @@
       button.disabled = true;
       feedback.textContent = userId ? 'Salvando alterações…' : 'Criando acesso seguro…';
       try {
-        await executeCentralPushAdmin(payload);
+        const result = await executeCentralPushAdmin(payload);
         closeWefrotasUserModal();
         await refreshWefrotasUsers();
-        showToast(userId ? 'Usuário atualizado.' : 'Usuário criado. Entregue a senha temporária de forma segura.');
+        showToast(result?.repaired ? 'Acesso reparado e sincronizado com o WeFrotas.' : (userId ? 'Usuário atualizado.' : 'Usuário criado. Entregue a senha temporária de forma segura.'));
       } catch (error) {
         feedback.textContent = error?.message || 'Não foi possível salvar o usuário.';
       } finally {
