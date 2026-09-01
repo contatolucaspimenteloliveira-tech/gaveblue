@@ -4658,6 +4658,61 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
   border-radius: 999px;
   background: #fff;
 }
+.central-pending-status-filter {
+  position: relative;
+  padding: 0;
+}
+.central-pending-status-filter > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 10px 0 11px;
+  list-style: none;
+  cursor: pointer;
+}
+.central-pending-status-filter > summary::-webkit-details-marker { display: none; }
+.central-pending-status-filter > summary strong {
+  min-width: 62px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+}
+.central-pending-status-filter > summary svg {
+  color: #3157df;
+  transition: transform .18s ease;
+}
+.central-pending-status-filter[open] > summary svg { transform: rotate(180deg); }
+.central-pending-status-filter[open] {
+  border-color: #6b82ef;
+  box-shadow: 0 0 0 3px rgba(49, 87, 223, .12);
+}
+.central-pending-status-menu {
+  position: absolute;
+  z-index: 65;
+  top: calc(100% + 8px);
+  left: 0;
+  display: grid;
+  min-width: 160px;
+  padding: 6px;
+  border: 1px solid #dbe5f3;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, .16);
+}
+.central-pending-status-menu button {
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+.central-pending-status-menu button:hover { background: #eef4ff; color: #3157df; }
+.central-pending-status-menu button.is-active { background: #3157df; color: #fff; }
 .central-pending-status-filter span,
 .central-pending-date-range-button span {
   color: #7b88a1;
@@ -4665,17 +4720,6 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
   font-weight: 900;
   letter-spacing: .08em;
   text-transform: uppercase;
-}
-.central-pending-status-filter select {
-  width: 82px;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #475569;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
 }
 .central-pending-date-range {
   position: relative;
@@ -4863,11 +4907,15 @@ body.dark-mode .central-pending-date-range-button {
   border-color: #334155;
   background: #111c30;
 }
-body.dark-mode .central-pending-status-filter select,
+body.dark-mode .central-pending-status-filter > summary strong,
 body.dark-mode .central-pending-date-range-button strong {
   color: #dbeafe;
   color-scheme: dark;
 }
+body.dark-mode .central-pending-status-menu { border-color: #334155; background: #111c30; }
+body.dark-mode .central-pending-status-menu button { color: #dbeafe; }
+body.dark-mode .central-pending-status-menu button:hover { background: #1e3154; }
+body.dark-mode .central-pending-status-menu button.is-active { background: #5b6ff0; color: #fff; }
 body.dark-mode .central-pending-calendar { border-color: #334155; background: #111c30; }
 body.dark-mode .central-pending-calendar-head strong,
 body.dark-mode .central-pending-calendar-picker-head button,

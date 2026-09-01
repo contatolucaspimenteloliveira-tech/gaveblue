@@ -48,13 +48,14 @@ test('Central uses one global field across record content and ignores legacy hid
   assert.match(html, /input id="global-search-input"/);
   assert.match(html, /button id="central-pending-date-range-button"/);
   assert.match(html, /div id="central-pending-calendar"[^>]+role="dialog"/);
-  assert.match(html, /select id="central-pending-status-inline"/);
+  assert.match(html, /details id="central-pending-status-filter"/);
+  assert.match(html, /data-status-value="rejeitado"/);
   assert.match(html, />Filtrar<\/button>/);
   assert.doesNotMatch(html, /data-sort-key="type"/);
   assert.doesNotMatch(html, /central-pending-date-start-inline/);
   assert.doesNotMatch(html, /data-filter-module="documentos"/);
   assert.doesNotMatch(html, /central-pending-filter-controls/);
-  for (const legacyId of ['central-pending-status-filter', 'central-pending-date-start', 'central-pending-value-filter', 'central-pending-vehicle-filter', 'central-pending-supplier-filter', 'central-pending-order-filter', 'central-pending-nf-filter', 'central-pending-due-start']) {
+  for (const legacyId of ['central-pending-date-start', 'central-pending-value-filter', 'central-pending-vehicle-filter', 'central-pending-supplier-filter', 'central-pending-order-filter', 'central-pending-nf-filter', 'central-pending-due-start']) {
     assert.doesNotMatch(html, new RegExp(`id="${legacyId}"`));
   }
   assert.match(ui, /centralPendingStatusFilter = 'todos';[\s\S]*centralPendingDateStart = '';[\s\S]*centralPendingValueFilter = '';/);
@@ -101,7 +102,7 @@ test('Central uses one global field across record content and ignores legacy hid
   };
   vm.createContext(driverContext);
   vm.runInContext(ui.slice(ui.indexOf('    function getCentralPendingDriverVehicleLabel('), ui.indexOf('    function getCentralPendingValue(')), driverContext);
-  assert.equal(driverContext.getCentralPendingDriverVehicleLabel({ motorista: 'AMANDA P. BONATTO' }), 'AMANDA P. BONATTO - TOJ-1D23');
+  assert.equal(driverContext.getCentralPendingDriverVehicleLabel({ motorista: 'AMANDA P. BONATTO' }), 'AMANDA - TOJ-1D23');
 });
 
 test('deletion success waits for server confirmation and failures remain pending', async () => {

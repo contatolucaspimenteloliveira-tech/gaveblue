@@ -9536,6 +9536,7 @@
 
     function getCentralPendingDriverVehicleLabel(record) {
       const driverName = String(record?.motorista || record?.driver || '-').trim() || '-';
+      const firstName = driverName === '-' ? '-' : driverName.split(/\s+/)[0];
       const directPlate = String(
         record?.placa
         || record?.vehiclePlate
@@ -9544,7 +9545,7 @@
         || record?.vehicle?.plate
         || ''
       ).trim();
-      if (directPlate) return `${driverName} - ${directPlate}`;
+      if (directPlate) return `${firstName} - ${directPlate}`;
 
       const vehicleId = String(record?.vehicleId || record?.veiculoId || record?.vehicle?.id || '').trim();
       let vehicle = vehicleId ? allVehicles.find(item => String(item?.id || '') === vehicleId) : null;
@@ -9558,7 +9559,7 @@
           || allVehicles.find(item => String(item?.motoristaId || item?.driverId || '') === String(driver?.id || ''));
       }
       const linkedPlate = String(vehicle?.placa || vehicle?.plate || '').trim();
-      return linkedPlate ? `${driverName} - ${linkedPlate}` : driverName;
+      return linkedPlate ? `${firstName} - ${linkedPlate}` : firstName;
     }
 
     function getCentralPendingValue(record) {
@@ -9890,8 +9891,14 @@
     }
 
     function renderCentralPendingDateControls() {
-      const status = document.getElementById('central-pending-status-inline');
-      if (status && status.value !== centralPendingStatusFilter) status.value = centralPendingStatusFilter;
+      const statusLabels = { todos: 'Todos', pendente: 'Pendentes', aprovado: 'Aprovados', rejeitado: 'Rejeitados' };
+      const statusLabel = document.getElementById('central-pending-status-label');
+      if (statusLabel) statusLabel.textContent = statusLabels[centralPendingStatusFilter] || statusLabels.todos;
+      document.querySelectorAll('[data-status-value]').forEach((button) => {
+        const active = button.dataset.statusValue === centralPendingStatusFilter;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-current', active ? 'true' : 'false');
+      });
       const label = document.getElementById('central-pending-date-range-label');
       if (label) {
         const start = formatCentralPendingCalendarDate(centralPendingDateStart);
@@ -10029,6 +10036,8 @@
     function setCentralPendingStatus(value) {
       loadCentralPendingFilters();
       centralPendingStatusFilter = ['todos', 'pendente', 'aprovado', 'rejeitado'].includes(value) ? value : 'todos';
+      const menu = document.getElementById('central-pending-status-filter');
+      if (menu) menu.open = false;
       saveCentralPendingFilters();
       renderCentralPendingRecords();
     }
