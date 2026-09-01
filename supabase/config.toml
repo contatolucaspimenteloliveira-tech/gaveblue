@@ -1,2 +1,5 @@
 [functions.platform-admin]
 verify_jwt = false
+
+[functions.wetasks-notifications]
+verify_jwt = false

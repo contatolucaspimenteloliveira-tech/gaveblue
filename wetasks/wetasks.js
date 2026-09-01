@@ -139,7 +139,10 @@ function updateBrowserNotificationStatus() {
   }
 
   if (Notification.permission === 'granted') {
-    statusEl.textContent = 'Ativas: o dispositivo já pode receber alertas de tarefas em atraso.';
+    const cloudConnected = window.WeTasksCloud?.getStatus()?.connected;
+    statusEl.textContent = cloudConnected
+      ? 'Ativas: este dispositivo pode receber os alertas agendados, mesmo com a página fechada.'
+      : 'Ativas neste navegador. A sincronização com a nuvem será retomada quando houver conexão.';
     return;
   }
 
@@ -355,7 +358,13 @@ async function enableBrowserNotifications() {
   updateBrowserNotificationStatus();
 
   if (permission === 'granted') {
-    showToast('Notificações do dispositivo ativadas!');
+    try {
+      if (window.WeTasksCloud?.enablePush) await window.WeTasksCloud.enablePush();
+      updateBrowserNotificationStatus();
+      showToast('Notificações agendadas ativadas neste dispositivo!');
+    } catch (error) {
+      showToast(error?.message || 'Não foi possível ativar as notificações agendadas.', 'error');
+    }
     return;
   }
 
@@ -394,6 +403,7 @@ function save() {
   tasks = sanitizeTasks(tasks);
   localStorage.setItem('agenda_tasks', JSON.stringify(tasks));
   localStorage.setItem('agenda_notifications', JSON.stringify(notifications));
+  window.WeTasksCloud?.scheduleSync(tasks, notifications);
 }
 
 function sanitizeTasks(taskList) {
@@ -419,7 +429,8 @@ function sanitizeTasks(taskList) {
       priority: PRIORITY_LABELS[task.priority] ? task.priority : 'low',
       notes: String(task.notes || '').trim(),
       status: task.status === 'done' ? 'done' : 'pending',
-      createdAt: task.createdAt || new Date().toISOString()
+      createdAt: task.createdAt || new Date().toISOString(),
+      updatedAt: task.updatedAt || task.createdAt || new Date().toISOString()
     };
 
     const signature = [
@@ -1832,7 +1843,7 @@ function finalizeTaskSave(data, justification = '', previousDate = '') {
   if (editingId) {
     const idx = tasks.findIndex(t => t.id === editingId);
     if (idx > -1) {
-      const updatedTask = { ...tasks[idx], ...data };
+      const updatedTask = { ...tasks[idx], ...data, updatedAt: new Date().toISOString() };
       if (justification && previousDate && previousDate !== data.date) {
         updatedTask.notes = appendTaskObservation(
           updatedTask.notes,
@@ -1844,7 +1855,8 @@ function finalizeTaskSave(data, justification = '', previousDate = '') {
       clearTaskNotification(editingId);
     }
   } else {
-    const newTask = { id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, ...data, status: 'pending', createdAt: new Date().toISOString() };
+    const createdAt = new Date().toISOString();
+    const newTask = { id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, ...data, status: 'pending', createdAt, updatedAt: createdAt };
     tasks.push(newTask);
     addNotification('create', `Nova tarefa "${data.title}" criada`);
     showToast(`Tarefa "${data.title}" criada com sucesso!`);
@@ -1975,6 +1987,7 @@ function finalizeTaskCompletion(taskId, action, justification = '') {
   const t = tasks.find(x => x.id === taskId);
   if (t) {
     t.status = action === 'uncomplete' ? 'pending' : 'done';
+    t.updatedAt = new Date().toISOString();
     if (justification && action === 'complete') {
       t.notes = appendTaskObservation(
         t.notes,
@@ -2032,7 +2045,7 @@ function renderAll() {
 }
 
 // ===== INIT =====
-function initApp() {
+async function initApp() {
   save();
   applyTheme();
   restoreNotifiedTasks();
@@ -2042,6 +2055,20 @@ function initApp() {
   lucide.createIcons();
   updateFabVisibility();
   startOverdueMonitor();
+
+  if (window.WeTasksCloud?.start) {
+    const cloudState = await window.WeTasksCloud.start({ tasks, notifications });
+    if (cloudState.connected) {
+      tasks = sanitizeTasks(cloudState.tasks);
+      notifications = Array.isArray(cloudState.notifications) ? cloudState.notifications : [];
+      localStorage.setItem('agenda_tasks', JSON.stringify(tasks));
+      localStorage.setItem('agenda_notifications', JSON.stringify(notifications));
+      renderAll();
+      updateNotificationBadge();
+      updateBrowserNotificationStatus();
+      lucide.createIcons();
+    }
+  }
 
   getTodayFromAPI()
     .then(() => {
@@ -2060,7 +2087,7 @@ function initApp() {
   }, 800);
 }
 
-initApp();
+initApp().catch((error) => console.warn('[WeTasks] Falha durante a inicialização:', error));
 
 document.addEventListener('click', (event) => {
   const panel = document.getElementById('calendar-picker-panel');
