@@ -177,6 +177,7 @@ test('all native WeFrotas date and month fields use the shared calendar', () => 
   assert.match(picker, /input\.dispatchEvent\(new Event\('input'[\s\S]*input\.dispatchEvent\(new Event\('change'/);
   assert.match(picker, /state\.view === 'years'[\s\S]*state\.view === 'months'/);
   assert.match(picker, /closest\('\.contextual-module-filter-source'\)/);
+  assert.match(picker, /trigger\.addEventListener\('click',[\s\S]*event\.preventDefault\(\)[\s\S]*event\.stopPropagation\(\)[\s\S]*openPicker\(input\)/);
   assert.match(css, /\.standard-date-picker-backdrop[\s\S]*backdrop-filter: blur\(5px\)/);
   assert.match(css, /\.standard-date-picker-month-grid[\s\S]*\.standard-date-picker-year-grid/);
   assert.match(batch, /type="date"/);

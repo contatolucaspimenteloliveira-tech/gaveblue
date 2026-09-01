@@ -234,7 +234,14 @@
     trigger.className = 'standard-date-input-trigger';
     trigger.setAttribute('aria-label', `Abrir calendário: ${getFieldLabel(input)}`);
     trigger.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3M17 3v3M4 8h16M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" stroke-width="1.9" stroke-linecap="round"/></svg>';
-    trigger.addEventListener('click', () => openPicker(input));
+    trigger.addEventListener('click', event => {
+      // The trigger is often rendered inside a <label>. Without cancelling the
+      // label's default action, the same click also activates the underlying
+      // native date input and both calendars are displayed at once.
+      event.preventDefault();
+      event.stopPropagation();
+      openPicker(input);
+    });
     shell.appendChild(trigger);
   }
 
