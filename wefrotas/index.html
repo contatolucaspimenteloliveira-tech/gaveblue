@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260831-central-fixed-grid-2">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260831-unified-module-filters-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -203,7 +203,7 @@
 
         <main class="app-main-content">
       <section id="panel-orders" class="module-panel content-card orders-page-shell p-8 sm:p-10">
-          <div class="orders-filter-shell">
+          <div class="orders-filter-shell contextual-module-filter-source">
             <div class="orders-filter-grid">
               <div class="orders-filter-field">
                 <label>Pesquisa rápida</label>
@@ -221,7 +221,7 @@
                 <label>Status</label>
                 <select id="order-filter-status" class="soft-input w-full">
                   <option value="todos" selected>Todos os Status</option>
-                  <option value="">Abertas e em andamento</option>
+                  <option value="ativas">Abertas e em andamento</option>
                   <option value="aberta">Aberta</option>
                   <option value="andamento">Em andamento</option>
                   <option value="fechada">Fechada</option>
@@ -413,12 +413,15 @@
         </section>
 
         <section id="panel-veiculos" class="module-panel content-card orders-page-shell p-8 sm:p-10">
-          <div class="orders-filter-shell">
+          <div class="orders-filter-shell contextual-module-filter-source">
             <div class="orders-filter-grid entity-filter-grid entity-filter-grid--vehicles">
               <div class="orders-filter-field">
                 <label>Pesquisa rápida</label>
                 <input id="vehicle-filter-search" class="soft-input w-full" placeholder="Frota, placa, modelo, chassi ou cor">
               </div>
+              <div class="orders-filter-field"><label>Status</label><select id="vehicle-filter-status" class="soft-input w-full"><option value="todos">Todos</option><option value="ativo">Ativos</option><option value="inativo">Inativos</option></select></div>
+              <div class="orders-filter-field"><label>Seguro de</label><input id="vehicle-filter-start" type="date" class="soft-input w-full"></div>
+              <div class="orders-filter-field"><label>Seguro até</label><input id="vehicle-filter-end" type="date" class="soft-input w-full"></div>
               <div class="orders-filter-actions">
                 <button class="filter-action-btn" title="Limpar filtros" aria-label="Limpar filtros" onclick="clearVehicleFilters()">⌫</button>
               </div>
@@ -465,16 +468,15 @@
         </section>
 
         <section id="panel-motoristas" class="module-panel content-card orders-page-shell p-8 sm:p-10">
-          <div class="orders-filter-shell">
+          <div class="orders-filter-shell contextual-module-filter-source">
             <div class="orders-filter-grid entity-filter-grid entity-filter-grid--drivers">
               <div class="orders-filter-field">
                 <label>Pesquisa rápida</label>
                 <input id="driver-filter-search" class="soft-input w-full" placeholder="Nome, CPF, CNH, telefone ou categoria">
               </div>
-              <div class="orders-filter-field">
-                <label>Validade da CNH</label>
-                <input id="driver-filter-validity" type="date" class="soft-input w-full">
-              </div>
+              <div class="orders-filter-field"><label>Status</label><select id="driver-filter-status" class="soft-input w-full"><option value="todos">Todos</option><option value="ativo">Ativos</option><option value="inativo">Inativos</option></select></div>
+              <div class="orders-filter-field"><label>CNH válida de</label><input id="driver-filter-start" type="date" class="soft-input w-full"></div>
+              <div class="orders-filter-field"><label>CNH válida até</label><input id="driver-filter-end" type="date" class="soft-input w-full"></div>
               <div class="orders-filter-actions">
                 <button class="filter-action-btn" title="Limpar filtros" aria-label="Limpar filtros" onclick="clearDriverFilters()">⌫</button>
               </div>
@@ -520,7 +522,7 @@
         </section>
 
         <section id="panel-fornecedores" class="module-panel content-card orders-page-shell p-8 sm:p-10">
-          <div class="orders-filter-shell">
+          <div class="orders-filter-shell contextual-module-filter-source">
             <div class="orders-filter-grid entity-filter-grid entity-filter-grid--suppliers">
               <div class="orders-filter-field">
                 <label>Pesquisa rápida</label>
@@ -547,6 +549,9 @@
                   <option value="outro">Outro</option>
                 </select>
               </div>
+              <div class="orders-filter-field"><label>Status</label><select id="supplier-filter-status" class="soft-input w-full"><option value="todos">Todos</option><option value="ativo">Ativos</option><option value="inativo">Inativos</option></select></div>
+              <div class="orders-filter-field"><label>Cadastrado de</label><input id="supplier-filter-start" type="date" class="soft-input w-full"></div>
+              <div class="orders-filter-field"><label>Cadastrado até</label><input id="supplier-filter-end" type="date" class="soft-input w-full"></div>
               <div class="orders-filter-actions">
                 <button class="filter-action-btn" title="Limpar filtros" aria-label="Limpar filtros" onclick="clearSupplierFilters()">⌫</button>
               </div>
@@ -591,7 +596,7 @@
           </div>
         </section>
         <section id="panel-financeiro" class="module-panel content-card orders-page-shell p-8 sm:p-10">
-          <div class="orders-filter-shell">
+          <div class="orders-filter-shell contextual-module-filter-source">
             <div class="orders-filter-grid finance-filter-grid">
               <div class="orders-filter-field">
                 <label>Pesquisa rápida</label>
@@ -615,16 +620,6 @@
                 <label>Data final</label>
                 <input id="finance-filter-end" type="date" class="soft-input w-full">
               </div>
-              <div class="orders-filter-field">
-                <label>Valor</label>
-                <input id="finance-filter-value" class="soft-input w-full" placeholder="Ex: 1500,00">
-              </div>
-              <div class="orders-filter-field"><label>Veículo</label><input id="finance-filter-vehicle" class="soft-input w-full" placeholder="Placa, frota ou modelo"></div>
-              <div class="orders-filter-field"><label>Fornecedor</label><input id="finance-filter-supplier" class="soft-input w-full" placeholder="Fornecedor ou posto"></div>
-              <div class="orders-filter-field"><label>OS</label><input id="finance-filter-order" class="soft-input w-full" placeholder="Nº da OS"></div>
-              <div class="orders-filter-field"><label>Nota fiscal</label><input id="finance-filter-nf" class="soft-input w-full" placeholder="Número da nota"></div>
-              <div class="orders-filter-field"><label>Vencimento de</label><input id="finance-filter-due-start" type="date" class="soft-input w-full"></div>
-              <div class="orders-filter-field"><label>Vencimento até</label><input id="finance-filter-due-end" type="date" class="soft-input w-full"></div>
               <div class="orders-filter-actions">
                 <button class="filter-action-btn" title="Limpar filtros" aria-label="Limpar filtros" onclick="clearFinanceFilters()">⌫</button>
               </div>
@@ -1788,7 +1783,7 @@
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260831-session-company-1"></script>
-  <script src="./wefrotas.js?v=20260831-central-status-menu-1"></script>
+  <script src="./wefrotas.js?v=20260831-unified-module-filters-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>

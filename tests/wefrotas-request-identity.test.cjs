@@ -110,6 +110,53 @@ test('Central uses one global field across record content and ignores legacy hid
   assert.equal(driverContext.getCentralPendingDriverVehicleLabel({ motorista: 'AMANDA P. BONATTO' }), 'AMANDA - TOJ-1D23');
 });
 
+test('Finance, OS and entity modules share contextual search, compact status and period filters', () => {
+  const ui = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.js'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'wefrotas/index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.css'), 'utf8');
+  for (const module of ['orders', 'financeiro', 'veiculos', 'motoristas', 'fornecedores']) {
+    assert.match(ui, new RegExp(`${module}: \\{[\\s\\S]*statusInputId:[\\s\\S]*startInputId:[\\s\\S]*endInputId:`));
+  }
+  for (const id of [
+    'order-filter-status', 'order-filter-start', 'order-filter-end',
+    'finance-filter-status', 'finance-filter-start', 'finance-filter-end',
+    'vehicle-filter-status', 'vehicle-filter-start', 'vehicle-filter-end',
+    'driver-filter-status', 'driver-filter-start', 'driver-filter-end',
+    'supplier-filter-status', 'supplier-filter-start', 'supplier-filter-end'
+  ]) assert.match(html, new RegExp(`id="${id}"`));
+  for (const removedId of ['finance-filter-value', 'finance-filter-vehicle', 'finance-filter-supplier', 'finance-filter-order', 'finance-filter-nf', 'finance-filter-due-start', 'finance-filter-due-end', 'driver-filter-validity']) {
+    assert.doesNotMatch(html, new RegExp(`id="${removedId}"`));
+  }
+  assert.equal((html.match(/contextual-module-filter-source/g) || []).length, 5);
+  assert.match(ui, /contextualModuleSearchFields = \{[\s\S]*orders:[\s\S]*financeiro:[\s\S]*veiculos:[\s\S]*motoristas:[\s\S]*fornecedores:/);
+  assert.match(ui, /document\.getElementById\('finance-filter-search'\)\?\.addEventListener\('input', renderFinance\)/);
+  assert.match(ui, /getFinanceEntryStatusLabel\(entry\)[\s\S]*formatCurrency\(total\)/);
+  assert.match(ui, /formatDate\(order\.dataInicio\)[\s\S]*formatCurrency\(total\)/);
+  assert.match(ui, /module-compact-status-[\s\S]*module-compact-calendar-[\s\S]*applyModuleCompactDateRange/);
+  assert.match(ui, /state\.view === 'months'[\s\S]*state\.view === 'years'/);
+  assert.match(css, /\.contextual-module-filter-source \{ display: none !important; \}/);
+  assert.match(css, /\.module-compact-filters \{[\s\S]*display: inline-flex/);
+
+  const context = {
+    Date,
+    parseCentralPendingCalendarDate(value) {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+      if (!match) return null;
+      const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+      return Number.isNaN(date.getTime()) ? null : date;
+    },
+    centralPendingCalendarIso(date) { return date instanceof Date && !Number.isNaN(date.getTime()) ? date.toISOString().slice(0, 10) : ''; },
+    isEntityActive(entity) { return entity?.ativo !== false; }
+  };
+  vm.createContext(context);
+  vm.runInContext(ui.slice(ui.indexOf('    function getEntityCreatedIsoDate('), ui.indexOf('    function getVisibleVehicles(')), context);
+  assert.equal(context.matchesEntityStatus({ ativo: true }, 'ativo'), true);
+  assert.equal(context.matchesEntityStatus({ ativo: false }, 'ativo'), false);
+  assert.equal(context.matchesIsoDateRange('2026-08-15', '2026-08-01', '2026-08-31'), true);
+  assert.equal(context.matchesIsoDateRange('2026-09-01', '2026-08-01', '2026-08-31'), false);
+  assert.equal(context.getEntityCreatedIsoDate({ createdAt: '2026-08-31T12:00:00.000Z' }), '2026-08-31');
+});
+
 test('deletion success waits for server confirmation and failures remain pending', async () => {
   const ui = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.js'), 'utf8');
   for (const fail of [false, true]) {

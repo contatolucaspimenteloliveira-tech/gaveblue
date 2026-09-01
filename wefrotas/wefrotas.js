@@ -4907,7 +4907,8 @@
       setFilterValue('finance-filter-status', '');
       setFilterValue('finance-filter-start', '');
       setFilterValue('finance-filter-end', '');
-      setFilterValue('finance-filter-value', '');
+      renderModuleCompactFilterControls('financeiro');
+      updateContextualSearchUi();
       selectedFinance.clear();
       renderFinance();
     }
@@ -4916,7 +4917,11 @@
       const driver = allDrivers.find(item => item.id === driverId);
       openModuleFromHome('motoristas');
       setFilterValue('driver-filter-search', driver ? [driver.nome, driver.cpf, driver.cnh, driver.telefone].filter(Boolean).join(' ') : '');
-      setFilterValue('driver-filter-validity', '');
+      setFilterValue('driver-filter-status', 'todos');
+      setFilterValue('driver-filter-start', '');
+      setFilterValue('driver-filter-end', '');
+      renderModuleCompactFilterControls('motoristas');
+      updateContextualSearchUi();
       selectedDrivers.clear();
       renderDrivers();
     }
@@ -4925,6 +4930,11 @@
       const vehicle = allVehicles.find(item => item.id === vehicleId);
       openModuleFromHome('veiculos');
       setFilterValue('vehicle-filter-search', buildVehicleSearchValue(vehicle));
+      setFilterValue('vehicle-filter-status', 'todos');
+      setFilterValue('vehicle-filter-start', '');
+      setFilterValue('vehicle-filter-end', '');
+      renderModuleCompactFilterControls('veiculos');
+      updateContextualSearchUi();
       selectedVehicles.clear();
       renderVehicles();
     }
@@ -4938,6 +4948,8 @@
       setFilterValue('order-filter-end', '');
       setFilterValue('order-filter-status', 'todos');
       setFilterValue('order-filter-sort', 'recentes');
+      renderModuleCompactFilterControls('orders');
+      updateContextualSearchUi();
       orderSortState = { key: 'default', direction: 'desc' };
       selectedOrders.clear();
       renderOrders();
@@ -4952,6 +4964,8 @@
       setFilterValue('order-filter-end', '');
       setFilterValue('order-filter-status', 'todos');
       setFilterValue('order-filter-sort', 'recentes');
+      renderModuleCompactFilterControls('orders');
+      updateContextualSearchUi();
       selectedOrders.clear();
       renderOrders();
     }
@@ -6054,7 +6068,7 @@
             duplicates += 1;
             return;
           }
-          allVehicles.unshift({ id: generateId(), ...payload });
+          allVehicles.unshift({ id: generateId(), createdAt: new Date().toISOString(), ...payload });
           created += 1;
         }
       });
@@ -6122,7 +6136,7 @@
             return;
           }
           const newDriverId = generateId();
-          allDrivers.unshift({ id: newDriverId, ...payload });
+          allDrivers.unshift({ id: newDriverId, createdAt: new Date().toISOString(), ...payload });
           if (hasVehicleLinksValue) {
             syncVehiclesWithDriver(newDriverId, vehicleIds);
           }
@@ -6175,7 +6189,7 @@
             duplicates += 1;
             return;
           }
-          allSuppliers.unshift({ id: generateId(), ...payload });
+          allSuppliers.unshift({ id: generateId(), createdAt: new Date().toISOString(), ...payload });
           created += 1;
         }
       });
@@ -6997,8 +7011,9 @@
       setFilterValue('finance-filter-search', '');
       setFilterValue('finance-filter-start', '');
       setFilterValue('finance-filter-end', '');
-      setFilterValue('finance-filter-value', '');
       setFilterValue('finance-filter-status', group === 'distributed' ? 'distribuido' : 'pendente');
+      renderModuleCompactFilterControls('financeiro');
+      updateContextualSearchUi();
       renderFinance();
     }
 
@@ -8161,13 +8176,6 @@
       const statusFilter = document.getElementById('finance-filter-status')?.value || '';
       const startFilter = document.getElementById('finance-filter-start')?.value || '';
       const endFilter = document.getElementById('finance-filter-end')?.value || '';
-      const valueFilter = document.getElementById('finance-filter-value')?.value.trim().toLowerCase() || '';
-      const vehicleFilter = normalizeSearchText(document.getElementById('finance-filter-vehicle')?.value || '');
-      const supplierFilter = normalizeSearchText(document.getElementById('finance-filter-supplier')?.value || '');
-      const orderFilter = normalizeSearchText(document.getElementById('finance-filter-order')?.value || '');
-      const nfFilter = normalizeSearchText(document.getElementById('finance-filter-nf')?.value || '');
-      const dueStart = document.getElementById('finance-filter-due-start')?.value || '';
-      const dueEnd = document.getElementById('finance-filter-due-end')?.value || '';
 
       let visibleEntries = allFinanceEntries
         .filter(entry => !entry.groupedIntoId);
@@ -8179,47 +8187,42 @@
       }
       if (startFilter) visibleEntries = visibleEntries.filter(entry => getFinanceEntryDate(entry) >= startFilter);
       if (endFilter) visibleEntries = visibleEntries.filter(entry => getFinanceEntryDate(entry) <= endFilter);
-      if (dueStart) visibleEntries = visibleEntries.filter(entry => String(entry.dataVencimento || '') >= dueStart);
-      if (dueEnd) visibleEntries = visibleEntries.filter(entry => String(entry.dataVencimento || '') <= dueEnd);
-      if (vehicleFilter) visibleEntries = visibleEntries.filter(entry => {
-        const vehicle = allVehicles.find(item => item.id === getEntryVehicleId(entry));
-        return normalizeSearchText([
-          vehicle ? buildVehicleSearchValue(vehicle) : '',
-          entry.veiculo,
-          entry.vehicle,
-          entry.placa,
-          entry.modelo,
-          entry.frota
-        ].join(' ')).includes(vehicleFilter);
-      });
-      if (supplierFilter) visibleEntries = visibleEntries.filter(entry => normalizeSearchText([entry.fornecedor, entry.posto, entry.supplier].join(' ')).includes(supplierFilter));
-      if (orderFilter) visibleEntries = visibleEntries.filter(entry => {
-        const order = allOrders.find(item => item.id === entry.orderId);
-        return normalizeSearchText([entry.orderId, entry.os, entry.numeroOs, getOrderNumberLabel(order || {})].join(' ')).includes(orderFilter);
-      });
-      if (nfFilter) visibleEntries = visibleEntries.filter(entry => normalizeSearchText([entry.nf, entry.notaFiscal, entry.numeroNota].join(' ')).includes(nfFilter));
       if (quickSearch) {
         visibleEntries = visibleEntries.filter(entry => {
           const order = allOrders.find(item => item.id === entry.orderId);
           const vehicle = allVehicles.find(item => item.id === getEntryVehicleId(entry));
+          const total = getFinanceTotal(entry);
           const haystack = normalizeSearchText([
             entry.fornecedor,
+            entry.posto,
+            entry.supplier,
             entry.nf,
+            entry.notaFiscal,
+            entry.numeroNota,
             entry.observacoes,
             entry.kindLabel,
             entry.fuelType,
             entry.km,
+            entry.motorista,
+            entry.dataVencimento,
+            formatDate(entry.dataVencimento),
+            getFinanceEntryDate(entry),
+            formatDate(getFinanceEntryDate(entry)),
+            getFinanceEntryStatusLabel(entry),
+            total,
+            formatCurrency(total),
+            entry.orderId,
+            entry.os,
+            entry.numeroOs,
             order ? `OS ${getOrderNumberLabel(order)}` : '',
-            vehicle ? `${vehicle.numeroFrota || ''} ${vehicle.placa || ''} ${vehicle.modelo || ''}` : ''
+            vehicle ? buildVehicleSearchValue(vehicle) : '',
+            entry.veiculo,
+            entry.vehicle,
+            entry.placa,
+            entry.modelo,
+            entry.frota
           ].join(' '));
           return haystack.includes(quickSearch);
-        });
-      }
-      if (valueFilter) {
-        const normalizedValue = valueFilter.replace(/[^\d,.-]/g, '').replace(',', '.');
-        visibleEntries = visibleEntries.filter(entry => {
-          const total = getFinanceTotal(entry);
-          return String(total).includes(normalizedValue) || formatCurrency(total).toLowerCase().includes(valueFilter);
         });
       }
 
@@ -11789,19 +11792,53 @@
     window.toggleDriverSort = toggleDriverSort;
     window.toggleSupplierSort = toggleSupplierSort;
 
+    function getEntityCreatedIsoDate(entity) {
+      const explicitDate = String(entity?.createdAt || entity?.criadoEm || entity?.$createdAt || '').slice(0, 10);
+      if (parseCentralPendingCalendarDate(explicitDate)) return explicitDate;
+      const timestamp = Number(String(entity?.id || '').split('_')[0]);
+      if (!Number.isFinite(timestamp) || timestamp < 946684800000) return '';
+      return centralPendingCalendarIso(new Date(timestamp));
+    }
+
+    function matchesEntityStatus(entity, value) {
+      if (!value || value === 'todos') return true;
+      return value === 'ativo' ? isEntityActive(entity) : !isEntityActive(entity);
+    }
+
+    function matchesIsoDateRange(value, start, end) {
+      const iso = String(value || '').slice(0, 10);
+      if (!iso) return !start && !end;
+      return (!start || iso >= start) && (!end || iso <= end);
+    }
+
     function getVisibleVehicles() {
       const quickSearch = normalizeSearchText(document.getElementById('vehicle-filter-search')?.value || '');
+      const statusFilter = document.getElementById('vehicle-filter-status')?.value || 'todos';
+      const startFilter = document.getElementById('vehicle-filter-start')?.value || '';
+      const endFilter = document.getElementById('vehicle-filter-end')?.value || '';
 
       const items = [...allVehicles]
+        .filter(vehicle => matchesEntityStatus(vehicle, statusFilter))
+        .filter(vehicle => matchesIsoDateRange(vehicle.seguroVencimento, startFilter, endFilter))
         .filter(vehicle => {
           if (!quickSearch) return true;
+          const driver = allDrivers.find(item => item.id === vehicle.motoristaId);
+          const currentKm = getVehicleCurrentKm(vehicle.id);
+          const totalCost = getVehicleDistributedCostTotal(vehicle.id);
           const haystack = normalizeSearchText([
             vehicle.numeroFrota,
             vehicle.placa,
             vehicle.modelo,
             vehicle.ano,
             vehicle.cor,
-            vehicle.chassi
+            vehicle.chassi,
+            vehicle.seguroVencimento,
+            formatDate(vehicle.seguroVencimento),
+            isEntityActive(vehicle) ? 'ativo' : 'inativo',
+            driver?.nome,
+            currentKm,
+            totalCost,
+            formatCurrency(totalCost)
           ].join(' '));
           return haystack.includes(quickSearch);
         });
@@ -11810,18 +11847,29 @@
 
     function getVisibleDrivers() {
       const quickSearch = normalizeComparableText(document.getElementById('driver-filter-search')?.value || '');
-      const validityFilter = document.getElementById('driver-filter-validity')?.value || '';
+      const statusFilter = document.getElementById('driver-filter-status')?.value || 'todos';
+      const startFilter = document.getElementById('driver-filter-start')?.value || '';
+      const endFilter = document.getElementById('driver-filter-end')?.value || '';
 
       const items = [...allDrivers]
-        .filter(driver => !validityFilter || String(driver.validade || '') === validityFilter)
+        .filter(driver => matchesEntityStatus(driver, statusFilter))
+        .filter(driver => matchesIsoDateRange(driver.validade, startFilter, endFilter))
         .filter(driver => {
           if (!quickSearch) return true;
+          const linkedVehicles = allVehicles.filter(vehicle =>
+            (Array.isArray(driver.vehicleIds) && driver.vehicleIds.map(String).includes(String(vehicle.id))) ||
+            String(vehicle.motoristaId || '') === String(driver.id)
+          );
           const haystack = normalizeComparableText([
             driver.nome,
             driver.cpf,
             driver.cnh,
             driver.telefone,
-            driver.categoria
+            driver.categoria,
+            driver.validade,
+            formatDate(driver.validade),
+            isEntityActive(driver) ? 'ativo' : 'inativo',
+            ...linkedVehicles.flatMap(vehicle => [vehicle.numeroFrota, vehicle.placa, vehicle.modelo])
           ].join(' '));
           return haystack.includes(quickSearch);
         });
@@ -11831,9 +11879,14 @@
     function getVisibleSuppliers() {
       const quickSearch = normalizeComparableText(document.getElementById('supplier-filter-search')?.value || '');
       const typeFilter = document.getElementById('supplier-filter-type')?.value || '';
+      const statusFilter = document.getElementById('supplier-filter-status')?.value || 'todos';
+      const startFilter = document.getElementById('supplier-filter-start')?.value || '';
+      const endFilter = document.getElementById('supplier-filter-end')?.value || '';
 
       const items = [...allSuppliers]
         .filter(supplier => !typeFilter || supplier.tipo === typeFilter)
+        .filter(supplier => matchesEntityStatus(supplier, statusFilter))
+        .filter(supplier => matchesIsoDateRange(getEntityCreatedIsoDate(supplier), startFilter, endFilter))
         .filter(supplier => {
           if (!quickSearch) return true;
           const haystack = normalizeComparableText([
@@ -11842,7 +11895,13 @@
             supplier.documento,
             supplier.telefone,
             supplier.email,
-            supplier.observacoes
+            supplier.observacoes,
+            supplier.cidade,
+            supplier.endereco,
+            supplier.mapaUrl,
+            getEntityCreatedIsoDate(supplier),
+            formatDate(getEntityCreatedIsoDate(supplier)),
+            isEntityActive(supplier) ? 'ativo' : 'inativo'
           ].join(' '));
           return haystack.includes(quickSearch);
         });
@@ -11850,18 +11909,22 @@
     }
 
     function hasActiveVehicleFilters() {
-      return ['vehicle-filter-search']
-        .some((id) => String(document.getElementById(id)?.value || '').trim() !== '');
+      return Boolean(document.getElementById('vehicle-filter-search')?.value.trim())
+        || !['', 'todos'].includes(document.getElementById('vehicle-filter-status')?.value || '')
+        || Boolean(document.getElementById('vehicle-filter-start')?.value || document.getElementById('vehicle-filter-end')?.value);
     }
 
     function hasActiveDriverFilters() {
-      return ['driver-filter-search', 'driver-filter-validity']
-        .some((id) => String(document.getElementById(id)?.value || '').trim() !== '');
+      return Boolean(document.getElementById('driver-filter-search')?.value.trim())
+        || !['', 'todos'].includes(document.getElementById('driver-filter-status')?.value || '')
+        || Boolean(document.getElementById('driver-filter-start')?.value || document.getElementById('driver-filter-end')?.value);
     }
 
     function hasActiveSupplierFilters() {
-      return ['supplier-filter-search', 'supplier-filter-type']
-        .some((id) => String(document.getElementById(id)?.value || '').trim() !== '');
+      return Boolean(document.getElementById('supplier-filter-search')?.value.trim())
+        || Boolean(document.getElementById('supplier-filter-type')?.value)
+        || !['', 'todos'].includes(document.getElementById('supplier-filter-status')?.value || '')
+        || Boolean(document.getElementById('supplier-filter-start')?.value || document.getElementById('supplier-filter-end')?.value);
     }
 
     function renderVehicles() {
@@ -12039,18 +12102,27 @@
       if (orderVehicleFilterId) items = items.filter(order => order.vehicleId === orderVehicleFilterId);
       if (start) items = items.filter(order => !order.dataInicio || order.dataInicio >= start);
       if (end) items = items.filter(order => !order.dataInicio || order.dataInicio <= end);
-      if (status && status !== 'todos') {
+      if (status === 'ativas') {
+        items = items.filter(order => ['aberta', 'andamento'].includes(order.status || 'aberta'));
+      } else if (status && status !== 'todos') {
         items = items.filter(order => order.status === status);
       }
       if (quickSearch) {
         items = items.filter(order => {
           const vehicle = allVehicles.find(item => item.id === order.vehicleId);
           const driver = allDrivers.find(item => item.id === order.driverId);
+          const total = sumFinanceNetTotal(allFinanceEntries.filter(entry => entry.orderId === order.id));
           const haystack = normalizeSearchText([
             order.numero,
             order.status,
             order.descricao,
             order.responsavelNome,
+            order.dataInicio,
+            order.dataTermino,
+            formatDate(order.dataInicio),
+            formatDate(order.dataTermino),
+            total,
+            formatCurrency(total),
             driver?.nome,
             vehicle ? `${vehicle.numeroFrota || ''} ${vehicle.placa || ''} ${vehicle.modelo || ''} ${vehicle.chassi || ''}` : '',
             vehicle ? buildVehicleSearchValue(vehicle) : ''
@@ -12334,6 +12406,8 @@
       document.getElementById('order-filter-status').value = 'todos';
       document.getElementById('order-filter-sort').value = 'recentes';
       orderSortState = { key: 'default', direction: 'desc' };
+      renderModuleCompactFilterControls('orders');
+      updateContextualSearchUi();
       renderOrders();
     }
 
@@ -12342,9 +12416,10 @@
       document.getElementById('finance-filter-status').value = '';
       document.getElementById('finance-filter-start').value = '';
       document.getElementById('finance-filter-end').value = '';
-      document.getElementById('finance-filter-value').value = '';
       ['finance-filter-vehicle','finance-filter-supplier','finance-filter-order','finance-filter-nf','finance-filter-due-start','finance-filter-due-end'].forEach(id => { const node=document.getElementById(id); if(node) node.value=''; });
       financeSortState = { key: 'default', direction: 'desc' };
+      renderModuleCompactFilterControls('financeiro');
+      updateContextualSearchUi();
       renderFinance();
     }
 
@@ -12391,23 +12466,263 @@
     window.applyModuleFilters = applyModuleFilters;
     window.clearModuleFilters = clearModuleFilters;
 
+    const moduleCompactFilterConfigs = {
+      orders: {
+        statusInputId: 'order-filter-status', startInputId: 'order-filter-start', endInputId: 'order-filter-end', dateLabel: 'Abertura',
+        statuses: [['todos', 'Todos'], ['ativas', 'Abertas e em andamento'], ['aberta', 'Abertas'], ['andamento', 'Em andamento'], ['fechada', 'Fechadas']]
+      },
+      financeiro: {
+        statusInputId: 'finance-filter-status', startInputId: 'finance-filter-start', endInputId: 'finance-filter-end', dateLabel: 'Lançamento',
+        statuses: [['', 'Todos'], ['pendente', 'Pendentes'], ['pendente_os', 'Pendentes de OS'], ['distribuido', 'Finalizados'], ['agrupado', 'Agrupados']]
+      },
+      veiculos: {
+        statusInputId: 'vehicle-filter-status', startInputId: 'vehicle-filter-start', endInputId: 'vehicle-filter-end', dateLabel: 'Seguro',
+        statuses: [['todos', 'Todos'], ['ativo', 'Ativos'], ['inativo', 'Inativos']]
+      },
+      motoristas: {
+        statusInputId: 'driver-filter-status', startInputId: 'driver-filter-start', endInputId: 'driver-filter-end', dateLabel: 'CNH',
+        statuses: [['todos', 'Todos'], ['ativo', 'Ativos'], ['inativo', 'Inativos']]
+      },
+      fornecedores: {
+        statusInputId: 'supplier-filter-status', startInputId: 'supplier-filter-start', endInputId: 'supplier-filter-end', dateLabel: 'Cadastro',
+        statuses: [['todos', 'Todos'], ['ativo', 'Ativos'], ['inativo', 'Inativos']]
+      }
+    };
+    let moduleCompactCalendarState = {
+      module: '', month: null, selectingEnd: false, view: 'days', draftStart: '', draftEnd: ''
+    };
+
+    function getModuleCompactFilterValue(module, key) {
+      const id = moduleCompactFilterConfigs[module]?.[key];
+      return id ? (document.getElementById(id)?.value || '') : '';
+    }
+
+    function renderModuleCompactFilterControls(module) {
+      const config = moduleCompactFilterConfigs[module];
+      if (!config) return;
+      const status = getModuleCompactFilterValue(module, 'statusInputId');
+      const selectedStatus = config.statuses.find(([value]) => value === status) || config.statuses[0];
+      const statusLabel = document.getElementById(`module-compact-status-label-${module}`);
+      if (statusLabel) statusLabel.textContent = selectedStatus[1];
+      document.querySelectorAll(`[data-module-status="${module}"]`).forEach((button) => {
+        const active = button.dataset.moduleStatusValue === selectedStatus[0];
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-current', active ? 'true' : 'false');
+      });
+      const start = formatCentralPendingCalendarDate(getModuleCompactFilterValue(module, 'startInputId'));
+      const end = formatCentralPendingCalendarDate(getModuleCompactFilterValue(module, 'endInputId'));
+      const dateLabel = document.getElementById(`module-compact-date-label-${module}`);
+      if (dateLabel) dateLabel.textContent = start ? `${start}${end ? ` – ${end}` : ' – …'}` : 'Todas as datas';
+      if (moduleCompactCalendarState.module === module) {
+        const hint = document.getElementById(`module-compact-calendar-hint-${module}`);
+        if (hint) hint.textContent = moduleCompactCalendarState.selectingEnd && moduleCompactCalendarState.draftStart && !moduleCompactCalendarState.draftEnd
+          ? 'Agora escolha a data final.'
+          : (moduleCompactCalendarState.draftStart && moduleCompactCalendarState.draftEnd ? 'Período pronto para filtrar.' : 'Escolha a data inicial.');
+      }
+    }
+
+    function setModuleCompactStatus(module, value) {
+      const config = moduleCompactFilterConfigs[module];
+      if (!config || !config.statuses.some(([option]) => option === value)) return;
+      const field = document.getElementById(config.statusInputId);
+      if (field) field.value = value;
+      const details = document.getElementById(`module-compact-status-${module}`);
+      if (details) details.open = false;
+      renderModuleCompactFilterControls(module);
+      moduleFilterRenderActions[module]?.();
+    }
+
+    function renderModuleCompactCalendar(module) {
+      const state = moduleCompactCalendarState;
+      const months = document.getElementById(`module-compact-calendar-months-${module}`);
+      if (!months || state.module !== module) return;
+      if (!(state.month instanceof Date)) state.month = new Date();
+      const todayIso = centralPendingCalendarIso(new Date());
+      const weekdays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+      const year = state.month.getFullYear();
+      const month = state.month.getMonth();
+      const monthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(state.month);
+      const pickerHead = `<div class="central-pending-calendar-picker-head"><button type="button" onclick="event.stopPropagation(); setModuleCompactCalendarView('${module}', 'months')">${monthName}</button><button type="button" onclick="event.stopPropagation(); setModuleCompactCalendarView('${module}', 'years')">${year}</button></div>`;
+      if (state.view === 'months') {
+        const names = Array.from({ length: 12 }, (_, index) => new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(new Date(year, index, 1)).replace('.', ''));
+        months.innerHTML = `<section class="central-pending-calendar-month">${pickerHead}<div class="central-pending-calendar-options is-months">${names.map((name, index) => `<button type="button" class="${index === month ? 'is-selected' : ''}" onclick="event.stopPropagation(); chooseModuleCompactCalendarMonth('${module}', ${index})">${name}</button>`).join('')}</div></section>`;
+      } else if (state.view === 'years') {
+        const firstYear = Math.floor(year / 12) * 12;
+        months.innerHTML = `<section class="central-pending-calendar-month">${pickerHead}<div class="central-pending-calendar-options is-years">${Array.from({ length: 12 }, (_, index) => firstYear + index).map(optionYear => `<button type="button" class="${optionYear === year ? 'is-selected' : ''}" onclick="event.stopPropagation(); chooseModuleCompactCalendarYear('${module}', ${optionYear})">${optionYear}</button>`).join('')}</div></section>`;
+      } else {
+        const firstWeekday = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const blanks = Array.from({ length: firstWeekday }, () => '<span class="central-pending-calendar-day is-placeholder"></span>').join('');
+        const days = Array.from({ length: daysInMonth }, (_, index) => {
+          const iso = centralPendingCalendarIso(new Date(year, month, index + 1));
+          const classes = ['central-pending-calendar-day'];
+          if (iso === todayIso) classes.push('is-today');
+          if (iso === state.draftStart) classes.push('is-start');
+          if (iso === state.draftEnd) classes.push('is-end');
+          if (state.draftStart && state.draftEnd && iso > state.draftStart && iso < state.draftEnd) classes.push('is-in-range');
+          return `<button type="button" class="${classes.join(' ')}" data-date="${iso}" aria-label="${formatCentralPendingCalendarDate(iso)}" onclick="event.stopPropagation(); selectModuleCompactCalendarDate('${module}', '${iso}')">${index + 1}</button>`;
+        }).join('');
+        months.innerHTML = `<section class="central-pending-calendar-month">${pickerHead}<div class="central-pending-calendar-weekdays">${weekdays.map(day => `<span>${day}</span>`).join('')}</div><div class="central-pending-calendar-days">${blanks}${days}</div></section>`;
+      }
+      renderModuleCompactFilterControls(module);
+    }
+
+    function closeModuleCompactCalendars() {
+      document.querySelectorAll('.module-compact-calendar.is-open').forEach((calendar) => {
+        calendar.classList.remove('is-open');
+        calendar.setAttribute('aria-hidden', 'true');
+      });
+      document.querySelectorAll('.module-compact-date-button[aria-expanded="true"]').forEach(button => button.setAttribute('aria-expanded', 'false'));
+      document.querySelectorAll('.orders-sticky-table-header.has-open-calendar').forEach(header => header.classList.remove('has-open-calendar'));
+      document.body.classList.remove('central-calendar-open');
+      moduleCompactCalendarState.module = '';
+    }
+
+    function toggleModuleCompactCalendar(module, forceOpen) {
+      const config = moduleCompactFilterConfigs[module];
+      const calendar = document.getElementById(`module-compact-calendar-${module}`);
+      const button = document.getElementById(`module-compact-date-button-${module}`);
+      if (!config || !calendar || !button) return;
+      const open = typeof forceOpen === 'boolean' ? forceOpen : !calendar.classList.contains('is-open');
+      closeModuleCompactCalendars();
+      if (!open) return;
+      toggleCentralPendingCalendar(false);
+      moduleCompactCalendarState = {
+        module,
+        month: null,
+        selectingEnd: false,
+        view: 'days',
+        draftStart: getModuleCompactFilterValue(module, 'startInputId'),
+        draftEnd: getModuleCompactFilterValue(module, 'endInputId')
+      };
+      moduleCompactCalendarState.selectingEnd = Boolean(moduleCompactCalendarState.draftStart && !moduleCompactCalendarState.draftEnd);
+      const selected = parseCentralPendingCalendarDate(moduleCompactCalendarState.draftStart) || new Date();
+      moduleCompactCalendarState.month = new Date(selected.getFullYear(), selected.getMonth(), 1);
+      calendar.classList.add('is-open');
+      calendar.setAttribute('aria-hidden', 'false');
+      button.setAttribute('aria-expanded', 'true');
+      button.closest('.orders-sticky-table-header')?.classList.add('has-open-calendar');
+      document.body.classList.add('central-calendar-open');
+      renderModuleCompactCalendar(module);
+    }
+
+    function moveModuleCompactCalendar(module, offset) {
+      if (moduleCompactCalendarState.module !== module) return;
+      const state = moduleCompactCalendarState;
+      const step = state.view === 'years' ? 12 : (state.view === 'months' ? 1 : 0);
+      state.month = step
+        ? new Date(state.month.getFullYear() + (Number(offset || 0) * step), state.month.getMonth(), 1)
+        : new Date(state.month.getFullYear(), state.month.getMonth() + Number(offset || 0), 1);
+      renderModuleCompactCalendar(module);
+    }
+
+    function setModuleCompactCalendarView(module, view) {
+      if (moduleCompactCalendarState.module !== module) return;
+      moduleCompactCalendarState.view = ['days', 'months', 'years'].includes(view) ? view : 'days';
+      renderModuleCompactCalendar(module);
+    }
+
+    function chooseModuleCompactCalendarMonth(module, month) {
+      if (moduleCompactCalendarState.module !== module) return;
+      const state = moduleCompactCalendarState;
+      state.month = new Date(state.month.getFullYear(), Math.max(0, Math.min(11, Number(month))), 1);
+      state.view = 'days';
+      renderModuleCompactCalendar(module);
+    }
+
+    function chooseModuleCompactCalendarYear(module, year) {
+      if (moduleCompactCalendarState.module !== module) return;
+      const state = moduleCompactCalendarState;
+      const normalizedYear = Math.max(1000, Math.min(9999, Number(year)));
+      state.month = new Date(normalizedYear, state.month.getMonth(), 1);
+      state.view = 'months';
+      renderModuleCompactCalendar(module);
+    }
+
+    function selectModuleCompactCalendarDate(module, value) {
+      if (moduleCompactCalendarState.module !== module) return;
+      const iso = centralPendingCalendarIso(parseCentralPendingCalendarDate(value));
+      if (!iso) return;
+      const state = moduleCompactCalendarState;
+      if (!state.draftStart || state.draftEnd || !state.selectingEnd) {
+        state.draftStart = iso;
+        state.draftEnd = '';
+        state.selectingEnd = true;
+      } else if (iso < state.draftStart) {
+        state.draftStart = iso;
+      } else {
+        state.draftEnd = iso;
+        state.selectingEnd = false;
+      }
+      renderModuleCompactCalendar(module);
+    }
+
+    function clearModuleCompactDateRange(module) {
+      if (moduleCompactCalendarState.module !== module) return;
+      moduleCompactCalendarState.draftStart = '';
+      moduleCompactCalendarState.draftEnd = '';
+      moduleCompactCalendarState.selectingEnd = false;
+      moduleCompactCalendarState.view = 'days';
+      renderModuleCompactCalendar(module);
+    }
+
+    function applyModuleCompactDateRange(module) {
+      const config = moduleCompactFilterConfigs[module];
+      if (!config || moduleCompactCalendarState.module !== module) return;
+      const start = moduleCompactCalendarState.draftStart;
+      const end = moduleCompactCalendarState.draftEnd || start;
+      const startField = document.getElementById(config.startInputId);
+      const endField = document.getElementById(config.endInputId);
+      if (startField) startField.value = start;
+      if (endField) endField.value = end;
+      renderModuleCompactFilterControls(module);
+      moduleFilterRenderActions[module]?.();
+      closeModuleCompactCalendars();
+    }
+
+    Object.assign(window, {
+      setModuleCompactStatus,
+      toggleModuleCompactCalendar,
+      moveModuleCompactCalendar,
+      setModuleCompactCalendarView,
+      chooseModuleCompactCalendarMonth,
+      chooseModuleCompactCalendarYear,
+      selectModuleCompactCalendarDate,
+      clearModuleCompactDateRange,
+      applyModuleCompactDateRange
+    });
+
     function clearVehicleFilters() {
       document.getElementById('vehicle-filter-search').value = '';
+      document.getElementById('vehicle-filter-status').value = 'todos';
+      document.getElementById('vehicle-filter-start').value = '';
+      document.getElementById('vehicle-filter-end').value = '';
       vehicleSortState = { key: 'fleet', direction: 'asc' };
+      renderModuleCompactFilterControls('veiculos');
+      updateContextualSearchUi();
       renderVehicles();
     }
 
     function clearDriverFilters() {
       document.getElementById('driver-filter-search').value = '';
-      document.getElementById('driver-filter-validity').value = '';
+      document.getElementById('driver-filter-status').value = 'todos';
+      document.getElementById('driver-filter-start').value = '';
+      document.getElementById('driver-filter-end').value = '';
       driverSortState = { key: 'name', direction: 'asc' };
+      renderModuleCompactFilterControls('motoristas');
+      updateContextualSearchUi();
       renderDrivers();
     }
 
     function clearSupplierFilters() {
       document.getElementById('supplier-filter-search').value = '';
       document.getElementById('supplier-filter-type').value = '';
+      document.getElementById('supplier-filter-status').value = 'todos';
+      document.getElementById('supplier-filter-start').value = '';
+      document.getElementById('supplier-filter-end').value = '';
       supplierSortState = { key: 'name', direction: 'asc' };
+      renderModuleCompactFilterControls('fornecedores');
+      updateContextualSearchUi();
       renderSuppliers();
     }
 
@@ -13942,7 +14257,7 @@
           syncDriversWithVehicle(currentEditingId, motoristaId);
         } else {
           const newVehicleId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-          allVehicles.unshift({ id: newVehicleId, numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo, vehicleImageUrl, vehicleImageFileId });
+          allVehicles.unshift({ id: newVehicleId, createdAt: new Date().toISOString(), numeroFrota, placa, modelo, ano, cor, seguroVencimento, motoristaId, chassi, ativo, vehicleImageUrl, vehicleImageFileId });
           syncDriversWithVehicle(newVehicleId, motoristaId);
         }
         renderAll();
@@ -13989,7 +14304,7 @@
           syncVehiclesWithDriver(currentEditingId, vehicleIds);
         } else {
           const newDriverId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-          allDrivers.unshift({ id: newDriverId, nome, cpf, cnh, categoria, telefone, validade, vehicleIds, ativo });
+          allDrivers.unshift({ id: newDriverId, createdAt: new Date().toISOString(), nome, cpf, cnh, categoria, telefone, validade, vehicleIds, ativo });
           syncVehiclesWithDriver(newDriverId, vehicleIds);
         }
         renderAll();
@@ -14049,7 +14364,7 @@
             : supplier);
           showToast('Fornecedor atualizado com sucesso.');
         } else {
-          allSuppliers.unshift({ id: generateId(), nome, tipo, tipoLabel, documento, telefone, cidade, endereco, mapaUrl, email, observacoes, ativo });
+          allSuppliers.unshift({ id: generateId(), createdAt: new Date().toISOString(), nome, tipo, tipoLabel, documento, telefone, cidade, endereco, mapaUrl, email, observacoes, ativo });
           showToast('Fornecedor cadastrado com sucesso.');
         }
         saveToLocalStorage();
@@ -14538,42 +14853,68 @@
         const toolbar = stickyHeader?.querySelector(':scope > .orders-toolbar');
         const selection = toolbar?.querySelector('.orders-selection-wrap');
         const searchField = document.getElementById(searchFieldId);
-        if (!filterShell || !stickyHeader) return;
-        if (!stickyHeader.contains(filterShell)) stickyHeader.prepend(filterShell);
-        filterShell.classList.add('module-filters-modal');
-        filterShell.dataset.filterModule = module;
-        const filterGrid = filterShell.querySelector('.orders-filter-grid');
-        if (filterGrid && !filterGrid.querySelector('.module-filter-close')) {
-          filterGrid.insertAdjacentHTML('afterbegin', `<button class="module-filter-close" type="button" title="Fechar" aria-label="Fechar filtros" onclick="closeModuleFilters('${module}')"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6 6 18"/></svg></button>`);
-        }
-        if (filterGrid && !filterGrid.querySelector('.module-filter-apply-row')) {
-          filterGrid.insertAdjacentHTML('beforeend', `<div class="module-filter-apply-row"><button type="button" onclick="applyModuleFilters('${module}')">Aplicar</button></div>`);
-        }
-        if (!stickyHeader.querySelector(`.module-filter-controls[data-module="${module}"]`)) {
-          const controls = document.createElement('div');
-          controls.className = 'module-filter-controls';
-          controls.dataset.module = module;
-          controls.innerHTML = `<button class="module-filter-icon" type="button" title="Filtros" aria-label="Filtros" onclick="openModuleFilters('${module}')"><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5"/></svg></button><button class="filter-action-btn" type="button" title="Limpar filtros" aria-label="Limpar filtros" onclick="clearModuleFilters('${module}')">⌫</button>`;
-          stickyHeader.insertBefore(controls, toolbar);
-        }
+        const config = moduleCompactFilterConfigs[module];
+        if (!filterShell || !stickyHeader || !toolbar || !config) return;
+        filterShell.classList.add('contextual-module-filter-source');
         if (selection && selection.parentElement !== stickyHeader) {
           selection.classList.add('module-selection-sticky');
           stickyHeader.insertBefore(selection, stickyHeader.firstChild);
         }
-        searchField?.closest('.orders-filter-field')?.classList.add('is-contextual-search-source');
-        if (!filterShell.dataset.closeHandlersReady) {
-          filterShell.dataset.closeHandlersReady = 'true';
-          filterShell.addEventListener('click', (event) => {
-            if (event.target === filterShell) closeModuleFilters(module);
-          });
+        if (!stickyHeader.querySelector(`.module-compact-filters[data-module="${module}"]`)) {
+          const controls = document.createElement('div');
+          controls.className = 'module-compact-filters';
+          controls.dataset.module = module;
+          controls.innerHTML = `
+            <details id="module-compact-status-${module}" class="central-pending-status-filter module-compact-status-filter">
+              <summary aria-label="Filtrar ${module} por status">
+                <span>Status</span>
+                <strong id="module-compact-status-label-${module}">${escapeHtml(config.statuses[0][1])}</strong>
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/></svg>
+              </summary>
+              <div class="central-pending-status-menu" role="menu" aria-label="Opções de status">
+                ${config.statuses.map(([value, label]) => `<button type="button" data-module-status="${module}" data-module-status-value="${escapeHtml(value)}" onclick="setModuleCompactStatus('${module}', '${escapeHtml(value)}')">${escapeHtml(label)}</button>`).join('')}
+              </div>
+            </details>
+            <div class="central-pending-date-range module-compact-date-range">
+              <button id="module-compact-date-button-${module}" class="central-pending-date-range-button module-compact-date-button" type="button" aria-haspopup="dialog" aria-expanded="false" onclick="toggleModuleCompactCalendar('${module}')">
+                <span>${escapeHtml(config.dateLabel)}</span>
+                <strong id="module-compact-date-label-${module}">Todas as datas</strong>
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 3v3M17 3v3M4 8h16M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg>
+              </button>
+              <div id="module-compact-calendar-${module}" class="central-pending-calendar module-compact-calendar" role="dialog" aria-label="Selecionar período de ${module}" aria-hidden="true">
+                <div class="central-pending-calendar-head">
+                  <button type="button" aria-label="Mês anterior" onclick="event.stopPropagation(); moveModuleCompactCalendar('${module}', -1)">‹</button>
+                  <strong>Selecionar período</strong>
+                  <button type="button" aria-label="Próximo mês" onclick="event.stopPropagation(); moveModuleCompactCalendar('${module}', 1)">›</button>
+                </div>
+                <div id="module-compact-calendar-months-${module}" class="central-pending-calendar-months"></div>
+                <div class="central-pending-calendar-footer">
+                  <span id="module-compact-calendar-hint-${module}">Escolha a data inicial.</span>
+                  <div class="central-pending-calendar-footer-actions">
+                    <button type="button" onclick="event.stopPropagation(); clearModuleCompactDateRange('${module}')">Limpar</button>
+                    <button class="is-primary" type="button" onclick="event.stopPropagation(); applyModuleCompactDateRange('${module}')">Filtrar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button class="filter-action-btn module-compact-clear" type="button" title="Limpar filtros" aria-label="Limpar filtros" onclick="clearModuleFilters('${module}')">⌫</button>`;
+          stickyHeader.insertBefore(controls, toolbar);
         }
+        searchField?.closest('.orders-filter-field')?.classList.add('is-contextual-search-source');
+        renderModuleCompactFilterControls(module);
       });
     }
 
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && document.getElementById('central-pending-calendar')?.classList.contains('is-open')) {
-        toggleCentralPendingCalendar(false);
-        return;
+      if (event.key === 'Escape') {
+        if (document.querySelector('.module-compact-calendar.is-open')) {
+          closeModuleCompactCalendars();
+          return;
+        }
+        if (document.getElementById('central-pending-calendar')?.classList.contains('is-open')) {
+          toggleCentralPendingCalendar(false);
+          return;
+        }
       }
       const openModal = document.querySelector('.module-filters-modal.is-open');
       if (!openModal?.dataset.filterModule) return;
@@ -14588,6 +14929,9 @@
     });
 
     document.addEventListener('click', (event) => {
+      if (document.querySelector('.module-compact-calendar.is-open') && !event.target?.closest?.('.module-compact-date-range')) {
+        closeModuleCompactCalendars();
+      }
       const calendar = document.getElementById('central-pending-calendar');
       if (!calendar?.classList.contains('is-open')) return;
       if (!event.target?.closest?.('.central-pending-date-range')) toggleCentralPendingCalendar(false);
@@ -14616,8 +14960,11 @@
       const node = document.getElementById(id);
       if (node) node.addEventListener('change', renderOrders);
     });
-    applyCurrencyMaskToInput(document.getElementById('finance-filter-value'));
     applyCurrencyMaskToInput(document.getElementById('central-pending-value-filter'));
+    document.getElementById('finance-filter-search')?.addEventListener('input', renderFinance);
+    ['finance-filter-start', 'finance-filter-end', 'finance-filter-status'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', renderFinance);
+    });
     ['vehicle-filter-search'].forEach(id => {
       const node = document.getElementById(id);
       if (node) node.addEventListener('input', renderVehicles);
@@ -14626,9 +14973,15 @@
       const node = document.getElementById(id);
       if (node) node.addEventListener('input', renderDrivers);
     });
-    ['driver-filter-validity', 'supplier-filter-type'].forEach(id => {
+    ['driver-filter-start', 'driver-filter-end', 'driver-filter-status', 'supplier-filter-type'].forEach(id => {
       const node = document.getElementById(id);
-      if (node) node.addEventListener('change', id === 'driver-filter-validity' ? renderDrivers : renderSuppliers);
+      if (node) node.addEventListener('change', id.startsWith('driver-') ? renderDrivers : renderSuppliers);
+    });
+    ['vehicle-filter-start', 'vehicle-filter-end', 'vehicle-filter-status'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', renderVehicles);
+    });
+    ['supplier-filter-start', 'supplier-filter-end', 'supplier-filter-status'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', renderSuppliers);
     });
     ['supplier-filter-search'].forEach(id => {
       const node = document.getElementById(id);

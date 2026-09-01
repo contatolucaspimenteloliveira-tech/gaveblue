@@ -2102,6 +2102,7 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       border-bottom: 0;
       box-shadow: none;
     }
+    .orders-sticky-table-header.has-open-calendar { z-index: 75; }
     .orders-sticky-table-header .orders-filter-shell {
       order: 1;
       margin: 0 0 4px;
@@ -3455,6 +3456,25 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
     .module-filter-apply-row button { height:38px; padding:0 20px; border:0; border-radius:11px; background:#6657e8; color:#fff; font-weight:800; cursor:pointer; }
     body.module-filters-open { overflow:hidden; }
     @media (max-width:720px) { .module-filters-modal.is-open .orders-filter-grid { grid-template-columns:1fr !important; } }
+    .contextual-module-filter-source { display: none !important; }
+    .module-compact-filters {
+      order: 1;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      margin: 0 0 4px;
+    }
+    .module-compact-status-filter > summary strong { min-width: 54px; max-width: 180px; }
+    .module-compact-date-button { min-width: 205px; }
+    .module-compact-clear {
+      width: 34px !important;
+      height: 34px !important;
+      flex: 0 0 34px;
+      padding: 0 !important;
+      border-radius: 10px !important;
+    }
+    body.dark-mode .module-compact-clear { border-color: #334155; background: #111c30; color: #cbd5e1; }
     .mini-badge--status-pendente,
     .mini-badge--status-pendente_os {
       color: #9a6700;
@@ -6921,6 +6941,23 @@ svg.h-8 { height: 2rem; }
   .orders-sticky-table-header .module-filter-controls {
     margin: 0;
     justify-self: end;
+  }
+
+  .orders-sticky-table-header .module-compact-filters {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    margin: 0;
+  }
+
+  .module-compact-date-range { flex: 1 1 210px; }
+  .module-compact-date-button { width: 100%; min-width: 0; }
+  .module-compact-calendar {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
 
   .orders-sticky-table-header .orders-toolbar,
