@@ -5044,7 +5044,7 @@
       if (!inputEl || !resultsEl) return;
 
       inputEl.addEventListener('input', (event) => {
-        if (syncContextualModuleSearch(event.target.value)) return;
+        if (syncContextualModuleSearch(event.target.value, event.currentTarget)) return;
         setActiveSearchContext(inputEl, resultsEl);
         updateGlobalSearch(event.target.value, resultsEl);
       });
@@ -5114,15 +5114,16 @@
       return isCentralRecordsSearchContext() || Boolean(contextualModuleSearchFields[activeModule]);
     }
 
-    function syncContextualModuleSearch(value) {
-      if (isCentralRecordsSearchContext()) {
+    function syncContextualModuleSearch(value, sourceInput = null) {
+      const explicitTargetId = sourceInput?.dataset?.contextualTargetId || '';
+      if (explicitTargetId === 'central-records' || (!explicitTargetId && isCentralRecordsSearchContext())) {
         centralPendingSearchFilter = normalizeComparableText(value);
         saveCentralPendingFilters();
         renderCentralPendingRecords();
         hideGlobalSearchResults();
         return true;
       }
-      const targetId = contextualModuleSearchFields[activeModule];
+      const targetId = explicitTargetId || contextualModuleSearchFields[activeModule];
       if (!targetId) return false;
       const target = document.getElementById(targetId);
       if (!target) return false;
@@ -5142,6 +5143,7 @@
       [globalSearchInputEl, mobileGlobalSearchInputEl].forEach((input) => {
         if (!input) return;
         input.value = centralRecordsContext ? centralPendingSearchFilter : (target?.value || '');
+        input.dataset.contextualTargetId = centralRecordsContext ? 'central-records' : (targetId || '');
         input.placeholder = placeholder;
         input.setAttribute('aria-label', placeholder);
       });

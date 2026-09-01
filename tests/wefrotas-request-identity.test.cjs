@@ -129,6 +129,8 @@ test('Finance, OS and entity modules share contextual search, compact status and
   }
   assert.equal((html.match(/contextual-module-filter-source/g) || []).length, 5);
   assert.match(ui, /contextualModuleSearchFields = \{[\s\S]*orders:[\s\S]*financeiro:[\s\S]*veiculos:[\s\S]*motoristas:[\s\S]*fornecedores:/);
+  assert.match(ui, /syncContextualModuleSearch\(event\.target\.value, event\.currentTarget\)/);
+  assert.match(ui, /input\.dataset\.contextualTargetId = centralRecordsContext \? 'central-records' : \(targetId \|\| ''\)/);
   assert.match(ui, /document\.getElementById\('finance-filter-search'\)\?\.addEventListener\('input', renderFinance\)/);
   assert.match(ui, /getFinanceEntryStatusLabel\(entry\)[\s\S]*formatCurrency\(total\)/);
   assert.match(ui, /formatDate\(order\.dataInicio\)[\s\S]*formatCurrency\(total\)/);
