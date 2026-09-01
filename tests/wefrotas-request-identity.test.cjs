@@ -50,9 +50,13 @@ test('Central uses one global field across record content and ignores legacy hid
   assert.match(html, /div id="central-pending-calendar"[^>]+role="dialog"/);
   assert.match(html, /details id="central-pending-status-filter"/);
   assert.match(html, /data-status-value="rejeitado"/);
+  assert.match(html, /<col class="central-col-driver">/);
   assert.match(html, />Filtrar<\/button>/);
   assert.doesNotMatch(html, /data-sort-key="type"/);
   assert.doesNotMatch(html, /central-pending-date-start-inline/);
+  const css = fs.readFileSync(path.join(root, 'wefrotas/wefrotas.css'), 'utf8');
+  assert.match(css, /\.central-pending-table-shell \{[\s\S]*height: clamp\(430px, calc\(100dvh - 250px\), 680px\)/);
+  assert.match(css, /\.central-pending-table \{[\s\S]*table-layout: fixed/);
   assert.doesNotMatch(html, /data-filter-module="documentos"/);
   assert.doesNotMatch(html, /central-pending-filter-controls/);
   for (const legacyId of ['central-pending-date-start', 'central-pending-value-filter', 'central-pending-vehicle-filter', 'central-pending-supplier-filter', 'central-pending-order-filter', 'central-pending-nf-filter', 'central-pending-due-start']) {

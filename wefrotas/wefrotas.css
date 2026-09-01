@@ -4967,6 +4967,7 @@ body.dark-mode .central-pending-calendar-footer { border-color: #334155; }
 }
 
 .central-pending-table-shell {
+  height: clamp(430px, calc(100dvh - 250px), 680px);
   overflow: hidden;
   border: 1px solid #e3ebf7;
   border-radius: 26px;
@@ -4976,14 +4977,24 @@ body.dark-mode .central-pending-calendar-footer { border-color: #334155; }
 
 .central-pending-table-scroll {
   width: 100%;
-  overflow-x: auto;
+  height: 100%;
+  overflow: auto;
 }
 
 .central-pending-table {
   width: 100%;
   min-width: 980px;
+  table-layout: fixed;
   border-collapse: collapse;
 }
+
+.central-pending-table .central-col-date { width: 12%; }
+.central-pending-table .central-col-driver { width: 22%; }
+.central-pending-table .central-col-supplier { width: 24%; }
+.central-pending-table .central-col-km { width: 9%; }
+.central-pending-table .central-col-value { width: 11%; }
+.central-pending-table .central-col-status { width: 12%; }
+.central-pending-table .central-col-receipt { width: 10%; }
 
 .central-pending-table th,
 .central-pending-table td {
@@ -4996,6 +5007,9 @@ body.dark-mode .central-pending-calendar-footer { border-color: #334155; }
 }
 
 .central-pending-table th {
+  position: sticky;
+  z-index: 2;
+  top: 0;
   color: #8a97ad;
   font-size: 11px;
   font-weight: 900;
@@ -7087,6 +7101,7 @@ svg.h-8 { height: 2rem; }
   .central-pending-calendar-month:nth-child(2) { display: none; }
 
   .central-pending-table-shell {
+    height: clamp(360px, calc(100dvh - 290px), 580px);
     border-radius: 15px;
   }
 

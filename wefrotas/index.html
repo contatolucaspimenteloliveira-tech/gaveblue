@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260831-central-status-menu-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260831-central-fixed-grid-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -1082,6 +1082,15 @@
             <div class="central-pending-table-shell">
               <div class="central-pending-table-scroll">
                 <table class="central-pending-table">
+                  <colgroup>
+                    <col class="central-col-date">
+                    <col class="central-col-driver">
+                    <col class="central-col-supplier">
+                    <col class="central-col-km">
+                    <col class="central-col-value">
+                    <col class="central-col-status">
+                    <col class="central-col-receipt">
+                  </colgroup>
                   <thead>
                     <tr>
                       <th><button type="button" class="central-pending-sort-head is-active" data-sort-key="date" onclick="toggleCentralPendingSort('date')">Data <span data-central-sort-indicator="date">↓</span></button></th>
