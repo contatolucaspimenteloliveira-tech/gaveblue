@@ -17,6 +17,7 @@ test('silent Central refresh preserves rendered rows while syncing or briefly of
     renderCentralPendingSummary() {}, updateCentralPendingSortIndicators() {}, renderCentralPendingDateControls() {},
     getCentralPendingStatus: () => ({ className: 'pending', label: 'Pendente' }),
     getCentralPendingDate: () => '31/08/2026', getCentralPendingRecordType: () => 'Abastecimento',
+    getCentralPendingDriverVehicleLabel: record => record.motorista || '-',
     getCentralPendingSupplier: () => 'Posto', getCentralPendingValue: () => 'R$ 10,00',
     escapeHtml: value => String(value),
     centralPendingRecords: [{ $id: 'record-1' }], centralPendingLoading: true,
@@ -62,6 +63,8 @@ test('Central uses one global field across record content and ignores legacy hid
   assert.match(ui, /setCentralPendingCalendarView\('years'\)/);
   assert.match(ui, /centralPendingDateStart = centralPendingDraftDateStart/);
   assert.match(ui, /document\.body\.classList\.toggle\('central-calendar-open', open\)/);
+  assert.match(ui, /loadCentralPendingFilters\(\);\s*centralPendingStatusFilter = \['todos', 'pendente', 'aprovado', 'rejeitado'\]/);
+  assert.match(ui, /getCentralPendingDriverVehicleLabel\(record\)/);
   assert.match(ui, /\^\(\\d\{4\}\)-\(\\d\{2\}\)-\(\\d\{2\}\)\$/);
   assert.match(ui, /getCentralPendingDate\(record\)[\s\S]*getCentralPendingValue\(record\)[\s\S]*getCentralPendingStatus\(record\)\.label/);
   assert.match(ui, /centralPendingSearchFilter\.split\(\/\\s\+\/\)\.map\(normalizeSearchText\)\.filter\(Boolean\)/);
@@ -83,6 +86,22 @@ test('Central uses one global field across record content and ignores legacy hid
   assert.equal(calendarContext.parseCentralPendingCalendarDate('275-05-15'), null);
   assert.equal(calendarContext.parseCentralPendingCalendarDate('2026-02-30'), null);
   assert.equal(calendarContext.centralPendingCalendarIso(calendarContext.parseCentralPendingCalendarDate('2026-08-31')), '2026-08-31');
+
+  const statusContext = { normalizeComparableText: context.normalizeComparableText };
+  vm.createContext(statusContext);
+  vm.runInContext(ui.slice(ui.indexOf('    function getCentralPendingStatus('), ui.indexOf('    function buildCentralPendingMessage(')), statusContext);
+  assert.equal(statusContext.matchesCentralPendingStatus({ status: 'aprovado' }, 'aprovado'), true);
+  assert.equal(statusContext.matchesCentralPendingStatus({ status: 'rejeitado' }, 'rejeitado'), true);
+  assert.equal(statusContext.matchesCentralPendingStatus({ status: 'pendente' }, 'aprovado'), false);
+
+  const driverContext = {
+    allVehicles: [{ id: 'vehicle-1', placa: 'TOJ-1D23', motoristaId: 'driver-1' }],
+    allDrivers: [{ id: 'driver-1', nome: 'AMANDA P. BONATTO', vehicleIds: ['vehicle-1'] }],
+    normalizeComparableText: context.normalizeComparableText
+  };
+  vm.createContext(driverContext);
+  vm.runInContext(ui.slice(ui.indexOf('    function getCentralPendingDriverVehicleLabel('), ui.indexOf('    function getCentralPendingValue(')), driverContext);
+  assert.equal(driverContext.getCentralPendingDriverVehicleLabel({ motorista: 'AMANDA P. BONATTO' }), 'AMANDA P. BONATTO - TOJ-1D23');
 });
 
 test('deletion success waits for server confirmation and failures remain pending', async () => {

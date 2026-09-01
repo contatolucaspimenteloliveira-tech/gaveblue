@@ -9534,6 +9534,33 @@
       return record?.posto || record?.fornecedor || record?.supplier || '-';
     }
 
+    function getCentralPendingDriverVehicleLabel(record) {
+      const driverName = String(record?.motorista || record?.driver || '-').trim() || '-';
+      const directPlate = String(
+        record?.placa
+        || record?.vehiclePlate
+        || record?.veiculoPlaca
+        || record?.vehicle?.placa
+        || record?.vehicle?.plate
+        || ''
+      ).trim();
+      if (directPlate) return `${driverName} - ${directPlate}`;
+
+      const vehicleId = String(record?.vehicleId || record?.veiculoId || record?.vehicle?.id || '').trim();
+      let vehicle = vehicleId ? allVehicles.find(item => String(item?.id || '') === vehicleId) : null;
+      if (!vehicle && driverName !== '-') {
+        const normalizedDriver = normalizeComparableText(driverName);
+        const driver = allDrivers.find(item => normalizeComparableText(item?.nome || item?.name || '') === normalizedDriver);
+        const linkedIds = Array.isArray(driver?.vehicleIds)
+          ? driver.vehicleIds.map(String)
+          : (driver?.vehicleId ? [String(driver.vehicleId)] : []);
+        vehicle = allVehicles.find(item => linkedIds.includes(String(item?.id || '')))
+          || allVehicles.find(item => String(item?.motoristaId || item?.driverId || '') === String(driver?.id || ''));
+      }
+      const linkedPlate = String(vehicle?.placa || vehicle?.plate || '').trim();
+      return linkedPlate ? `${driverName} - ${linkedPlate}` : driverName;
+    }
+
     function getCentralPendingValue(record) {
       const numericValue = Number(record?.valorNumero ?? record?.valor ?? 0);
       if (Number.isFinite(numericValue) && numericValue > 0) return formatCurrency(numericValue);
@@ -9612,6 +9639,15 @@
       return { label: 'Pendente', className: 'pending' };
     }
 
+    function matchesCentralPendingStatus(record, filter) {
+      const normalizedFilter = ['todos', 'pendente', 'aprovado', 'rejeitado'].includes(filter) ? filter : 'todos';
+      if (normalizedFilter === 'todos') return true;
+      const className = getCentralPendingStatus(record).className;
+      if (normalizedFilter === 'pendente') return className === 'pending';
+      if (normalizedFilter === 'aprovado') return className === 'approved' || className === 'imported';
+      return className === 'error';
+    }
+
     function buildCentralPendingMessage(record) {
       if (record?.mensagemWhatsapp) return String(record.mensagemWhatsapp);
       const type = normalizeComparableText(record?.tipo || '');
@@ -9645,12 +9681,7 @@
       loadCentralPendingFilters();
       const rows = [...centralPendingRecords]
         .filter(record => normalizeComparableText(record?.workspaceId || '') === normalizeComparableText(window.WeFrotasBackend?.getOrganizationContext?.().workspaceId || window.WeFrotasBackend?.config?.companyId || 'covre-e-cia'))
-        .filter(record => {
-          const className = getCentralPendingStatus(record).className;
-          const statusMap = { pendente: 'pending', aprovado: 'approved', rejeitado: 'error' };
-          if (centralPendingStatusFilter === 'aprovado') return className === 'approved' || className === 'imported';
-          return centralPendingStatusFilter === 'todos' || className === statusMap[centralPendingStatusFilter];
-        })
+        .filter(record => matchesCentralPendingStatus(record, centralPendingStatusFilter))
         .filter(record => {
           const date = getCentralRecordIsoDate(record);
           return (!centralPendingDateStart || date >= centralPendingDateStart) && (!centralPendingDateEnd || date <= centralPendingDateEnd);
@@ -9996,6 +10027,7 @@
     }
 
     function setCentralPendingStatus(value) {
+      loadCentralPendingFilters();
       centralPendingStatusFilter = ['todos', 'pendente', 'aprovado', 'rejeitado'].includes(value) ? value : 'todos';
       saveCentralPendingFilters();
       renderCentralPendingRecords();
@@ -10079,7 +10111,7 @@
         return `
           <tr class="${selectedCentralPending.has(getCentralPendingRecordId(record)) ? 'is-selected' : ''}" onclick="toggleCentralPendingRecord('${rowId}')">
             <td>${getCentralPendingDate(record)}</td>
-            <td>${escapeHtml(record?.motorista || '-')}</td>
+            <td>${escapeHtml(getCentralPendingDriverVehicleLabel(record))}</td>
             <td>${escapeHtml(getCentralPendingSupplier(record))}</td>
             <td>${escapeHtml(record?.km || '-')}</td>
             <td class="central-pending-value">${getCentralPendingValue(record)}</td>

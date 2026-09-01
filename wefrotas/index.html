@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./wefrotas.css?v=20260831-central-calendar-picker-1">
+  <link rel="stylesheet" href="./wefrotas.css?v=20260831-central-status-driver-1">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260813-auth-1">
   
 </head>
@@ -1030,7 +1030,7 @@
               </div>
               <label class="central-pending-status-filter" title="Filtrar registros por status">
                 <span>Status</span>
-                <select id="central-pending-status-inline" aria-label="Status dos registros" onchange="setCentralPendingStatus(this.value)">
+                <select id="central-pending-status-inline" aria-label="Status dos registros" oninput="setCentralPendingStatus(this.value)" onchange="setCentralPendingStatus(this.value)">
                   <option value="todos">Todos</option>
                   <option value="pendente">Pendentes</option>
                   <option value="aprovado">Aprovados</option>
@@ -1775,7 +1775,7 @@
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
   <script src="./wefrotas-backend.js?v=20260831-session-company-1"></script>
-  <script src="./wefrotas.js?v=20260831-central-calendar-picker-1"></script>
+  <script src="./wefrotas.js?v=20260831-central-status-driver-1"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
 </body>
 </html>
