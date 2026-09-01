@@ -2102,7 +2102,17 @@ body { height: 100%; margin: 0; box-sizing: border-box; }
       border-bottom: 0;
       box-shadow: none;
     }
-    .orders-sticky-table-header.has-open-calendar { z-index: 75; }
+    .orders-sticky-table-header.has-open-calendar {
+      z-index: 75;
+      background: transparent;
+    }
+    body.central-calendar-open .orders-sticky-table-header.has-open-calendar > *:not(.module-compact-filters),
+    body.central-calendar-open .orders-sticky-table-header.has-open-calendar .module-compact-filters > *:not(.module-compact-date-range) {
+      opacity: .28;
+      filter: blur(5px);
+      pointer-events: none;
+      user-select: none;
+    }
     .orders-sticky-table-header .orders-filter-shell {
       order: 1;
       margin: 0 0 4px;

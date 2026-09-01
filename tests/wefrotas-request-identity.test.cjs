@@ -135,6 +135,8 @@ test('Finance, OS and entity modules share contextual search, compact status and
   for (const module of ['orders', 'financeiro', 'veiculos', 'motoristas', 'fornecedores']) {
     assert.match(ui, new RegExp(`getContextualModuleSearchValue\\('${module}'`));
   }
+  assert.match(css, /body\.central-calendar-open \.orders-sticky-table-header\.has-open-calendar > \*:not\(\.module-compact-filters\)/);
+  assert.match(css, /\.module-compact-filters > \*:not\(\.module-compact-date-range\)[\s\S]*filter: blur\(5px\)/);
   assert.match(ui, /document\.getElementById\('finance-filter-search'\)\?\.addEventListener\('input', renderFinance\)/);
   assert.match(ui, /getFinanceEntryStatusLabel\(entry\)[\s\S]*formatCurrency\(total\)/);
   assert.match(ui, /formatDate\(order\.dataInicio\)[\s\S]*formatCurrency\(total\)/);
