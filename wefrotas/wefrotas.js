@@ -5150,6 +5150,12 @@
       hideGlobalSearchResults();
     }
 
+    function getContextualModuleSearchValue(module, fallbackId) {
+      const targetId = contextualModuleSearchFields[module];
+      const globalTargetsModule = activeModule === module && globalSearchInputEl?.dataset?.contextualTargetId === targetId;
+      return globalTargetsModule ? (globalSearchInputEl.value || '') : (document.getElementById(fallbackId)?.value || '');
+    }
+
     setupGlobalSearchInput(globalSearchInputEl, globalSearchResultsEl);
     setupGlobalSearchInput(mobileGlobalSearchInputEl, mobileGlobalSearchResultsEl);
 
@@ -8174,7 +8180,7 @@
     window.toggleFinanceSort = toggleFinanceSort;
 
     function getVisibleFinanceEntries() {
-      const quickSearch = normalizeSearchText(document.getElementById('finance-filter-search')?.value || '');
+      const quickSearch = normalizeSearchText(getContextualModuleSearchValue('financeiro', 'finance-filter-search'));
       const statusFilter = document.getElementById('finance-filter-status')?.value || '';
       const startFilter = document.getElementById('finance-filter-start')?.value || '';
       const endFilter = document.getElementById('finance-filter-end')?.value || '';
@@ -11814,7 +11820,7 @@
     }
 
     function getVisibleVehicles() {
-      const quickSearch = normalizeSearchText(document.getElementById('vehicle-filter-search')?.value || '');
+      const quickSearch = normalizeSearchText(getContextualModuleSearchValue('veiculos', 'vehicle-filter-search'));
       const statusFilter = document.getElementById('vehicle-filter-status')?.value || 'todos';
       const startFilter = document.getElementById('vehicle-filter-start')?.value || '';
       const endFilter = document.getElementById('vehicle-filter-end')?.value || '';
@@ -11848,7 +11854,7 @@
     }
 
     function getVisibleDrivers() {
-      const quickSearch = normalizeComparableText(document.getElementById('driver-filter-search')?.value || '');
+      const quickSearch = normalizeComparableText(getContextualModuleSearchValue('motoristas', 'driver-filter-search'));
       const statusFilter = document.getElementById('driver-filter-status')?.value || 'todos';
       const startFilter = document.getElementById('driver-filter-start')?.value || '';
       const endFilter = document.getElementById('driver-filter-end')?.value || '';
@@ -11879,7 +11885,7 @@
     }
 
     function getVisibleSuppliers() {
-      const quickSearch = normalizeComparableText(document.getElementById('supplier-filter-search')?.value || '');
+      const quickSearch = normalizeComparableText(getContextualModuleSearchValue('fornecedores', 'supplier-filter-search'));
       const typeFilter = document.getElementById('supplier-filter-type')?.value || '';
       const statusFilter = document.getElementById('supplier-filter-status')?.value || 'todos';
       const startFilter = document.getElementById('supplier-filter-start')?.value || '';
@@ -12094,7 +12100,7 @@
     }
 
     function getFilteredOrders() {
-      const quickSearch = normalizeSearchText(document.getElementById('order-filter-search')?.value || '');
+      const quickSearch = normalizeSearchText(getContextualModuleSearchValue('orders', 'order-filter-search'));
       const start = document.getElementById('order-filter-start')?.value || '';
       const end = document.getElementById('order-filter-end')?.value || '';
       const status = document.getElementById('order-filter-status')?.value || '';
