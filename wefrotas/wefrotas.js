@@ -9775,6 +9775,10 @@
         });
       const direction = centralPendingSortState.direction === 'asc' ? 1 : -1;
       return rows.sort((a, b) => {
+        const statusPriority = { pending: 0, approved: 1, imported: 1, error: 2 };
+        const priority = record => statusPriority[getCentralPendingStatus(record).className] ?? 2;
+        const priorityDifference = priority(a) - priority(b);
+        if (priorityDifference !== 0) return priorityDifference;
         const getValue = (record) => {
           switch (centralPendingSortState.key) {
             case 'type': return getCentralPendingRecordType(record);
@@ -9818,7 +9822,8 @@
         centralPendingNfFilter = '';
         centralPendingDueStart = '';
         centralPendingDueEnd = '';
-        if (['date', 'driver', 'supplier', 'km', 'value', 'status'].includes(saved.sortKey)) {
+        // Start the new priority ordering by newest date, not a legacy saved sort.
+        if (saved.sortVersion === 2 && ['date', 'driver', 'supplier', 'km', 'value', 'status'].includes(saved.sortKey)) {
           centralPendingSortState = { key: saved.sortKey, direction: saved.sortDirection === 'asc' ? 'asc' : 'desc' };
         }
       } catch (error) {}
@@ -9845,6 +9850,7 @@
           dueStart: centralPendingDueStart,
           dueEnd: centralPendingDueEnd,
           sortKey: centralPendingSortState.key,
+          sortVersion: 2,
           sortDirection: centralPendingSortState.direction
         }));
       } catch (error) {}
