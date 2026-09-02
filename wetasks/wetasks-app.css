@@ -35,17 +35,19 @@ body .header-shell[class] { max-width: 760px; margin: 0 auto; padding: calc(22px
 #app-search-mount .search-item { color: var(--text); border-color: #94a3b820; padding: 20px; }
 #app-search-mount .search-kicker { color: var(--primary); font-size: 9px; }
 #app-search-mount .search-desc, #app-search-mount .search-empty { color: var(--secondary); font-size: 12px; }
-.app-dock { position: fixed; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); z-index: 120; padding: 7px; border: 1px solid #ffffff80; border-radius: 27px; background: linear-gradient(125deg, #078cedeb, #1762dac9 55%, #1754cde6); backdrop-filter: blur(24px) saturate(1.7); -webkit-backdrop-filter: blur(24px) saturate(1.7); box-shadow: 0 12px 34px #145fc44d, inset 0 1px 0 #ffffff66, inset 0 -1px 0 #ffffff20; }
-#tutorial-main-tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
-.dock-action { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 0; min-height: 57px; padding: 6px 1px; color: #fff; border: 1px solid transparent; border-radius: 19px; background: transparent; font-family: inherit; cursor: pointer; transition: background .18s, transform .18s; -webkit-tap-highlight-color: transparent; }
+:root { --dock-glass: rgba(255,255,255,.62); --dock-border: rgba(255,255,255,.85); --dock-active: rgba(255,255,255,.72); --dock-hover: rgba(255,255,255,.42); --dock-highlight: rgba(255,255,255,.7); }
+:root[data-theme="dark"] { --dock-glass: rgba(28,30,34,.68); --dock-border: rgba(255,255,255,.18); --dock-active: rgba(255,255,255,.13); --dock-hover: rgba(255,255,255,.08); --dock-highlight: rgba(255,255,255,.12); }
+.app-dock { position: fixed; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); z-index: 120; padding: 7px; border: 1px solid var(--dock-border); border-radius: 27px; background: var(--dock-glass); backdrop-filter: blur(24px) saturate(1.2); -webkit-backdrop-filter: blur(24px) saturate(1.2); box-shadow: 0 12px 34px #00000018, inset 0 1px 0 var(--dock-highlight); }
+#tutorial-main-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
+.dock-action { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 0; min-height: 57px; padding: 6px 1px; color: var(--text); border: 1px solid transparent; border-radius: 19px; background: transparent; font-family: inherit; cursor: pointer; transition: background .18s, transform .18s; -webkit-tap-highlight-color: transparent; }
 .dock-icon { position: relative; display: flex; align-items: center; justify-content: center; }
-.dock-icon svg { width: 22px; height: 22px; stroke-width: 1.8; filter: drop-shadow(0 1px 1px #06399135); }
+.dock-icon svg { width: 22px; height: 22px; stroke-width: 1.8; }
 .dock-label { font-size: 10px; font-weight: 600; letter-spacing: -.02em; }
-.dock-action.active { background: #ffffff28; border-color: #ffffff35; box-shadow: inset 0 1px 0 #ffffff40; }
-.dock-action:hover { background: #ffffff20; }
+.dock-action.active { background: var(--dock-active); border-color: var(--dock-border); box-shadow: inset 0 1px 0 var(--dock-highlight); }
+.dock-action:hover { background: var(--dock-hover); }
 .dock-action:active { transform: scale(.94); }
-.dock-action:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
-.dock-create .dock-icon { background: #fff; color: #076ee5; width: 36px; height: 30px; border-radius: 12px; box-shadow: 0 4px 12px #0745a526; }
+.dock-action:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
+.dock-create .dock-icon { background: var(--dock-active); color: var(--text); width: 36px; height: 30px; border: 1px solid var(--dock-border); border-radius: 12px; box-shadow: 0 4px 12px #00000012; }
 .dock-create .dock-icon svg { width: 23px; height: 23px; stroke-width: 2.1; }
 .dock-create { gap: 2px; }
 .dock-badge { position: absolute; right: -8px; top: -6px; min-width: 15px; height: 15px; padding: 0 3px; background: #ff5274; border: 1px solid #fdfdff; border-radius: 20px; font-size: 8px; font-weight: 800; align-items: center; justify-content: center; color: #fff; }

@@ -1,8 +1,8 @@
 // Cache public app assets only. Never intercept Supabase or user data requests.
-const APP_CACHE = 'wetasks-shell-20260902-2';
+const APP_CACHE = 'wetasks-shell-20260902-3';
 const APP_ASSETS = [
-  './', './index.html', './wetasks.css', './wetasks-app.css?v=20260902-2',
-  './wetasks.js?v=20260902-app-2', './wetasks-app.js?v=20260902-2',
+  './', './index.html', './wetasks.css', './wetasks-app.css?v=20260902-3',
+  './wetasks.js?v=20260902-app-3', './wetasks-app.js?v=20260902-3',
   './wetasks-cloud.js', './supabase-config.js', './manifest.webmanifest',
   './icons/wetasks.jpeg', './icons/wetasks-180.png', './icons/wetasks-192.png', './icons/wetasks-512.png',
   './vendor/tailwind-3.4.17.js', './vendor/lucide-0.263.0.min.js'

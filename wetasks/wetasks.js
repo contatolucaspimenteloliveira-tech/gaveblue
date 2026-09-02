@@ -930,6 +930,7 @@ function updateThemeButtons() {
 }
 
 function applyTheme() {
+  document.documentElement.dataset.theme = currentTheme;
   if (currentTheme === 'dark') {
     document.documentElement.style.setProperty('--bg', '#0F172A');
     document.documentElement.style.setProperty('--surface', '#1E293B');

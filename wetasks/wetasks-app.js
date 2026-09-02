@@ -23,7 +23,7 @@
   const items = [
     ['tasks', 'list-todo', 'Tarefas'], ['calendar', 'calendar-days', 'Agenda'],
     ['create', 'plus', 'Criar'], ['dashboard', 'bar-chart-3', 'Resumo'],
-    ['notifications', 'bell', 'Avisos'], ['settings', 'settings-2', 'Ajustes']
+    ['settings', 'settings-2', 'Ajustes']
   ];
   items.forEach(([key, icon, label]) => {
     const button = key === 'create' ? document.getElementById('fab-button') : document.createElement('button');
@@ -38,7 +38,7 @@
     }
     button.setAttribute('aria-label', key === 'create' ? 'Nova tarefa' : label);
     button.title = key === 'create' ? 'Nova tarefa' : label;
-    button.innerHTML = `<span class="dock-icon"><i data-lucide="${icon}"></i>${key === 'notifications' ? '<span id="notification-badge-dock" class="dock-badge" style="display:none"></span>' : ''}</span><span class="dock-label">${label}</span>`;
+    button.innerHTML = `<span class="dock-icon"><i data-lucide="${icon}"></i></span><span class="dock-label">${label}</span>`;
     tabs.appendChild(button);
   });
   document.body.appendChild(dock);

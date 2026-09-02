@@ -8,15 +8,19 @@ const app = fs.readFileSync(path.join(root, 'wetasks.js'), 'utf8');
 const shell = fs.readFileSync(path.join(root, 'wetasks-app.js'), 'utf8');
 const worker = fs.readFileSync(path.join(root, 'wetasks-sw.js'), 'utf8');
 
-test('header has no brand icon and dock has six actions without search', () => {
+test('header has no brand icon and neutral glass dock has five actions without search or notifications', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const css = fs.readFileSync(path.join(root, 'wetasks-app.css'), 'utf8');
   const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
   assert.doesNotMatch(header, /<img\b/);
   const items = shell.slice(shell.indexOf('const items = ['), shell.indexOf('items.forEach'));
   assert.doesNotMatch(items, /'search'/);
-  assert.equal((items.match(/\['/g) || []).length, 6);
-  assert.match(css, /#tutorial-main-tabs[^}]*repeat\(6,/);
+  assert.doesNotMatch(items, /'notifications'/);
+  assert.equal((items.match(/\['/g) || []).length, 5);
+  assert.match(css, /#tutorial-main-tabs[^}]*repeat\(5,/);
+  assert.match(css, /background: var\(--dock-glass\)/);
+  assert.match(css, /:root\[data-theme="dark"\]/);
+  assert.match(app, /document\.documentElement\.dataset\.theme = currentTheme/);
   assert.doesNotMatch(app, /target: '#tab-search'/);
   assert.match(html, /rel="apple-touch-icon"/);
 });
