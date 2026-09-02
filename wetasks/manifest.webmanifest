@@ -1,0 +1,20 @@
+{
+  "id": "/wetasks/",
+  "name": "WeTasks — Sua agenda pessoal",
+  "short_name": "WeTasks",
+  "description": "Tarefas, calendário e lembretes em um só lugar.",
+  "lang": "pt-BR",
+  "start_url": "/wetasks/#/tasks",
+  "scope": "/wetasks/",
+  "display": "standalone",
+  "background_color": "#F0F4F8",
+  "theme_color": "#0867e8",
+  "icons": [
+    { "src": "./icons/wetasks-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/wetasks-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Minhas tarefas", "url": "/wetasks/#/tasks" },
+    { "name": "Calendário", "url": "/wetasks/#/calendar" }
+  ]
+}

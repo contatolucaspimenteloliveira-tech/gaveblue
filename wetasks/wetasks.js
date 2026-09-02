@@ -49,7 +49,7 @@ const TUTORIAL_STEPS = [
   {
     title: 'Pesquise outros módulos',
     description: 'Use a busca global para navegar pelo ecossistema GaveBlue sem sair procurando manualmente cada sistema.',
-    target: () => window.innerWidth < 960 ? '#tutorial-search-mobile' : '#tutorial-search-desktop',
+    target: '#tab-search',
     placement: 'bottom',
     padding: 6
   },
@@ -85,7 +85,7 @@ const TUTORIAL_STEPS = [
   {
     title: 'Abra as configurações quando precisar',
     description: 'Em Configurações você encontra tema, importação, notificações do dispositivo, limpeza e a opção de rever este tutorial quando quiser.',
-    target: () => window.innerWidth < 960 ? '#tutorial-settings-mobile' : '.header-desktop .header-actions button:nth-child(2)',
+    target: '#tab-settings',
     placement: 'left',
     padding: 6
   }
@@ -122,8 +122,8 @@ function sendOverdueBrowserNotification(task) {
 
   notification.onclick = () => {
     window.focus();
-    currentTab = 'tasks';
     selectedTaskDate = task.date;
+    switchTab('tasks');
     renderAll();
     notification.close();
   };
@@ -658,12 +658,12 @@ function getSearchNodes() {
 
 function getActiveSearchInput() {
   const { desktopInput, mobileInput } = getSearchNodes();
-  return window.innerWidth >= 960 ? desktopInput : mobileInput;
+  return desktopInput || mobileInput;
 }
 
 function getActiveSearchResults() {
   const { desktopResults, mobileResults } = getSearchNodes();
-  return window.innerWidth >= 960 ? desktopResults : mobileResults;
+  return desktopResults || mobileResults;
 }
 
 function focusGlobalSearch() {
@@ -672,10 +672,8 @@ function focusGlobalSearch() {
 }
 
 function openGlobalSearch(forceMobileOpen = false) {
-  const { overlay, mobilePanel } = getSearchNodes();
+  if (currentTab !== 'search') switchTab('search');
   const results = getActiveSearchResults();
-  if (overlay) overlay.classList.add('active');
-  if (window.innerWidth < 960 && mobilePanel) mobilePanel.classList.add('active');
   if (results) results.classList.add('active');
   renderGlobalSearch(getActiveSearchInput()?.value || '');
   if (forceMobileOpen) {
@@ -738,29 +736,11 @@ function handleGlobalSearchKeydown(event) {
 
 // ===== SETTINGS =====
 function toggleSettings(event) {
-  if (typeof event === 'boolean') {
-    const p = document.getElementById('settings-panel');
-    const o = document.getElementById('settings-overlay');
-    p.style.display = event ? 'block' : 'none';
-    if (o) o.style.display = event ? 'block' : 'none';
-    if (event) {
-      updateThemeButtons();
-      updateBrowserNotificationStatus();
-    }
-    updateFabVisibility();
+  if (event === false) {
+    if (currentTab === 'settings') switchTab('tasks');
     return;
   }
-  if (event && event.target.id === 'settings-overlay') return;
-  const p = document.getElementById('settings-panel');
-  const o = document.getElementById('settings-overlay');
-  const show = p.style.display === 'none' || p.style.display === '';
-  p.style.display = show ? 'block' : 'none';
-  if (o) o.style.display = show ? 'block' : 'none';
-  if (show) {
-    updateThemeButtons();
-    updateBrowserNotificationStatus();
-  }
-  updateFabVisibility();
+  switchTab(event === true || currentTab !== 'settings' ? 'settings' : 'tasks');
 }
 
 // ===== NOTIFICATIONS =====
@@ -768,7 +748,8 @@ function updateNotificationBadge() {
   const unread = notifications.filter(n => !n.read).length;
   const badges = [
     document.getElementById('notification-badge-mobile'),
-    document.getElementById('notification-badge-desktop')
+    document.getElementById('notification-badge-desktop'),
+    document.getElementById('notification-badge-dock')
   ];
 
   badges.forEach(badge => {
@@ -784,33 +765,11 @@ function updateNotificationBadge() {
 }
 
 function toggleNotifications(event) {
-  if (typeof event === 'boolean') {
-    const p = document.getElementById('notifications-panel');
-    const o = document.getElementById('notifications-overlay');
-    p.style.display = event ? 'block' : 'none';
-    if (o) o.style.display = event ? 'block' : 'none';
-    if (event) {
-      renderNotifications();
-      notifications.forEach(n => n.read = true);
-      save();
-      updateNotificationBadge();
-    }
-    updateFabVisibility();
+  if (event === false) {
+    if (currentTab === 'notifications') switchTab('tasks');
     return;
   }
-  if (event && event.target.id === 'notifications-overlay') return;
-  const p = document.getElementById('notifications-panel');
-  const o = document.getElementById('notifications-overlay');
-  const show = p.style.display === 'none';
-  p.style.display = show ? 'block' : 'none';
-  if (o) o.style.display = show ? 'block' : 'none';
-  if (show) {
-    renderNotifications();
-    notifications.forEach(n => n.read = true);
-    save();
-    updateNotificationBadge();
-  }
-  updateFabVisibility();
+  switchTab(event === true || currentTab !== 'notifications' ? 'notifications' : 'tasks');
 }
 
 function renderNotifications() {
@@ -1174,7 +1133,7 @@ function closeExitModal() {
 
 function confirmExit() {
   closeExitModal();
-  window.location.href = 'https://gaveblue.com';
+  window.location.href = 'https://gaveblue.com.br/';
 }
 
 function renderHeader() {
@@ -1494,26 +1453,40 @@ function updateTaskDateLabel() {
 
 function updateFabVisibility() {
   const fab = document.getElementById('fab-button');
-  const settingsOpen = document.getElementById('settings-panel').style.display === 'block';
-  const notificationsOpen = document.getElementById('notifications-panel').style.display === 'block';
-  const isMainView = currentTab === 'tasks' || currentTab === 'calendar';
-
-  fab.style.display = (isMainView && !settingsOpen && !notificationsOpen) ? 'flex' : 'none';
+  if (fab) fab.style.display = 'flex';
 }
 
 // ===== TABS =====
-function switchTab(tab) {
+function switchTab(tab, updateRoute = true) {
+  const screens = { tasks: 'view-tasks', calendar: 'view-calendar', dashboard: 'view-dashboard', settings: 'settings-panel', notifications: 'notifications-panel', search: 'view-search' };
+  if (!screens[tab]) tab = 'tasks';
   currentTab = tab;
-  document.getElementById('tab-tasks').classList.toggle('active', tab === 'tasks');
-  document.getElementById('tab-calendar').classList.toggle('active', tab === 'calendar');
-  document.getElementById('tab-dashboard').classList.toggle('active', tab === 'dashboard');
-  document.getElementById('view-tasks').style.display = tab === 'tasks' ? 'block' : 'none';
-  document.getElementById('view-calendar').style.display = tab === 'calendar' ? 'block' : 'none';
-  document.getElementById('view-dashboard').style.display = tab === 'dashboard' ? 'block' : 'none';
+  Object.entries(screens).forEach(([key, id]) => {
+    const screen = document.getElementById(id);
+    if (screen) { screen.style.display = tab === key ? 'block' : 'none'; screen.setAttribute('aria-hidden', String(tab !== key)); }
+    const button = document.getElementById(`tab-${key}`);
+    if (button) { button.classList.toggle('active', tab === key); button.setAttribute('aria-current', tab === key ? 'page' : 'false'); }
+  });
+  closeGlobalSearch();
+  ['settings-overlay', 'notifications-overlay'].forEach(id => { const overlay = document.getElementById(id); if (overlay) overlay.style.display = 'none'; });
+  const title = document.getElementById('app-screen-title');
+  const titles = { tasks: 'Tarefas', calendar: 'Calendário', dashboard: 'Seu resumo', settings: 'Ajustes', notifications: 'Notificações', search: 'Explorar' };
+  if (title) title.textContent = titles[tab];
+  document.title = `${titles[tab]} · WeTasks`;
+  if (updateRoute && window.location.hash !== `#/${tab}`) window.history.pushState(null, '', `#/${tab}`);
   
   if (tab === 'tasks') renderTasks();
   if (tab === 'calendar') renderCalendar();
   if (tab === 'dashboard') renderDashboard();
+  if (tab === 'settings') { updateThemeButtons(); updateBrowserNotificationStatus(); }
+  if (tab === 'notifications') {
+    renderNotifications();
+    notifications.forEach(n => n.read = true);
+    save();
+    updateNotificationBadge();
+  }
+  if (tab === 'search') renderGlobalSearch('');
+  document.getElementById('app')?.scrollTo({ top: 0 });
   
   updateFabVisibility();
 }

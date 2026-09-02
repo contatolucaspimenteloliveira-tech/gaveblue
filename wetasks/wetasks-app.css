@@ -1,0 +1,62 @@
+/* Floating glass navigation. Content remains in normal flow, never underneath panels. */
+html { overscroll-behavior-y: none; }
+body { background: var(--bg); }
+.app-wrapper { padding-bottom: calc(122px + env(safe-area-inset-bottom, 0px)); }
+body .header-shell[class] { max-width: 760px; margin: 0 auto; padding: calc(22px + env(safe-area-inset-top, 0px)) 24px 8px; background: transparent; box-shadow: none; color: var(--text); }
+.header-shell::after { display: none; }
+.header-desktop { gap: 20px; padding: 0; align-items: center; }
+.header-desktop-left { flex: 1; }
+.header-desktop-center { flex: 0 0 48px; order: -1; }
+.header-desktop-center img, .header-mobile img { width: 48px!important; height: 48px!important; margin: 0!important; border-radius: 15px; box-shadow: 0 5px 15px #0877e52b; }
+.header-desktop-left-datetime, .header-mobile > div > div:last-child { color: var(--secondary); font-size: 12px!important; }
+.header-desktop-left-date, .header-desktop-left-time { color: var(--secondary); }
+.header-shell .greeting-badge { background: transparent; color: var(--secondary); border: 0; padding: 0; box-shadow: none; font-size: 13px; }
+.header-mobile > div > div:first-child { margin-bottom: 4px!important; }
+.header-mobile > div > div:first-child > div { flex-direction: row!important; align-items: center!important; margin-right: 0!important; gap: 14px!important; }
+.header-mobile #greeting-text { font-size: 13px!important; }
+.header-mobile > div > div:last-child { margin-top: 10px!important; font-weight: 500!important; }
+.app-page-heading { max-width: 760px; padding: 24px 24px 12px; margin: auto; }
+.screen-eyebrow { font-size: 10px; font-weight: 800; letter-spacing: .16em; color: var(--primary); }
+.app-page-heading h1 { font-size: clamp(28px, 5vw, 36px); letter-spacing: -.05em; line-height: 1.2; font-weight: 800; margin-top: 7px; }
+#view-tasks, #view-calendar, #view-dashboard { max-width: 760px!important; margin: 12px auto 20px!important; padding: 0 24px!important; }
+.app-screen { max-width: 712px; margin: 12px auto 20px; }
+.panel-shell.app-screen { position: relative; inset: auto; width: calc(100% - 48px); max-width: 712px; height: auto; border: 1px solid #94a3b820; border-radius: 24px; box-shadow: 0 12px 40px #0f172a06; overflow: hidden; z-index: auto!important; }
+.app-screen .panel-head { position: static; background: transparent; border-color: #94a3b820; }
+.app-screen .panel-head h2 { font-size: 15px!important; }
+.screen-intro { margin-bottom: 22px; }
+.screen-intro h2 { font-size: 25px; font-weight: 800; letter-spacing: -.04em; margin: 8px 0; color: var(--text); }
+.screen-intro p { color: var(--secondary); font-size: 14px; line-height: 1.7; }
+#view-search { width: calc(100% - 48px); }
+#app-search-mount .search-anchor { max-width: none!important; }
+#app-search-mount .global-search { background: var(--surface); border: 1px solid #94a3b835; color: var(--text); }
+#app-search-mount .global-search input { color: var(--text); }
+#app-search-mount .global-search input::placeholder { color: var(--secondary); }
+#app-search-mount .search-results { position: static; opacity: 1; transform: none; pointer-events: auto; margin-top: 16px; max-height: none; background: var(--surface); box-shadow: none; }
+#app-search-mount .search-item { color: var(--text); border-color: #94a3b820; padding: 20px; }
+#app-search-mount .search-kicker { color: var(--primary); font-size: 9px; }
+#app-search-mount .search-desc, #app-search-mount .search-empty { color: var(--secondary); font-size: 12px; }
+.app-dock { position: fixed; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); z-index: 120; padding: 7px; border: 1px solid #ffffff80; border-radius: 27px; background: linear-gradient(125deg, #078cedeb, #1762dac9 55%, #1754cde6); backdrop-filter: blur(24px) saturate(1.7); -webkit-backdrop-filter: blur(24px) saturate(1.7); box-shadow: 0 12px 34px #145fc44d, inset 0 1px 0 #ffffff66, inset 0 -1px 0 #ffffff20; }
+#tutorial-main-tabs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.dock-action { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 0; min-height: 57px; padding: 6px 1px; color: #fff; border: 1px solid transparent; border-radius: 19px; background: transparent; font-family: inherit; cursor: pointer; transition: background .18s, transform .18s; -webkit-tap-highlight-color: transparent; }
+.dock-icon { position: relative; display: flex; align-items: center; justify-content: center; }
+.dock-icon svg { width: 22px; height: 22px; stroke-width: 1.8; filter: drop-shadow(0 1px 1px #06399135); }
+.dock-label { font-size: 10px; font-weight: 600; letter-spacing: -.02em; }
+.dock-action.active { background: #ffffff28; border-color: #ffffff35; box-shadow: inset 0 1px 0 #ffffff40; }
+.dock-action:hover { background: #ffffff20; }
+.dock-action:active { transform: scale(.94); }
+.dock-action:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+.dock-create .dock-icon { background: #fff; color: #076ee5; width: 36px; height: 30px; border-radius: 12px; box-shadow: 0 4px 12px #0745a526; }
+.dock-create .dock-icon svg { width: 23px; height: 23px; stroke-width: 2.1; }
+.dock-create { gap: 2px; }
+.dock-badge { position: absolute; right: -8px; top: -6px; min-width: 15px; height: 15px; padding: 0 3px; background: #ff5274; border: 1px solid #fdfdff; border-radius: 20px; font-size: 8px; font-weight: 800; align-items: center; justify-content: center; color: #fff; }
+.install-card { display: grid; grid-template-columns: 56px 1fr; gap: 14px; margin: 0 0 24px; padding: 18px; border: 1px solid #2385ef30; border-radius: 19px; background: #1685f10a; }
+.install-card img { border-radius: 16px; }
+.install-card h3 { font-size: 14px; font-weight: 800; margin-bottom: 7px; }
+.install-card p { font-size: 12px; line-height: 1.6; color: var(--secondary); }
+.install-card button { grid-column: 1 / -1; justify-content: center; }
+.install-card button[hidden] { display: none; }
+.app-exit { width: 100%; margin-top: 24px; border: 1px solid #94a3b830; color: var(--secondary); background: transparent; justify-content: center; font-size: 12px; }
+.app-exit svg { width: 17px; height: 17px; }
+@media (max-width: 380px) { .app-dock { width: calc(100% - 16px); padding: 5px; border-radius: 24px; } #tutorial-main-tabs { gap: 0; } .dock-label { font-size: 9px; } .dock-action { min-height: 56px; } }
+@media (prefers-reduced-motion: reduce) { .dock-action, .app-screen { transition: none; animation: none; } }
+@media print { .app-dock { display: none; } }
