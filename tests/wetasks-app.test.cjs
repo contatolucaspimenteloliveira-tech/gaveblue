@@ -68,6 +68,9 @@ test('manifest uses the supplied icon and confines app launch to WeTasks', () =>
   assert.equal(manifest.start_url, '/wetasks/#/tasks');
   assert.deepEqual(manifest.icons.map(icon => icon.sizes), ['192x192', '512x512']);
   manifest.icons.forEach(icon => assert.ok(fs.existsSync(path.join(root, icon.src))));
+  manifest.icons.forEach(icon => assert.match(icon.src, /-v2\.png$/));
+  assert.match(fs.readFileSync(path.join(root, 'index.html'), 'utf8'), /apple-touch-icon" href="\.\/icons\/wetasks-180-v2\.png/);
+  assert.doesNotMatch(worker, /icons\/wetasks\.jpeg/);
   assert.match(shell, /navigator\.serviceWorker\.register\('\.\/wetasks-sw.js'\)/);
   assert.match(shell, /beforeinstallprompt/);
   assert.match(shell, /Adicionar à Tela de Início/);
