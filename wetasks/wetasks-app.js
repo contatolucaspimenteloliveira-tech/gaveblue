@@ -8,8 +8,31 @@
   document.querySelector('.header-desktop-right')?.remove();
   const heading = document.createElement('div');
   heading.className = 'app-page-heading';
-  heading.innerHTML = '<p class="screen-eyebrow">WETASKS · SUA AGENDA PESSOAL</p><h1 id="app-screen-title" tabindex="-1">Tarefas</h1>';
+  heading.innerHTML = '<h1 id="app-screen-title" tabindex="-1">Essas são suas tarefas para este dia</h1>';
   document.querySelector('.header-shell').after(heading);
+  // Keep the dialog outside the inert application while the tour is open.
+  document.body.appendChild(document.getElementById('tutorial-overlay'));
+  const headerActions = document.createElement('div');
+  headerActions.className = 'app-header-actions';
+  headerActions.innerHTML = `
+    <button id="header-task-search" type="button" aria-label="Pesquisar tarefas" title="Pesquisar tarefas"><i data-lucide="search"></i></button>
+    <button id="header-notifications" type="button" aria-label="Lembretes e notificações" title="Lembretes e notificações"><i data-lucide="bell"></i><span id="notification-badge-header" class="dock-badge" style="display:none" aria-live="polite"></span></button>
+    <button id="header-profile" type="button" aria-label="Perfil — em breve" title="Perfil — em breve"><i data-lucide="user"></i></button>`;
+  document.querySelector('.header-shell').appendChild(headerActions);
+  document.getElementById('header-task-search').addEventListener('click', () => openGlobalSearch(true));
+  document.getElementById('header-notifications').addEventListener('click', () => switchTab('notifications'));
+  document.getElementById('header-profile').addEventListener('click', () => showToast('Seu perfil será disponibilizado em breve.', 'info'));
+  const filters = document.getElementById('tutorial-task-filters');
+  filters.removeAttribute('style');
+  filters.innerHTML = `<label class="task-filter-select" for="task-status-filter"><i data-lucide="flag"></i><span>Filtro</span>
+    <select id="task-status-filter" aria-label="Filtrar tarefas por status ou prioridade">
+      <option value="all">Todas as tarefas</option><optgroup label="Status"><option value="pending">Pendentes</option><option value="done">Concluídas</option></optgroup>
+      <optgroup label="Prioridade"><option value="urgent">Urgentes</option><option value="high">Prioridade alta</option><option value="medium">Prioridade média</option><option value="low">Prioridade baixa</option></optgroup>
+    </select></label>`;
+  document.getElementById('task-status-filter').addEventListener('change', event => filterTasks(event.target.value));
+  const searchInput = document.getElementById('global-search-input-desktop');
+  searchInput.placeholder = 'Pesquisar suas tarefas...';
+  searchInput.setAttribute('aria-label', 'Pesquisar tarefas em todos os dias');
 
   const dock = document.createElement('nav');
   dock.className = 'app-dock';

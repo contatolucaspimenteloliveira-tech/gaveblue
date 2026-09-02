@@ -23,7 +23,8 @@ let justificationContext = null;
 let tutorialStepIndex = 0;
 let tutorialActive = false;
 let tutorialHighlightedElement = null;
-let tutorialCreatedDemoTask = false;
+let tutorialReturnState = null;
+let tutorialReturnFocus = null;
 const TUTORIAL_STORAGE_KEY = 'wetasks_tutorial_done';
 const TUTORIAL_DEMO_TASK_ID = 'tutorial_demo_task';
 
@@ -39,49 +40,18 @@ const GLOBAL_MODULES = [
   { name:'WeTasks', desc:'Tarefas e organização', url:'https://gaveblue.com/wetasks' }
 ];
 const TUTORIAL_STEPS = [
-  {
-    title: 'Bem-vindo ao WeTasks',
-    description: 'Aqui você organiza seu dia sem complicação. Vou te mostrar rapidamente os pontos principais para você sair usando sem dúvida.',
-    target: '#app-screen-title',
-    placement: 'bottom',
-    padding: 6
-  },
-  {
-    title: 'Troque entre Tarefas, Calendário e Dashboard',
-    description: 'Essas abas organizam sua rotina. Tarefas é o operacional do dia, Calendário ajuda na navegação e Dashboard mostra os indicadores.',
-    target: '#tutorial-main-tabs',
-    placement: 'bottom',
-    padding: 8
-  },
-  {
-    title: 'Adicione tarefas rápido',
-    description: 'Esse botão cria uma nova tarefa a qualquer momento. É o atalho mais importante do módulo.',
-    target: '#fab-button',
-    placement: 'left',
-    padding: 4
-  },
-  {
-    title: 'As tarefas aparecem nessa lista',
-    description: 'Depois de lançar uma tarefa, ela aparece aqui com horário, prioridade e ações rápidas. É desse card que você edita, conclui, reabre ou exclui quando permitido.',
-    target: '#tutorial-demo-card',
-    placement: 'top',
-    padding: 6,
-    onEnter: () => ensureTutorialDemoTask()
-  },
-  {
-    title: 'Gerencie pelo gesto ou pelos filtros',
-    description: 'Use os filtros para separar pendentes, concluídas e prioridades. No celular, também dá para arrastar a tarefa para concluir ou tentar excluir.',
-    target: '#tutorial-task-filters',
-    placement: 'top',
-    padding: 8
-  },
-  {
-    title: 'Abra as configurações quando precisar',
-    description: 'Em Configurações você encontra tema, importação, notificações do dispositivo, limpeza e a opção de rever este tutorial quando quiser.',
-    target: '#tab-settings',
-    placement: 'left',
-    padding: 6
-  }
+  { title: 'Sua rotina, com mais leveza', screen: 'tasks', target: '#app-screen-title', description: 'Vamos conhecer o WeTasks em 12 passos curtos. Você pode voltar, avançar ou sair quando quiser. Suas tarefas não serão alteradas.' },
+  { title: 'Um dia de cada vez', screen: 'tasks', target: '#tasks-date-label', description: 'Use as setas ao lado da data para ver o dia anterior ou seguinte. A lista mostra as tarefas do dia escolhido.' },
+  { title: 'Um filtro, uma escolha', screen: 'tasks', target: '#tutorial-task-filters', description: 'Abra a bandeirinha para escolher pendentes, concluídas ou uma prioridade. Para voltar à lista completa do dia, selecione Todas as tarefas.' },
+  { title: 'Tudo sobre cada tarefa', screen: 'tasks', target: '#tasks-list', description: 'Aqui aparecem horário, prioridade e ações. Você pode editar, concluir ou reabrir uma tarefa. Se a lista estiver vazia, use o botão + para começar.' },
+  { title: 'Crie sua próxima tarefa', screen: 'tasks', target: '#fab-button', description: 'O + azul abre o formulário. Preencha título, dia, horário e prioridade e salve. Esse atalho fica disponível em todas as telas.' },
+  { title: 'Veja sua agenda', screen: 'calendar', target: '#calendar-month-trigger', description: 'Na Agenda, escolha um dia para consultar suas tarefas. Toque no mês ou no ano para navegar mais rápido, ou use Hoje para retornar.' },
+  { title: 'Acompanhe seu progresso', screen: 'dashboard', target: '#view-dashboard', description: 'O Resumo reúne os indicadores da sua rotina. Consulte tarefas pendentes, concluídas e prioridades para planejar o próximo passo.' },
+  { title: 'Encontre qualquer tarefa', screen: 'search', target: '#tutorial-search-desktop', description: 'A lupa do cabeçalho pesquisa suas tarefas em todos os dias. Digite título, descrição, anotações ou data e toque no resultado para abrir a tarefa.' },
+  { title: 'Seus lembretes, em um lugar', screen: 'notifications', target: '#notifications-panel', description: 'O sino abre seus avisos. Para receber alertas no dispositivo, ative as notificações em Ajustes e permita o acesso no navegador. Este passeio não marca avisos como lidos.' },
+  { title: 'Um espaço para seu perfil', screen: 'tasks', target: '#header-profile', description: 'O ícone de perfil já está reservado no cabeçalho. Os recursos de conta serão preparados depois; por enquanto, ele informa que estarão disponíveis em breve.' },
+  { title: 'Deixe o app do seu jeito', screen: 'settings', target: '#theme-light', description: 'Em Ajustes, escolha o tema claro ou escuro, gerencie os alertas e importe ou exporte tarefas. Você também pode rever este tutorial por aqui.' },
+  { title: 'Leve o WeTasks com você', screen: 'settings', target: '.install-card', description: 'Adicione o aplicativo à tela inicial para abrir pelo ícone. O botão mostra a instalação ou as orientações do seu navegador. Pronto: sua rotina pode começar!' }
 ];
 
 function canUseBrowserNotifications() {
@@ -167,78 +137,29 @@ function applyTutorialHighlight(target) {
   tutorialHighlightedElement.classList.add('tutorial-target-active');
 }
 
-function ensureTutorialDemoTask() {
-  if (tasks.some(task => task.id === TUTORIAL_DEMO_TASK_ID)) return;
-  tutorialCreatedDemoTask = true;
-  tasks.unshift({
-    id: TUTORIAL_DEMO_TASK_ID,
-    title: 'Exemplo do tutorial',
-    description: 'Use este card para entender edição, conclusão e exclusão.',
-    date: selectedTaskDate || todayStr(),
-    time: '09:00',
-    priority: 'medium',
-    notes: '',
-    status: 'pending',
-    createdAt: new Date().toISOString()
-  });
-  save();
-  renderAll();
-}
-
-function removeTutorialDemoTask() {
-  const hasDemo = tasks.some(task => task.id === TUTORIAL_DEMO_TASK_ID);
-  if (!hasDemo) return;
-  tasks = tasks.filter(task => task.id !== TUTORIAL_DEMO_TASK_ID);
-  clearTaskNotification(TUTORIAL_DEMO_TASK_ID);
-  save();
-  renderAll();
-}
-
 function positionTutorialCard(target, placement) {
   const card = document.getElementById('tutorial-card');
   if (!card) return;
-
-  card.style.left = '';
-  card.style.right = '';
-  card.style.top = '';
-  card.style.bottom = '';
-
-  if (!target) return;
-
-  const rect = target.getBoundingClientRect();
-  const prefersMobile = window.innerWidth < 640;
-  if (prefersMobile) {
-    card.style.left = '14px';
-    card.style.right = '14px';
-    card.style.bottom = '14px';
-    return;
+  // Explicitly unset opposite edges: top + bottom used to stretch the card.
+  card.style.right = 'auto';
+  card.style.bottom = 'auto';
+  const margin = 16;
+  const viewportHeight = window.visualViewport?.height || window.innerHeight;
+  const viewportWidth = window.visualViewport?.width || window.innerWidth;
+  const width = Math.min(400, viewportWidth - margin * 2);
+  card.style.width = `${width}px`;
+  card.style.maxHeight = `${viewportHeight - margin * 2}px`;
+  const height = card.offsetHeight;
+  const rect = target?.getBoundingClientRect();
+  let top = (viewportHeight - height) / 2;
+  let left = (viewportWidth - width) / 2;
+  if (rect) {
+    left = rect.left + rect.width / 2 - width / 2;
+    if (rect.bottom + height + 18 <= viewportHeight - margin) top = rect.bottom + 18;
+    else if (rect.top - height - 18 >= margin) top = rect.top - height - 18;
   }
-
-  const gap = 18;
-  const cardWidth = Math.min(380, window.innerWidth - 48);
-  const estimatedHeight = card.offsetHeight || 250;
-  const clampLeft = (value) => Math.max(24, Math.min(window.innerWidth - cardWidth - 24, value));
-  const clampTop = (value) => Math.max(24, Math.min(window.innerHeight - estimatedHeight - 24, value));
-  const centeredLeft = clampLeft(rect.left + (rect.width / 2) - (cardWidth / 2));
-
-  if (placement === 'top') {
-    const fitsAbove = rect.top - estimatedHeight - gap >= 24;
-    card.style.top = `${clampTop(fitsAbove ? rect.top - estimatedHeight - gap : rect.bottom + gap)}px`;
-    card.style.left = `${centeredLeft}px`;
-    return;
-  }
-
-  if (placement === 'left') {
-    const placeOnLeft = rect.left > (window.innerWidth / 2);
-    const desiredLeft = placeOnLeft ? rect.left - cardWidth - gap : rect.right + gap;
-    card.style.left = `${clampLeft(desiredLeft)}px`;
-    card.style.top = `${clampTop(rect.top + (rect.height / 2) - (estimatedHeight / 2))}px`;
-    return;
-  }
-
-  const fitsBelow = rect.bottom + estimatedHeight + gap <= window.innerHeight - 24;
-  card.style.top = `${clampTop(fitsBelow ? rect.bottom + gap : rect.top - estimatedHeight - gap)}px`;
-  card.style.left = `${centeredLeft}px`;
+  card.style.left = `${Math.max(margin, Math.min(viewportWidth - width - margin, left))}px`;
+  card.style.top = `${Math.max(margin, Math.min(viewportHeight - height - margin, top))}px`;
 }
 
 function renderTutorialStep() {
@@ -258,7 +179,10 @@ function renderTutorialStep() {
   title.textContent = step.title;
   description.textContent = step.description;
   stepLabel.textContent = `Passo ${tutorialStepIndex + 1} de ${TUTORIAL_STEPS.length}`;
-  prevBtn.style.visibility = tutorialStepIndex === 0 ? 'hidden' : 'visible';
+  const progress = document.getElementById('tutorial-progress');
+  progress.setAttribute('aria-valuenow', String(tutorialStepIndex + 1));
+  progress.firstElementChild.style.width = `${(tutorialStepIndex + 1) / TUTORIAL_STEPS.length * 100}%`;
+  prevBtn.disabled = tutorialStepIndex === 0;
   nextBtn.textContent = tutorialStepIndex === TUTORIAL_STEPS.length - 1 ? 'Finalizar' : 'Próximo';
 
   if (!target) {
@@ -275,7 +199,7 @@ function renderTutorialStep() {
   spotlight.style.left = `${Math.max(10, rect.left - padding)}px`;
   spotlight.style.top = `${Math.max(10, rect.top - padding)}px`;
   spotlight.style.width = `${Math.min(window.innerWidth - 20, rect.width + padding * 2)}px`;
-  spotlight.style.height = `${rect.height + padding * 2}px`;
+  spotlight.style.height = `${Math.min(window.innerHeight - 20, rect.height + padding * 2)}px`;
 
   applyTutorialHighlight(target);
   positionTutorialCard(target, step.placement);
@@ -283,33 +207,49 @@ function renderTutorialStep() {
 }
 
 function closeTutorial(markDone = true) {
-  tutorialActive = false;
   const overlay = document.getElementById('tutorial-overlay');
   const spotlight = document.getElementById('tutorial-spotlight');
   if (overlay) overlay.style.display = 'none';
   if (spotlight) spotlight.style.opacity = '0';
   clearTutorialHighlight();
-  if (tutorialCreatedDemoTask) {
-    tutorialCreatedDemoTask = false;
-    removeTutorialDemoTask();
+  document.getElementById('app').inert = false;
+  document.querySelector('.app-dock').inert = false;
+  if (tutorialReturnState) {
+    selectedTaskDate = tutorialReturnState.date;
+    currentFilter = tutorialReturnState.filter;
+    switchTab(tutorialReturnState.tab, false);
+    renderAll();
+    tutorialReturnState = null;
   }
+  tutorialActive = false;
+  if (tutorialReturnFocus?.isConnected) tutorialReturnFocus.focus({ preventScroll: true });
   if (markDone) localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
+}
+
+function enterTutorialStep() {
+  const step = TUTORIAL_STEPS[tutorialStepIndex];
+  switchTab(step.screen, false);
+  resolveTutorialTarget(step)?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  renderTutorialStep();
+  document.getElementById('tutorial-card').focus({ preventScroll: true });
 }
 
 function startTutorial(force = false) {
   if (!force && localStorage.getItem(TUTORIAL_STORAGE_KEY) === 'true') return;
+  if (tutorialActive) return;
+  tutorialReturnState = { tab: currentTab, date: selectedTaskDate, filter: currentFilter };
+  tutorialReturnFocus = document.activeElement;
   tutorialActive = true;
   tutorialStepIndex = 0;
   closeGlobalSearch();
   toggleNotifications(false);
   toggleSettings(false);
-  switchTab('tasks');
-  selectedTaskDate = todayStr();
-  renderAll();
-  if (typeof TUTORIAL_STEPS[0].onEnter === 'function') TUTORIAL_STEPS[0].onEnter();
+  switchTab('tasks', false);
   const overlay = document.getElementById('tutorial-overlay');
   if (overlay) overlay.style.display = 'block';
-  renderTutorialStep();
+  document.getElementById('app').inert = true;
+  document.querySelector('.app-dock').inert = true;
+  enterTutorialStep();
 }
 
 function nextTutorialStep() {
@@ -319,22 +259,14 @@ function nextTutorialStep() {
     showToast('Tutorial concluído! Você pode rever em Configurações.', 'success');
     return;
   }
-  const currentStep = TUTORIAL_STEPS[tutorialStepIndex];
-  if (typeof currentStep?.onExit === 'function') currentStep.onExit();
   tutorialStepIndex += 1;
-  const nextStep = TUTORIAL_STEPS[tutorialStepIndex];
-  if (typeof nextStep?.onEnter === 'function') nextStep.onEnter();
-  renderTutorialStep();
+  enterTutorialStep();
 }
 
 function prevTutorialStep() {
   if (!tutorialActive || tutorialStepIndex === 0) return;
-  const currentStep = TUTORIAL_STEPS[tutorialStepIndex];
-  if (typeof currentStep?.onExit === 'function') currentStep.onExit();
   tutorialStepIndex -= 1;
-  const prevStep = TUTORIAL_STEPS[tutorialStepIndex];
-  if (typeof prevStep?.onEnter === 'function') prevStep.onEnter();
-  renderTutorialStep();
+  enterTutorialStep();
 }
 
 function skipTutorial() {
@@ -344,6 +276,16 @@ function skipTutorial() {
 
 window.addEventListener('resize', () => {
   if (tutorialActive) renderTutorialStep();
+});
+window.visualViewport?.addEventListener('resize', () => { if (tutorialActive) renderTutorialStep(); });
+document.addEventListener('keydown', event => {
+  if (!tutorialActive) return;
+  if (event.key === 'Escape') { event.preventDefault(); skipTutorial(); }
+  if (event.key !== 'Tab') return;
+  const buttons = [...document.querySelectorAll('#tutorial-card button')].filter(button => !button.disabled);
+  const index = buttons.indexOf(document.activeElement);
+  event.preventDefault();
+  buttons[(index + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length].focus();
 });
 
 async function enableBrowserNotifications() {
@@ -685,32 +627,46 @@ function closeGlobalSearch() {
   [desktopInput, mobileInput].forEach(node => { if (node) node.value = ''; });
 }
 
+function findTaskSearchMatches(query = '') {
+  const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const terms = normalize(query).trim().split(/\s+/).filter(Boolean);
+  return tasks.filter(task => {
+    const date = String(task.date || '').split('-').reverse().join('/');
+    const searchable = normalize([task.title, task.description, task.notes, task.date, date, task.time, PRIORITY_LABELS[task.priority], task.status === 'done' ? 'concluída' : 'pendente'].join(' '));
+    return terms.every(term => searchable.includes(term));
+  }).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(a.time || '').localeCompare(String(b.time || '')));
+}
+
 function renderGlobalSearch(query = '') {
   const results = getActiveSearchResults();
   if (!results) return;
-  const term = query.trim().toLowerCase();
-  const filtered = !term
-    ? GLOBAL_MODULES
-    : GLOBAL_MODULES.filter(item => item.name.toLowerCase().includes(term) || item.desc.toLowerCase().includes(term));
-
+  const filtered = findTaskSearchMatches(query);
+  results.replaceChildren();
   if (!filtered.length) {
-    results.innerHTML = `<div class="search-empty">Nenhum módulo encontrado para essa busca.</div>`;
+    results.innerHTML = '<div class="search-empty">Nenhuma tarefa encontrada. Tente outro termo ou crie sua primeira tarefa no +.</div>';
     results.classList.add('active');
     return;
   }
-
-  results.innerHTML = filtered.map(item => `
-    <a class="search-item" href="${item.url}" onclick="closeGlobalSearch()">
-      <span class="search-meta">
-        <span class="search-kicker">Ecossistema GaveBlue</span>
-        <strong style="font-size:16px">${item.name}</strong>
-        <span class="search-desc">${item.desc}</span>
-      </span>
-      <i data-lucide="arrow-up-right" style="width:18px;height:18px;color:rgba(191,219,254,.95)"></i>
-    </a>
-  `).join('');
+  filtered.forEach(task => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'search-item task-search-result';
+    const title = document.createElement('strong');
+    title.textContent = task.title;
+    const detail = document.createElement('span');
+    detail.className = 'search-desc';
+    detail.textContent = `${String(task.date || '').split('-').reverse().join('/')} ${task.time || ''} · ${task.status === 'done' ? 'Concluída' : 'Pendente'} · ${PRIORITY_LABELS[task.priority] || 'Sem prioridade'}`;
+    button.append(title, detail);
+    button.addEventListener('click', () => {
+      selectedTaskDate = task.date;
+      currentFilter = 'all';
+      switchTab('tasks');
+      renderAll();
+      openTaskModal(task.id);
+    });
+    results.appendChild(button);
+  });
   results.classList.add('active');
-  lucide.createIcons();
 }
 
 function handleGlobalSearchKeydown(event) {
@@ -721,9 +677,7 @@ function handleGlobalSearchKeydown(event) {
   }
   if (event.key === 'Enter') {
     event.preventDefault();
-    const query = event.target.value.trim().toLowerCase();
-    const match = GLOBAL_MODULES.find(item => item.name.toLowerCase().includes(query) || item.desc.toLowerCase().includes(query)) || GLOBAL_MODULES[0];
-    if (match) window.location.href = match.url;
+    getActiveSearchResults()?.querySelector('.task-search-result')?.click();
   }
 }
 
@@ -742,7 +696,8 @@ function updateNotificationBadge() {
   const badges = [
     document.getElementById('notification-badge-mobile'),
     document.getElementById('notification-badge-desktop'),
-    document.getElementById('notification-badge-dock')
+    document.getElementById('notification-badge-dock'),
+    document.getElementById('notification-badge-header')
   ];
 
   badges.forEach(badge => {
@@ -1239,6 +1194,8 @@ function clearTaskNotification(taskId) {
 }
 
 function renderTasks(targetTasks, container) {
+  const filterSelect = document.getElementById('task-status-filter');
+  if (filterSelect) filterSelect.value = currentFilter;
   const list = container || document.getElementById('tasks-list');
   let filtered = targetTasks || tasks;
   const today = todayStr();
@@ -1464,7 +1421,7 @@ function switchTab(tab, updateRoute = true) {
   closeGlobalSearch();
   ['settings-overlay', 'notifications-overlay'].forEach(id => { const overlay = document.getElementById(id); if (overlay) overlay.style.display = 'none'; });
   const title = document.getElementById('app-screen-title');
-  const titles = { tasks: 'Tarefas', calendar: 'Calendário', dashboard: 'Seu resumo', settings: 'Ajustes', notifications: 'Notificações', search: 'Explorar' };
+  const titles = { tasks: 'Essas são suas tarefas para este dia', calendar: 'Calendário', dashboard: 'Seu resumo', settings: 'Ajustes', notifications: 'Notificações', search: 'Pesquisar tarefas' };
   if (title) title.textContent = titles[tab];
   document.title = `${titles[tab]} · WeTasks`;
   if (updateRoute && window.location.hash !== `#/${tab}`) window.history.pushState(null, '', `#/${tab}`);
@@ -1475,9 +1432,11 @@ function switchTab(tab, updateRoute = true) {
   if (tab === 'settings') { updateThemeButtons(); updateBrowserNotificationStatus(); }
   if (tab === 'notifications') {
     renderNotifications();
-    notifications.forEach(n => n.read = true);
-    save();
-    updateNotificationBadge();
+    if (!tutorialActive) {
+      notifications.forEach(n => n.read = true);
+      save();
+      updateNotificationBadge();
+    }
   }
   if (tab === 'search') renderGlobalSearch('');
   document.getElementById('app')?.scrollTo({ top: 0 });

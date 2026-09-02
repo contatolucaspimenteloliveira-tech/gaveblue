@@ -34,7 +34,7 @@ test('every screen is exclusive, addressable and preserves tasks when navigating
   const tasks = [{ id: 'existing', title: 'Preservar tarefa' }];
   let reads = 0;
   const context = {
-    currentTab: 'tasks', tasks, notifications: [{ read: false }],
+    currentTab: 'tasks', tutorialActive: false, tasks, notifications: [{ read: false }],
     document: { getElementById: node },
     window: { location: { hash: '' }, history: { pushState(_state, _title, hash) { context.window.location.hash = hash; } } },
     closeGlobalSearch() {}, renderTasks() {}, renderCalendar() {}, renderDashboard() {},

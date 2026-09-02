@@ -17,7 +17,7 @@ body .header-shell[class] { max-width: 760px; margin: 0 auto; padding: calc(22px
 .header-mobile > div > div:last-child { margin-top: 10px!important; font-weight: 500!important; }
 .app-page-heading { max-width: 760px; padding: 24px 24px 12px; margin: auto; }
 .screen-eyebrow { font-size: 10px; font-weight: 800; letter-spacing: .16em; color: var(--primary); }
-.app-page-heading h1 { font-size: clamp(28px, 5vw, 36px); letter-spacing: -.05em; line-height: 1.2; font-weight: 800; margin-top: 7px; }
+.app-page-heading h1 { font-size: clamp(23px, 3.8vw, 30px); letter-spacing: -.04em; line-height: 1.3; font-weight: 800; margin: 0; max-width: 600px; text-wrap: balance; }
 #view-tasks, #view-calendar, #view-dashboard { max-width: 760px!important; margin: 12px auto 20px!important; padding: 0 24px!important; }
 .app-screen { max-width: 712px; margin: 12px auto 20px; }
 .panel-shell.app-screen { position: relative; inset: auto; width: calc(100% - 48px); max-width: 712px; height: auto; border: 1px solid #94a3b820; border-radius: 24px; box-shadow: 0 12px 40px #0f172a06; overflow: hidden; z-index: auto!important; }
@@ -47,7 +47,7 @@ body .header-shell[class] { max-width: 760px; margin: 0 auto; padding: calc(22px
 .dock-action:hover { background: var(--dock-hover); }
 .dock-action:active { transform: scale(.94); }
 .dock-action:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
-.dock-create .dock-icon { background: var(--dock-active); color: var(--text); width: 36px; height: 30px; border: 1px solid var(--dock-border); border-radius: 12px; box-shadow: 0 4px 12px #00000012; }
+.dock-create .dock-icon { background: #2563eb; color: #fff; width: 38px; height: 32px; border: 1px solid #60a5fa; border-radius: 12px; box-shadow: 0 4px 12px #2563eb35; }
 .dock-create .dock-icon svg { width: 23px; height: 23px; stroke-width: 2.1; }
 .dock-create { gap: 2px; }
 .dock-badge { position: absolute; right: -8px; top: -6px; min-width: 15px; height: 15px; padding: 0 3px; background: #ff5274; border: 1px solid #fdfdff; border-radius: 20px; font-size: 8px; font-weight: 800; align-items: center; justify-content: center; color: #fff; }
@@ -62,3 +62,48 @@ body .header-shell[class] { max-width: 760px; margin: 0 auto; padding: calc(22px
 @media (max-width: 380px) { .app-dock { width: calc(100% - 16px); padding: 5px; border-radius: 24px; } #tutorial-main-tabs { gap: 0; } .dock-label { font-size: 9px; } .dock-action { min-height: 56px; } }
 @media (prefers-reduced-motion: reduce) { .dock-action, .app-screen { transition: none; animation: none; } }
 @media print { .app-dock { display: none; } }
+
+/* Header utilities stay within reach without crowding the date. */
+body .header-shell[class] { position: relative; }
+.header-mobile > div { max-width: none!important; }
+.header-mobile > div > div:first-child, .header-desktop-left-greeting { padding-right: 142px; min-height: 42px; }
+.header-desktop-left-datetime { flex-wrap: wrap; }
+.header-mobile > div > div:nth-child(2) { flex-wrap: wrap; row-gap: 5px; }
+.app-header-actions { position: absolute; right: 24px; top: calc(20px + env(safe-area-inset-top, 0px)); display: flex; gap: 6px; }
+.app-header-actions button { position: relative; width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid #94a3b825; border-radius: 14px; background: var(--dock-glass); color: var(--text); cursor: pointer; }
+.app-header-actions svg { width: 19px; height: 19px; stroke-width: 1.8; }
+.app-header-actions button:hover { background: var(--dock-active); }
+.app-header-actions button:focus-visible, .task-filter-select:focus-within { outline: 2px solid var(--primary); outline-offset: 3px; }
+.app-header-actions .dock-badge { right: -3px; top: -4px; }
+#tutorial-task-filters { display: flex; margin: 0 0 18px; }
+.task-filter-select { display: inline-flex; align-items: center; gap: 9px; max-width: 100%; padding: 0 12px; border: 1px solid #94a3b830; border-radius: 14px; background: var(--surface); color: var(--secondary); font-size: 12px; }
+.task-filter-select svg { width: 17px; height: 17px; color: var(--primary); flex-shrink: 0; }
+.task-filter-select select { min-width: 0; min-height: 44px; max-width: 100%; border: 0; outline: 0; background: var(--surface); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+.task-search-result { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; font: inherit; background: transparent; cursor: pointer; overflow-wrap: anywhere; }
+.task-search-result:hover, .task-search-result:focus-visible { background: #2563eb0d; outline: 2px solid var(--primary); outline-offset: -2px; }
+#app-search-mount .search-results { overflow: visible; }
+
+/* One compact, accessible tutorial card. Never anchor both top and bottom. */
+.tutorial-overlay { background: rgba(48,65,88,.22); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 500; }
+.tutorial-spotlight { border: 2px solid #60a5fa; background: #60a5fa0a; box-shadow: 0 0 0 5px #60a5fa20; border-radius: 18px; transition: none; }
+.tutorial-target-active { z-index: auto!important; box-shadow: none!important; }
+.tutorial-card { right: auto; bottom: auto; width: min(400px, calc(100vw - 32px)); height: auto; min-height: 0; max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; background: var(--surface); color: var(--text); padding: 22px; gap: 18px; border-radius: 24px; border: 1px solid #94a3b830; box-shadow: 0 20px 70px #0f172a25; outline: none; }
+.tutorial-progress { height: 4px; background: #94a3b826; border-radius: 10px; overflow: hidden; flex-shrink: 0; }
+.tutorial-progress span { display: block; height: 100%; background: #3b82f6; border-radius: inherit; transition: width .2s; }
+.tutorial-step-label { font-size: 10px; letter-spacing: .1em; color: var(--primary); margin-bottom: 8px; }
+.tutorial-title { font-size: 21px; line-height: 1.3; text-wrap: balance; }
+.tutorial-description { font-size: 14px; line-height: 1.7; color: var(--secondary); }
+.tutorial-close { flex-shrink: 0; background: var(--bg); color: var(--secondary); width: 38px; height: 38px; }
+.tutorial-close:hover { background: var(--dock-hover); }
+.tutorial-actions { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; }
+.tutorial-actions > div { display: flex; margin-left: auto; gap: 8px!important; }
+.tutorial-actions .btn { min-height: 42px; padding: 10px 14px; font-size: 12px; justify-content: center; }
+.tutorial-actions .tutorial-skip-btn { width: auto; padding-left: 0; padding-right: 0; color: var(--secondary); }
+.tutorial-next-btn { background: #2563eb; color: #fff; }
+.tutorial-prev-btn { color: var(--text); background: var(--bg); }
+.tutorial-prev-btn:disabled { opacity: .4; cursor: default; }
+.tutorial-card button:focus-visible { outline: 2px solid #60a5fa; outline-offset: 3px; }
+:root[data-theme="dark"] .tutorial-overlay { background: rgba(0,0,0,.38); }
+:root[data-theme="dark"] .tutorial-step-label { color: #93c5fd; }
+@media (max-width: 400px) { .tutorial-card { padding: 18px; gap: 14px; } .tutorial-title { font-size: 19px; } .tutorial-actions { gap: 8px; } .tutorial-actions .btn { padding: 10px; } .tutorial-actions .tutorial-skip-btn { padding-left: 0; padding-right: 0; } }
+@media (prefers-reduced-motion: reduce) { .tutorial-progress span { transition: none; } }
