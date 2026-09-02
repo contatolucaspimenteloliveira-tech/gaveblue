@@ -36,7 +36,7 @@ body .header-shell[class] { max-width: 760px; margin: 0 auto; padding: calc(22px
 #app-search-mount .search-kicker { color: var(--primary); font-size: 9px; }
 #app-search-mount .search-desc, #app-search-mount .search-empty { color: var(--secondary); font-size: 12px; }
 .app-dock { position: fixed; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); z-index: 120; padding: 7px; border: 1px solid #ffffff80; border-radius: 27px; background: linear-gradient(125deg, #078cedeb, #1762dac9 55%, #1754cde6); backdrop-filter: blur(24px) saturate(1.7); -webkit-backdrop-filter: blur(24px) saturate(1.7); box-shadow: 0 12px 34px #145fc44d, inset 0 1px 0 #ffffff66, inset 0 -1px 0 #ffffff20; }
-#tutorial-main-tabs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+#tutorial-main-tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
 .dock-action { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 0; min-height: 57px; padding: 6px 1px; color: #fff; border: 1px solid transparent; border-radius: 19px; background: transparent; font-family: inherit; cursor: pointer; transition: background .18s, transform .18s; -webkit-tap-highlight-color: transparent; }
 .dock-icon { position: relative; display: flex; align-items: center; justify-content: center; }
 .dock-icon svg { width: 22px; height: 22px; stroke-width: 1.8; filter: drop-shadow(0 1px 1px #06399135); }

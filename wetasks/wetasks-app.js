@@ -6,13 +6,6 @@
   document.querySelectorAll('.header-actions').forEach(node => node.remove());
   document.getElementById('mobile-search-panel')?.remove();
   document.querySelector('.header-desktop-right')?.remove();
-  document.querySelectorAll('.header-shell img').forEach(img => {
-    img.src = './icons/wetasks.jpeg';
-    img.alt = 'WeTasks';
-    img.removeAttribute('loading');
-    img.removeAttribute('onerror');
-    img.style.display = 'block';
-  });
   const heading = document.createElement('div');
   heading.className = 'app-page-heading';
   heading.innerHTML = '<p class="screen-eyebrow">WETASKS · SUA AGENDA PESSOAL</p><h1 id="app-screen-title" tabindex="-1">Tarefas</h1>';
@@ -30,7 +23,7 @@
   const items = [
     ['tasks', 'list-todo', 'Tarefas'], ['calendar', 'calendar-days', 'Agenda'],
     ['create', 'plus', 'Criar'], ['dashboard', 'bar-chart-3', 'Resumo'],
-    ['notifications', 'bell', 'Avisos'], ['search', 'search', 'Busca'], ['settings', 'settings-2', 'Ajustes']
+    ['notifications', 'bell', 'Avisos'], ['settings', 'settings-2', 'Ajustes']
   ];
   items.forEach(([key, icon, label]) => {
     const button = key === 'create' ? document.getElementById('fab-button') : document.createElement('button');

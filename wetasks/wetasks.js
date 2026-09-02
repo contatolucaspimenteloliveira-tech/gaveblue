@@ -42,14 +42,7 @@ const TUTORIAL_STEPS = [
   {
     title: 'Bem-vindo ao WeTasks',
     description: 'Aqui você organiza seu dia sem complicação. Vou te mostrar rapidamente os pontos principais para você sair usando sem dúvida.',
-    target: () => window.innerWidth < 960 ? '#tutorial-brand-mobile' : '#tutorial-brand-desktop',
-    placement: 'bottom',
-    padding: 6
-  },
-  {
-    title: 'Pesquise outros módulos',
-    description: 'Use a busca global para navegar pelo ecossistema GaveBlue sem sair procurando manualmente cada sistema.',
-    target: '#tab-search',
+    target: '#app-screen-title',
     placement: 'bottom',
     padding: 6
   },
