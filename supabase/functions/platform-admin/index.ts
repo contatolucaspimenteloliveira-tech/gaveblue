@@ -97,6 +97,19 @@ async function ensureAppwriteUser(input: { appwriteUserId?: string; email: strin
   return { id: String(result.$id || ''), skipped: false, created: true };
 }
 
+async function listOperationalAudit(workspaceId: string, limit = 100) {
+  const connection = appwriteConnection();
+  if (!connection) throw new Error('A conexão de auditoria com o Appwrite não está configurada.');
+  const url = new URL(`${connection.baseUrl}/tablesdb/6a68ce8c000a36a44d98/tables/gaveblue_wefrotas/rows`);
+  url.searchParams.append('queries[]', `equal("workspaceId", ["${workspaceId.replace(/"/g, '')}"])`);
+  url.searchParams.append('queries[]', 'orderDesc("updatedAt")');
+  url.searchParams.append('queries[]', `limit(${Math.max(1, Math.min(Number(limit) || 100, 200))})`);
+  const response = await fetch(url, { headers: connection.headers });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result?.message || 'Não foi possível consultar a auditoria operacional.');
+  return Array.isArray(result?.rows) ? result.rows : (Array.isArray(result?.documents) ? result.documents : []);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json(405, { ok: false, error: 'Método não permitido.' });
@@ -121,6 +134,32 @@ Deno.serve(async (req) => {
       ]);
       if (orgError || planError) throw orgError || planError;
       return json(200, { ok: true, adminRole: platformAdmin.role, user: { id: authData.user.id, email: authData.user.email }, organizations, plans });
+    }
+
+    if (action === 'audit-list') {
+      const organizationId = String(payload.organizationId || '').trim();
+      const query = admin.from('organizations').select('id,name,appwrite_workspace_id,organization_members(email,appwrite_user_id)');
+      const { data: organizations, error } = organizationId ? await query.eq('id', organizationId) : await query;
+      if (error) throw error;
+      const rows = await Promise.all((organizations || []).map(async (organization: any) => {
+        const members = new Map((organization.organization_members || []).map((member: any) => [String(member.appwrite_user_id || ''), String(member.email || '')]));
+        const auditRows = await listOperationalAudit(String(organization.appwrite_workspace_id || ''), payload.limit);
+        return auditRows.flatMap((row: any) => {
+          try {
+            const event = JSON.parse(String(row.snapshot || '{}'));
+            if (event.kind !== 'platform-audit') return [];
+            return [{
+              id: String(row.$id || row.id || ''), organizationId: organization.id, organizationName: organization.name,
+              at: String(event.createdAt || row.updatedAt || row.$updatedAt || ''), actorId: String(event.actorId || row.updatedBy || ''),
+              actorEmail: members.get(String(event.actorId || row.updatedBy || '')) || 'Usuário não identificado',
+              action: String(event.action || 'operação'), targetId: String(event.targetId || ''), result: String(event.result || 'success'),
+              before: event.before || null, after: event.after || null
+            }];
+          } catch (_) { return []; }
+        });
+      }));
+      const events = rows.flat().sort((a: any, b: any) => String(b.at).localeCompare(String(a.at))).slice(0, Math.max(1, Math.min(Number(payload.limit) || 100, 200)));
+      return json(200, { ok: true, events });
     }
 
     if (action === 'organization-save') {

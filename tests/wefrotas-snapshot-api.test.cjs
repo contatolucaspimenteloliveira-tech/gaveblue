@@ -10,15 +10,16 @@ function harness(role = 'wefrotas-admin') {
   const writes = [];
   const organization = { id: 'gave', workspaceId: 'gave-workspace', appwriteLabel: 'orggave', modules: ['wefrotas'], limits: { vehicles: 2 } };
   const directoryWrites = [];
-  const context = { Buffer, crypto: require('node:crypto'), DATABASE_ID: 'db', DRIVER_DIRECTORY_COLLECTION_ID: 'directory',
+  const context = { Buffer, crypto: require('node:crypto'), DATABASE_ID: 'db', WEFROTAS_TABLE_ID: 'snapshots', DRIVER_DIRECTORY_COLLECTION_ID: 'directory', wefrotasSnapshotDocumentId: value => `snapshot-${value}`,
     Query: { equal: (key, values) => ({ key, values }), limit: value => ({ limit: value }), offset: value => ({ offset: value }) },
     tenantManagedPermissions: organization => [`read:${organization.appwriteLabel}`],
     assertOperationalManager: async () => {
       if (!['wefrotas-admin', 'wefrotas-gestor'].includes(role)) throw Object.assign(new Error('Forbidden'), { status: 403 });
       return { userId: 'actor', organization };
     },
-    createDatabaseClient: () => ({ updateDocument: async args => { directoryWrites.push(args); }, listDocuments: async () => ({ documents: [] }) }),
-    persistWefrotasSnapshot: async (...args) => { writes.push(args); }
+    createDatabaseClient: () => ({ getDocument: async () => { throw { code: 404 }; }, updateDocument: async args => { directoryWrites.push(args); }, listDocuments: async () => ({ documents: [] }) }),
+    persistWefrotasSnapshot: async (...args) => { writes.push(args); return { updatedAt: 'now' }; },
+    getSnapshotAuditEvents: () => [], writeWefrotasAudit: async () => {}
   };
   vm.createContext(context); vm.runInContext(block, context);
   return { ...context, writes, directoryWrites, organization };

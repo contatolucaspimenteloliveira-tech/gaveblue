@@ -1167,6 +1167,47 @@ async function writeWefrotasAudit(databases, { actorId, action, targetId = '', b
   }, tenantManagedPermissions(organization, { auditOnly: true }));
 }
 
+const SNAPSHOT_AUDIT_ENTITIES = Object.freeze([
+  ['vehicles', 'vehicle', 'veículo'],
+  ['drivers', 'driver', 'motorista'],
+  ['suppliers', 'supplier', 'fornecedor'],
+  ['orders', 'order', 'OS'],
+  ['finance', 'finance', 'lançamento financeiro']
+]);
+
+function snapshotEntityId(item = {}) {
+  return String(item?.id || item?.$id || item?.uuid || '').trim();
+}
+
+function snapshotAuditSummary(item = {}) {
+  return {
+    name: String(item?.nome || item?.name || item?.titulo || item?.descricao || item?.numero || '').slice(0, 180),
+    plate: String(item?.placa || item?.plate || '').toUpperCase().slice(0, 16),
+    number: String(item?.numero || item?.numeroOS || item?.orderNumber || '').slice(0, 48),
+    status: String(item?.status || item?.workflowStatus || '').slice(0, 48),
+    total: Number(item?.total ?? item?.valor ?? item?.value ?? 0) || 0
+  };
+}
+
+function getSnapshotAuditEvents(previous = {}, next = {}) {
+  const events = [];
+  for (const [collection, key, label] of SNAPSHOT_AUDIT_ENTITIES) {
+    const before = new Map((Array.isArray(previous?.[collection]) ? previous[collection] : [])
+      .map((item) => [snapshotEntityId(item), item]).filter(([id]) => id));
+    const after = new Map((Array.isArray(next?.[collection]) ? next[collection] : [])
+      .map((item) => [snapshotEntityId(item), item]).filter(([id]) => id));
+    for (const [id, item] of after) {
+      const old = before.get(id);
+      if (!old) events.push({ action: `${key}.create`, targetId: id, after: snapshotAuditSummary(item), label });
+      else if (JSON.stringify(old) !== JSON.stringify(item)) events.push({ action: `${key}.update`, targetId: id, before: snapshotAuditSummary(old), after: snapshotAuditSummary(item), label });
+    }
+    for (const [id, item] of before) {
+      if (!after.has(id)) events.push({ action: `${key}.delete`, targetId: id, before: snapshotAuditSummary(item), label });
+    }
+  }
+  return events;
+}
+
 async function updateCollectionPermissions(databases, collectionId, permissions, includeDocument = () => true) {
   let cursor = '';
   let updated = 0;
@@ -1252,6 +1293,7 @@ async function persistWefrotasSnapshot(databases, snapshot, senderId, tenant = W
     updatedAt,
     updatedBy: senderId
   }, snapshotPermissions);
+  return { updatedAt, rowId };
 }
 
 function buildTenantDriverDirectory(snapshot = {}) {
@@ -1297,9 +1339,37 @@ async function saveTenantOperationalSnapshot(req, payload = {}) {
     throw Object.assign(new Error(`O plano desta empresa permite até ${maxVehicles} veículos ativos.`), { status: 409 });
   }
   const databases = createDatabaseClient(req);
-  await persistWefrotasSnapshot(databases, snapshot, access.userId, organization);
+  const rowId = wefrotasSnapshotDocumentId(organization.workspaceId);
+  let previousRow = null;
+  let previousSnapshot = {};
+  try {
+    previousRow = await databases.getDocument({ databaseId: DATABASE_ID, collectionId: WEFROTAS_TABLE_ID, documentId: rowId });
+    previousSnapshot = await decodeWefrotasSnapshot(databases, previousRow.snapshot, organization.workspaceId);
+  } catch (error) {
+    if (Number(error?.code) !== 404) throw error;
+  }
+  const expectedUpdatedAt = String(payload.expectedUpdatedAt || '').trim();
+  const currentUpdatedAt = String(previousRow?.updatedAt || previousRow?.$updatedAt || '').trim();
+  if (previousRow && expectedUpdatedAt !== currentUpdatedAt) {
+    await writeWefrotasAudit(databases, {
+      actorId: access.userId, action: 'snapshot.conflict', targetId: rowId,
+      before: { updatedAt: currentUpdatedAt, updatedBy: String(previousRow?.updatedBy || '') },
+      after: { expectedUpdatedAt }, result: 'blocked', organization
+    });
+    throw Object.assign(new Error('Os dados desta empresa foram alterados em outro dispositivo. Atualize a página antes de salvar para evitar sobrescrever informações.'), { status: 409 });
+  }
+  const auditEvents = getSnapshotAuditEvents(previousSnapshot, snapshot);
+  const saved = await persistWefrotasSnapshot(databases, snapshot, access.userId, organization);
   await syncTenantDriverDirectory(databases, snapshot, organization);
-  return { ok: true, workspaceId: organization.workspaceId };
+  const eventsToWrite = auditEvents.slice(0, 200);
+  await Promise.all(eventsToWrite.map((event) => writeWefrotasAudit(databases, {
+    actorId: access.userId, action: event.action, targetId: event.targetId,
+    before: event.before || null, after: event.after || null, organization
+  })));
+  if (auditEvents.length > eventsToWrite.length) {
+    await writeWefrotasAudit(databases, { actorId: access.userId, action: 'snapshot.bulk-change', targetId: rowId, after: { omittedEvents: auditEvents.length - eventsToWrite.length }, organization });
+  }
+  return { ok: true, workspaceId: organization.workspaceId, updatedAt: saved.updatedAt, auditEvents: auditEvents.length };
 }
 
 async function syncTenantDriverDirectory(databases, snapshot, organization) {
