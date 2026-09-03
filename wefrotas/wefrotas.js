@@ -2123,7 +2123,7 @@
         getSnapshot: buildStorageSnapshot,
         getSnapshotUpdatedAt: () => wefrotasLocalSnapshotUpdatedAt,
         prepareSnapshot: prepareSnapshotForOnline,
-        persistSnapshot: (snapshot, workspaceId) => executeCentralPushAdmin({ action: 'wefrotas-snapshot-save', snapshot, workspaceId }),
+        persistSnapshot: (snapshot, workspaceId, expectedUpdatedAt) => executeCentralPushAdmin({ action: 'wefrotas-snapshot-save', snapshot, workspaceId, expectedUpdatedAt }),
         applySnapshot: applyRemoteStorageSnapshot,
         onStatus: updateOnlineStatus,
         onCentralRecordsChange: () => refreshCentralPendingRecords({ silent: true })

@@ -12,6 +12,7 @@
   let currentSnapshotUpdatedAtGetter = null;
   let currentSnapshotPreparer = null;
   let currentSnapshotWriter = null;
+  let remoteSnapshotUpdatedAt = '';
   let currentSnapshotApplier = null;
   let statusListener = null;
   let unsubscribeRealtime = null;
@@ -410,11 +411,12 @@
     // a browser admin cannot grant another manager's label permissions.
     if (organizationContext.id) {
       if (!currentSnapshotWriter) throw new Error('O serviço de salvamento da empresa não está disponível. Atualize a página.');
-      const confirmation = await currentSnapshotWriter(preparedSnapshot, organizationContext.workspaceId);
+      const confirmation = await currentSnapshotWriter(preparedSnapshot, organizationContext.workspaceId, remoteSnapshotUpdatedAt);
       if (confirmation?.ok !== true || confirmation.workspaceId !== organizationContext.workspaceId) {
         throw new Error('O servidor não confirmou o salvamento desta empresa.');
       }
       lastSerializedSnapshot = serialized;
+      remoteSnapshotUpdatedAt = String(confirmation.updatedAt || remoteSnapshotUpdatedAt || '');
       setPendingSync(false);
       emitStatus('online', 'Dados sincronizados.');
       return preparedSnapshot;
@@ -495,10 +497,12 @@
       clearTimeout(remoteApplyTimer);
       remoteApplyTimer = setTimeout(async () => {
         try {
-          const remoteSnapshot = await loadRemoteSnapshot();
+          const remoteRecord = await loadRemoteRecord();
+          const remoteSnapshot = remoteRecord?.snapshot || null;
           if (revision !== contextRevision || !snapshotReady) return;
           if (!remoteSnapshot) return;
           const serialized = JSON.stringify(remoteSnapshot);
+          remoteSnapshotUpdatedAt = String(remoteRecord?.updatedAt || remoteSnapshotUpdatedAt || '');
           if (serialized === lastSerializedSnapshot) return;
           lastSerializedSnapshot = serialized;
           await currentSnapshotApplier?.(remoteSnapshot);
@@ -902,6 +906,7 @@
     if (remoteRecord?.snapshot) {
       const remoteSerialized = JSON.stringify(remoteRecord.snapshot);
       lastSerializedSnapshot = remoteSerialized;
+      remoteSnapshotUpdatedAt = String(remoteRecord.updatedAt || '');
       setPendingSync(false);
       await currentSnapshotApplier?.(remoteRecord.snapshot);
       if (revision !== contextRevision) throw new Error('A empresa mudou durante o carregamento.');
@@ -917,6 +922,7 @@
     if (revision !== contextRevision) throw new Error('A empresa mudou durante o carregamento.');
     snapshotReady = true;
     lastSerializedSnapshot = JSON.stringify(currentSnapshotGetter?.() || emptySnapshot);
+    remoteSnapshotUpdatedAt = '';
     setPendingSync(false);
     await subscribeRealtime();
     emitStatus('online', 'Empresa nova carregada, sem importar dados de outro cadastro.');
