@@ -24,6 +24,15 @@
   let lastSerializedSnapshot = '';
   const LOGOUT_PENDING_KEY = 'wefrotas_online_logout_pending';
   const SYNC_PENDING_KEY = 'wefrotas_online_sync_pending';
+  const SYNC_VERSION_KEY = 'wefrotas_online_sync_version';
+
+  function rememberRemoteVersion(value) {
+    remoteSnapshotUpdatedAt = String(value || '');
+    if (organizationContext.id) {
+      try { localStorage.setItem(`${SYNC_VERSION_KEY}:${organizationContext.id}`, remoteSnapshotUpdatedAt); }
+      catch (error) { console.warn('Não foi possível guardar a versão confirmada.', error); }
+    }
+  }
   const CHUNK_MANIFEST_PREFIX = 'chunked-v1:';
   const SNAPSHOT_CHUNK_SIZE = 600 * 1024;
   const CHUNK_REQUEST_BATCH_SIZE = 4;
@@ -129,6 +138,7 @@
     organizationContext = Object.freeze({ id: '', workspaceId: '', role: '', modules: [] });
     primaryRowId = '';
     lastSerializedSnapshot = '';
+    remoteSnapshotUpdatedAt = '';
   }
 
   async function clearPendingRemoteSession() {
@@ -416,7 +426,7 @@
         throw new Error('O servidor não confirmou o salvamento desta empresa.');
       }
       lastSerializedSnapshot = serialized;
-      remoteSnapshotUpdatedAt = String(confirmation.updatedAt || remoteSnapshotUpdatedAt || '');
+        rememberRemoteVersion(confirmation.updatedAt || remoteSnapshotUpdatedAt);
       setPendingSync(false);
       emitStatus('online', 'Dados sincronizados.');
       return preparedSnapshot;
@@ -499,10 +509,10 @@
         try {
           const remoteRecord = await loadRemoteRecord();
           const remoteSnapshot = remoteRecord?.snapshot || null;
-          if (revision !== contextRevision || !snapshotReady) return;
+          if (revision !== contextRevision || !snapshotReady || hasPendingSync() || activeSnapshotWrites) return;
           if (!remoteSnapshot) return;
           const serialized = JSON.stringify(remoteSnapshot);
-          remoteSnapshotUpdatedAt = String(remoteRecord?.updatedAt || remoteSnapshotUpdatedAt || '');
+          rememberRemoteVersion(remoteRecord?.updatedAt || remoteSnapshotUpdatedAt);
           if (serialized === lastSerializedSnapshot) return;
           lastSerializedSnapshot = serialized;
           await currentSnapshotApplier?.(remoteSnapshot);
@@ -579,6 +589,12 @@
       .then(() => {
         if (revision !== contextRevision || !snapshotReady) throw new Error('A empresa mudou durante a sincronização.');
         return persistSnapshot(nextSnapshot);
+      }).catch(error => {
+        if (revision === contextRevision) {
+          setPendingSync(true);
+          emitStatus('error', `Não confirmado no servidor: ${describeError(error)}. Cópia local pendente.`, { error });
+        }
+        throw error;
       });
     return syncChain;
   }
@@ -882,6 +898,9 @@
       if (localSnapshot && typeof localSnapshot === 'object' && !Array.isArray(localSnapshot)) {
         snapshotReady = true;
         try {
+          // Never adopt the CURRENT server version for an older pending local
+          // snapshot. Restore only the version this device actually edited.
+          remoteSnapshotUpdatedAt = localStorage.getItem(`${SYNC_VERSION_KEY}:${organizationContext.id}`) || '';
           const recoveredSnapshot = await persistSnapshot(localSnapshot);
           if (revision !== contextRevision) throw new Error('A empresa mudou durante a sincronização.');
           await currentSnapshotApplier?.(recoveredSnapshot);
@@ -906,7 +925,7 @@
     if (remoteRecord?.snapshot) {
       const remoteSerialized = JSON.stringify(remoteRecord.snapshot);
       lastSerializedSnapshot = remoteSerialized;
-      remoteSnapshotUpdatedAt = String(remoteRecord.updatedAt || '');
+      rememberRemoteVersion(remoteRecord.updatedAt);
       setPendingSync(false);
       await currentSnapshotApplier?.(remoteRecord.snapshot);
       if (revision !== contextRevision) throw new Error('A empresa mudou durante o carregamento.');
@@ -922,7 +941,7 @@
     if (revision !== contextRevision) throw new Error('A empresa mudou durante o carregamento.');
     snapshotReady = true;
     lastSerializedSnapshot = JSON.stringify(currentSnapshotGetter?.() || emptySnapshot);
-    remoteSnapshotUpdatedAt = '';
+    rememberRemoteVersion('');
     setPendingSync(false);
     await subscribeRealtime();
     emitStatus('online', 'Empresa nova carregada, sem importar dados de outro cadastro.');

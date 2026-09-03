@@ -1852,17 +1852,12 @@
     async function persistOperationalDataImmediately() {
       await saveToLocalStorage();
       const backend = window.WeFrotasBackend;
-      if (backend?.getUser?.() && backend?.syncNow) {
-        await backend.syncNow(buildStorageSnapshot());
-      }
+      if (!backend?.getUser?.() || !backend?.syncNow) throw new Error('Sessão online indisponível. Gravação não confirmada.');
+      await backend.syncNow(buildStorageSnapshot());
     }
 
     async function persistFinanceImmediately() {
-      await saveToLocalStorage();
-      const backend = window.WeFrotasBackend;
-      if (backend?.getUser?.() && backend?.syncNow) {
-        await backend.syncNow(buildStorageSnapshot());
-      }
+      await persistOperationalDataImmediately();
     }
 
     function updateOnlineStatus({ state = 'local', message = '', user = null } = {}) {
@@ -10290,12 +10285,18 @@
     }
 
     async function persistApprovedCentralFinance(record, entry) {
+      const backend = window.WeFrotasBackend;
+      // A manager may already have local edits (including the imported entry).
+      // Confirm those before the server append changes the snapshot version.
+      if (backend?.hasPermission?.('syncSnapshot')) await persistOperationalDataImmediately();
       const result = await executeCentralPushAdmin({
         action: 'central-finance-append',
         centralRecordId: getCentralPendingRecordId(record),
         entry
       });
-      await saveToLocalStorage();
+      // The append writes on the server. Re-read its canonical snapshot/version
+      // instead of queueing an old whole-company snapshot over that write.
+      await backend.adoptRemoteOrUploadLocal();
       return result;
     }
 
@@ -13193,11 +13194,17 @@
           : `Tem certeza que deseja fechar ${closableIds.size} OS?`,
         confirmLabel: 'Fechar',
         cancelLabel: 'Cancelar',
-        onConfirm: () => {
+        onConfirm: async () => {
           allOrders = allOrders.map(order => closableIds.has(order.id)
             ? { ...order, status: 'fechada', dataTermino: order.dataTermino || getLocalIsoDate() }
             : order);
-          saveToLocalStorage();
+          try {
+            await persistOperationalDataImmediately();
+          } catch (error) {
+            renderAll();
+            showToast('Fechamento NÃO confirmado no servidor. Cópia local pendente; não considere a OS salva.');
+            return;
+          }
           renderAll();
           showToast(`OS fechada${closableIds.size === 1 ? '' : 's'} com sucesso.`);
         }
@@ -14422,14 +14429,15 @@
         if (currentEditingId) {
           const previousOrder = allOrders.find(order => order.id === currentEditingId);
           const nextOrderPayload = { numero, administracao, tipoOs, vehicleId, driverId, responsavelNome, dataInicio, dataTermino, status, descricao };
-          const persistUpdatedOrder = (historyEntry = null) => {
+          const persistUpdatedOrder = async (historyEntry = null) => {
             allOrders = allOrders.map(order => {
               if (order.id !== currentEditingId) return order;
               const updatedOrder = { ...order, ...nextOrderPayload };
               return historyEntry ? appendOrderHistory(updatedOrder, historyEntry) : updatedOrder;
             });
             syncOrderCounterWithOrders();
-            saveToLocalStorage();
+            try { await persistOperationalDataImmediately(); }
+            catch (error) { renderAll(); showToast(`OS não confirmada no servidor: ${error.message}`); return; }
             renderAll();
             closeCadastroModal();
             showToast('OS atualizada com sucesso.');
@@ -14446,14 +14454,15 @@
             });
             return;
           }
-          persistUpdatedOrder();
+          await persistUpdatedOrder();
           return;
         } else {
           allOrders.unshift({ id: generateId(), numero, administracao, tipoOs, vehicleId, driverId, responsavelNome, dataInicio, dataTermino, status, descricao });
           syncOrderCounterWithOrders();
-          showToast('OS cadastrada com sucesso.');
         }
-        saveToLocalStorage();
+        try { await persistOperationalDataImmediately(); }
+        catch (error) { renderAll(); showToast(`OS não confirmada no servidor: ${error.message}`); return; }
+        showToast('OS cadastrada e sincronizada.');
         renderAll();
         closeCadastroModal();
       }
@@ -14807,7 +14816,13 @@
             }
           : item
         );
-        saveToLocalStorage();
+        try {
+          await persistFinanceImmediately();
+        } catch (error) {
+          renderAll();
+          showToast('Fechamento NÃO confirmado no servidor. Cópia local pendente; não considere a despesa salva.');
+          return;
+        }
         renderAll();
         closeCadastroModal();
         showToast('Despesa fechada e distribuída com sucesso.');
