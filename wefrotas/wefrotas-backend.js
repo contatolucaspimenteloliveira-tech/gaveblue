@@ -406,6 +406,15 @@
     return record?.snapshot || null;
   }
 
+  function snapshotsEqual(left, right) {
+    if (left === right) return true;
+    if (!left || !right || typeof left !== 'object' || typeof right !== 'object') return false;
+    if (Array.isArray(left) !== Array.isArray(right)) return false;
+    const keys = Object.keys(left);
+    return keys.length === Object.keys(right).length && keys.every(key =>
+      Object.prototype.hasOwnProperty.call(right, key) && snapshotsEqual(left[key], right[key]));
+  }
+
   async function persistSnapshot(snapshot) {
     if (!currentUser) throw new Error('Entre no WeFrotas antes de sincronizar os dados.');
     assertCanWrite();
@@ -421,7 +430,22 @@
     // a browser admin cannot grant another manager's label permissions.
     if (organizationContext.id) {
       if (!currentSnapshotWriter) throw new Error('O serviço de salvamento da empresa não está disponível. Atualize a página.');
-      const confirmation = await currentSnapshotWriter(preparedSnapshot, organizationContext.workspaceId, remoteSnapshotUpdatedAt);
+      const writeRevision = contextRevision;
+      const workspaceId = organizationContext.workspaceId;
+      let confirmation;
+      try {
+        confirmation = await currentSnapshotWriter(preparedSnapshot, workspaceId, remoteSnapshotUpdatedAt);
+      } catch (writeError) {
+        // A committed write may lose its response or fail in a downstream task.
+        // Only an exact read-back can confirm it. Never rebase a differing local
+        // snapshot on the newest version: that could erase another user's work.
+        let confirmedRecord;
+        try { confirmedRecord = await loadRemoteRecord(); } catch (_) { /* Preserve the original write failure. */ }
+        if (writeRevision !== contextRevision || !confirmedRecord?.updatedAt
+          || !snapshotsEqual(preparedSnapshot, confirmedRecord.snapshot)) throw writeError;
+        confirmation = { ok: true, workspaceId, updatedAt: confirmedRecord.updatedAt };
+      }
+      if (writeRevision !== contextRevision) throw new Error('A empresa mudou durante a sincronização.');
       if (confirmation?.ok !== true || confirmation.workspaceId !== organizationContext.workspaceId) {
         throw new Error('O servidor não confirmou o salvamento desta empresa.');
       }
