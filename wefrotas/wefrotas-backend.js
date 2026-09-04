@@ -535,7 +535,7 @@
       Object.prototype.hasOwnProperty.call(right, key) && snapshotsEqual(left[key], right[key]));
   }
 
-  async function persistSnapshot(snapshot) {
+  async function persistSnapshot(snapshot, intent = null) {
     if (!currentUser) throw new Error('Entre no WeFrotas antes de sincronizar os dados.');
     assertCanWrite();
     activeSnapshotWrites += 1;
@@ -543,6 +543,10 @@
     try {
     emitStatus('syncing', 'Preparando dados para sincronização...');
     let preparedSnapshot = await currentSnapshotPreparer?.(snapshot) || snapshot;
+    const original = JSON.parse(JSON.stringify(preparedSnapshot));
+    if (intent?.base && confirmedBase?.snapshot && !snapshotsEqual(intent.base, confirmedBase.snapshot)) {
+      preparedSnapshot = mergeIndependentChanges(intent.base, preparedSnapshot, confirmedBase.snapshot);
+    }
     const maxVehicles = Number(organizationContext.limits?.vehicles || 0);
     const activeVehicles = (Array.isArray(preparedSnapshot.vehicles) ? preparedSnapshot.vehicles : []).filter((vehicle) => vehicle?.ativo !== false && vehicle?.active !== false).length;
     if (maxVehicles > 0 && activeVehicles > maxVehicles) throw new Error(`O plano desta empresa permite até ${maxVehicles} veículos ativos.`);
@@ -554,7 +558,7 @@
       const writeRevision = contextRevision;
       const workspaceId = organizationContext.workspaceId;
       let confirmation;
-      const original = JSON.parse(serialized);
+      const submitted = JSON.parse(serialized);
       const base = confirmedBase?.snapshot;
       try {
         confirmation = await currentSnapshotWriter(preparedSnapshot, workspaceId, remoteSnapshotUpdatedAt);
@@ -574,7 +578,7 @@
           }
           // A new request always keeps the server version check. If another
           // writer wins again, fail safely; no unchecked last-write-wins retry.
-          preparedSnapshot = mergeIndependentChanges(base, original, confirmedRecord.snapshot);
+          preparedSnapshot = mergeIndependentChanges(base, submitted, confirmedRecord.snapshot);
           emitStatus('syncing', 'Conciliando alterações de outros dispositivos...');
           confirmation = await currentSnapshotWriter(preparedSnapshot, workspaceId, confirmedRecord.updatedAt);
           serialized = JSON.stringify(preparedSnapshot);
@@ -591,7 +595,7 @@
       lastSerializedSnapshot = serialized;
       if (!snapshotsEqual(preparedSnapshot, original) || changedDuringWrite) await currentSnapshotApplier?.(working);
       setPendingSync(!snapshotsEqual(working, preparedSnapshot));
-      emitStatus('online', 'Dados sincronizados.');
+      emitStatus(hasPendingSync() ? 'syncing' : 'online', hasPendingSync() ? 'Envio confirmado; há novas alterações aguardando sincronização.' : 'Dados sincronizados.');
       return preparedSnapshot;
     }
     const storedSnapshot = await encodeSnapshot(serialized);
@@ -636,6 +640,7 @@
     if (!hasCurrentPermission('syncSnapshot')) return;
     const revision = contextRevision;
     snapshot = JSON.parse(JSON.stringify(snapshot));
+    const intent = { base: confirmedBase?.snapshot ? JSON.parse(JSON.stringify(confirmedBase.snapshot)) : null };
     setPendingSync(true);
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => {
@@ -645,7 +650,7 @@
       if (serialized === lastSerializedSnapshot) { setPendingSync(false); return; }
       syncChain = syncChain.then(() => {
         if (revision !== contextRevision || !snapshotReady) return;
-        return persistSnapshot(snapshot);
+        return persistSnapshot(snapshot, intent);
       }).catch(error => {
         console.error('Falha ao sincronizar WeFrotas.', error);
         emitStatus('error', `Falha na sincronização: ${describeError(error)}. Cópia local pendente.`, { error });
@@ -732,6 +737,7 @@
     assertCanWrite();
     const revision = contextRevision;
     const nextSnapshot = JSON.parse(JSON.stringify(snapshot || currentSnapshotGetter?.() || null));
+    const intent = { base: confirmedBase?.snapshot ? JSON.parse(JSON.stringify(confirmedBase.snapshot)) : null };
     if (!nextSnapshot) throw new Error('Não há dados disponíveis para sincronização.');
 
     // A sincronização imediata substitui qualquer envio agendado do mesmo estado.
@@ -743,7 +749,7 @@
       .catch(() => undefined)
       .then(() => {
         if (revision !== contextRevision || !snapshotReady) throw new Error('A empresa mudou durante a sincronização.');
-        return persistSnapshot(nextSnapshot);
+        return persistSnapshot(nextSnapshot, intent);
       }).catch(error => {
         if (revision === contextRevision) {
           setPendingSync(true);
