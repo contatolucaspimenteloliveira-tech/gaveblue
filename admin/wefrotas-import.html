@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Importação segura — WeFrotas</title>
+  <style>
+    :root{font-family:Inter,system-ui,sans-serif;color:#14213d;background:#eef4fb}*{box-sizing:border-box}body{margin:0;padding:32px}.shell{max-width:980px;margin:auto}.card{background:#fff;border:1px solid #dbe7f5;border-radius:22px;padding:24px;box-shadow:0 20px 60px #315b8b1a;margin-bottom:18px}h1{margin:.2rem 0;font-size:2rem}p{color:#5b6f8d;line-height:1.5}.warning{background:#fff8df;border-color:#f2d675}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.candidate{display:block;border:1px solid #dbe7f5;border-radius:16px;padding:14px;cursor:pointer}.candidate:has(input:checked){border-color:#2563eb;box-shadow:0 0 0 2px #2563eb33}.candidate strong,.candidate small{display:block}.candidate small{color:#6c7f9d;margin-top:6px}input[type=file],select,button{width:100%;padding:12px 14px;border:1px solid #cbd9eb;border-radius:12px;background:#fff;font:inherit}button{background:#2563eb;color:#fff;border:0;font-weight:700;cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}pre{white-space:pre-wrap;background:#0d1b2a;color:#dcecff;border-radius:14px;padding:16px;max-height:360px;overflow:auto}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:640px){body{padding:14px}.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="card">
+      <small>ADMINISTRAÇÃO · SUPABASE</small>
+      <h1>Importação segura do WeFrotas</h1>
+      <p>O arquivo é lido localmente. Nada é enviado até você escolher uma versão e confirmar. A importação é idempotente e não exclui registros já existentes.</p>
+    </section>
+    <section class="card warning"><strong>Proteção ativa</strong><p>Não use este importador antes de guardar o JSON original. Se as contagens divergirem, o corte para Supabase deve permanecer bloqueado.</p></section>
+    <section class="card">
+      <div class="row"><label>Backup JSON<input id="backup-file" type="file" accept="application/json,.json"></label><label>Empresa<select id="organization"><option value="">Carregando empresas…</option></select></label></div>
+      <h2>Versões encontradas</h2><div id="candidates" class="grid"><p>Selecione um backup.</p></div>
+    </section>
+    <section class="card"><button id="import" disabled>Importar a versão selecionada</button><pre id="result">Aguardando seleção.</pre></section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
+  <script src="./wefrotas-import.js"></script>
+</body>
+</html>
