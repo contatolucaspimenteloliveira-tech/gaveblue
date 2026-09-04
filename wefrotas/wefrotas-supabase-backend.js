@@ -2,6 +2,13 @@
   'use strict';
 
   const config = global.WEFROTAS_SUPABASE_CONFIG || {};
+  const supabasePreview = (() => {
+    try { return new URL(global.location.href).searchParams.get('backend') === 'supabase'; }
+    catch (_) { return false; }
+  })();
+  // During acceptance, production keeps the confirmed backend unless the URL
+  // explicitly requests Supabase. Final cutover flips the immutable config.
+  if (!config.cutover && !supabasePreview) return;
   const core = global.WeFrotasSupabaseCore;
   const ROLE_PERMISSIONS = Object.freeze({
     'wefrotas-admin': new Set(['read','syncSnapshot','manageOperations','approveRecords','manageSettings','manageUsers','manageDevices','sendNotifications','deleteRecords']),

@@ -11,6 +11,7 @@ const realtimeMigration = fs.readFileSync(path.join(__dirname, '../supabase/migr
 const platformAdminSource = fs.readFileSync(path.join(__dirname, '../supabase/functions/platform-admin/index.ts'), 'utf8');
 const wefrotasAdminSource = fs.readFileSync(path.join(__dirname, '../supabase/functions/wefrotas-admin/index.ts'), 'utf8');
 const adminHtml = fs.readFileSync(path.join(__dirname, '../admin/index.html'), 'utf8');
+const wefrotasHtml = fs.readFileSync(path.join(__dirname, '../wefrotas/index.html'), 'utf8');
 const context = { console, JSON, Map, Set };
 context.window = context;
 vm.runInNewContext(coreSource, context);
@@ -131,6 +132,19 @@ test('the browser backend contains no Appwrite runtime reference', () => {
 test('the browser backend authenticates with Supabase password auth', () => {
   assert.match(backendSource, /auth\.signInWithPassword/);
   assert.match(backendSource, /auth\.getSession/);
+});
+
+test('Supabase preview requires an explicit URL switch while cutover is disabled', () => {
+  assert.match(backendSource, /searchParams\.get\('backend'\) === 'supabase'/);
+  assert.match(backendSource, /if \(!config\.cutover && !supabasePreview\) return/);
+});
+
+test('the preview scripts load after the confirmed backend and before the application', () => {
+  const legacy = wefrotasHtml.indexOf('wefrotas-backend.js');
+  const supabase = wefrotasHtml.indexOf('wefrotas-supabase-backend.js');
+  const app = wefrotasHtml.indexOf('wefrotas.js');
+  assert.ok(legacy >= 0 && supabase > legacy && app > supabase);
+  assert.match(wefrotasHtml, /@supabase\/supabase-js@2/);
 });
 
 test('the browser backend sends atomic revisioned deltas', () => {
