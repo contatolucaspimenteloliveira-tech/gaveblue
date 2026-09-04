@@ -5194,8 +5194,9 @@
 
     function getContextualModuleSearchValue(module, fallbackId) {
       const targetId = contextualModuleSearchFields[module];
-      const globalTargetsModule = activeModule === module && globalSearchInputEl?.dataset?.contextualTargetId === targetId;
-      return globalTargetsModule ? (globalSearchInputEl.value || '') : (document.getElementById(fallbackId)?.value || '');
+      // Desktop and mobile inputs both write to this module-owned field.
+      // Reading the hidden desktop input discards searches typed on mobile.
+      return document.getElementById(targetId || fallbackId)?.value || '';
     }
 
     setupGlobalSearchInput(globalSearchInputEl, globalSearchResultsEl);
