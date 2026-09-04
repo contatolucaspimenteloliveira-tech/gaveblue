@@ -12176,6 +12176,9 @@
           const total = sumFinanceNetTotal(allFinanceEntries.filter(entry => entry.orderId === order.id));
           const haystack = normalizeSearchText([
             order.numero,
+            String(order.numero || '').padStart(4, '0'),
+            `OS-${String(order.numero || '').padStart(4, '0')}`,
+            `OS ${String(order.numero || '').padStart(4, '0')}`,
             order.status,
             order.descricao,
             order.responsavelNome,
