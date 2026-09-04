@@ -392,6 +392,15 @@
   backdrop-filter: none !important;
 }
 
+#online-status.online-status.is-contingency {
+  position: fixed !important; width: min(760px, calc(100vw - 32px)) !important;
+  height: auto !important; clip: auto !important; overflow: visible !important;
+  white-space: normal !important; top: 82px !important; right: 16px !important;
+  max-width: min(760px, calc(100vw - 32px)) !important; padding: 12px 16px !important;
+  border: 1px solid #f0b429 !important; background: #fff8df !important; color: #704700 !important;
+  box-shadow: 0 12px 34px rgba(42, 32, 5, .16) !important;
+}
+
 #online-status #online-status-text {
   overflow: hidden;
   text-overflow: ellipsis;

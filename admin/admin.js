@@ -333,7 +333,7 @@
     const a=document.createElement('a');a.href=url;a.download='sessoes-wefrotas.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
   });
   // Presence refresh is a read-only admin query, independent of operational sync.
-  setInterval(()=>{if(state.view==='audit' && !document.hidden && !state.sessionBusy) void loadSessions();},60000);
+  setInterval(()=>{if(state.view==='audit' && !document.hidden && !state.sessionBusy) void loadSessions();},300000);
   $('#menu-btn').addEventListener('click', () => updateMenu()); $('#menu-backdrop').addEventListener('click', () => updateMenu(true));
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('.sidebar').classList.contains('open')) { updateMenu(true); $('#menu-btn').focus(); } });
   window.matchMedia('(max-width:720px)').addEventListener('change', () => updateMenu(true)); updateMenu(true);

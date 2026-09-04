@@ -106,6 +106,7 @@
     let currentModalType = null;
     let currentEditingId = null;
     let currentFinanceEntryType = null;
+    let contingencySaveNoticeUntil = 0;
     let vehicleImagePreviewObjectUrl = '';
     let activeModule = 'home';
     let activeCentralSection = 'registros';
@@ -1772,11 +1773,12 @@
           value: snapshot,
           updatedAt
         });
-        request.onsuccess = () => {
+        request.onsuccess = () => { /* Confirm durability on transaction completion. */ };
+        transaction.oncomplete = () => {
           wefrotasLocalSnapshotUpdatedAt = updatedAt;
           resolve();
         };
-        request.onerror = () => reject(request.error || new Error('Falha ao salvar IndexedDB.'));
+        transaction.onerror = transaction.onabort = () => reject(transaction.error || request.error || new Error('Falha ao salvar IndexedDB.'));
       }));
     }
 
@@ -1853,7 +1855,9 @@
       await saveToLocalStorage();
       const backend = window.WeFrotasBackend;
       if (!backend?.getUser?.() || !backend?.syncNow) throw new Error('Sessão online indisponível. Gravação não confirmada.');
-      await backend.syncNow(buildStorageSnapshot());
+      const result = await backend.syncNow(buildStorageSnapshot());
+      if (String(result?.mode || '').startsWith('contingency-')) contingencySaveNoticeUntil = Date.now() + 5000;
+      return result;
     }
 
     async function persistFinanceImmediately() {
@@ -1866,7 +1870,7 @@
       const syncButton = document.getElementById('online-sync-btn');
       const logoutButton = document.getElementById('online-logout-btn');
       if (!statusNode || !textNode) return;
-      statusNode.classList.remove('is-local', 'is-online', 'is-syncing', 'is-error', 'is-signed-out');
+      statusNode.classList.remove('is-local', 'is-online', 'is-syncing', 'is-error', 'is-signed-out', 'is-contingency');
       statusNode.classList.add(`is-${state}`);
       textNode.textContent = message || 'WeFrotas Online';
       const reconcileButton = document.getElementById('online-reconcile-btn');
@@ -2123,7 +2127,7 @@
         persistSnapshot: (snapshot, workspaceId, expectedUpdatedAt) => executeCentralPushAdmin({ action: 'wefrotas-snapshot-save', snapshot, workspaceId, expectedUpdatedAt }),
         applySnapshot: applyRemoteStorageSnapshot,
         onStatus: updateOnlineStatus,
-        onCentralRecordsChange: () => refreshCentralPendingRecords({ silent: true })
+        onCentralRecordsChange: applyCentralPendingRealtimeEvent
       });
       if (!backend.isConfigured()) {
         toggleOnlineLogin(true, 'O acesso online ainda não foi configurado.');
@@ -2143,8 +2147,10 @@
         await finishOnlineAuthChecking();
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
-        startCentralPendingAutoRefresh();
-        refreshCentralPendingRecords({ silent: true });
+        if (!backend.isContingencyMode?.()) {
+          startCentralPendingAutoRefresh();
+          refreshCentralPendingRecords({ silent: true });
+        }
         return result;
       } catch (error) {
         window.clearTimeout(preparingTimer);
@@ -2205,11 +2211,13 @@
         await finishOnlineAuthChecking();
         toggleOnlineLogin(false);
         scheduleOnlineIdleLogout();
-        startCentralPendingAutoRefresh();
-        refreshCentralPendingRecords();
-        showToast('WeFrotas Online conectado.');
+        if (!backend.isContingencyMode?.()) {
+          startCentralPendingAutoRefresh();
+          refreshCentralPendingRecords();
+          showToast('WeFrotas Online conectado.');
+        } else showToast('Modo de contingência ativo. As alterações ficarão protegidas neste dispositivo.');
       } catch (error) {
-        if (signedIn) await backend.signOut().catch(() => {});
+        if (signedIn && !backend.isDatabaseReadQuotaError?.(error) && error?.code !== 412) await backend.signOut().catch(() => {});
         toggleOnlineLogin(true, translateOnlineAuthError(error));
       } finally {
         onlineLoginInProgress = false;
@@ -2267,14 +2275,15 @@
       window.clearInterval(centralPendingAutoRefreshTimer);
       centralPendingAutoRefreshTimer = window.setInterval(() => {
         if (document.visibilityState !== 'visible' || !window.WeFrotasBackend?.getUser?.()) return;
+        if (window.WeFrotasBackend?.isContingencyMode?.()) return;
         window.WeFrotasBackend.refreshFromServer().catch(error => {
           console.warn('Não foi possível consultar a atualização da empresa.', error);
         });
-        refreshCentralPendingRecords({ silent: true });
+        if (activeModule === 'documentos') refreshCentralPendingRecords({ silent: true });
         if (activeCentralSection === 'usuarios' || activeCentralSection === 'notificacoes') {
           refreshPushSubscriberStats();
         }
-      }, 15000);
+      }, 120000);
     }
 
     window.logoutWeFrotasOnline = logoutWeFrotasOnline;
@@ -2447,6 +2456,10 @@
       if (!stack) return;
       const toast = document.createElement('div');
       toast.className = 'toast-item';
+      if (contingencySaveNoticeUntil > Date.now() && !/contingência|dispositivo/i.test(String(message))) {
+        message = `${message} Salvo somente neste dispositivo; aguardando sincronização.`;
+        contingencySaveNoticeUntil = 0;
+      }
       toast.textContent = message;
       stack.appendChild(toast);
       if (options.notify) {
@@ -3767,7 +3780,10 @@
       }
 
       if (execution.status === 'failed' || execution.responseStatusCode >= 400 || result.ok === false) {
-        throw new Error(result.error || execution.errors || 'A função de notificações não concluiu a operação.');
+        const failure = new Error(result.error || execution.errors || 'A função de notificações não concluiu a operação.');
+        failure.code = Number(result.code || result.status || execution.responseStatusCode || 0) || undefined;
+        failure.type = result.type || '';
+        throw failure;
       }
       return result;
     }
@@ -5854,9 +5870,15 @@
     }
 
     function exportSystemBackup() {
+      const organization = window.WeFrotasBackend?.getOrganizationContext?.() || {};
       const payload = {
-        version: 'wefrotas-backup-v1',
+        version: 'wefrotas-backup-v2',
         exportedAt: new Date().toISOString(),
+        organizationId: organization.id || null,
+        workspaceId: organization.workspaceId || wefrotasStorageWorkspace || null,
+        localSnapshotUpdatedAt: wefrotasLocalSnapshotUpdatedAt || null,
+        contingencyMode: window.WeFrotasBackend?.isContingencyMode?.() === true,
+        pendingSync: organization.id ? localStorage.getItem(`wefrotas_online_sync_pending:${organization.id}`) === '1' : null,
         theme: localStorage.getItem('wefrotas_theme') || 'light',
         customLogoEnabled,
         customLogoUrl,
@@ -5871,9 +5893,13 @@
         orders: allOrders,
         finance: allFinanceEntries,
         administrations: allAdministrations,
-        deletedOrders
+        deletedOrders,
+        centralCities,
+        centralDeviceLinks
       };
-      downloadBlob(`wefrotas_backup_${getLocalIsoDate()}.json`, new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' }));
+      const serialized = JSON.stringify(payload, null, 2);
+      JSON.parse(serialized);
+      downloadBlob(`wefrotas_backup_${getLocalIsoDate()}_${Date.now()}.json`, new Blob([serialized], { type: 'application/json;charset=utf-8' }));
       showToast('Backup exportado com sucesso.', {
         notify: true,
         notifyTitle: 'Backup exportado',
@@ -10393,6 +10419,20 @@
         body: 'Seu registro foi aprovado e lançado no WeFrotas.',
         url: './#meus-envios'
       });
+    }
+
+    function applyCentralPendingRealtimeEvent(event) {
+      const record = event?.payload;
+      const rowId = String(record?.$id || record?.id || '');
+      if (!rowId) return;
+      const deleted = (event?.events || []).some(name => /\.delete$/.test(String(name)));
+      const index = centralPendingRecords.findIndex(item => String(item?.$id || item?.id || '') === rowId);
+      if (deleted) { if (index >= 0) centralPendingRecords.splice(index, 1); }
+      else if (index >= 0) centralPendingRecords[index] = { ...centralPendingRecords[index], ...record };
+      else centralPendingRecords.unshift(record);
+      centralPendingLoaded = true;
+      renderCentralPendingRecords();
+      renderPushIndividualRecipients();
     }
 
     async function persistApprovedCentralFinance(record, entry) {

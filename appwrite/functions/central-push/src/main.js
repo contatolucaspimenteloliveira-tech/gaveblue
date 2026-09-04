@@ -1450,7 +1450,11 @@ async function saveTenantOperationalSnapshot(req, payload = {}) {
   }
   const auditEvents = getSnapshotAuditEvents(previousSnapshot, snapshot);
   const saved = await persistWefrotasSnapshot(databases, snapshot, access.userId, organization, currentUpdatedAt);
-  await syncTenantDriverDirectory(databases, snapshot, organization);
+  const previousDirectory = buildTenantDriverDirectory(previousSnapshot);
+  const nextDirectory = buildTenantDriverDirectory(snapshot);
+  if (JSON.stringify(previousDirectory) !== JSON.stringify(nextDirectory)) {
+    await syncTenantDriverDirectory(databases, snapshot, organization, previousSnapshot);
+  }
   const eventsToWrite = auditEvents.slice(0, 200);
   await Promise.all(eventsToWrite.map((event) => writeWefrotasAudit(databases, {
     actorId: access.userId, action: event.action, targetId: event.targetId,
@@ -1462,12 +1466,35 @@ async function saveTenantOperationalSnapshot(req, payload = {}) {
   return { ok: true, workspaceId: organization.workspaceId, updatedAt: saved.updatedAt, auditEvents: auditEvents.length };
 }
 
-async function syncTenantDriverDirectory(databases, snapshot, organization) {
+async function syncTenantDriverDirectory(databases, snapshot, organization, previousSnapshot = null) {
   const workspaceId = organization.workspaceId;
   const desired = buildTenantDriverDirectory(snapshot);
   const desiredIds = new Set();
   const updatedAt = new Date().toISOString();
   const permissions = tenantManagedPermissions(organization);
+  const getDocumentId = row => crypto.createHash('sha256').update(`${workspaceId}:central-driver:${row.driverId}:${row.vehicleId || 'without-vehicle'}`).digest('hex').slice(0, 36);
+  if (previousSnapshot && typeof previousSnapshot === 'object') {
+    const previous = new Map(buildTenantDriverDirectory(previousSnapshot).map(row => [getDocumentId(row), row]));
+    const next = new Map(desired.map(row => [getDocumentId(row), row]));
+    for (const [documentId, row] of next) {
+      const before = previous.get(documentId);
+      if (before && JSON.stringify(before) === JSON.stringify(row)) continue;
+      const args = { databaseId: DATABASE_ID, collectionId: DRIVER_DIRECTORY_COLLECTION_ID, documentId,
+        data: { ...row, workspaceId, active: true, updatedAt }, permissions };
+      try { await databases.updateDocument(args); } catch (error) {
+        if (Number(error?.code) !== 404) throw error;
+        await databases.createDocument(args);
+      }
+    }
+    for (const [documentId] of previous) {
+      if (next.has(documentId)) continue;
+      try {
+        await databases.updateDocument({ databaseId: DATABASE_ID, collectionId: DRIVER_DIRECTORY_COLLECTION_ID,
+          documentId, data: { active: false, updatedAt }, permissions });
+      } catch (error) { if (Number(error?.code) !== 404) throw error; }
+    }
+    return;
+  }
   const existing = new Map();
   let offset = 0;
   while (true) {
@@ -1478,7 +1505,7 @@ async function syncTenantDriverDirectory(databases, snapshot, organization) {
     offset += page.documents.length;
   }
   for (const row of desired) {
-    const documentId = crypto.createHash('sha256').update(`${workspaceId}:central-driver:${row.driverId}:${row.vehicleId || 'without-vehicle'}`).digest('hex').slice(0, 36);
+    const documentId = getDocumentId(row);
     desiredIds.add(documentId);
     const current = existing.get(documentId);
     if (current && current.active !== false && Object.keys(row).every(key => String(current[key] ?? '') === String(row[key] ?? ''))) continue;

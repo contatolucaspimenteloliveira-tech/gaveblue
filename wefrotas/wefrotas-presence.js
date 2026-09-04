@@ -11,7 +11,7 @@
     };
   }
   async function transmit(phase) {
-    if (!connection || busy) return;
+    if (!connection || busy || backend()?.isContingencyMode?.()) return;
     const active = connection;
     const user = backend()?.getUser(), org = backend()?.getOrganizationContext();
     if (active.actorId !== user?.$id || active.workspaceId !== org?.workspaceId) return;
@@ -36,6 +36,7 @@
     if (closing || !global.crypto?.randomUUID) return;
     const user = backend()?.getUser(), org = backend()?.getOrganizationContext();
     if (!user?.$id || !org?.id || !org?.workspaceId) { connection = null; return; }
+    if (backend()?.isContingencyMode?.()) return;
     if (!connection || connection.actorId !== user.$id || connection.workspaceId !== org.workspaceId) {
       connection = {id:global.crypto.randomUUID(),actorId:user.$id,workspaceId:org.workspaceId,confirmed:false,nextAt:0};
     }

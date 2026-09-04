@@ -13,7 +13,7 @@ const missing = () => Object.assign(new Error('not found'), { code: 404 });
 async function harness() {
   const rows = new Map(), writes = [], storageWrites = [], appliedSnapshots = [], local = new Map(), timers = new Map();
   let nextTimer = 0, applied = { vehicles: [{ id: 'COVRE-PRIVATE' }], orders: [{ id: 'COVRE-ORDER' }] };
-  let getError, writeError, pendingRead;
+  let getError, writeError, pendingRead, getReads = 0;
   const context = { console, TextEncoder, Uint8Array, crypto: webcrypto,
     setTimeout: fn => { timers.set(++nextTimer, fn); return nextTimer; }, clearTimeout: id => timers.delete(id),
     localStorage: { getItem: k => local.get(k) ?? null, setItem: (k,v) => local.set(k,v), removeItem: k => local.delete(k) },
@@ -27,7 +27,7 @@ async function harness() {
       },
       ID: { unique: () => 'test-file-id' },
       TablesDB: class {
-        async getRow({ rowId }) { if (pendingRead) await pendingRead; if (getError) throw getError; if (!rows.has(rowId)) throw missing(); return rows.get(rowId); }
+        async getRow({ rowId }) { getReads += 1; if (pendingRead) await pendingRead; if (getError) throw getError; if (!rows.has(rowId)) throw missing(); return rows.get(rowId); }
         async updateRow(args) { if (writeError) throw writeError; if (!rows.has(args.rowId)) throw missing(); writes.push(clone(args)); rows.set(args.rowId, clone(args.data)); return args.data; }
         async createRow(args) { if (writeError) throw writeError; writes.push(clone(args)); rows.set(args.rowId, clone(args.data)); return args.data; }
       },
@@ -52,8 +52,12 @@ async function harness() {
     return id;
   }
   return { backend, rows, writes, storageWrites, appliedSnapshots, local, timers, seed, snapshot: () => applied, setSnapshot: value => { applied = clone(value); },
-    fail: e => { getError = e; }, failWrites: e => { writeError = e; }, hold: promise => { pendingRead = promise; } };
+    reads: () => getReads, fail: e => { getError = e; }, failWrites: e => { writeError = e; }, hold: promise => { pendingRead = promise; } };
 }
+
+test('read quota opens a circuit only with a confirmed tenant base',async()=>{const h=await harness();await h.seed('covre-e-cia',{vehicles:[{id:'v'}],orders:[]});h.backend.setOrganizationContext(tenant('covre-e-cia'));await h.backend.adoptRemoteOrUploadLocal();h.fail(Object.assign(new Error('Database reads limit for the current billing cycle has been exceeded.'),{code:402}));assert.equal((await h.backend.refreshFromServer()).mode,'contingency-confirmed-local');const reads=h.reads();assert.equal((await h.backend.refreshFromServer()).mode,'contingency-circuit-open');assert.equal(h.reads(),reads);h.setSnapshot({vehicles:[{id:'v'}],orders:[{id:'local'}]});assert.equal((await h.backend.syncNow(h.snapshot())).mode,'contingency-local-pending');assert.equal(h.reads(),reads);});
+
+test('authorization failure never enables contingency',async()=>{const h=await harness();await h.seed('covre-e-cia',{vehicles:[],orders:[]});h.backend.setOrganizationContext(tenant('covre-e-cia'));await h.backend.adoptRemoteOrUploadLocal();h.fail(Object.assign(new Error('Forbidden'),{code:403}));await assert.rejects(h.backend.refreshFromServer(),e=>e.code===403);assert.equal(h.backend.isContingencyMode(),false);});
 
 test('new tenant never uploads or adopts the previous company cache', async () => {
   const h = await harness();

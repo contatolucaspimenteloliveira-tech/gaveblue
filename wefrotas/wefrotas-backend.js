@@ -28,6 +28,9 @@
   const SYNC_BASE_KEY = 'wefrotas_online_sync_base';
   let confirmedBase = null;
   let reconciliationReview = null;
+  let contingencyMode = false;
+  let quotaCircuitUntil = 0;
+  const QUOTA_CIRCUIT_MS = 6 * 60 * 60 * 1000;
 
   async function rememberConfirmedSnapshot(snapshot, updatedAt) {
     const revision = contextRevision;
@@ -43,13 +46,15 @@
     rememberRemoteVersion(updatedAt);
   }
 
-  async function restoreConfirmedBase() {
+  async function restoreConfirmedBase({ allowStoredVersion = false } = {}) {
     const encoded = localStorage.getItem(`${SYNC_BASE_KEY}:${organizationContext.id}`);
-    if (!encoded) return;
+    if (!encoded) return false;
     const record = await decodeSnapshot(encoded);
-    if (record?.workspaceId !== organizationContext.workspaceId || !record.snapshot || record.updatedAt !== remoteSnapshotUpdatedAt) return;
+    if (record?.workspaceId !== organizationContext.workspaceId || !record.snapshot) return false;
+    if ((!allowStoredVersion || remoteSnapshotUpdatedAt) && record.updatedAt !== remoteSnapshotUpdatedAt) return false;
     confirmedBase = record;
     remoteSnapshotUpdatedAt = record.updatedAt;
+    return true;
   }
 
   // Three-way reconciliation: preserve unrelated remote changes, but never
@@ -159,6 +164,38 @@
     return error.code ? `${message} (código ${error.code})` : message;
   }
 
+  function isDatabaseReadQuotaError(error) {
+    const code = Number(error?.code || error?.status || error?.responseStatusCode || 0);
+    const message = String(error?.message || error?.type || '').toLowerCase();
+    return code === 402 && (/database\s+reads?/.test(message) && /(limit|quota|billing cycle|exceeded)/.test(message));
+  }
+
+  function emitContingencyStatus(extra = {}) {
+    emitStatus('contingency', 'Modo de contingência — alterações protegidas neste dispositivo e aguardando sincronização.', { contingency: true, ...extra });
+  }
+
+  async function enterReadQuotaContingency(error) {
+    if (!isDatabaseReadQuotaError(error)) throw error;
+    quotaCircuitUntil = Date.now() + QUOTA_CIRCUIT_MS;
+    clearTimeout(syncTimer); syncTimer = null;
+    clearTimeout(remoteApplyTimer); remoteApplyTimer = null;
+    unsubscribeRealtime?.(); unsubscribeRealtime = null;
+    unsubscribeCentralRealtime?.(); unsubscribeCentralRealtime = null;
+    remoteSnapshotUpdatedAt = localStorage.getItem(`${SYNC_VERSION_KEY}:${organizationContext.id}`) || '';
+    const restored = await restoreConfirmedBase({ allowStoredVersion: true }).catch(() => false);
+    const pending = hasPendingSync();
+    if (!restored && !pending) {
+      snapshotReady = false;
+      const unavailable = new Error('A cota de leituras acabou e este dispositivo não possui uma base local confirmada. Nenhum banco vazio será aberto.');
+      unavailable.code = 412; unavailable.cause = error; throw unavailable;
+    }
+    contingencyMode = true;
+    snapshotReady = true;
+    if (pending) setPendingSync(true);
+    emitContingencyStatus({ error });
+    return { mode: pending ? 'contingency-local-pending' : 'contingency-confirmed-local', snapshot: currentSnapshotGetter?.(), error };
+  }
+
   function getCurrentAccessRole() {
     if (organizationContext.role && ACCESS_ROLE_PERMISSIONS[organizationContext.role]) return organizationContext.role;
     const labels = Array.isArray(currentUser?.labels) ? currentUser.labels.map((label) => String(label).trim().toLowerCase()) : [];
@@ -208,6 +245,8 @@
     confirmedBase = null;
     reconciliationReview = null;
     remoteRefreshPromise = null;
+    contingencyMode = false;
+    quotaCircuitUntil = 0;
   }
 
   async function clearPendingRemoteSession() {
@@ -480,6 +519,7 @@
   // guarded path so losing a websocket event cannot strand another computer.
   async function refreshFromServer() {
     if (!currentUser || !organizationContext.id || !snapshotReady) return { mode: 'not-ready' };
+    if (contingencyMode || quotaCircuitUntil > Date.now()) { emitContingencyStatus(); return { mode: 'contingency-circuit-open' }; }
     if (activeSnapshotWrites || syncTimer) return { mode: 'syncing' };
     if (hasPendingSync()) return { mode: 'local-pending' };
     if (remoteRefreshPromise) return remoteRefreshPromise;
@@ -502,6 +542,7 @@
       }
       catch (error) {
         if (revision !== contextRevision) return { mode: 'context-changed' };
+        if (isDatabaseReadQuotaError(error)) return enterReadQuotaContingency(error);
         if (error?.code === 404) throw new Error('A cópia da empresa não foi encontrada no servidor. Os dados locais foram preservados.');
         throw error;
       }
@@ -643,6 +684,7 @@
     const intent = { base: confirmedBase?.snapshot ? JSON.parse(JSON.stringify(confirmedBase.snapshot)) : null };
     setPendingSync(true);
     clearTimeout(syncTimer);
+    if (contingencyMode || quotaCircuitUntil > Date.now()) { emitContingencyStatus(); return; }
     syncTimer = setTimeout(() => {
       if (revision !== contextRevision || !snapshotReady) return;
       syncTimer = null;
@@ -662,7 +704,7 @@
     unsubscribeRealtime?.();
     unsubscribeCentralRealtime?.();
     unsubscribeCentralRealtime = null;
-    if (!currentUser || !snapshotReady) return;
+    if (!currentUser || !snapshotReady || contingencyMode) return;
     const revision = contextRevision;
     const expectedRowId = await getPrimaryRowId();
     if (revision !== contextRevision) return;
@@ -682,7 +724,11 @@
     });
     if (config.centralTableId && typeof centralRecordsListener === 'function') {
       const centralChannel = `tablesdb.${config.databaseId}.tables.${config.centralTableId}.rows`;
-      unsubscribeCentralRealtime = client.subscribe(centralChannel, event => centralRecordsListener(event));
+      unsubscribeCentralRealtime = client.subscribe(centralChannel, event => {
+        if (revision !== contextRevision || contingencyMode) return;
+        if (event?.payload?.workspaceId !== organizationContext.workspaceId) return;
+        centralRecordsListener(event);
+      });
     }
   }
 
@@ -739,6 +785,10 @@
     const nextSnapshot = JSON.parse(JSON.stringify(snapshot || currentSnapshotGetter?.() || null));
     const intent = { base: confirmedBase?.snapshot ? JSON.parse(JSON.stringify(confirmedBase.snapshot)) : null };
     if (!nextSnapshot) throw new Error('Não há dados disponíveis para sincronização.');
+    if (contingencyMode || quotaCircuitUntil > Date.now()) {
+      setPendingSync(true); emitContingencyStatus();
+      return { mode: 'contingency-local-pending', snapshot: nextSnapshot };
+    }
 
     // A sincronização imediata substitui qualquer envio agendado do mesmo estado.
     // Mantê-la na mesma fila impede duas gravações concorrentes do snapshot.
@@ -750,7 +800,8 @@
       .then(() => {
         if (revision !== contextRevision || !snapshotReady) throw new Error('A empresa mudou durante a sincronização.');
         return persistSnapshot(nextSnapshot, intent);
-      }).catch(error => {
+      }).catch(async error => {
+        if (isDatabaseReadQuotaError(error)) return enterReadQuotaContingency(error);
         if (revision === contextRevision) {
           setPendingSync(true);
           emitStatus('error', `Não confirmado no servidor: ${describeError(error)}. Cópia local pendente.`, { error });
@@ -1072,6 +1123,7 @@
           return { mode: 'recovered-local-pending', snapshot: recoveredSnapshot };
         } catch (error) {
           if (revision !== contextRevision) throw error;
+          if (isDatabaseReadQuotaError(error)) return enterReadQuotaContingency(error);
           await currentSnapshotApplier?.(localSnapshot);
           if (revision !== contextRevision) throw error;
           await subscribeRealtime();
@@ -1081,7 +1133,13 @@
       }
     }
 
-    const remoteRecord = await loadRemoteRecord();
+    let remoteRecord;
+    try { remoteRecord = await loadRemoteRecord(); }
+    catch (error) {
+      if (revision !== contextRevision) throw error;
+      if (isDatabaseReadQuotaError(error)) return enterReadQuotaContingency(error);
+      throw error;
+    }
     if (revision !== contextRevision) throw new Error('A empresa mudou durante o carregamento.');
 
     if (remoteRecord?.snapshot) {
@@ -1229,6 +1287,8 @@
     config, isConfigured, initialize, signIn, signOut,
     setOrganizationContext,
     isSnapshotReady: () => snapshotReady,
+    isContingencyMode: () => contingencyMode,
+    isDatabaseReadQuotaError,
     getOrganizationContext: () => organizationContext,
     getUser: () => currentUser,
     updateAuthenticatedUserName,
