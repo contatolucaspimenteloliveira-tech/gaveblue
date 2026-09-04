@@ -792,13 +792,17 @@ async function touchSubscriptionPresence(databases, payload, workspaceId = WEFRO
   }
 }
 
+const snapshotReadVersions = new WeakMap();
+
 async function getWefrotasSnapshot(databases, workspaceId = WEFROTAS_COMPANY_ID) {
   const row = await databases.getDocument({
     databaseId: DATABASE_ID,
     collectionId: WEFROTAS_TABLE_ID,
     documentId: wefrotasSnapshotDocumentId(workspaceId)
   });
-  return decodeWefrotasSnapshot(databases, row?.snapshot, workspaceId);
+  const snapshot = await decodeWefrotasSnapshot(databases, row?.snapshot, workspaceId);
+  snapshotReadVersions.set(snapshot, row.updatedAt || row.$updatedAt || '');
+  return snapshot;
 }
 
 async function resolveCentralDeviceProfile(databases, subscriptionId, snapshot = null, directory = null, workspaceId = WEFROTAS_COMPANY_ID) {
@@ -1167,6 +1171,60 @@ async function writeWefrotasAudit(databases, { actorId, action, targetId = '', b
   }, tenantManagedPermissions(organization, { auditOnly: true }));
 }
 
+function accessWorkspaceId(workspaceId) {
+  return 'access-' + crypto.createHash('sha256').update(String(workspaceId)).digest('hex').slice(0, 28);
+}
+
+async function recordAccessPresence(databases, access, payload) {
+  if (!access.organization?.modules?.includes('wefrotas')) throw Object.assign(new Error('WeFrotas não habilitado para esta empresa.'), {status:403});
+  const connectionId = String(payload.connectionId || '');
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(connectionId) || !['open','ping','close'].includes(payload.phase)) throw Object.assign(new Error('Conexão de acesso inválida.'), {status:400});
+  const workspaceId = access.organization.workspaceId;
+  const documentId = crypto.createHash('sha256').update(`access:${workspaceId}:${access.userId}:${connectionId}`).digest('hex').slice(0,36);
+  const scope = accessWorkspaceId(workspaceId);
+  const args = {databaseId:DATABASE_ID, collectionId:WEFROTAS_TABLE_ID, documentId};
+  const now = new Date().toISOString();
+  let existing = null;
+  try { existing = await databases.getDocument(args); } catch(e) { if(Number(e?.code)!==404) throw e; }
+  if (!existing && payload.phase !== 'open') return {ok:true,ignored:true};
+  const previous = existing ? JSON.parse(existing.snapshot) : null;
+  if (previous && (previous.actorId !== access.userId || previous.organizationWorkspace !== workspaceId || previous.kind !== 'platform-session')) throw Object.assign(new Error('Sessão de acesso incompatível.'),{status:403});
+  if (previous?.closedAt || (previous && payload.phase === 'open')) return {ok:true,ignored:true};
+  if (previous && payload.phase === 'ping' && Date.parse(now)-Date.parse(previous.lastSeenAt)<45000) return {ok:true,ignored:true};
+  const session = previous ? {...previous} : {
+    kind:'platform-session', connectionId, organizationWorkspace:workspaceId, actorId:access.userId,
+    actorName:String(access.user?.name || '').slice(0,128), actorEmail:String(access.user?.email || '').slice(0,320),
+    startedAt:now, lastActivityAt:payload.active === true ? now : null, closedAt:null,
+    browser:['Chrome','Edge','Firefox','Safari','Outro'].includes(payload.browser) ? payload.browser : 'Outro',
+    system:['Windows','macOS','Linux','Android','iOS','Outro'].includes(payload.system) ? payload.system : 'Outro'
+  };
+  session.lastSeenAt = now;
+  if (payload.active === true) session.lastActivityAt = now;
+  if (payload.phase === 'close') session.closedAt = now;
+  const transaction = await databases.createTransaction({ttl:60});
+  const tx = transaction.$id;
+  try {
+    if (existing) {
+      await databases.updateDocument({...args,transactionId:tx,data:{workspaceId:scope}});
+      const locked = await databases.getDocument({...args,transactionId:tx});
+      if (locked.snapshot !== existing.snapshot) throw Object.assign(new Error('Presença atualizada por outra requisição.'),{status:409});
+      await databases.updateDocument({...args,transactionId:tx,data:{snapshot:JSON.stringify(session),updatedAt:now,updatedBy:access.userId}});
+    } else {
+      // Server-only rows; the platform admin reads using its existing service key.
+      await databases.createDocument({...args,transactionId:tx,data:{workspaceId:scope,snapshot:JSON.stringify(session),updatedAt:now,updatedBy:access.userId},permissions:[]});
+    }
+    if (!previous || payload.phase === 'close') {
+      const action = previous ? 'session.close' : 'session.open';
+      const auditId = crypto.createHash('sha256').update(`${documentId}:${action}`).digest('hex').slice(0,36);
+      await databases.createDocument({databaseId:DATABASE_ID,collectionId:WEFROTAS_TABLE_ID,documentId:auditId,transactionId:tx,
+        data:{workspaceId,updatedAt:now,updatedBy:access.userId,snapshot:JSON.stringify({kind:'platform-audit',actorId:access.userId,actorName:session.actorName,actorEmail:session.actorEmail,action,targetId:documentId,result:'success',createdAt:now,after:{browser:session.browser,system:session.system,startedAt:session.startedAt,closedAt:session.closedAt}})},
+        permissions:tenantManagedPermissions(access.organization,{auditOnly:true})});
+    }
+    await databases.updateTransaction({transactionId:tx,commit:true});
+    return {ok:true,confirmedAt:now};
+  } catch(e) { await databases.updateTransaction({transactionId:tx,rollback:true}).catch(()=>{}); throw e; }
+}
+
 const SNAPSHOT_AUDIT_ENTITIES = Object.freeze([
   ['vehicles', 'vehicle', 'veículo'],
   ['drivers', 'driver', 'motorista'],
@@ -1258,7 +1316,7 @@ async function hardenWefrotasPermissions(databases, organization) {
   return results;
 }
 
-async function persistWefrotasSnapshot(databases, snapshot, senderId, tenant = WEFROTAS_COMPANY_ID) {
+async function persistWefrotasSnapshot(databases, snapshot, senderId, tenant = WEFROTAS_COMPANY_ID, expectedUpdatedAt = snapshotReadVersions.get(snapshot)) {
   const organization = normalizeTenant(tenant); const workspaceId = organization.workspaceId;
   const snapshotPermissions = tenantManagedPermissions(organization);
   const serialized = JSON.stringify(snapshot);
@@ -1287,12 +1345,36 @@ async function persistWefrotasSnapshot(databases, snapshot, senderId, tenant = W
     primarySnapshot = `chunked-v1:${JSON.stringify({ generation, count: chunks.length, length: storedSnapshot.length })}`;
   }
 
-  await updateOrCreateWefrotasRow(databases, rowId, {
+  const data = {
     workspaceId,
     snapshot: primarySnapshot,
     updatedAt,
     updatedBy: senderId
-  }, snapshotPermissions);
+  };
+  // Stage the primary row before checking its version. Appwrite detects any
+  // concurrent write after staging at commit, including old deployed writers.
+  // A read-then-update outside a transaction is NOT a compare-and-swap.
+  if (expectedUpdatedAt === undefined) throw new Error('Gravação sem versão de origem bloqueada.');
+  const transaction = await databases.createTransaction({ ttl: 60 });
+  const transactionId = transaction.$id;
+  const args = { databaseId: DATABASE_ID, collectionId: WEFROTAS_TABLE_ID, documentId: rowId, transactionId };
+  try {
+    if (expectedUpdatedAt) {
+      await databases.updateDocument({ ...args, data: { workspaceId } });
+      const staged = await databases.getDocument(args);
+      const actual = String(staged.updatedAt || '');
+      if (actual !== expectedUpdatedAt && Date.parse(actual) !== Date.parse(expectedUpdatedAt)) {
+        throw Object.assign(new Error('Os dados mudaram durante a gravação. Tente sincronizar novamente.'), { status: 409 });
+      }
+      await databases.updateDocument({ ...args, data, permissions: snapshotPermissions });
+    } else {
+      await databases.createDocument({ ...args, data, permissions: snapshotPermissions });
+    }
+    await databases.updateTransaction({ transactionId, commit: true });
+  } catch (error) {
+    await databases.updateTransaction({ transactionId, rollback: true }).catch(() => undefined);
+    throw error;
+  }
   return { updatedAt, rowId };
 }
 
@@ -1350,7 +1432,15 @@ async function saveTenantOperationalSnapshot(req, payload = {}) {
   }
   const expectedUpdatedAt = String(payload.expectedUpdatedAt || '').trim();
   const currentUpdatedAt = String(previousRow?.updatedAt || previousRow?.$updatedAt || '').trim();
-  if (previousRow && expectedUpdatedAt !== currentUpdatedAt) {
+  // Appwrite datetime attributes may return +00:00 while the write receipt
+  // uses Date.toISOString() (Z). Compare instants, not their representation.
+  const expectedVersion = Date.parse(expectedUpdatedAt);
+  const currentVersion = Date.parse(currentUpdatedAt);
+  const sameVersion = expectedUpdatedAt && currentUpdatedAt && (
+    expectedUpdatedAt === currentUpdatedAt
+    || (Number.isFinite(expectedVersion) && Number.isFinite(currentVersion) && expectedVersion === currentVersion)
+  );
+  if (previousRow && !sameVersion) {
     await writeWefrotasAudit(databases, {
       actorId: access.userId, action: 'snapshot.conflict', targetId: rowId,
       before: { updatedAt: currentUpdatedAt, updatedBy: String(previousRow?.updatedBy || '') },
@@ -1359,7 +1449,7 @@ async function saveTenantOperationalSnapshot(req, payload = {}) {
     throw Object.assign(new Error('Os dados desta empresa foram alterados em outro dispositivo. Atualize a página antes de salvar para evitar sobrescrever informações.'), { status: 409 });
   }
   const auditEvents = getSnapshotAuditEvents(previousSnapshot, snapshot);
-  const saved = await persistWefrotasSnapshot(databases, snapshot, access.userId, organization);
+  const saved = await persistWefrotasSnapshot(databases, snapshot, access.userId, organization, currentUpdatedAt);
   await syncTenantDriverDirectory(databases, snapshot, organization);
   const eventsToWrite = auditEvents.slice(0, 200);
   await Promise.all(eventsToWrite.map((event) => writeWefrotasAudit(databases, {
@@ -1461,7 +1551,7 @@ async function appendApprovedFinanceEntry(databases, senderId, payload = {}, ten
 
     finance.unshift(entry);
     snapshot.finance = finance;
-    await persistWefrotasSnapshot(databases, snapshot, senderId, organization);
+    await persistWefrotasSnapshot(databases, snapshot, senderId, organization, row.updatedAt || row.$updatedAt || '');
     await writeWefrotasAudit(databases, {
       actorId: senderId,
       action: 'central.finance.append',
@@ -1587,7 +1677,7 @@ async function migrateCentralStationsToWefrotas(databases, senderId, tenant = WE
 
   if (created || updated) {
     snapshot.suppliers = suppliers;
-    await persistWefrotasSnapshot(databases, snapshot, senderId, organization);
+    await persistWefrotasSnapshot(databases, snapshot, senderId, organization, row.updatedAt || row.$updatedAt || '');
   }
   return { total: CENTRAL_STATION_DIRECTORY.length, created, updated, unchanged };
 }
@@ -1609,7 +1699,7 @@ async function revertImportedCentralStations(databases, senderId, tenant = WEFRO
   );
   if (removed.length) {
     snapshot.suppliers = suppliers.filter((supplier) => !removed.includes(supplier));
-    await persistWefrotasSnapshot(databases, snapshot, senderId, organization);
+    await persistWefrotasSnapshot(databases, snapshot, senderId, organization, row.updatedAt || row.$updatedAt || '');
   }
   return {
     removed: removed.length,
@@ -1968,6 +2058,10 @@ export default async ({ req, res, log, error }) => {
   try {
     const payload = parseBody(req);
     const action = String(payload.action || '');
+    if (action === 'wefrotas-session-presence') {
+      const access = await assertAccessRole(req, ['wefrotas-admin','wefrotas-gestor','wefrotas-aprovador','wefrotas-consulta']);
+      return json(res, 200, await recordAccessPresence(createDatabaseClient(req), access, payload));
+    }
     if (action === 'tenant-context') {
       const organization = await resolveCentralOrganization(payload);
       return json(res, 200, { ok: true, organization: {
