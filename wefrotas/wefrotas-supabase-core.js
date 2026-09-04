@@ -79,6 +79,30 @@
     return ENTITY_KEYS.some((key) => delta?.[key]?.upserts?.length || delta?.[key]?.deletes?.length);
   }
 
+  function applyDelta(snapshotValue, delta = {}) {
+    const snapshot = normalizeSnapshot(snapshotValue);
+    for (const key of ENTITY_KEYS) {
+      const items = mapById(snapshot[key]);
+      for (const id of arrayOrEmpty(delta?.[key]?.deletes)) items.delete(String(id));
+      for (const item of arrayOrEmpty(delta?.[key]?.upserts)) items.set(entityId(item), clone(item));
+      snapshot[key] = Array.from(items.values());
+    }
+    return snapshot;
+  }
+
+  function deltasOverlap(left = {}, right = {}) {
+    return ENTITY_KEYS.some((key) => {
+      const changed = new Set([
+        ...arrayOrEmpty(left?.[key]?.deletes).map(String),
+        ...arrayOrEmpty(left?.[key]?.upserts).map(entityId)
+      ]);
+      return [
+        ...arrayOrEmpty(right?.[key]?.deletes).map(String),
+        ...arrayOrEmpty(right?.[key]?.upserts).map(entityId)
+      ].some((id) => changed.has(id));
+    });
+  }
+
   function extractState(snapshotValue) {
     const snapshot = normalizeSnapshot(snapshotValue);
     const settings = {};
@@ -109,6 +133,6 @@
 
   global.WeFrotasSupabaseCore = Object.freeze({
     ENTITY_TABLES, ENTITY_KEYS, STATE_KEYS, normalizeSnapshot, diffSnapshots,
-    hasDelta, extractState, applyRealtimeEntity, countSnapshot, equal
+    hasDelta, applyDelta, deltasOverlap, extractState, applyRealtimeEntity, countSnapshot, equal
   });
 })(typeof window === 'undefined' ? globalThis : window);

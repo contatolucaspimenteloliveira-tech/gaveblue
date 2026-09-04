@@ -7,6 +7,7 @@ const { test } = require('node:test');
 const coreSource = fs.readFileSync(path.join(__dirname, '../wefrotas/wefrotas-supabase-core.js'), 'utf8');
 const backendSource = fs.readFileSync(path.join(__dirname, '../wefrotas/wefrotas-supabase-backend.js'), 'utf8');
 const migration = fs.readFileSync(path.join(__dirname, '../supabase/migrations/202609040001_wefrotas_operational.sql'), 'utf8');
+const realtimeMigration = fs.readFileSync(path.join(__dirname, '../supabase/migrations/202609040002_wefrotas_realtime.sql'), 'utf8');
 const platformAdminSource = fs.readFileSync(path.join(__dirname, '../supabase/functions/platform-admin/index.ts'), 'utf8');
 const wefrotasAdminSource = fs.readFileSync(path.join(__dirname, '../supabase/functions/wefrotas-admin/index.ts'), 'utf8');
 const adminHtml = fs.readFileSync(path.join(__dirname, '../admin/index.html'), 'utf8');
@@ -84,6 +85,40 @@ test('hasDelta is true for one changed entity', () => {
   assert.equal(core.hasDelta(core.diffSnapshots({}, { finance: [{ id: 'f1' }] })), true);
 });
 
+test('disjoint multi-device changes do not conflict', () => {
+  const left = core.diffSnapshots({ orders: [{ id: '1', status: 'open' }] }, { orders: [{ id: '1', status: 'closed' }] });
+  const right = core.diffSnapshots({ orders: [{ id: '1', status: 'open' }] }, { orders: [{ id: '1', status: 'open' }], vehicles: [{ id: 'v1' }] });
+  assert.equal(core.deltasOverlap(left, right), false);
+});
+
+test('changes to the same entity are detected as a conflict', () => {
+  const left = core.diffSnapshots({ orders: [{ id: '1', status: 'open' }] }, { orders: [{ id: '1', status: 'closed' }] });
+  const right = core.diffSnapshots({ orders: [{ id: '1', status: 'open' }] }, { orders: [{ id: '1', status: 'cancelled' }] });
+  assert.equal(core.deltasOverlap(left, right), true);
+});
+
+test('delete versus update of the same entity is detected as a conflict', () => {
+  const left = core.diffSnapshots({ finance: [{ id: 'f1', value: 1 }] }, { finance: [] });
+  const right = core.diffSnapshots({ finance: [{ id: 'f1', value: 1 }] }, { finance: [{ id: 'f1', value: 2 }] });
+  assert.equal(core.deltasOverlap(left, right), true);
+});
+
+test('rebasing a delta preserves unrelated remote rows', () => {
+  const remote = { orders: [{ id: 'remote', status: 'open' }], vehicles: [{ id: 'v1', plate: 'AAA0A00' }] };
+  const localDelta = core.diffSnapshots({ orders: [] }, { orders: [{ id: 'local', status: 'open' }] });
+  const merged = core.applyDelta(remote, localDelta);
+  assert.deepEqual(clone(merged.orders), [{ id: 'remote', status: 'open' }, { id: 'local', status: 'open' }]);
+  assert.deepEqual(clone(merged.vehicles), [{ id: 'v1', plate: 'AAA0A00' }]);
+});
+
+test('rebasing applies deletions without clearing unrelated entities', () => {
+  const remote = { suppliers: [{ id: 's1' }, { id: 's2' }], drivers: [{ id: 'd1' }] };
+  const localDelta = core.diffSnapshots({ suppliers: [{ id: 's1' }, { id: 's2' }] }, { suppliers: [{ id: 's2' }] });
+  const merged = core.applyDelta(remote, localDelta);
+  assert.deepEqual(clone(merged.suppliers), [{ id: 's2' }]);
+  assert.deepEqual(clone(merged.drivers), [{ id: 'd1' }]);
+});
+
 test('countSnapshot counts every operational entity independently', () => {
   const snapshot = Object.fromEntries(core.ENTITY_KEYS.map((key, index) => [key, Array.from({ length: index }, (_, item) => ({ id: `${key}-${item}` }))]));
   assert.deepEqual(clone(core.countSnapshot(snapshot)), Object.fromEntries(core.ENTITY_KEYS.map((key, index) => [key, index])));
@@ -107,7 +142,9 @@ test('the browser backend sends atomic revisioned deltas', () => {
 test('the browser backend preserves local pending state on failed save', () => {
   const syncBody = backendSource.slice(backendSource.indexOf('async function syncNow'), backendSource.indexOf('function queueSnapshot'));
   assert.match(syncBody, /setPending\(true\)/);
-  assert.doesNotMatch(syncBody, /setPending\(false\).*throw error/s);
+  const terminalFailure = syncBody.slice(syncBody.lastIndexOf("emitStatus('error','Falha"), syncBody.lastIndexOf('revision=Number(data)'));
+  assert.match(terminalFailure, /throw error/);
+  assert.doesNotMatch(terminalFailure, /setPending\(false\)/);
 });
 
 test('the relational migration creates one table per operational entity', () => {
@@ -158,6 +195,13 @@ test('private assets are tenant-folder protected', () => {
   assert.match(migration, /'wefrotas-assets','wefrotas-assets',false/);
   assert.match(migration, /storage\.foldername\(name\)/);
   assert.match(migration, /wefrotas_can_write/);
+});
+
+test('every synchronized table is added to the Supabase realtime publication', () => {
+  ['wefrotas_workspace_state', ...Object.values(core.ENTITY_TABLES), 'wefrotas_central_records', 'wefrotas_central_driver_directory', 'wefrotas_banners']
+    .forEach((table) => assert.match(realtimeMigration, new RegExp(`'${table}'`)));
+  assert.match(realtimeMigration, /alter publication supabase_realtime add table/);
+  assert.match(realtimeMigration, /if not exists/);
 });
 
 test('service role is never present in browser files', () => {

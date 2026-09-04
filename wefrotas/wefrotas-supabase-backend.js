@@ -26,6 +26,7 @@
   let revision = 0;
   let snapshotReady = false;
   let syncTimer = null;
+  let remoteRefreshTimer = null;
   let syncChain = Promise.resolve();
   let channel = null;
   let centralChannel = null;
@@ -116,6 +117,7 @@
 
   async function signOut() {
     clearTimeout(syncTimer); syncTimer = null;
+    clearTimeout(remoteRefreshTimer); remoteRefreshTimer = null;
     if (channel) await ensureClient().removeChannel(channel).catch(()=>{});
     if (centralChannel) await ensureClient().removeChannel(centralChannel).catch(()=>{});
     await ensureClient().auth.signOut({ scope:'local' });
@@ -183,6 +185,22 @@
         emitStatus('online','Atualização recebida do Supabase.');
       });
     }
+    channel.on('postgres_changes',{event:'UPDATE',schema:'public',table:'wefrotas_workspace_state',filter},(payload)=>{
+      const announcedRevision=Number(payload?.new?.revision)||0;
+      if(announcedRevision<=revision)return;
+      clearTimeout(remoteRefreshTimer);
+      const refresh=async()=>{
+        if(hasPending()){remoteRefreshTimer=setTimeout(refresh,350);return;}
+        try{
+          const remote=await loadRemote();
+          if(remote.revision<announcedRevision)return;
+          baseSnapshot=clone(remote.snapshot);revision=remote.revision;
+          await snapshotApplier?.(clone(remote.snapshot));
+          emitStatus('online','Versão mais recente carregada do Supabase.');
+        }catch(error){emitStatus('error','Não foi possível atualizar a versão recebida do Supabase.',{error});}
+      };
+      remoteRefreshTimer=setTimeout(refresh,180);
+    });
     channel.subscribe();
   }
 
@@ -209,13 +227,35 @@
     const state=core.extractState(desired);
     if (!core.hasDelta(delta) && core.equal(core.extractState(baseSnapshot),state)) return {mode:'unchanged',revision};
     setPending(true); emitStatus('syncing','Salvando alterações no Supabase...');
-    const {data,error}=await ensureClient().rpc('wefrotas_apply_snapshot_delta',{
+    let {data,error}=await ensureClient().rpc('wefrotas_apply_snapshot_delta',{
       target_organization_id:organizationContext.id,expected_revision:revision,delta,next_state:state
     });
     if (error) {
       const conflict=String(error.message||'').includes('WEFROTAS_REVISION_CONFLICT');
-      emitStatus('error',conflict?'Conflito detectado. A cópia local foi preservada para revisão.':'Falha ao salvar no Supabase. A cópia local permanece pendente.',{error});
-      if (conflict) error.code=409;
+      if(conflict){
+        const remote=await loadRemote();
+        const remoteDelta=core.diffSnapshots(baseSnapshot,remote.snapshot);
+        const remoteState=core.extractState(remote.snapshot);
+        const baseState=core.extractState(baseSnapshot);
+        const localStateChanged=!core.equal(baseState,state);
+        const remoteStateChanged=!core.equal(baseState,remoteState);
+        if(core.deltasOverlap(delta,remoteDelta)||(localStateChanged&&remoteStateChanged&&!core.equal(state,remoteState))){
+          emitStatus('error','Conflito no mesmo registro detectado. A cópia local foi preservada para revisão.',{error});
+          error.code=409;throw error;
+        }
+        const rebasedSnapshot=core.applyDelta(remote.snapshot,delta);
+        const rebasedState=localStateChanged?state:remoteState;
+        ({data,error}=await ensureClient().rpc('wefrotas_apply_snapshot_delta',{
+          target_organization_id:organizationContext.id,expected_revision:remote.revision,delta,next_state:rebasedState
+        }));
+        if(!error){
+          Object.assign(rebasedSnapshot,rebasedState.settings,{orderCounter:rebasedState.orderCounter});
+          revision=Number(data);baseSnapshot=clone(rebasedSnapshot);setPending(false);
+          emitStatus('online','Alterações conciliadas e confirmadas no Supabase.');
+          return{mode:'supabase-rebased',revision,workspaceId:organizationContext.workspaceId,updatedAt:String(revision)};
+        }
+      }
+      emitStatus('error','Falha ao salvar no Supabase. A cópia local permanece pendente.',{error});
       throw error;
     }
     revision=Number(data); baseSnapshot=clone(desired); setPending(false);
