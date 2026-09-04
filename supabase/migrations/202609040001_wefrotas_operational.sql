@@ -289,7 +289,7 @@ $$;
 
 create or replace function public.wefrotas_import_snapshot(
   target_organization_id uuid, p_import_key text, source_updated_at timestamptz, snapshot jsonb
-) returns jsonb language plpgsql security definer set search_path = public as $$
+) returns jsonb language plpgsql security definer set search_path = public, extensions as $$
 declare digest_value text := encode(digest(snapshot::text,'sha256'),'hex');
 declare prior public.wefrotas_import_runs%rowtype; counts jsonb; state_settings jsonb;
 begin
