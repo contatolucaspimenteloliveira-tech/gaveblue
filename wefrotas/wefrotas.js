@@ -2267,6 +2267,17 @@
     window.logoutWeFrotasOnline = logoutWeFrotasOnline;
     window.syncWeFrotasOnline = syncWeFrotasOnline;
 
+    window.recoverWeFrotasFromServer = async function () {
+      if (!window.confirm('Preservar as pendências locais em backup e carregar a versão atual do servidor? Nenhum dado será enviado ou substituído no servidor.')) return;
+      try {
+        const { backup } = await window.WeFrotasBackend.recoverFromServer({ confirmed: true });
+        downloadBlob(`wefrotas_conciliacao_${Date.now()}.json`, new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' }));
+        showToast(`Cópia do servidor carregada. Backup preservado. Campos para conciliação: ${backup.differingFields.join(', ') || 'nenhum'}.`);
+      } catch (error) {
+        showToast(`Recuperação não concluída: ${error?.message || 'erro desconhecido'}`);
+      }
+    };
+
     function getStorageUsageStats() {
       const snapshotText = JSON.stringify(buildStorageSnapshot());
       const usedBytes = snapshotText.length * 2;

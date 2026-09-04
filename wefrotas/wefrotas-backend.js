@@ -972,6 +972,47 @@
     return { mode: 'empty-workspace', snapshot: emptySnapshot };
   }
 
+  async function recoverFromServer({ confirmed = false } = {}) {
+    if (!confirmed) throw new Error('Confirme a recuperação antes de substituir a cópia de trabalho local.');
+    if (!currentUser || !organizationContext.id) throw new Error('Empresa não confirmada.');
+    const revision = contextRevision;
+    clearTimeout(syncTimer); syncTimer = null;
+    clearTimeout(remoteApplyTimer);
+    await syncChain.catch(() => undefined);
+    if (revision !== contextRevision) throw new Error('A empresa mudou durante a recuperação.');
+    snapshotReady = false;
+    try {
+      const localSnapshot = JSON.parse(JSON.stringify(currentSnapshotGetter?.()));
+      const record = await loadRemoteRecord();
+      if (revision !== contextRevision) throw new Error('A empresa mudou durante a recuperação.');
+      if (!record?.snapshot || !record.updatedAt) throw new Error('Cópia remota indisponível. Os dados locais foram mantidos.');
+      const backup = {
+        version: 'wefrotas-conflict-recovery-v1', createdAt: new Date().toISOString(),
+        organizationId: organizationContext.id, workspaceId: organizationContext.workspaceId,
+        localVersion: remoteSnapshotUpdatedAt, serverVersion: record.updatedAt,
+        localSnapshot, serverSnapshot: record.snapshot,
+        differingFields: [...new Set([...Object.keys(localSnapshot), ...Object.keys(record.snapshot)])]
+          .filter(key => !snapshotsEqual(localSnapshot[key], record.snapshot[key]))
+      };
+      const backupKey = `wefrotas:recovery:${organizationContext.id}:${Date.now()}`;
+      const serializedBackup = JSON.stringify(backup);
+      localStorage.setItem(backupKey, serializedBackup);
+      if (localStorage.getItem(backupKey) !== serializedBackup) throw new Error('Não foi possível verificar o backup. Recuperação cancelada.');
+      // No remote writes. Preserve both versions before replacing working data.
+      await currentSnapshotApplier?.(record.snapshot);
+      if (revision !== contextRevision) throw new Error('A empresa mudou durante a recuperação.');
+      rememberRemoteVersion(record.updatedAt);
+      lastSerializedSnapshot = JSON.stringify(record.snapshot);
+      setPendingSync(false);
+      snapshotReady = true;
+      await subscribeRealtime();
+      emitStatus('online', 'Dados do servidor carregados. Pendências anteriores preservadas em backup para conciliação.');
+      return { backup, backupKey };
+    } finally {
+      if (revision === contextRevision) snapshotReady = true;
+    }
+  }
+
   global.WeFrotasBackend = Object.freeze({
     config, isConfigured, initialize, signIn, signOut,
     setOrganizationContext,
@@ -983,7 +1024,7 @@
     getAccessRole: getCurrentAccessRole,
     hasPermission: hasCurrentPermission,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
-    syncNow,
+    syncNow, recoverFromServer,
     uploadReceipt, uploadVehicleImage, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord,
     uploadCentralBanner, deleteCentralBannerFile, uploadCentralCityImage, deleteCentralCityImage, listCentralHomeBanners,
     createCentralHomeBanner, upsertCentralHomeBanner, updateCentralHomeBanner, deleteCentralHomeBanner,
