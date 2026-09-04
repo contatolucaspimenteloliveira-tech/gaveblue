@@ -3917,7 +3917,7 @@
       passwordField.classList.remove('hidden');
       passwordLabel.textContent = user?.syncError ? 'Nova senha para reparar o acesso' : (user ? 'Nova senha (opcional)' : 'Senha temporária');
       passwordHint.textContent = user?.syncError
-        ? 'Obrigatória para recriar ou religar a conta no Appwrite. Use pelo menos 8 caracteres.'
+        ? 'Obrigatória para criar ou religar a conta no Supabase. Use pelo menos 8 caracteres.'
         : user
         ? 'Deixe em branco para manter a senha atual. A nova senha deve ter pelo menos 8 caracteres.'
         : 'Mínimo de 8 caracteres. A senha não será exibida novamente.';

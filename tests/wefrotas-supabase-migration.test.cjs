@@ -7,6 +7,9 @@ const { test } = require('node:test');
 const coreSource = fs.readFileSync(path.join(__dirname, '../wefrotas/wefrotas-supabase-core.js'), 'utf8');
 const backendSource = fs.readFileSync(path.join(__dirname, '../wefrotas/wefrotas-supabase-backend.js'), 'utf8');
 const migration = fs.readFileSync(path.join(__dirname, '../supabase/migrations/202609040001_wefrotas_operational.sql'), 'utf8');
+const platformAdminSource = fs.readFileSync(path.join(__dirname, '../supabase/functions/platform-admin/index.ts'), 'utf8');
+const wefrotasAdminSource = fs.readFileSync(path.join(__dirname, '../supabase/functions/wefrotas-admin/index.ts'), 'utf8');
+const adminHtml = fs.readFileSync(path.join(__dirname, '../admin/index.html'), 'utf8');
 const context = { console, JSON, Map, Set };
 context.window = context;
 vm.runInNewContext(coreSource, context);
@@ -159,4 +162,24 @@ test('private assets are tenant-folder protected', () => {
 
 test('service role is never present in browser files', () => {
   assert.doesNotMatch(coreSource + backendSource, /service_role|SUPABASE_SERVICE_ROLE_KEY/);
+});
+
+test('platform administration no longer calls Appwrite', () => {
+  assert.doesNotMatch(platformAdminSource, /APPWRITE_ENDPOINT|APPWRITE_API_KEY|x-appwrite|cloud\.appwrite|fetch\([^\n]*appwrite/i);
+  assert.match(platformAdminSource, /admin\.auth\.admin\.createUser/);
+  assert.match(platformAdminSource, /wefrotas_audit_events/);
+  assert.match(platformAdminSource, /wefrotas_session_presence/);
+});
+
+test('WeFrotas user administration repairs pre-authorized members in Supabase', () => {
+  assert.match(wefrotasAdminSource, /existing\?\.user_id/);
+  assert.match(wefrotasAdminSource, /admin\.auth\.admin\.createUser/);
+  assert.match(wefrotasAdminSource, /repaired:Boolean\(existing\)/);
+  assert.match(wefrotasAdminSource, /roleToDatabase/);
+  assert.match(wefrotasAdminSource, /roleToInterface/);
+});
+
+test('admin UI does not request an Appwrite user id', () => {
+  assert.doesNotMatch(adminHtml, /member-appwrite-id|ID do usuário no Appwrite/);
+  assert.match(adminHtml, /primeiro acesso ao Supabase/);
 });

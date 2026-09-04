@@ -11,6 +11,12 @@ const json = (status: number, body: unknown) => new Response(JSON.stringify(body
 const cleanEmail = (value: unknown) => String(value || '').trim().toLowerCase();
 const validEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const allowedRoles = new Set(['admin','manager','approver','viewer','driver']);
+const roleToDatabase = (value: unknown) => ({
+  'wefrotas-admin':'admin','wefrotas-gestor':'manager','wefrotas-aprovador':'approver','wefrotas-consulta':'viewer'
+} as Record<string,string>)[String(value || '')] || (allowedRoles.has(String(value || '')) ? String(value) : 'viewer');
+const roleToInterface = (value: unknown) => ({
+  admin:'wefrotas-admin',manager:'wefrotas-gestor',approver:'wefrotas-aprovador',viewer:'wefrotas-consulta',driver:'wefrotas-consulta'
+} as Record<string,string>)[String(value || '')] || 'wefrotas-consulta';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -41,35 +47,38 @@ Deno.serve(async (req) => {
       let query=admin.from('organization_members').select('id,user_id,email,role,status,created_at,updated_at').eq('organization_id',orgId).order('email');
       const search=String(payload.search||'').trim();if(search)query=query.ilike('email',`%${search.replace(/[%_]/g,'')}%`);
       const{data,error}=await query;if(error)throw error;
-      return json(200,{ok:true,users:(data||[]).map((item:any)=>({id:item.id,userId:item.user_id,email:item.email,role:item.role,status:item.status,createdAt:item.created_at,updatedAt:item.updated_at}))});
+      const{data:authUsers,error:authUsersError}=await admin.auth.admin.listUsers({page:1,perPage:1000});if(authUsersError)throw authUsersError;
+      const byId=new Map((authUsers.users||[]).map((item:any)=>[item.id,item]));
+      return json(200,{ok:true,provider:'supabase',users:(data||[]).map((item:any)=>{const account=byId.get(item.user_id);return{id:item.id,userId:item.user_id,email:item.email,name:account?.user_metadata?.name||item.email.split('@')[0],role:roleToInterface(item.role),status:item.status==='active',createdAt:item.created_at,updatedAt:item.updated_at,accessedAt:account?.last_sign_in_at||null,syncError:item.status==='active'&&!item.user_id?'Defina uma senha para concluir a migração deste acesso ao Supabase.':''};})});
     }
 
     if(action==='wefrotas-user-create'){
       const email=cleanEmail(payload.email),password=String(payload.password||payload.temporaryPassword||''),name=String(payload.name||'').trim();
-      const role=allowedRoles.has(String(payload.role))?String(payload.role):'viewer';
+      const role=roleToDatabase(payload.role);
       if(!validEmail(email))return json(400,{ok:false,error:'E-mail inválido.'});
       if(password.length<8)return json(400,{ok:false,error:'A senha temporária precisa ter pelo menos 8 caracteres.'});
-      const existing=await admin.from('organization_members').select('id').eq('organization_id',orgId).eq('email',email).maybeSingle();
-      if(existing.data)return json(409,{ok:false,error:'Este e-mail já pertence à empresa.'});
+      const{data:existing,error:existingError}=await admin.from('organization_members').select('*').eq('organization_id',orgId).eq('email',email).maybeSingle();if(existingError)throw existingError;
+      if(existing?.user_id)return json(409,{ok:false,error:'Este e-mail já possui uma conta Supabase vinculada à empresa.'});
       const{data:created,error:createError}=await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{name}});if(createError)throw createError;
-      const row={organization_id:orgId,user_id:created.user.id,email,appwrite_user_id:'',role,status:'active'};
-      const{data:saved,error:saveError}=await admin.from('organization_members').insert(row).select().single();
+      const row={organization_id:orgId,user_id:created.user.id,email,appwrite_user_id:existing?.appwrite_user_id||'',role,status:'active'};
+      const saveQuery=existing?admin.from('organization_members').update(row).eq('id',existing.id):admin.from('organization_members').insert(row);
+      const{data:saved,error:saveError}=await saveQuery.select().single();
       if(saveError){await admin.auth.admin.deleteUser(created.user.id).catch(()=>{});throw saveError;}
       await admin.from('wefrotas_audit_events').insert({organization_id:orgId,actor_user_id:authData.user.id,actor_email:authData.user.email||'',entity_type:'user',entity_id:saved.id,action:'create',after_data:saved});
-      return json(200,{ok:true,user:{id:saved.id,userId:created.user.id,email,role,status:'active'}});
+      return json(200,{ok:true,provider:'supabase',repaired:Boolean(existing),user:{id:saved.id,userId:created.user.id,email,role:roleToInterface(role),status:true}});
     }
 
     if(action==='wefrotas-user-update'){
       const memberId=String(payload.userId||'');
       const{data:member,error:memberError}=await admin.from('organization_members').select('*').eq('organization_id',orgId).eq('id',memberId).single();if(memberError)throw memberError;
-      const role=allowedRoles.has(String(payload.role))?String(payload.role):member.role;
+      const role=payload.role?roleToDatabase(payload.role):member.role;
       const status=payload.status===false||payload.status==='disabled'?'disabled':'active';
       const email=payload.email?cleanEmail(payload.email):member.email;
       const authPatch:any={};if(payload.name)authPatch.user_metadata={name:String(payload.name).trim()};if(payload.password)authPatch.password=String(payload.password);if(email!==member.email)authPatch.email=email;
       if(member.user_id&&Object.keys(authPatch).length){const{error}=await admin.auth.admin.updateUserById(member.user_id,authPatch);if(error)throw error;}
       const{data:saved,error}=await admin.from('organization_members').update({email,role,status}).eq('id',member.id).select().single();if(error)throw error;
       await admin.from('wefrotas_audit_events').insert({organization_id:orgId,actor_user_id:authData.user.id,actor_email:authData.user.email||'',entity_type:'user',entity_id:saved.id,action:'update',before_data:member,after_data:saved});
-      return json(200,{ok:true,user:{id:saved.id,userId:saved.user_id,email:saved.email,role:saved.role,status:saved.status}});
+      return json(200,{ok:true,provider:'supabase',user:{id:saved.id,userId:saved.user_id,email:saved.email,role:roleToInterface(saved.role),status:saved.status==='active'}});
     }
 
     if(action==='stats'){

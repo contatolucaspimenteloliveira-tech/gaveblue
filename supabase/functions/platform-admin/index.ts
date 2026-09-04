@@ -5,113 +5,39 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
-
 const json = (status: number, payload: unknown) => new Response(JSON.stringify(payload), {
-  status,
-  headers: { ...corsHeaders, 'content-type': 'application/json; charset=utf-8' }
+  status, headers: { ...corsHeaders, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
 });
-
 const cleanSlug = (value: unknown) => String(value || '').trim().toLowerCase()
-  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48);
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48);
+const cleanEmail = (value: unknown) => String(value || '').trim().toLowerCase();
+const validEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const validIso = (value: unknown) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
+  && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString() === value;
+const allowedRoles = new Set(['admin', 'manager', 'approver', 'viewer', 'driver']);
 
-const orgLabel = (organizationId: string) => `org${organizationId.replace(/-/g, '').slice(0, 24)}`;
-const orgRoleLabel = (organizationId: string, role: string) => `${orgLabel(organizationId)}${({ admin: 'adm', manager: 'mgr', approver: 'apr', viewer: 'view', driver: 'drv' } as Record<string,string>)[role] || 'view'}`;
-const legacyRoleLabels = new Set(['admin', 'gestor', 'aprovador', 'consulta', 'motorista']);
-
-function appwriteConnection() {
-  const endpoint = Deno.env.get('APPWRITE_ENDPOINT');
-  const project = Deno.env.get('APPWRITE_PROJECT_ID');
-  const key = Deno.env.get('APPWRITE_API_KEY');
-  if (!endpoint || !project || !key) return null;
-  return {
-    baseUrl: endpoint.replace(/\/$/, ''),
-    headers: { 'content-type': 'application/json', 'x-appwrite-project': project, 'x-appwrite-key': key }
-  };
-}
-
-async function getAppwriteUser(appwriteUserId: string) {
-  const connection = appwriteConnection();
-  if (!connection || !appwriteUserId) return null;
-  const response = await fetch(`${connection.baseUrl}/users/${encodeURIComponent(appwriteUserId)}`, { headers: connection.headers });
-  if (response.status === 404) return null;
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result?.message || 'Falha ao validar o usuário no Appwrite.');
-  return result;
-}
-
-async function findAppwriteUserByEmail(email: string) {
-  const connection = appwriteConnection();
-  if (!connection) return null;
-  const url = new URL(`${connection.baseUrl}/users`);
-  url.searchParams.set('search', email);
-  const response = await fetch(url, { headers: connection.headers });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result?.message || 'Falha ao localizar o usuário no Appwrite.');
-  return (Array.isArray(result?.users) ? result.users : []).find((item: any) => String(item?.email || '').trim().toLowerCase() === email) || null;
-}
-
-async function deleteAppwriteUser(appwriteUserId: string) {
-  const connection = appwriteConnection();
-  if (!connection || !appwriteUserId) return;
-  const response = await fetch(`${connection.baseUrl}/users/${encodeURIComponent(appwriteUserId)}`, { method: 'DELETE', headers: connection.headers });
-  if (!response.ok && response.status !== 404) {
-    const result = await response.json().catch(() => ({}));
-    throw new Error(result?.message || 'Falha ao desfazer a criação incompleta no Appwrite.');
+async function findAuthUser(admin: any, email: string) {
+  for (let page = 1; page <= 10; page += 1) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw error;
+    const found = (data?.users || []).find((user: any) => cleanEmail(user.email) === email);
+    if (found) return found;
+    if ((data?.users || []).length < 1000) break;
   }
+  return null;
 }
 
-async function syncAppwriteLabels(appwriteUserId: string, organizationId: string, role: string, active = true) {
-  const connection = appwriteConnection();
-  if (!appwriteUserId || !connection) return { skipped: true };
-  const userUrl = `${connection.baseUrl}/users/${encodeURIComponent(appwriteUserId)}`;
-  const current = await getAppwriteUser(appwriteUserId);
-  if (!current) throw new Error('Usuário Appwrite não encontrado para sincronizar o acesso.');
-  const preserved = (Array.isArray(current.labels) ? current.labels : []).filter((item: string) => !legacyRoleLabels.has(item) && !/^org[a-f0-9]{24}(?:adm|mgr|apr|view|drv)?$/.test(item));
-  const labels = [...new Set(active ? [...preserved, orgLabel(organizationId), orgRoleLabel(organizationId, role)] : preserved)];
-  const response = await fetch(`${userUrl}/labels`, { method: 'PUT', headers: connection.headers, body: JSON.stringify({ labels }) });
-  if (!response.ok) throw new Error((await response.json().catch(() => ({})))?.message || 'Falha ao aplicar o acesso no Appwrite.');
-  return { skipped: false, labels };
-}
-
-async function ensureAppwriteUser(input: { appwriteUserId?: string; email: string; name?: string; temporaryPassword?: string }) {
-  const connection = appwriteConnection();
-  if (!connection) return { id: input.appwriteUserId || '', skipped: true, created: false };
-  if (input.appwriteUserId) {
-    const current = await getAppwriteUser(input.appwriteUserId);
-    if (current && String(current.email || '').trim().toLowerCase() === input.email) {
-      return { id: input.appwriteUserId, skipped: false, created: false };
-    }
-  }
-  const existing = await findAppwriteUserByEmail(input.email);
-  if (existing?.$id) return { id: String(existing.$id), skipped: false, created: false };
-  const password = String(input.temporaryPassword || '');
-  if (password.length < 8 || password.length > 256) throw new Error('O vínculo Appwrite está ausente ou inválido. Informe uma senha temporária de 8 a 256 caracteres para recriar o acesso no WeFrotas.');
-  const response = await fetch(`${connection.baseUrl}/users`, {
-    method: 'POST',
-    headers: connection.headers,
-    body: JSON.stringify({ userId: 'unique()', email: input.email, password, name: String(input.name || input.email.split('@')[0]).slice(0, 128) })
+async function recordPlatformAudit(admin: any, input: {
+  organizationId: string; actorId: string; actorEmail: string; entityType: string; entityId?: string;
+  action: 'create' | 'update' | 'delete' | 'import' | 'login' | 'logout'; before?: unknown; after?: unknown; operation: string;
+}) {
+  const { error } = await admin.from('wefrotas_audit_events').insert({
+    organization_id: input.organizationId, actor_user_id: input.actorId, actor_email: input.actorEmail,
+    entity_type: input.entityType, entity_id: input.entityId || '', action: input.action,
+    before_data: input.before || null, after_data: input.after || null,
+    details: { operation: input.operation, provider: 'supabase' }
   });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result?.message || 'Falha ao criar o usuário no Appwrite. Se ele já existir, informe o ID Appwrite.');
-  return { id: String(result.$id || ''), skipped: false, created: true };
-}
-
-async function listOperationalAudit(workspaceId: string, limit = 100, options: any = {}) {
-  if (!workspaceId) return [];
-  const connection = appwriteConnection();
-  if (!connection) throw new Error('A conexão de auditoria com o Appwrite não está configurada.');
-  const url = new URL(`${connection.baseUrl}/tablesdb/6a68ce8c000a36a44d98/tables/gaveblue_wefrotas/rows`);
-  url.searchParams.append('queries[]', JSON.stringify({ method: 'equal', attribute: 'workspaceId', values: [workspaceId] }));
-  url.searchParams.append('queries[]', JSON.stringify({ method: 'orderDesc', attribute: 'updatedAt' }));
-  url.searchParams.append('queries[]', JSON.stringify({ method: 'limit', values: [Math.max(1, Math.min(Number(limit) || 100, 200))] }));
-  if (options.from) url.searchParams.append('queries[]', JSON.stringify({ method: 'greaterThanEqual', attribute: 'updatedAt', values: [options.from] }));
-  if (options.to) url.searchParams.append('queries[]', JSON.stringify({ method: 'lessThanEqual', attribute: 'updatedAt', values: [options.to] }));
-  if (options.cursor) url.searchParams.append('queries[]', JSON.stringify({ method: 'cursorAfter', values: [options.cursor] }));
-  const response = await fetch(url, { headers: connection.headers });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result?.message || 'Não foi possível consultar a auditoria operacional.');
-  return Array.isArray(result?.rows) ? result.rows : (Array.isArray(result?.documents) ? result.documents : []);
+  if (error) throw error;
 }
 
 Deno.serve(async (req) => {
@@ -121,6 +47,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    if (!supabaseUrl || !anonKey || !serviceKey) throw new Error('Variáveis do Supabase ausentes.');
     const bearer = req.headers.get('authorization') || '';
     const authClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: bearer } } });
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -133,75 +60,70 @@ Deno.serve(async (req) => {
 
     if (action === 'bootstrap' || action === 'organizations-list') {
       const [{ data: organizations, error: orgError }, { data: plans, error: planError }] = await Promise.all([
-        admin.from('organizations').select('*,organization_subscriptions(*,plans(*)),organization_modules(*),organization_members(id,email,role,status,appwrite_user_id)').order('created_at'),
+        admin.from('organizations').select('*,organization_subscriptions(*,plans(*)),organization_modules(*),organization_members(id,user_id,email,role,status,appwrite_user_id,created_at,updated_at)').order('created_at'),
         admin.from('plans').select('*').eq('active', true).order('monthly_price')
       ]);
       if (orgError || planError) throw orgError || planError;
-      return json(200, { ok: true, adminRole: platformAdmin.role, user: { id: authData.user.id, email: authData.user.email }, organizations, plans });
+      return json(200, { ok: true, provider: 'supabase', adminRole: platformAdmin.role, user: { id: authData.user.id, email: authData.user.email }, organizations, plans });
     }
 
     if (action === 'session-list') {
       const from = String(payload.from || ''), to = String(payload.to || '');
-      const iso = (v: string) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(v) && !Number.isNaN(Date.parse(v)) && new Date(v).toISOString() === v;
-      if (!iso(from) || !iso(to) || from > to) return json(400,{ok:false,error:'Período das sessões inválido.'});
-      const query = admin.from('organizations').select('id,name,appwrite_workspace_id');
-      const {data:organizations,error} = payload.organizationId ? await query.eq('id',String(payload.organizationId)) : await query;
+      if (!validIso(from) || !validIso(to) || from > to) return json(400, { ok: false, error: 'Período das sessões inválido.' });
+      let query = admin.from('wefrotas_session_presence').select('*').gte('last_seen_at', from).lte('last_seen_at', to)
+        .order('last_seen_at', { ascending: false }).limit(201);
+      if (payload.organizationId) query = query.eq('organization_id', String(payload.organizationId));
+      const { data: rows, error } = await query;
       if (error) throw error;
-      let limited = false;
-      const lists = await Promise.all((organizations || []).map(async (org: any) => {
-        if (!org.appwrite_workspace_id) return [];
-        const digest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(org.appwrite_workspace_id)));
-        const scope = 'access-' + Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,28);
-        const rows = await listOperationalAudit(scope,200,{from,to});
-        if(rows.length>=200) limited=true;
-        return rows.flatMap((row: any) => {
-          try {
-            const s = JSON.parse(row.snapshot);
-            if (s.kind !== 'platform-session' || s.organizationWorkspace !== org.appwrite_workspace_id) return [];
-            return [{id:String(row.$id || row.id),organizationId:org.id,organizationName:org.name,
-              actorId:s.actorId,actorName:s.actorName,actorEmail:s.actorEmail,startedAt:s.startedAt,
-              lastSeenAt:s.lastSeenAt,lastActivityAt:s.lastActivityAt,closedAt:s.closedAt,browser:s.browser,system:s.system}];
-          } catch { return []; }
-        });
+      const organizationIds = [...new Set((rows || []).map((row: any) => row.organization_id))];
+      const userIds = [...new Set((rows || []).map((row: any) => row.user_id))];
+      const [{ data: organizations }, { data: members }] = await Promise.all([
+        organizationIds.length ? admin.from('organizations').select('id,name').in('id', organizationIds) : Promise.resolve({ data: [] }),
+        userIds.length ? admin.from('organization_members').select('organization_id,user_id,email').in('user_id', userIds) : Promise.resolve({ data: [] })
+      ]);
+      const orgNames = new Map((organizations || []).map((org: any) => [org.id, org.name]));
+      const memberEmails = new Map((members || []).map((member: any) => [`${member.organization_id}:${member.user_id}`, member.email]));
+      const sessions = (rows || []).slice(0, 200).map((row: any) => ({
+        id: row.connection_id, organizationId: row.organization_id, organizationName: orgNames.get(row.organization_id) || 'Empresa',
+        actorId: row.user_id, actorName: '', actorEmail: memberEmails.get(`${row.organization_id}:${row.user_id}`) || '',
+        startedAt: row.opened_at, lastSeenAt: row.last_seen_at, lastActivityAt: row.last_seen_at,
+        closedAt: row.closed_at, browser: row.browser, system: row.system
       }));
-      return json(200,{ok:true,sessions:lists.flat().sort((a: any,b: any)=>String(b.lastSeenAt).localeCompare(String(a.lastSeenAt))),limited,serverTime:new Date().toISOString()});
+      return json(200, { ok: true, provider: 'supabase', sessions, limited: (rows || []).length > 200, serverTime: new Date().toISOString() });
     }
 
     if (action === 'audit-list') {
-      const pageSize = Math.floor(Math.max(1, Math.min(Number(payload.limit) || 100, 200)));
-      const validIso = (value: any) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString() === value;
-      if ((payload.from && !validIso(payload.from)) || (payload.to && !validIso(payload.to)) || (payload.from && payload.to && payload.from > payload.to)) return json(400, { ok: false, error: 'Período de auditoria inválido.' });
+      const limit = Math.floor(Math.max(1, Math.min(Number(payload.limit) || 100, 200)));
+      if ((payload.from && !validIso(payload.from)) || (payload.to && !validIso(payload.to)) || (payload.from && payload.to && payload.from > payload.to)) {
+        return json(400, { ok: false, error: 'Período de auditoria inválido.' });
+      }
+      const organizationId = String(payload.organizationId || '').trim();
+      let orgQuery = admin.from('organizations').select('id,name');
+      if (organizationId) orgQuery = orgQuery.eq('id', organizationId);
+      const { data: organizations, error: organizationError } = await orgQuery;
+      if (organizationError) throw organizationError;
       const cursors = payload.cursors && typeof payload.cursors === 'object' && !Array.isArray(payload.cursors) ? payload.cursors : {};
       const nextCursors: Record<string, string | null> = {};
-      const organizationId = String(payload.organizationId || '').trim();
-      const query = admin.from('organizations').select('id,name,appwrite_workspace_id,organization_members(email,appwrite_user_id)');
-      const { data: organizations, error } = organizationId ? await query.eq('id', organizationId) : await query;
-      if (error) throw error;
-      const rows = await Promise.all((organizations || []).map(async (organization: any) => {
-        if (Object.prototype.hasOwnProperty.call(cursors, organization.id) && cursors[organization.id] === null) { nextCursors[organization.id] = null; return []; }
+      const pages = await Promise.all((organizations || []).map(async (organization: any) => {
         const cursor = cursors[organization.id];
-        if (cursor && (typeof cursor !== 'string' || !/^[a-zA-Z0-9._-]{1,36}$/.test(cursor))) throw new Error('Cursor da auditoria inválido. Atualize a consulta.');
-        const members = new Map((organization.organization_members || []).filter((member: any) => member.appwrite_user_id).map((member: any) => [String(member.appwrite_user_id), String(member.email || '')]));
-        const auditRows = await listOperationalAudit(String(organization.appwrite_workspace_id || ''), pageSize, {from:payload.from,to:payload.to,cursor});
-        nextCursors[organization.id] = auditRows.length === pageSize ? String(auditRows[auditRows.length - 1].$id || auditRows[auditRows.length - 1].id) : null;
-        return auditRows.flatMap((row: any) => {
-          try {
-            const event = JSON.parse(String(row.snapshot || '{}'));
-            if (event.kind !== 'platform-audit') return [];
-            return [{
-              id: String(row.$id || row.id || ''), organizationId: organization.id, organizationName: organization.name,
-              at: String(event.createdAt || row.updatedAt || row.$updatedAt || ''), actorId: String(event.actorId || row.updatedBy || ''),
-              actorEmail: String(event.actorEmail || '') || members.get(String(event.actorId || row.updatedBy || '')) || 'Usuário não identificado',
-              actorName: String(event.actorName || ''),
-              action: String(event.action || 'operação'), targetId: String(event.targetId || ''), result: String(event.result || 'unknown'),
-              before: event.before || null, after: event.after || null, justification: String(event.justification || '')
-            }];
-          } catch (_) { return []; }
-        });
+        if (Object.prototype.hasOwnProperty.call(cursors, organization.id) && cursor === null) { nextCursors[organization.id] = null; return []; }
+        if (cursor && !/^\d+$/.test(String(cursor))) throw new Error('Cursor da auditoria inválido. Atualize a consulta.');
+        let query = admin.from('wefrotas_audit_events').select('*').eq('organization_id', organization.id).order('id', { ascending: false }).limit(limit);
+        if (payload.from) query = query.gte('occurred_at', payload.from);
+        if (payload.to) query = query.lte('occurred_at', payload.to);
+        if (cursor) query = query.lt('id', cursor);
+        const { data: events, error } = await query;
+        if (error) throw error;
+        nextCursors[organization.id] = (events || []).length === limit ? String(events![events!.length - 1].id) : null;
+        return (events || []).map((event: any) => ({
+          id: String(event.id), organizationId: organization.id, organizationName: organization.name,
+          at: event.occurred_at, actorId: event.actor_user_id || '', actorEmail: event.actor_email || 'Usuário não identificado', actorName: '',
+          action: String(event.details?.operation || `${event.entity_type}.${event.action}`), targetId: event.entity_id || '',
+          result: 'success', before: event.before_data, after: event.after_data, justification: String(event.details?.justification || '')
+        }));
       }));
-      // Preserve every fetched row: a global slice would skip events when each tenant cursor advances.
-      const events = rows.flat().sort((a: any, b: any) => String(b.at).localeCompare(String(a.at)));
-      return json(200, { ok: true, auditVersion: 2, events, cursors: nextCursors, hasMore: Object.values(nextCursors).some(Boolean) });
+      const events = pages.flat().sort((a: any, b: any) => String(b.at).localeCompare(String(a.at)) || Number(b.id) - Number(a.id));
+      return json(200, { ok: true, provider: 'supabase', auditVersion: 2, events, cursors: nextCursors, hasMore: Object.values(nextCursors).some(Boolean) });
     }
 
     if (action === 'organization-save') {
@@ -211,71 +133,75 @@ Deno.serve(async (req) => {
       const name = String(payload.name || '').trim().slice(0, 120);
       if (!slug || name.length < 2) return json(400, { ok: false, error: 'Informe nome e identificador válidos.' });
       const row = {
-        slug, name,
-        legal_name: String(payload.legalName || '').trim().slice(0, 180),
-        document: String(payload.document || '').trim().slice(0, 32),
+        slug, name, legal_name: String(payload.legalName || '').trim().slice(0, 180), document: String(payload.document || '').trim().slice(0, 32),
         status: ['trial', 'active', 'past_due', 'suspended', 'archived'].includes(payload.status) ? payload.status : 'trial',
         logo_url: String(payload.logoUrl || '').trim().slice(0, 1000),
         primary_color: /^#[0-9a-f]{6}$/i.test(payload.primaryColor) ? payload.primaryColor : '#2563eb',
         secondary_color: /^#[0-9a-f]{6}$/i.test(payload.secondaryColor) ? payload.secondaryColor : '#7c3aed',
-        appwrite_workspace_id: cleanSlug(payload.appwriteWorkspaceId || slug).slice(0, 36),
-        metadata: {
-          address: String(payload.address || '').trim().slice(0, 240),
-          supportEmail: String(payload.supportEmail || '').trim().toLowerCase().slice(0, 320),
-          whatsapp: String(payload.whatsapp || '').replace(/\D/g, '').slice(0, 15),
-          instagramUrl: String(payload.instagramUrl || '').trim().slice(0, 1000)
-        }
+        appwrite_workspace_id: cleanSlug(payload.workspaceId || payload.appwriteWorkspaceId || slug).slice(0, 36),
+        metadata: { address: String(payload.address || '').trim().slice(0, 240), supportEmail: cleanEmail(payload.supportEmail).slice(0, 320),
+          whatsapp: String(payload.whatsapp || '').replace(/\D/g, '').slice(0, 15), instagramUrl: String(payload.instagramUrl || '').trim().slice(0, 1000) }
       };
       const query = id ? admin.from('organizations').update(row).eq('id', id).select().single() : admin.from('organizations').insert(row).select().single();
       const { data: organization, error } = await query;
       if (error) throw error;
       for (const moduleKey of ['wefrotas', 'central']) {
-        await admin.from('organization_modules').upsert({ organization_id: organization.id, module_key: moduleKey, enabled: payload.modules?.includes(moduleKey) }, { onConflict: 'organization_id,module_key' });
+        const { error: moduleError } = await admin.from('organization_modules').upsert({ organization_id: organization.id, module_key: moduleKey, enabled: payload.modules?.includes(moduleKey) }, { onConflict: 'organization_id,module_key' });
+        if (moduleError) throw moduleError;
       }
-      if (payload.planId) await admin.from('organization_subscriptions').upsert({
-        organization_id: organization.id, plan_id: payload.planId, status: payload.subscriptionStatus || row.status,
-        trial_ends_at: payload.trialEndsAt || null, current_period_end: payload.currentPeriodEnd || null
-      });
-      await admin.from('platform_audit_logs').insert({ actor_user_id: authData.user.id, organization_id: organization.id, action: id ? 'organization.update' : 'organization.create', target_type: 'organization', target_id: organization.id, after_data: row });
-      return json(200, { ok: true, organization });
+      if (payload.planId) {
+        const { error: subscriptionError } = await admin.from('organization_subscriptions').upsert({ organization_id: organization.id, plan_id: payload.planId,
+          status: payload.subscriptionStatus || row.status, trial_ends_at: payload.trialEndsAt || null, current_period_end: payload.currentPeriodEnd || null });
+        if (subscriptionError) throw subscriptionError;
+      }
+      await recordPlatformAudit(admin, { organizationId: organization.id, actorId: authData.user.id, actorEmail: authData.user.email || '', entityType: 'organization', entityId: organization.id, action: id ? 'update' : 'create', after: row, operation: id ? 'organization.update' : 'organization.create' });
+      return json(200, { ok: true, provider: 'supabase', organization });
     }
 
     if (action === 'member-save') {
       if (!['owner', 'support'].includes(platformAdmin.role)) return json(403, { ok: false, error: 'Sem permissão para administrar acessos.' });
-      const organizationId = String(payload.organizationId || '');
-      const email = String(payload.email || '').trim().toLowerCase();
-      const role = ['admin', 'manager', 'approver', 'viewer', 'driver'].includes(payload.role) ? payload.role : 'viewer';
-      if (!organizationId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(400, { ok: false, error: 'Informe empresa e e-mail válidos.' });
+      const organizationId = String(payload.organizationId || '').trim();
+      const email = cleanEmail(payload.email);
+      const role = allowedRoles.has(String(payload.role)) ? String(payload.role) : 'viewer';
+      const status = payload.status === 'disabled' ? 'disabled' : 'active';
+      const password = String(payload.temporaryPassword || payload.password || '');
+      if (!organizationId || !validEmail(email)) return json(400, { ok: false, error: 'Informe empresa e e-mail válidos.' });
       const [{ data: currentMember }, { data: subscription }, { count: activeMembers }] = await Promise.all([
-        admin.from('organization_members').select('id,appwrite_user_id').eq('organization_id', organizationId).eq('email', email).maybeSingle(),
+        admin.from('organization_members').select('*').eq('organization_id', organizationId).eq('email', email).maybeSingle(),
         admin.from('organization_subscriptions').select('max_users,plans(max_users)').eq('organization_id', organizationId).maybeSingle(),
         admin.from('organization_members').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('status', 'active')
       ]);
       const plan = Array.isArray(subscription?.plans) ? subscription.plans[0] : subscription?.plans;
       const maxUsers = subscription?.max_users || plan?.max_users || null;
-      if (!currentMember && payload.status !== 'disabled' && maxUsers && Number(activeMembers || 0) >= maxUsers) return json(409, { ok: false, error: `O limite de ${maxUsers} usuários deste plano foi atingido.` });
-      const { data: usersData } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      const user = usersData.users.find((item) => item.email?.toLowerCase() === email);
-      const appwriteUser = await ensureAppwriteUser({ appwriteUserId: String(payload.appwriteUserId || currentMember?.appwrite_user_id || '').trim(), email, name: String(payload.name || ''), temporaryPassword: String(payload.temporaryPassword || '') });
-      const member = { organization_id: organizationId, user_id: user?.id || null, email, appwrite_user_id: appwriteUser.id, role, status: payload.status === 'disabled' ? 'disabled' : 'active' };
-      let appwrite;
-      let saved;
-      try {
-        appwrite = await syncAppwriteLabels(member.appwrite_user_id, organizationId, role, member.status === 'active');
-        const result = await admin.from('organization_members').upsert(member, { onConflict: 'organization_id,email' }).select().single();
-        if (result.error) throw result.error;
-        saved = result.data;
-      } catch (error) {
-        if (appwriteUser.created) await deleteAppwriteUser(appwriteUser.id).catch((rollbackError) => console.error('Falha ao desfazer usuário Appwrite:', rollbackError));
-        throw error;
+      if (!currentMember && status === 'active' && maxUsers && Number(activeMembers || 0) >= maxUsers) return json(409, { ok: false, error: `O limite de ${maxUsers} usuários deste plano foi atingido.` });
+      let authUser = await findAuthUser(admin, email);
+      let createdAuthUser = false;
+      if (!authUser && status === 'active') {
+        if (password.length < 8 || password.length > 256) return json(400, { ok: false, error: 'Este acesso ainda não possui conta no Supabase. Informe uma senha temporária de 8 a 256 caracteres.' });
+        const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true,
+          user_metadata: { name: String(payload.name || email.split('@')[0]).trim().slice(0, 128) } });
+        if (error) throw error;
+        authUser = data.user; createdAuthUser = true;
+      } else if (authUser && (password || payload.name)) {
+        const patch: Record<string, unknown> = {};
+        if (password) { if (password.length < 8 || password.length > 256) return json(400, { ok: false, error: 'A nova senha precisa ter de 8 a 256 caracteres.' }); patch.password = password; }
+        if (payload.name) patch.user_metadata = { ...(authUser.user_metadata || {}), name: String(payload.name).trim().slice(0, 128) };
+        const { data, error } = await admin.auth.admin.updateUserById(authUser.id, patch);
+        if (error) throw error;
+        authUser = data.user;
       }
-      await admin.from('platform_audit_logs').insert({ actor_user_id: authData.user.id, organization_id: organizationId, action: 'member.save', target_type: 'member', target_id: saved.id, after_data: member });
-      return json(200, { ok: true, member: saved, appwrite });
+      const member = { organization_id: organizationId, user_id: authUser?.id || null, email,
+        appwrite_user_id: currentMember?.appwrite_user_id || '', role, status };
+      const { data: saved, error } = await admin.from('organization_members').upsert(member, { onConflict: 'organization_id,email' }).select().single();
+      if (error) { if (createdAuthUser && authUser?.id) await admin.auth.admin.deleteUser(authUser.id).catch(() => {}); throw error; }
+      await recordPlatformAudit(admin, { organizationId, actorId: authData.user.id, actorEmail: authData.user.email || '', entityType: 'user', entityId: saved.id,
+        action: currentMember ? 'update' : 'create', before: currentMember, after: saved, operation: 'member.save' });
+      return json(200, { ok: true, provider: 'supabase', member: saved, accountCreated: createdAuthUser });
     }
 
     return json(400, { ok: false, error: 'Ação inválida.' });
   } catch (error: any) {
     console.error(error);
-    return json(500, { ok: false, error: error?.message || 'Falha interna na gestão da plataforma.' });
+    return json(Number(error?.status || 500), { ok: false, error: error?.message || 'Falha interna na gestão da plataforma.' });
   }
 });
