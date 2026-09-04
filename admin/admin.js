@@ -1,6 +1,11 @@
 (() => {
   'use strict';
   const config = window.GAVEBLUE_SUPABASE_CONFIG || {};
+  const audit = window.GaveBlueAudit;
+  const brandImage = document.querySelector('.brand img');
+  const brandFallback = () => { brandImage.hidden = true; document.querySelector('.brand-fallback').hidden = false; };
+  brandImage.addEventListener('error', brandFallback);
+  if (brandImage.complete && !brandImage.naturalWidth) brandFallback();
   const state = { client: null, session: null, organizations: [], plans: [], query: '', detailOrganizationId: '', auditEvents: [], auditLoaded: false };
   const $ = (selector) => document.querySelector(selector);
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
@@ -80,34 +85,120 @@
     $('#plans-list').innerHTML = state.plans.map((plan) => `<article class="plan-card"><span class="eyebrow">${escapeHtml(plan.code)}</span><h3>${escapeHtml(plan.name)}</h3><p>${escapeHtml(plan.description)}</p><div class="plan-limits"><span>${plan.max_users} usuários</span><span>${plan.max_vehicles} veículos</span><span>${plan.max_devices} dispositivos</span></div></article>`).join('');
     $('#org-plan').innerHTML = '<option value="">Selecione</option>' + state.plans.map((plan) => `<option value="${plan.id}">${escapeHtml(plan.name)}</option>`).join('');
     const currentAuditOrganization = $('#audit-organization')?.value || '';
+    document.querySelectorAll('#plans-list .plan-card').forEach(card => card.classList.toggle('hidden', !card.textContent.toLowerCase().includes(state.query.toLowerCase())));
     $('#audit-organization').innerHTML = '<option value="">Todas as empresas</option>' + state.organizations.map((org) => `<option value="${org.id}">${escapeHtml(org.name)}</option>`).join('');
     $('#audit-organization').value = currentAuditOrganization;
   }
 
-  function formatAuditDate(value) {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'medium' }).format(date);
-  }
-  function auditActionLabel(action) {
-    const labels = { create: 'Cadastro', update: 'Alteração', delete: 'Exclusão', conflict: 'Conflito bloqueado', 'bulk-change': 'Alteração em lote' };
-    const [entity, verb] = String(action || '').split('.');
-    const names = { vehicle: 'veículo', driver: 'motorista', supplier: 'fornecedor', order: 'OS', finance: 'lançamento', users: 'usuário', snapshot: 'sincronização', central: 'Central' };
-    return `${labels[verb] || verb || 'Operação'}${names[entity] ? ` · ${names[entity]}` : ''}`;
-  }
+  function filteredAudit() { return audit.filter(state.auditEvents, state.view === 'audit' ? state.query : '', $('#audit-result').value, $('#audit-entity').value); }
+  function auditExportButtons(disabled) { ['csv','pdf','print'].forEach(key => $(`#audit-${key}-btn`).disabled = disabled); }
   function renderAudit() {
     const body = $('#audit-list');
     if (!body) return;
-    body.innerHTML = state.auditEvents.length ? state.auditEvents.map((event) => `<tr><td>${escapeHtml(formatAuditDate(event.at))}</td><td>${escapeHtml(event.organizationName)}</td><td>${escapeHtml(event.actorEmail)}</td><td>${escapeHtml(auditActionLabel(event.action))}</td><td>${escapeHtml(event.targetId || '—')}</td><td><span class="status ${event.result === 'blocked' ? 'past_due' : 'active'}">${event.result === 'blocked' ? 'Bloqueado' : 'Concluído'}</span></td></tr>`).join('') : '<tr><td colspan="6">Nenhum evento operacional encontrado.</td></tr>';
+    const events = filteredAudit();
+    body.innerHTML = events.length ? events.map((event) => `<tr><td>${escapeHtml(audit.date(event.at))}<small>Brasília · UTC−3</small></td><td>${escapeHtml(event.organizationName)}</td><td><strong>${escapeHtml(event.actorName || event.actorEmail || 'Não identificado')}</strong>${event.actorName ? `<small>${escapeHtml(event.actorEmail)}</small>` : ''}<small>ID: ${escapeHtml(event.actorId || 'Não registrado')}</small></td><td><strong>${escapeHtml(audit.action(event))}</strong><small>${escapeHtml(event.action)}</small></td><td>${escapeHtml(audit.item(event))}</td><td><span class="status ${event.result === 'success' ? 'active' : ['blocked','error','failed'].includes(event.result) ? 'past_due' : 'unknown'}">${escapeHtml(audit.result(event))}</span></td><td><button class="detail-button" data-audit-detail="${escapeHtml(event.organizationId + ':' + event.id)}" aria-label="Ver detalhes: ${escapeHtml(audit.action(event))}">Ver alteração</button></td></tr>`).join('') : '<tr><td class="audit-empty" colspan="7">Nenhum evento corresponde aos filtros. Tente outro período ou carregue mais eventos.</td></tr>';
+    $('#audit-count').textContent = events.length;
+    $('#audit-success').textContent = events.filter(e => e.result === 'success').length;
+    $('#audit-blocked').textContent = events.filter(e => ['blocked','error','failed'].includes(e.result)).length;
+    $('#audit-actors').textContent = new Set(events.map(e => e.actorId).filter(Boolean)).size;
+    auditExportButtons(state.auditBusy || state.auditDirty || !events.length);
+    $('#audit-more-btn').hidden = !state.auditHasMore;
   }
-  async function loadAudit() {
+  function auditRange() {
+    const start = $('#audit-date-start').value, end = $('#audit-date-end').value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || start > end) throw new Error('Informe um período válido, com data inicial anterior ou igual à final.');
+    return {from: new Date(`${start}T00:00:00-03:00`).toISOString(), to: new Date(`${end}T23:59:59.999-03:00`).toISOString()};
+  }
+  function auditCaption() {
+    const f = state.auditFilters;
+    return `${f?.label || 'Período não carregado'} · Busca: ${state.query || 'todas'} · Resultado: ${$('#audit-result').selectedOptions[0].textContent} · Módulo: ${$('#audit-entity').selectedOptions[0].textContent} · ${state.auditHasMore ? 'Relatório parcial: há mais eventos para carregar' : 'Todos os eventos retornados no período'}`;
+  }
+  async function loadAudit(append = false) {
+    const request = (state.auditRequest || 0) + 1; state.auditRequest = request;
     const body = $('#audit-list');
-    if (body) body.innerHTML = '<tr><td colspan="6">Carregando auditoria…</td></tr>';
+    let filters;
+    try { filters = append ? state.auditFilters : { ...auditRange(), organizationId: $('#audit-organization').value, label: `${$('#audit-date-start').value} a ${$('#audit-date-end').value} · ${$('#audit-organization').selectedOptions[0].textContent}` }; }
+    catch (error) { $('#audit-message').textContent = error.message; $('#audit-message').classList.add('error'); return; }
+    state.auditBusy = true; auditExportButtons(true); $('#audit-more-btn').disabled = true;
+    $('#audit-message').classList.remove('error'); $('#audit-message').textContent = 'Consultando eventos no servidor…';
+    body.setAttribute('aria-busy','true');
     try {
-      const data = await invoke('audit-list', { organizationId: $('#audit-organization')?.value || '', limit: 200 });
-      state.auditEvents = data.events || []; state.auditLoaded = true; renderAudit();
+      const data = await invoke('audit-list', { ...filters, limit: 200, cursors: append ? state.auditCursors : undefined });
+      if (request !== state.auditRequest) return;
+      // Do not imply that an old deployed API has applied date filtering or pagination.
+      if (data.auditVersion !== 2) throw new Error('A atualização da consulta de auditoria ainda precisa ser publicada no servidor. Nenhum relatório será exportado com período incorreto.');
+      const unique = new Map((append ? state.auditEvents : []).map(e => [e.organizationId + ':' + e.id,e]));
+      (data.events || []).forEach(e => unique.set(e.organizationId + ':' + e.id,e));
+      state.auditEvents = [...unique.values()].sort((a,b) => String(b.at).localeCompare(String(a.at)) || String(a.id).localeCompare(String(b.id)));
+      state.auditFilters = filters; state.auditCursors = data.cursors; state.auditHasMore = data.hasMore; state.auditDirty = false;
+      state.auditLoaded = true;
+      $('#audit-message').textContent = `${filters.label} · ${state.auditEvents.length} eventos carregados. ${data.hasMore ? 'Há mais eventos neste período; use Carregar mais. Busca e exportação abrangem apenas os já carregados.' : 'Consulta do período concluída.'}`;
+      if (!append) void loadSessions();
     } catch (error) {
-      if (body) body.innerHTML = `<tr><td colspan="6">${escapeHtml(error.message || 'Falha ao carregar a auditoria.')}</td></tr>`;
+      if (request !== state.auditRequest) return;
+      state.auditDirty = true;
+      $('#audit-message').textContent = error.message || 'Falha ao carregar a auditoria.'; $('#audit-message').classList.add('error');
+    } finally {
+      if (request === state.auditRequest) { state.auditBusy = false; $('#audit-more-btn').disabled = state.auditDirty; body.removeAttribute('aria-busy'); renderAudit(); }
     }
+  }
+  function auditDetails(key) {
+    const e = state.auditEvents.find(e => e.organizationId + ':' + e.id === key); if (!e) return;
+    $('#audit-detail-title').textContent = audit.action(e);
+    const meta = { 'Data e hora (Brasília)':audit.date(e.at),'Empresa':e.organizationName,'Usuário':e.actorName || e.actorEmail,'ID do usuário':e.actorId,'Item afetado':audit.item(e),'ID do item':e.targetId,'Tipo técnico':e.action,'Resultado':audit.result(e),'ID do evento':e.id };
+    const changes = audit.changes(e);
+    $('#audit-detail-content').innerHTML = `<div class="audit-detail-content"><dl>${Object.entries(meta).map(([k,v]) => `<div><dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v || 'Não registrado')}</dd></div>`).join('')}</dl>${changes.length ? `<table><thead><tr><th>Campo alterado</th><th>Antes</th><th>Depois</th></tr></thead><tbody>${changes.map(c => `<tr><td>${escapeHtml(c.label)}</td><td>${escapeHtml(c.before)}</td><td>${escapeHtml(c.after)}</td></tr>`).join('')}</tbody></table>` : '<p>Este evento não contém diferenças detalhadas nos campos registrados. Não é possível reconstruir valores que não foram auditados.</p>'}<p><strong>Justificativa</strong><br>${escapeHtml(e.justification || 'Não registrada neste evento.')}</p></div>`;
+    $('#audit-detail').showModal();
+  }
+  function visibleSessions() {
+    const normalize = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    const terms=normalize(state.query).split(/\s+/).filter(Boolean);
+    return (state.sessions || []).filter(s=>terms.every(t=>normalize([s.actorName,s.actorEmail,s.actorId,s.organizationName,s.id,s.browser,s.system].join(' ')).includes(t)));
+  }
+  function sessionNow() { return Date.parse(state.sessionServerTime) + (Date.now() - state.sessionReceivedAt); }
+  function renderSessions() {
+    const sessions=visibleSessions();
+    $('#sessions-list').innerHTML=sessions.length ? sessions.map(s=>{
+      const status=state.sessionError || state.auditDirty ? 'Consulta não atualizada' : audit.sessionStatus(s,sessionNow());
+      return `<tr><td><strong>${escapeHtml(s.actorName || s.actorEmail || 'Não identificado')}</strong><small>${escapeHtml(s.actorEmail)}</small><small>${escapeHtml(s.organizationName)}</small></td><td>${escapeHtml(s.browser)} · ${escapeHtml(s.system)}<small>ID: ${escapeHtml(s.id)}</small></td><td>${escapeHtml(audit.date(s.startedAt))}</td><td>${escapeHtml(audit.date(s.lastSeenAt))}</td><td>${escapeHtml(s.lastActivityAt ? audit.date(s.lastActivityAt) : 'Não registrada')}</td><td>${escapeHtml(audit.sessionDuration(s))}</td><td><span class="status ${status === 'Conectada recentemente' ? 'active' : 'unknown'}">${escapeHtml(status)}</span>${s.closedAt ? `<small>${escapeHtml(audit.date(s.closedAt))}</small>` : ''}</td></tr>`;
+    }).join('') : '<tr><td class="audit-empty" colspan="7">Nenhum acesso registrado para esta consulta. Abas antigas só começam a informar presença após serem atualizadas.</td></tr>';
+    $('#sessions-csv-btn').disabled=!!(state.sessionBusy || state.sessionError || state.auditDirty || !sessions.length);
+  }
+  async function loadSessions() {
+    if (!state.auditFilters || state.auditDirty) return;
+    const request=(state.sessionRequest || 0)+1; state.sessionRequest=request; state.sessionBusy=true; $('#sessions-csv-btn').disabled=true;
+    const filters=state.auditFilters;
+    try {
+      const data=await invoke('session-list',filters);
+      if(request!==state.sessionRequest) return;
+      if(!Array.isArray(data.sessions) || !Number.isFinite(Date.parse(data.serverTime))) throw new Error('O acompanhamento de sessões ainda não foi publicado no servidor.');
+      state.sessions=data.sessions; state.sessionServerTime=data.serverTime; state.sessionReceivedAt=Date.now(); state.sessionError=false;
+      $('#sessions-message').classList.remove('error');
+      $('#sessions-message').textContent=`${filters.label} · Último contato no período · ${data.sessions.length} conexões carregadas · Atualizado em ${audit.date(data.serverTime)}. ${data.limited ? 'Exibindo até 200 conexões recentes por empresa; reduza o período para investigar.' : ''}`;
+    } catch(error) {
+      if(request!==state.sessionRequest) return;
+      state.sessionError=true; $('#sessions-message').classList.add('error'); $('#sessions-message').textContent=error.message;
+    } finally {if(request===state.sessionRequest){state.sessionBusy=false;renderSessions();}}
+  }
+  function exportAudit(format) {
+    const events = filteredAudit(); if (state.auditBusy || state.auditDirty || !events.length) return;
+    if (format === 'csv') {
+      const url = URL.createObjectURL(new Blob([audit.csv(events)],{type:'text/csv;charset=utf-8'}));
+      const a = document.createElement('a'); a.href = url; a.download = `auditoria-${$('#audit-date-start').value}-${$('#audit-date-end').value}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(url),10000);
+      toast(`Planilha com ${events.length} eventos exportada${state.auditHasMore ? ' (parcial)' : ''}.`);
+    } else {
+      $('#audit-print-report').innerHTML = audit.printReport(events,auditCaption());
+      if (format === 'pdf') toast('Na janela de impressão, escolha “Salvar como PDF”.');
+      window.print();
+    }
+  }
+  function updateMenu(close = false) {
+    const mobile = window.matchMedia('(max-width:720px)').matches;
+    if (mobile) $('.sidebar').classList.toggle('open', !close && !$('.sidebar').classList.contains('open'));
+    else if (!close) document.body.classList.toggle('sidebar-collapsed');
+    const expanded = mobile ? $('.sidebar').classList.contains('open') : !document.body.classList.contains('sidebar-collapsed');
+    $('#menu-btn').setAttribute('aria-expanded',String(expanded)); $('#menu-backdrop').hidden = !mobile || !expanded;
+    $('.sidebar').inert = !expanded;
   }
 
   function openOrganizationForm(org = null) {
@@ -197,14 +288,55 @@
     if (event.target.closest('[data-close-modal]')) closeOrganizationForm();
     if (event.target.closest('[data-close-member]')) closeMemberForm();
     if (event.target.closest('[data-close-detail]')) $('#detail-modal').classList.add('hidden');
+    const auditDetail = event.target.closest('[data-audit-detail]');
+    if (auditDetail) auditDetails(auditDetail.dataset.auditDetail);
     const nav = event.target.closest('[data-view]');
     if (nav) {
       document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('active', item === nav));
       document.querySelectorAll('.view').forEach((view) => view.classList.toggle('active', view.id === `${nav.dataset.view}-view`));
-      $('#page-title').textContent = nav.textContent.trim();
+      state.view = nav.dataset.view; state.query = ''; $('#search-input').value = '';
+      $('#page-title').textContent = {organizations:'Empresas',plans:'Planos',audit:'Auditoria'}[state.view];
+      $('#page-description').textContent = state.view === 'audit' ? 'Rastreie operações, alterações e resultados por empresa.' : 'Gerencie empresas, licenças e acessos em um só lugar.';
+      $('#search-input').placeholder = state.view === 'audit' ? 'Pesquisar usuário, ação, OS, placa...' : state.view === 'plans' ? 'Pesquisar plano...' : 'Pesquisar empresa...';
+      $('#search-input').setAttribute('aria-label', $('#search-input').placeholder);
+      $('#new-org-btn').classList.toggle('hidden',state.view !== 'organizations');
+      updateMenu(true);
       if (nav.dataset.view === 'audit') loadAudit();
+      else render();
     }
   });
-  $('#new-org-btn').addEventListener('click', () => openOrganizationForm()); $('#refresh-btn').addEventListener('click', loadPlatform); $('#audit-refresh-btn').addEventListener('click', loadAudit); $('#audit-organization').addEventListener('change', loadAudit); $('#search-input').addEventListener('input', (event) => { state.query = event.target.value; render(); }); $('#menu-btn').addEventListener('click', () => $('.sidebar').classList.toggle('open')); $('#logout-btn').addEventListener('click', async () => { await state.client.auth.signOut(); show('login-screen'); });
+  $('#new-org-btn').addEventListener('click', () => openOrganizationForm());
+  $('#refresh-btn').addEventListener('click', () => state.view === 'audit' ? loadAudit() : loadPlatform());
+  $('#audit-filter-form').addEventListener('submit', event => { event.preventDefault(); loadAudit(); });
+  ['audit-date-start','audit-date-end','audit-organization'].forEach(id => $('#' + id).addEventListener('input', () => {
+    state.auditRequest = (state.auditRequest || 0) + 1; state.auditBusy = false; state.auditDirty = true; auditExportButtons(true); $('#audit-more-btn').disabled = true; $('#audit-list').removeAttribute('aria-busy');
+    $('#audit-message').textContent = 'Período / empresa alterado. Clique em Filtrar para atualizar os dados antes de exportar.';
+    state.sessionRequest=(state.sessionRequest || 0)+1; state.sessionBusy=false; renderSessions();
+  }));
+  ['audit-result','audit-entity'].forEach(id => $('#' + id).addEventListener('change',renderAudit));
+  function defaultPeriod() {
+    const today = new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    $('#audit-date-end').value = today; $('#audit-date-start').value = today.slice(0,8) + '01';
+  }
+  defaultPeriod();
+  $('#audit-entity').append(new Option('Acessos','session'));
+  $('#audit-clear-btn').addEventListener('click', () => { defaultPeriod(); $('#audit-organization').value = ''; $('#audit-result').value = ''; $('#audit-entity').value = ''; state.query = ''; $('#search-input').value = ''; loadAudit(); });
+  $('#audit-more-btn').addEventListener('click', () => loadAudit(true));
+  ['csv','pdf','print'].forEach(format => $(`#audit-${format}-btn`).addEventListener('click', () => exportAudit(format)));
+  $('#audit-detail-close').addEventListener('click', () => $('#audit-detail').close());
+  $('#audit-detail').addEventListener('click', e => { if (e.target === $('#audit-detail')) $('#audit-detail').close(); });
+  $('#search-input').addEventListener('input', (event) => { state.query = event.target.value; if (state.view === 'audit') {renderAudit();renderSessions();} else render(); });
+  $('#sessions-refresh-btn').addEventListener('click',()=>state.auditDirty || !state.auditFilters ? loadAudit() : loadSessions());
+  $('#sessions-csv-btn').addEventListener('click',()=>{
+    if($('#sessions-csv-btn').disabled) return;
+    const url=URL.createObjectURL(new Blob([audit.sessionCsv(visibleSessions(),sessionNow())],{type:'text/csv;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download='sessoes-wefrotas.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
+  });
+  // Presence refresh is a read-only admin query, independent of operational sync.
+  setInterval(()=>{if(state.view==='audit' && !document.hidden && !state.sessionBusy) void loadSessions();},60000);
+  $('#menu-btn').addEventListener('click', () => updateMenu()); $('#menu-backdrop').addEventListener('click', () => updateMenu(true));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('.sidebar').classList.contains('open')) { updateMenu(true); $('#menu-btn').focus(); } });
+  window.matchMedia('(max-width:720px)').addEventListener('change', () => updateMenu(true)); updateMenu(true);
+  $('#logout-btn').addEventListener('click', async () => { await state.client.auth.signOut(); state.auditRequest = (state.auditRequest || 0) + 1; state.sessionRequest=(state.sessionRequest || 0)+1; state.sessions=[];state.view='';state.auditEvents = []; $('#audit-print-report').innerHTML = ''; $('#audit-detail').close(); show('login-screen'); });
   bootstrap();
 })();

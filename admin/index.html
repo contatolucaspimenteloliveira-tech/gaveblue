@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./admin.css?v=20260830-multitenant-1">
   <link rel="stylesheet" href="./member.css?v=20260830-central-link-1">
+  <link rel="stylesheet" href="./admin-ui.css?v=20260904-access-2">
 </head>
 <body>
   <div id="setup-screen" class="center-screen hidden">
@@ -39,8 +40,9 @@
   </div>
 
   <div id="app" class="app hidden">
-    <aside class="sidebar">
-      <a class="brand" href="../"><img src="https://i.imgur.com/Zih5jH8.png" alt="GaveBlue"></a>
+    <button id="menu-backdrop" class="menu-backdrop" aria-label="Fechar menu" hidden></button>
+    <aside class="sidebar" id="admin-sidebar">
+      <a class="brand" href="../"><img src="https://i.imgur.com/Zih5jH8.png" alt="GaveBlue"><span class="brand-fallback" hidden><b>GB</b><span>GaveBlue<small>GESTÃO DA PLATAFORMA</small></span></span></a>
       <nav>
         <button class="nav-item active" data-view="organizations"><span>▦</span> Empresas</button>
         <button class="nav-item" data-view="plans"><span>◇</span> Planos</button>
@@ -51,14 +53,40 @@
     </aside>
 
     <div class="main-shell">
-      <header class="topbar"><button id="menu-btn" aria-label="Abrir menu">☰</button><div><span class="eyebrow">GAVEBLUE ADMIN</span><h1 id="page-title">Empresas</h1></div><div class="top-actions"><label class="search">⌕<input id="search-input" placeholder="Pesquisar empresa..."></label><button id="refresh-btn" class="icon-button" title="Atualizar">↻</button><button id="new-org-btn" class="primary compact">+ Nova empresa</button></div></header>
+      <header class="topbar"><button id="menu-btn" aria-label="Alternar menu" aria-controls="admin-sidebar" aria-expanded="true">☰</button><div><span class="eyebrow">GAVEBLUE ADMIN</span><h1 id="page-title">Empresas</h1><p id="page-description">Gerencie empresas, licenças e acessos em um só lugar.</p></div><div class="top-actions"><label class="search"><span aria-hidden="true">⌕</span><input id="search-input" aria-label="Pesquisar empresa" placeholder="Pesquisar empresa..."></label><button id="refresh-btn" class="icon-button" title="Atualizar" aria-label="Atualizar tela">↻</button><button id="new-org-btn" class="primary compact">+ Nova empresa</button></div></header>
       <main>
         <section id="organizations-view" class="view active">
           <div class="stats-grid"><article><span>Empresas</span><strong id="stat-organizations">0</strong><small>cadastradas</small></article><article><span>Ativas</span><strong id="stat-active">0</strong><small>em operação</small></article><article><span>Em teste</span><strong id="stat-trial">0</strong><small>período de avaliação</small></article><article><span>Atenção</span><strong id="stat-attention">0</strong><small>vencidas ou suspensas</small></article></div>
           <section class="panel"><div class="panel-head"><div><span class="eyebrow">CARTEIRA DE CLIENTES</span><h2>Empresas gerenciadas</h2><p>Abra uma empresa para controlar módulos, contrato e equipe.</p></div></div><div id="organizations-list" class="organization-list"></div></section>
         </section>
         <section id="plans-view" class="view"><section class="panel"><div class="panel-head"><div><span class="eyebrow">LICENCIAMENTO</span><h2>Planos disponíveis</h2></div></div><div id="plans-list" class="plans-grid"></div></section></section>
-        <section id="audit-view" class="view"><section class="panel"><div class="panel-head"><div><span class="eyebrow">TRILHA OPERACIONAL</span><h2>Auditoria por empresa</h2><p>Cadastros, alterações, exclusões e conflitos de sincronização do WeFrotas.</p></div><div class="audit-controls"><select id="audit-organization"><option value="">Todas as empresas</option></select><button id="audit-refresh-btn" class="secondary" type="button">Atualizar</button></div></div><div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Data e hora</th><th>Empresa</th><th>Usuário</th><th>Ação</th><th>Item</th><th>Resultado</th></tr></thead><tbody id="audit-list"><tr><td colspan="6">Selecione esta tela para carregar os eventos.</td></tr></tbody></table></div></section></section>
+        <section id="audit-view" class="view">
+          <div class="audit-summary" aria-label="Resumo dos eventos exibidos">
+            <article><span>Eventos exibidos</span><strong id="audit-count">0</strong></article>
+            <article><span>Concluídos</span><strong id="audit-success">0</strong></article>
+            <article><span>Bloqueados / falhas</span><strong id="audit-blocked">0</strong></article>
+            <article><span>Usuários envolvidos</span><strong id="audit-actors">0</strong></article>
+          </div>
+          <section class="panel audit-panel">
+            <div class="panel-head"><div><span class="eyebrow">TRILHA OPERACIONAL</span><h2>Histórico de operações</h2><p>Entenda quem fez, o que mudou e qual foi o resultado.</p></div><div class="audit-export"><button id="audit-csv-btn" class="secondary" disabled>↓ Planilha CSV</button><button id="audit-pdf-btn" class="secondary" disabled>PDF</button><button id="audit-print-btn" class="secondary" disabled>Imprimir</button></div></div>
+            <form id="audit-filter-form" class="audit-toolbar">
+              <label>Empresa<select id="audit-organization"><option value="">Todas as empresas</option></select></label>
+              <fieldset class="audit-period"><legend>Período · horário de Brasília</legend><label class="sr-only" for="audit-date-start">Data inicial</label><input id="audit-date-start" type="date" min="0001-01-01" max="9999-12-31" required><span>até</span><label class="sr-only" for="audit-date-end">Data final</label><input id="audit-date-end" type="date" min="0001-01-01" max="9999-12-31" required></fieldset>
+              <label>Resultado<select id="audit-result"><option value="">Todos</option><option value="success">Concluídos</option><option value="blocked">Bloqueados</option><option value="error">Falhas</option></select></label>
+              <label>Módulo<select id="audit-entity"><option value="">Todos</option><option value="central">Central</option><option value="order">OS</option><option value="finance">Financeiro</option><option value="vehicle">Veículos</option><option value="driver">Motoristas</option><option value="supplier">Fornecedores</option><option value="users">Usuários</option><option value="snapshot">Sincronização</option><option value="permissions">Permissões</option></select></label>
+              <button id="audit-refresh-btn" class="primary" type="submit">Filtrar</button><button id="audit-clear-btn" class="secondary" type="button">Limpar</button>
+            </form>
+            <p id="audit-message" class="audit-message" role="status" aria-live="polite">Selecione esta tela para carregar os eventos.</p>
+            <div class="audit-table-wrap" tabindex="0" aria-label="Tabela de auditoria, role horizontalmente para mais colunas"><table class="audit-table"><thead><tr><th>Data e hora</th><th>Empresa</th><th>Usuário responsável</th><th>Alteração realizada</th><th>Item afetado</th><th>Resultado</th><th>Detalhes</th></tr></thead><tbody id="audit-list"><tr><td colspan="7">Nenhum evento carregado.</td></tr></tbody></table></div>
+            <footer class="audit-footer"><p>Exportações incluem os eventos carregados que correspondem à busca. Registros antigos podem não conter todos os detalhes.</p><button id="audit-more-btn" class="secondary" hidden>Carregar mais eventos</button></footer>
+          </section>
+          <section class="panel session-panel">
+            <div class="panel-head"><div><span class="eyebrow">ACESSOS AO WEFROTAS</span><h2>Quem esteve conectado</h2><p>Conexões da tela, não tokens de autenticação. Recarregar ou abrir outra aba inicia outra conexão.</p></div><div class="audit-export"><button id="sessions-refresh-btn" class="secondary">Atualizar sessões</button><button id="sessions-csv-btn" class="secondary" disabled>↓ CSV das sessões</button></div></div>
+            <p id="sessions-message" class="audit-message" role="status">O acompanhamento começará após a publicação. Não há histórico retroativo.</p>
+            <div class="audit-table-wrap" tabindex="0" aria-label="Sessões de acesso"><table class="audit-table"><thead><tr><th>Usuário / empresa</th><th>Conexão / navegador</th><th>Entrada</th><th>Último contato</th><th>Última interação</th><th>Duração observada</th><th>Situação</th></tr></thead><tbody id="sessions-list"><tr><td colspan="7">Nenhuma consulta de sessões realizada.</td></tr></tbody></table></div>
+            <p class="session-note">“Conectada recentemente” indica contato nos últimos 3 minutos; não comprova que a pessoa está diante da tela. “Sem contato” não confirma logout. Sem coleta de IP, senha, token ou conteúdo digitado. Segue empresa, período de último contato e busca; resultado/módulo são filtros apenas das operações.</p>
+          </section>
+        </section>
       </main>
     </div>
   </div>
@@ -82,8 +110,11 @@
     <span id="member-form-error" class="form-error"></span><footer><button type="button" class="secondary" data-close-member>Cancelar</button><button type="submit" class="primary">Salvar acesso</button></footer>
   </form></div>
   <div id="toast" class="toast hidden"></div>
+  <dialog id="audit-detail" class="audit-detail" aria-labelledby="audit-detail-title"><header><div><span class="eyebrow">DETALHES DO EVENTO</span><h2 id="audit-detail-title">Alteração realizada</h2></div><button id="audit-detail-close" class="icon-button" aria-label="Fechar detalhes">×</button></header><div id="audit-detail-content"></div></dialog>
+  <section id="audit-print-report" aria-hidden="true"></section>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./supabase-config.js?v=20260830-multitenant-3"></script>
-  <script src="./admin.js?v=20260830-central-link-1"></script>
+  <script src="./audit.js?v=20260904-access-2"></script>
+  <script src="./admin.js?v=20260904-access-2"></script>
 </body>
 </html>
