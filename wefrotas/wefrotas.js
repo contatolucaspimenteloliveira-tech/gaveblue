@@ -2245,9 +2245,17 @@
 
     async function syncWeFrotasOnline({ quiet = false } = {}) {
       try {
-        await window.WeFrotasBackend?.syncNow(buildStorageSnapshot());
+        const result = await window.WeFrotasBackend?.refreshFromServer();
+        if (result?.mode === 'local-pending') {
+          if (!quiet) window.recoverWeFrotasFromServer();
+          return;
+        }
+        if (!['remote-refreshed', 'unchanged'].includes(result?.mode)) {
+          if (!quiet) showToast('Aguarde a confirmação da empresa antes de atualizar.');
+          return;
+        }
         await refreshCentralPendingRecords();
-        if (!quiet) showToast('Dados e registros da Central atualizados.');
+        if (!quiet) showToast('Dados consultados no servidor e registros da Central atualizados.');
       } catch (error) {
         if (!quiet) showToast(error?.message || 'Não foi possível sincronizar agora.');
       }
@@ -2257,6 +2265,9 @@
       window.clearInterval(centralPendingAutoRefreshTimer);
       centralPendingAutoRefreshTimer = window.setInterval(() => {
         if (document.visibilityState !== 'visible' || !window.WeFrotasBackend?.getUser?.()) return;
+        window.WeFrotasBackend.refreshFromServer().catch(error => {
+          console.warn('Não foi possível consultar a atualização da empresa.', error);
+        });
         refreshCentralPendingRecords({ silent: true });
         if (activeCentralSection === 'usuarios' || activeCentralSection === 'notificacoes') {
           refreshPushSubscriberStats();
@@ -13036,7 +13047,7 @@
           : `Tem certeza que deseja excluir ${selectedCount} OS? Os lançamentos financeiros vinculados serão estornados e voltarão para pendente.`,
         confirmLabel: 'Excluir',
         cancelLabel: 'Cancelar',
-        onConfirm: () => {
+        onConfirm: async () => {
           const deletedIds = new Set(selectedOrders);
           const deletedAt = new Date().toISOString();
           const linkedEntryIds = new Set();
@@ -13072,8 +13083,13 @@
             };
           });
           selectedOrders.clear();
-          saveToLocalStorage();
           renderAll();
+          try {
+            await persistOperationalDataImmediately();
+          } catch (error) {
+            showToast(`Exclusão NÃO confirmada no servidor. Cópia local pendente: ${error?.message || 'falha de sincronização'}`);
+            return;
+          }
           showToast(linkedEntryIds.size
             ? 'OS excluída. Lançamentos financeiros preservados e estornados para pendente.'
             : 'OS excluída com sucesso.');

@@ -40,6 +40,7 @@
   let snapshotReady = false;
   let contextRevision = 0;
   let activeSnapshotWrites = 0;
+  let remoteRefreshPromise = null;
   let organizationContext = Object.freeze({
     id: '',
     slug: String(config.companyId || 'covre-e-cia'),
@@ -139,6 +140,7 @@
     primaryRowId = '';
     lastSerializedSnapshot = '';
     remoteSnapshotUpdatedAt = '';
+    remoteRefreshPromise = null;
   }
 
   async function clearPendingRemoteSession() {
@@ -330,8 +332,8 @@
     return manifest;
   }
 
-  async function getRow(rowId) {
-    return tablesDB.getRow({ databaseId: config.databaseId, tableId: config.tableId, rowId });
+  async function getRow(rowId, queries) {
+    return tablesDB.getRow({ databaseId: config.databaseId, tableId: config.tableId, rowId, ...(queries ? { queries } : {}) });
   }
 
   async function updateOrCreateRow(rowId, data, permissionsOnCreate = getPermissions()) {
@@ -404,6 +406,57 @@
   async function loadRemoteSnapshot() {
     const record = await loadRemoteRecord();
     return record?.snapshot || null;
+  }
+
+  // Refresh is a READ, never an upload of a possibly stale browser snapshot.
+  // Realtime is an optimization; polling and the refresh button use this same
+  // guarded path so losing a websocket event cannot strand another computer.
+  async function refreshFromServer() {
+    if (!currentUser || !organizationContext.id || !snapshotReady) return { mode: 'not-ready' };
+    if (activeSnapshotWrites || syncTimer) return { mode: 'syncing' };
+    if (hasPendingSync()) return { mode: 'local-pending' };
+    if (remoteRefreshPromise) return remoteRefreshPromise;
+    const revision = contextRevision;
+    const localBeforeRead = JSON.stringify(currentSnapshotGetter?.());
+    const request = (async () => {
+      let record;
+      try {
+        // Poll only the tiny version header. Download/decompress the company's
+        // full snapshot only when it changed, avoiding constant large transfers.
+        if (remoteSnapshotUpdatedAt && global.Appwrite?.Query?.select) {
+          const header = await getRow(await getPrimaryRowId(), [global.Appwrite.Query.select(['workspaceId', 'updatedAt'])]);
+          if (revision !== contextRevision || !snapshotReady) return { mode: 'context-changed' };
+          if (header.workspaceId !== organizationContext.workspaceId) throw new Error('Os dados recebidos pertencem a outra empresa.');
+          if (hasPendingSync() || activeSnapshotWrites || syncTimer
+            || JSON.stringify(currentSnapshotGetter?.()) !== localBeforeRead) return { mode: 'local-pending' };
+          if (header.updatedAt === remoteSnapshotUpdatedAt) return { mode: 'unchanged' };
+        }
+        record = await loadRemoteRecord();
+      }
+      catch (error) {
+        if (revision !== contextRevision) return { mode: 'context-changed' };
+        if (error?.code === 404) throw new Error('A cópia da empresa não foi encontrada no servidor. Os dados locais foram preservados.');
+        throw error;
+      }
+      if (revision !== contextRevision || !snapshotReady) return { mode: 'context-changed' };
+      if (hasPendingSync() || activeSnapshotWrites || syncTimer
+        || JSON.stringify(currentSnapshotGetter?.()) !== localBeforeRead) return { mode: 'local-pending' };
+      if (!record?.snapshot) throw new Error('A cópia da empresa não foi encontrada no servidor. Os dados locais foram preservados.');
+      const serialized = JSON.stringify(record.snapshot);
+      if (serialized === lastSerializedSnapshot) {
+        rememberRemoteVersion(record.updatedAt);
+        return { mode: 'unchanged' };
+      }
+      await currentSnapshotApplier?.(record.snapshot);
+      if (revision !== contextRevision) return { mode: 'context-changed' };
+      lastSerializedSnapshot = serialized;
+      rememberRemoteVersion(record.updatedAt);
+      emitStatus('online', 'Atualização recebida do servidor.');
+      return { mode: 'remote-refreshed' };
+    })();
+    remoteRefreshPromise = request;
+    try { return await request; }
+    finally { if (remoteRefreshPromise === request) remoteRefreshPromise = null; }
   }
 
   function snapshotsEqual(left, right) {
@@ -531,16 +584,8 @@
       clearTimeout(remoteApplyTimer);
       remoteApplyTimer = setTimeout(async () => {
         try {
-          const remoteRecord = await loadRemoteRecord();
-          const remoteSnapshot = remoteRecord?.snapshot || null;
-          if (revision !== contextRevision || !snapshotReady || hasPendingSync() || activeSnapshotWrites) return;
-          if (!remoteSnapshot) return;
-          const serialized = JSON.stringify(remoteSnapshot);
-          rememberRemoteVersion(remoteRecord?.updatedAt || remoteSnapshotUpdatedAt);
-          if (serialized === lastSerializedSnapshot) return;
-          lastSerializedSnapshot = serialized;
-          await currentSnapshotApplier?.(remoteSnapshot);
-          emitStatus('online', 'Atualização recebida de outro dispositivo.');
+          if (revision !== contextRevision) return;
+          await refreshFromServer();
         } catch (error) { console.warn('Não foi possível aplicar a atualização em tempo real.', error); }
       }, 700);
     });
@@ -1024,7 +1069,7 @@
     getAccessRole: getCurrentAccessRole,
     hasPermission: hasCurrentPermission,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
-    syncNow, recoverFromServer,
+    syncNow, recoverFromServer, refreshFromServer,
     uploadReceipt, uploadVehicleImage, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord,
     uploadCentralBanner, deleteCentralBannerFile, uploadCentralCityImage, deleteCentralCityImage, listCentralHomeBanners,
     createCentralHomeBanner, upsertCentralHomeBanner, updateCentralHomeBanner, deleteCentralHomeBanner,
