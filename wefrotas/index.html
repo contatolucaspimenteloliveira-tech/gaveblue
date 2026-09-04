@@ -1404,6 +1404,9 @@
               </svg>
               Exportar backup completo
             </button>
+            <button type="button" class="settings-action-btn full" onclick="reviewPendingWeFrotasChanges()">
+              Revisar e recuperar pendências no servidor
+            </button>
             <button type="button" class="settings-action-btn full" onclick="recoverWeFrotasFromServer()">
               Preservar pendências e carregar servidor
             </button>
@@ -1714,6 +1717,7 @@
   <div id="online-status" class="online-status is-local" role="status" aria-live="polite">
     <span class="online-status-dot"></span>
     <span id="online-status-text">Preparando WeFrotas Online...</span>
+    <button id="online-reconcile-btn" type="button" hidden onclick="reviewPendingWeFrotasChanges()">Revisar pendências</button>
   </div>
 
   <div id="online-platform-loading" class="online-platform-loading hidden" role="status" aria-live="polite">
@@ -1788,8 +1792,8 @@
 
   <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
   <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
-  <script src="./wefrotas-backend.js?v=20260904-server-refresh-9"></script>
-  <script src="./wefrotas.js?v=20260904-server-refresh-9"></script>
+  <script src="./wefrotas-backend.js?v=20260904-reconcile-10"></script>
+  <script src="./wefrotas.js?v=20260904-reconcile-10"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
   <script src="./wefrotas-date-picker.js?v=20260901-standard-date-pickers-2"></script>
 </body>

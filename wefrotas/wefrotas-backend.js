@@ -25,6 +25,71 @@
   const LOGOUT_PENDING_KEY = 'wefrotas_online_logout_pending';
   const SYNC_PENDING_KEY = 'wefrotas_online_sync_pending';
   const SYNC_VERSION_KEY = 'wefrotas_online_sync_version';
+  const SYNC_BASE_KEY = 'wefrotas_online_sync_base';
+  let confirmedBase = null;
+  let reconciliationReview = null;
+
+  async function rememberConfirmedSnapshot(snapshot, updatedAt) {
+    const revision = contextRevision;
+    const record = { workspaceId: organizationContext.workspaceId, updatedAt: String(updatedAt || ''), snapshot };
+    const encoded = await encodeSnapshot(JSON.stringify(record));
+    if (revision !== contextRevision) throw new Error('A empresa mudou durante a confirmação.');
+    // Keep the edited base and its version together, including after a crash.
+    // Never borrow another tab's version for this tab's older snapshot.
+    const key = `${SYNC_BASE_KEY}:${organizationContext.id}`;
+    localStorage.setItem(key, encoded);
+    if (localStorage.getItem(key) !== encoded) throw new Error('Não foi possível preservar a base de sincronização neste dispositivo.');
+    confirmedBase = JSON.parse(JSON.stringify(record));
+    rememberRemoteVersion(updatedAt);
+  }
+
+  async function restoreConfirmedBase() {
+    const encoded = localStorage.getItem(`${SYNC_BASE_KEY}:${organizationContext.id}`);
+    if (!encoded) return;
+    const record = await decodeSnapshot(encoded);
+    if (record?.workspaceId !== organizationContext.workspaceId || !record.snapshot || record.updatedAt !== remoteSnapshotUpdatedAt) return;
+    confirmedBase = record;
+    remoteSnapshotUpdatedAt = record.updatedAt;
+  }
+
+  // Three-way reconciliation: preserve unrelated remote changes, but never
+  // choose a winner for two edits/deletion of the same entity. The whole save
+  // fails if any entity conflicts (important for expense + OS consistency).
+  function mergeIndependentChanges(base, local, remote) {
+    const result = JSON.parse(JSON.stringify(remote));
+    const conflict = key => { throw Object.assign(new Error(`Conflito em ${key}. As duas versões foram preservadas; revise a pendência antes de salvar.`), { code: 409, reconciliationRequired: true }); };
+    for (const key of new Set([...Object.keys(base), ...Object.keys(local)])) {
+      if (snapshotsEqual(base[key], local[key])) continue;
+      if (snapshotsEqual(remote[key], local[key])) continue;
+      if (snapshotsEqual(remote[key], base[key])) {
+        if (Object.prototype.hasOwnProperty.call(local, key)) result[key] = local[key]; else delete result[key];
+        continue;
+      }
+      if (key === 'orderCounter' && [base[key],local[key],remote[key]].every(Number.isFinite)) {
+        result[key] = Math.max(local[key], remote[key]); continue;
+      }
+      const arrays = [base[key], local[key], remote[key]];
+      if (!arrays.every(Array.isArray) || !arrays.flat().every(item => item && typeof item === 'object' && item.id)) conflict(key);
+      const maps = arrays.map(items => new Map(items.map(item => [String(item.id), item])));
+      if (maps.some((map, index) => map.size !== arrays[index].length)) conflict(key);
+      const [before, desired, current] = maps;
+      const merged = new Map(current);
+      for (const id of new Set([...before.keys(), ...desired.keys()])) {
+        if (snapshotsEqual(before.get(id), desired.get(id))) continue;
+        if (!snapshotsEqual(current.get(id), before.get(id)) && !snapshotsEqual(current.get(id), desired.get(id))) conflict(`${key}/${id}`);
+        if (desired.has(id)) merged.set(id, desired.get(id)); else merged.delete(id);
+      }
+      result[key] = [...merged.values()];
+    }
+    // Two independent creates may have picked the same displayed OS number.
+    const numbers = new Set();
+    for (const order of result.orders || []) {
+      const number = String(order.numero || '').replace(/^0+(?=\d)/, '');
+      if (number && numbers.has(number)) conflict(`OS número ${number}`);
+      if (number) numbers.add(number);
+    }
+    return JSON.parse(JSON.stringify(result));
+  }
 
   function rememberRemoteVersion(value) {
     remoteSnapshotUpdatedAt = String(value || '');
@@ -140,6 +205,8 @@
     primaryRowId = '';
     lastSerializedSnapshot = '';
     remoteSnapshotUpdatedAt = '';
+    confirmedBase = null;
+    reconciliationReview = null;
     remoteRefreshPromise = null;
   }
 
@@ -444,13 +511,13 @@
       if (!record?.snapshot) throw new Error('A cópia da empresa não foi encontrada no servidor. Os dados locais foram preservados.');
       const serialized = JSON.stringify(record.snapshot);
       if (serialized === lastSerializedSnapshot) {
-        rememberRemoteVersion(record.updatedAt);
+        await rememberConfirmedSnapshot(record.snapshot, record.updatedAt);
         return { mode: 'unchanged' };
       }
       await currentSnapshotApplier?.(record.snapshot);
       if (revision !== contextRevision) return { mode: 'context-changed' };
       lastSerializedSnapshot = serialized;
-      rememberRemoteVersion(record.updatedAt);
+      await rememberConfirmedSnapshot(record.snapshot, record.updatedAt);
       emitStatus('online', 'Atualização recebida do servidor.');
       return { mode: 'remote-refreshed' };
     })();
@@ -472,13 +539,14 @@
     if (!currentUser) throw new Error('Entre no WeFrotas antes de sincronizar os dados.');
     assertCanWrite();
     activeSnapshotWrites += 1;
+    const localAtStart = JSON.stringify(currentSnapshotGetter?.());
     try {
     emitStatus('syncing', 'Preparando dados para sincronização...');
-    const preparedSnapshot = await currentSnapshotPreparer?.(snapshot) || snapshot;
+    let preparedSnapshot = await currentSnapshotPreparer?.(snapshot) || snapshot;
     const maxVehicles = Number(organizationContext.limits?.vehicles || 0);
     const activeVehicles = (Array.isArray(preparedSnapshot.vehicles) ? preparedSnapshot.vehicles : []).filter((vehicle) => vehicle?.ativo !== false && vehicle?.active !== false).length;
     if (maxVehicles > 0 && activeVehicles > maxVehicles) throw new Error(`O plano desta empresa permite até ${maxVehicles} veículos ativos.`);
-    const serialized = JSON.stringify(preparedSnapshot);
+    let serialized = JSON.stringify(preparedSnapshot);
     // Every authorized company, including Covre, needs the server writer:
     // a browser admin cannot grant another manager's label permissions.
     if (organizationContext.id) {
@@ -486,6 +554,8 @@
       const writeRevision = contextRevision;
       const workspaceId = organizationContext.workspaceId;
       let confirmation;
+      const original = JSON.parse(serialized);
+      const base = confirmedBase?.snapshot;
       try {
         confirmation = await currentSnapshotWriter(preparedSnapshot, workspaceId, remoteSnapshotUpdatedAt);
       } catch (writeError) {
@@ -494,17 +564,33 @@
         // snapshot on the newest version: that could erase another user's work.
         let confirmedRecord;
         try { confirmedRecord = await loadRemoteRecord(); } catch (_) { /* Preserve the original write failure. */ }
-        if (writeRevision !== contextRevision || !confirmedRecord?.updatedAt
-          || !snapshotsEqual(preparedSnapshot, confirmedRecord.snapshot)) throw writeError;
-        confirmation = { ok: true, workspaceId, updatedAt: confirmedRecord.updatedAt };
+        if (writeRevision !== contextRevision || !confirmedRecord?.updatedAt) throw writeError;
+        if (snapshotsEqual(preparedSnapshot, confirmedRecord.snapshot)) {
+          confirmation = { ok: true, workspaceId, updatedAt: confirmedRecord.updatedAt };
+        } else {
+          if (!base) {
+            writeError.reconciliationRequired = true;
+            throw writeError;
+          }
+          // A new request always keeps the server version check. If another
+          // writer wins again, fail safely; no unchecked last-write-wins retry.
+          preparedSnapshot = mergeIndependentChanges(base, original, confirmedRecord.snapshot);
+          emitStatus('syncing', 'Conciliando alterações de outros dispositivos...');
+          confirmation = await currentSnapshotWriter(preparedSnapshot, workspaceId, confirmedRecord.updatedAt);
+          serialized = JSON.stringify(preparedSnapshot);
+        }
       }
       if (writeRevision !== contextRevision) throw new Error('A empresa mudou durante a sincronização.');
       if (confirmation?.ok !== true || confirmation.workspaceId !== organizationContext.workspaceId) {
         throw new Error('O servidor não confirmou o salvamento desta empresa.');
       }
+      const current = currentSnapshotGetter?.();
+      const changedDuringWrite = JSON.stringify(current) !== localAtStart;
+      const working = changedDuringWrite ? mergeIndependentChanges(original, current, preparedSnapshot) : preparedSnapshot;
+      await rememberConfirmedSnapshot(preparedSnapshot, confirmation.updatedAt || remoteSnapshotUpdatedAt);
       lastSerializedSnapshot = serialized;
-        rememberRemoteVersion(confirmation.updatedAt || remoteSnapshotUpdatedAt);
-      setPendingSync(false);
+      if (!snapshotsEqual(preparedSnapshot, original) || changedDuringWrite) await currentSnapshotApplier?.(working);
+      setPendingSync(!snapshotsEqual(working, preparedSnapshot));
       emitStatus('online', 'Dados sincronizados.');
       return preparedSnapshot;
     }
@@ -970,6 +1056,7 @@
           // Never adopt the CURRENT server version for an older pending local
           // snapshot. Restore only the version this device actually edited.
           remoteSnapshotUpdatedAt = localStorage.getItem(`${SYNC_VERSION_KEY}:${organizationContext.id}`) || '';
+          await restoreConfirmedBase();
           const recoveredSnapshot = await persistSnapshot(localSnapshot);
           if (revision !== contextRevision) throw new Error('A empresa mudou durante a sincronização.');
           await currentSnapshotApplier?.(recoveredSnapshot);
@@ -994,7 +1081,7 @@
     if (remoteRecord?.snapshot) {
       const remoteSerialized = JSON.stringify(remoteRecord.snapshot);
       lastSerializedSnapshot = remoteSerialized;
-      rememberRemoteVersion(remoteRecord.updatedAt);
+      await rememberConfirmedSnapshot(remoteRecord.snapshot, remoteRecord.updatedAt);
       setPendingSync(false);
       await currentSnapshotApplier?.(remoteRecord.snapshot);
       if (revision !== contextRevision) throw new Error('A empresa mudou durante o carregamento.');
@@ -1010,7 +1097,7 @@
     if (revision !== contextRevision) throw new Error('A empresa mudou durante o carregamento.');
     snapshotReady = true;
     lastSerializedSnapshot = JSON.stringify(currentSnapshotGetter?.() || emptySnapshot);
-    rememberRemoteVersion('');
+    await rememberConfirmedSnapshot(emptySnapshot, '');
     setPendingSync(false);
     await subscribeRealtime();
     emitStatus('online', 'Empresa nova carregada, sem importar dados de outro cadastro.');
@@ -1046,7 +1133,7 @@
       // No remote writes. Preserve both versions before replacing working data.
       await currentSnapshotApplier?.(record.snapshot);
       if (revision !== contextRevision) throw new Error('A empresa mudou durante a recuperação.');
-      rememberRemoteVersion(record.updatedAt);
+      await rememberConfirmedSnapshot(record.snapshot, record.updatedAt);
       lastSerializedSnapshot = JSON.stringify(record.snapshot);
       setPendingSync(false);
       snapshotReady = true;
@@ -1056,6 +1143,80 @@
     } finally {
       if (revision === contextRevision) snapshotReady = true;
     }
+  }
+
+  async function inspectPendingReconciliation() {
+    assertCanWrite();
+    const revision = contextRevision;
+    clearTimeout(syncTimer); syncTimer = null;
+    await syncChain.catch(() => undefined);
+    const localSnapshot = JSON.parse(JSON.stringify(currentSnapshotGetter?.()));
+    const remote = await loadRemoteRecord();
+    if (revision !== contextRevision || !remote?.updatedAt) throw new Error('Não foi possível confirmar a empresa no servidor.');
+    const candidates = [];
+    const tombstones = new Set((remote.snapshot.deletedOrders || []).map(item => String(item.id || item.order?.id || '')));
+    for (const field of ['orders','finance','vehicles','drivers','suppliers']) {
+      const current = new Map((remote.snapshot[field] || []).map(item => [String(item.id), item]));
+      for (const item of localSnapshot[field] || []) {
+        if (!item?.id || (field === 'orders' && tombstones.has(String(item.id)))) continue;
+        const before = current.get(String(item.id));
+        if (!snapshotsEqual(before, item)) candidates.push({ key: `${field}/${item.id}`, field, id: String(item.id), before: before || null, after: item });
+      }
+    }
+    const backup = { version: 'wefrotas-conflict-recovery-v2', createdAt: new Date().toISOString(),
+      organizationId: organizationContext.id, workspaceId: organizationContext.workspaceId,
+      localVersion: remoteSnapshotUpdatedAt, serverVersion: remote.updatedAt, localSnapshot, serverSnapshot: remote.snapshot,
+      differingFields: [...new Set(candidates.map(item => item.field))] };
+    const backupKey = `wefrotas:recovery:${organizationContext.id}:${Date.now()}`;
+    const serialized = JSON.stringify(backup);
+    localStorage.setItem(backupKey, serialized);
+    if (localStorage.getItem(backupKey) !== serialized) throw new Error('Backup não confirmado. Nenhuma alteração permitida.');
+    reconciliationReview = { revision, backup, candidates, backupKey };
+    return JSON.parse(JSON.stringify({ candidates, backupKey, createdAt: backup.createdAt }));
+  }
+
+  async function reconcileSelectedPending({ keys = [], confirmed = false } = {}) {
+    assertCanWrite();
+    const review = reconciliationReview;
+    if (!confirmed || !review || review.revision !== contextRevision || !keys.length) throw new Error('Revise e selecione as pendências que deseja recuperar.');
+    const selected = new Set(keys);
+    if (keys.some(key => !review.candidates.some(item => item.key === key))) throw new Error('Seleção de recuperação inválida.');
+    const local = currentSnapshotGetter?.();
+    if (!snapshotsEqual(local, review.backup.localSnapshot)) throw new Error('A cópia local mudou. Abra a revisão novamente.');
+    const remote = await loadRemoteRecord();
+    if (review.revision !== contextRevision || !remote?.updatedAt || !snapshotsEqual(remote.snapshot, review.backup.serverSnapshot)) throw new Error('O servidor mudou. Abra a revisão novamente.');
+    if (!snapshotsEqual(currentSnapshotGetter?.(), review.backup.localSnapshot)) throw new Error('A cópia local mudou. Abra a revisão novamente.');
+    const next = JSON.parse(JSON.stringify(remote.snapshot));
+    // Keep linked OS/expense changes together; a partial reconciliation must
+    // not close an OS while abandoning its local expense allocation.
+    const selectedOrders = new Set(review.candidates.filter(item => selected.has(item.key) && item.field === 'orders').map(item => item.id));
+    for (const item of review.candidates) {
+      if (item.field === 'finance' && selectedOrders.has(String(item.after.orderId || '')) && !selected.has(item.key)) {
+        throw new Error('Selecione também os lançamentos financeiros vinculados à OS escolhida.');
+      }
+    }
+    for (const item of review.candidates.filter(item => selected.has(item.key))) {
+      const items = next[item.field] || [];
+      const index = items.findIndex(value => String(value.id) === item.id);
+      if (index >= 0) items[index] = item.after; else items.push(item.after);
+      next[item.field] = items;
+    }
+    const numbers = (next.orders || []).map(item => String(item.numero || '').replace(/^0+(?=\d)/, '')).filter(Boolean);
+    if (new Set(numbers).size !== numbers.length) throw new Error('Há números de OS repetidos. Revise a numeração antes de recuperar.');
+    next.orderCounter = Math.max(Number(next.orderCounter) || 1, ...numbers.map(Number).filter(Number.isFinite).map(n => n + 1));
+    clearTimeout(syncTimer); syncTimer = null;
+    activeSnapshotWrites += 1;
+    try {
+      const receipt = await currentSnapshotWriter(next, organizationContext.workspaceId, remote.updatedAt);
+      if (receipt?.ok !== true || receipt.workspaceId !== organizationContext.workspaceId) throw new Error('Recuperação não confirmada no servidor.');
+      await rememberConfirmedSnapshot(next, receipt.updatedAt);
+      await currentSnapshotApplier?.(next);
+      lastSerializedSnapshot = JSON.stringify(next);
+      setPendingSync(false);
+      reconciliationReview = null;
+      emitStatus('online', 'Pendências selecionadas confirmadas no servidor. Demais diferenças preservadas no backup.');
+      return { recovered: keys.length, backupKey: review.backupKey };
+    } finally { activeSnapshotWrites -= 1; }
   }
 
   global.WeFrotasBackend = Object.freeze({
@@ -1069,7 +1230,7 @@
     getAccessRole: getCurrentAccessRole,
     hasPermission: hasCurrentPermission,
     loadRemoteSnapshot, adoptRemoteOrUploadLocal, queueSnapshot,
-    syncNow, recoverFromServer, refreshFromServer,
+    syncNow, recoverFromServer, refreshFromServer, inspectPendingReconciliation, reconcileSelectedPending,
     uploadReceipt, uploadVehicleImage, listCentralPendingRecords, updateCentralPendingRecord, deleteCentralPendingRecord,
     uploadCentralBanner, deleteCentralBannerFile, uploadCentralCityImage, deleteCentralCityImage, listCentralHomeBanners,
     createCentralHomeBanner, upsertCentralHomeBanner, updateCentralHomeBanner, deleteCentralHomeBanner,

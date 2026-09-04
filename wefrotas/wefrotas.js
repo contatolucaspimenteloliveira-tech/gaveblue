@@ -1869,6 +1869,8 @@
       statusNode.classList.remove('is-local', 'is-online', 'is-syncing', 'is-error', 'is-signed-out');
       statusNode.classList.add(`is-${state}`);
       textNode.textContent = message || 'WeFrotas Online';
+      const reconcileButton = document.getElementById('online-reconcile-btn');
+      if (reconcileButton) reconcileButton.hidden = state !== 'error' || !user;
       if (syncButton) {
         syncButton.hidden = !user;
         syncButton.disabled = state === 'syncing';
@@ -2247,7 +2249,7 @@
       try {
         const result = await window.WeFrotasBackend?.refreshFromServer();
         if (result?.mode === 'local-pending') {
-          if (!quiet) window.recoverWeFrotasFromServer();
+          if (!quiet) window.reviewPendingWeFrotasChanges();
           return;
         }
         if (!['remote-refreshed', 'unchanged'].includes(result?.mode)) {
@@ -2287,6 +2289,59 @@
       } catch (error) {
         showToast(`Recuperação não concluída: ${error?.message || 'erro desconhecido'}`);
       }
+    };
+
+    window.reviewPendingWeFrotasChanges = async function () {
+      try {
+        const review = await window.WeFrotasBackend.inspectPendingReconciliation();
+        document.getElementById('wefrotas-reconciliation-dialog')?.remove();
+        const dialog = document.createElement('dialog');
+        dialog.id = 'wefrotas-reconciliation-dialog';
+        dialog.setAttribute('aria-labelledby', 'wefrotas-reconciliation-title');
+        dialog.style.cssText = 'width:min(820px,94vw);max-height:88vh;padding:24px;border:1px solid #dbe3ef;border-radius:20px;background:#fff;color:#17243a;box-shadow:0 20px 80px #17243a55;';
+        const title = document.createElement('h2');
+        title.id = 'wefrotas-reconciliation-title'; title.textContent = 'Revisar pendências deste computador';
+        const explanation = document.createElement('p');
+        explanation.textContent = 'As duas cópias já estão preservadas em backup. Nada está selecionado. Confira cada diferença e marque somente o que deve substituir ou entrar no servidor. Diferenças antigas também podem aparecer: não são necessariamente alterações novas. Não serão feitas exclusões automáticas.';
+        const list = document.createElement('div');
+        list.style.cssText = 'max-height:48vh;overflow:auto;margin:16px 0;';
+        const labels = { orders: 'OS', finance: 'Despesa', vehicles: 'Veículo', drivers: 'Motorista', suppliers: 'Fornecedor' };
+        for (const item of review.candidates) {
+          const card = document.createElement('section');
+          card.style.cssText = 'padding:12px;border-bottom:1px solid #e2e8f0;';
+          const label = document.createElement('label');
+          label.style.cssText = 'display:flex;gap:10px;align-items:flex-start;';
+          const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.value = item.key;
+          const text = document.createElement('span');
+          const name = item.after.numero || item.after.nome || item.after.descricao || item.after.placa || item.id;
+          text.textContent = `${labels[item.field]} ${name} — servidor: ${item.before ? (item.before.status || 'existente') : 'não existe'} → local: ${item.after.status || 'alterado'}`;
+          label.append(checkbox, text); card.append(label);
+          const details = document.createElement('details');
+          const summary = document.createElement('summary'); summary.textContent = 'Comparar todos os campos';
+          const pre = document.createElement('pre'); pre.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;';
+          pre.textContent = JSON.stringify({ servidor: item.before, nesteComputador: item.after }, null, 2);
+          details.append(summary, pre); card.append(details); list.append(card);
+        }
+        if (!review.candidates.length) list.textContent = 'Nenhuma diferença recuperável nos cadastros. Você pode carregar a cópia do servidor em Configurações → Backup.';
+        const status = document.createElement('p'); status.setAttribute('role', 'status');
+        const actions = document.createElement('div'); actions.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;';
+        const close = document.createElement('button'); close.textContent = 'Fechar sem alterar'; close.type = 'button'; close.onclick = () => dialog.close();
+        const save = document.createElement('button'); save.textContent = 'Confirmar selecionados no servidor'; save.type = 'button';
+        save.style.cssText = 'background:#245cf4;color:white;padding:10px 16px;border-radius:10px;';
+        save.onclick = async () => {
+          const keys = [...list.querySelectorAll('input:checked')].map(input => input.value);
+          if (!keys.length) { status.textContent = 'Selecione as alterações que deseja recuperar.'; return; }
+          if (!window.confirm(`Confirmar ${keys.length} alteração(ões) selecionada(s) no servidor? As demais diferenças ficarão apenas no backup preservado.`)) return;
+          save.disabled = true; close.disabled = true;
+          try {
+            const result = await window.WeFrotasBackend.reconcileSelectedPending({ keys, confirmed: true });
+            dialog.close(); showToast(`${result.recovered} alteração(ões) confirmada(s) no servidor. Backup mantido.`);
+          } catch (error) { status.textContent = error.message || 'Recuperação não confirmada.'; }
+          finally { save.disabled = false; close.disabled = false; }
+        };
+        actions.append(close, save); dialog.append(title, explanation, list, status, actions);
+        document.body.append(dialog); dialog.showModal();
+      } catch (error) { showToast(`Não foi possível abrir a revisão: ${error.message}`); }
     };
 
     window.reviewWeFrotasRecoveryBackup = function () {
