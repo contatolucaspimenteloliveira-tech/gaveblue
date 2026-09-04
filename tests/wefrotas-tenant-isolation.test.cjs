@@ -57,6 +57,22 @@ async function harness() {
 
 test('read quota opens a circuit only with a confirmed tenant base',async()=>{const h=await harness();await h.seed('covre-e-cia',{vehicles:[{id:'v'}],orders:[]});h.backend.setOrganizationContext(tenant('covre-e-cia'));await h.backend.adoptRemoteOrUploadLocal();h.fail(Object.assign(new Error('Database reads limit for the current billing cycle has been exceeded.'),{code:402}));assert.equal((await h.backend.refreshFromServer()).mode,'contingency-confirmed-local');const reads=h.reads();assert.equal((await h.backend.refreshFromServer()).mode,'contingency-circuit-open');assert.equal(h.reads(),reads);h.setSnapshot({vehicles:[{id:'v'}],orders:[{id:'local'}]});assert.equal((await h.backend.syncNow(h.snapshot())).mode,'contingency-local-pending');assert.equal(h.reads(),reads);});
 
+test('read quota reapplies the confirmed tenant base to the visible working snapshot', async () => {
+  const h = await harness();
+  const confirmed = { vehicles: [{ id: 'VISIBLE-VEHICLE' }], orders: [{ id: 'VISIBLE-ORDER' }], finance: [{ id: 'VISIBLE-EXPENSE' }] };
+  await h.seed('covre-e-cia', confirmed);
+  h.backend.setOrganizationContext(tenant('covre-e-cia'));
+  await h.backend.adoptRemoteOrUploadLocal();
+  // Reproduces the browser state: storage is protected, while the first HTML
+  // render is still empty when the remote refresh hits the billing limit.
+  h.setSnapshot({ vehicles: [], orders: [], finance: [] });
+  h.fail(Object.assign(new Error('Database reads limit for the current billing cycle has been exceeded.'), { code: 402 }));
+  const result = await h.backend.refreshFromServer();
+  assert.equal(result.mode, 'contingency-confirmed-local');
+  assert.deepEqual(h.snapshot(), confirmed);
+  assert.deepEqual(h.appliedSnapshots.at(-1), confirmed);
+});
+
 test('authorization failure never enables contingency',async()=>{const h=await harness();await h.seed('covre-e-cia',{vehicles:[],orders:[]});h.backend.setOrganizationContext(tenant('covre-e-cia'));await h.backend.adoptRemoteOrUploadLocal();h.fail(Object.assign(new Error('Forbidden'),{code:403}));await assert.rejects(h.backend.refreshFromServer(),e=>e.code===403);assert.equal(h.backend.isContingencyMode(),false);});
 
 test('new tenant never uploads or adopts the previous company cache', async () => {

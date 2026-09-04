@@ -176,6 +176,7 @@
 
   async function enterReadQuotaContingency(error) {
     if (!isDatabaseReadQuotaError(error)) throw error;
+    const revision = contextRevision;
     quotaCircuitUntil = Date.now() + QUOTA_CIRCUIT_MS;
     clearTimeout(syncTimer); syncTimer = null;
     clearTimeout(remoteApplyTimer); remoteApplyTimer = null;
@@ -189,6 +190,22 @@
       const unavailable = new Error('A cota de leituras acabou e este dispositivo não possui uma base local confirmada. Nenhum banco vazio será aberto.');
       unavailable.code = 412; unavailable.cause = error; throw unavailable;
     }
+    // The organization-specific IndexedDB copy is loaded before the remote
+    // read starts, but the page may still be showing its initial empty render.
+    // Reapply the exact protected version so contingency updates both memory
+    // and the visible modules. A pending local edit always wins here; without
+    // a pending edit, use the last server-confirmed base restored above.
+    const protectedSnapshot = pending
+      ? currentSnapshotGetter?.()
+      : confirmedBase?.snapshot;
+    if (!protectedSnapshot || typeof protectedSnapshot !== 'object' || Array.isArray(protectedSnapshot)) {
+      snapshotReady = false;
+      const unavailable = new Error('A base local protegida não pôde ser validada. Nenhum banco vazio será aberto.');
+      unavailable.code = 412; unavailable.cause = error; throw unavailable;
+    }
+    await currentSnapshotApplier?.(JSON.parse(JSON.stringify(protectedSnapshot)));
+    if (revision !== contextRevision) throw new Error('A empresa mudou durante a recuperação local.');
+    lastSerializedSnapshot = JSON.stringify(protectedSnapshot);
     contingencyMode = true;
     snapshotReady = true;
     if (pending) setPendingSync(true);
