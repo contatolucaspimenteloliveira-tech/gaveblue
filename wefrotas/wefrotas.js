@@ -2278,6 +2278,39 @@
       }
     };
 
+    window.reviewWeFrotasRecoveryBackup = function () {
+      const organizationId = window.WeFrotasBackend?.getOrganizationContext?.().id;
+      if (!organizationId) return showToast('Empresa não confirmada.');
+      const prefix = `wefrotas:recovery:${organizationId}:`;
+      const keys = Object.keys(localStorage).filter(key => key.startsWith(prefix)).sort().reverse();
+      if (!keys.length) return showToast('Nenhum backup de conciliação desta empresa neste navegador.');
+      try {
+        const backup = JSON.parse(localStorage.getItem(keys[0]));
+        const lines = [`Backup: ${backup.createdAt}. As duas cópias estão preservadas. Nenhum dado será alterado.`];
+        for (const field of backup.differingFields || []) {
+          const local = backup.localSnapshot[field], remote = backup.serverSnapshot[field];
+          if (Array.isArray(local) && Array.isArray(remote) && [...local, ...remote].every(item => item && item.id)) {
+            const localById = new Map(local.map(item => [String(item.id), item]));
+            const remoteById = new Map(remote.map(item => [String(item.id), item]));
+            const localOnly = local.filter(item => !remoteById.has(String(item.id)));
+            const remoteOnly = remote.filter(item => !localById.has(String(item.id)));
+            lines.push(`${field}: local ${local.length}, servidor ${remote.length}; exclusivos locais ${localOnly.length}, exclusivos no servidor ${remoteOnly.length}.`);
+            for (const item of localOnly.slice(0, 20)) lines.push(`Somente local: ${field} ${item.numero || item.nome || item.placa || item.id}.`);
+            for (const item of local) {
+              const other = remoteById.get(String(item.id));
+              if (!other) continue;
+              const changed = [...new Set([...Object.keys(item), ...Object.keys(other)])]
+                .filter(key => JSON.stringify(item[key]) !== JSON.stringify(other[key]));
+              if (changed.length) lines.push(`${field} ${item.numero || item.nome || item.placa || item.id}: ${changed.join(', ')}.`);
+            }
+          } else lines.push(`Diferença em ${field}.`);
+        }
+        openPromptModal({ title: 'Conciliação preservada', text: lines.join('\n'), mode: 'confirm',
+          confirmLabel: 'Baixar as duas versões', cancelLabel: 'Fechar',
+          onConfirm: () => downloadBlob(`wefrotas_conciliacao_${backup.createdAt.replace(/[:.]/g, '-')}.json`, new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' })) });
+      } catch (error) { showToast(`Não foi possível ler o backup: ${error.message}`); }
+    };
+
     function getStorageUsageStats() {
       const snapshotText = JSON.stringify(buildStorageSnapshot());
       const usedBytes = snapshotText.length * 2;
