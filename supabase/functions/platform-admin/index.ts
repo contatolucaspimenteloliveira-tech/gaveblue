@@ -97,13 +97,17 @@ async function ensureAppwriteUser(input: { appwriteUserId?: string; email: strin
   return { id: String(result.$id || ''), skipped: false, created: true };
 }
 
-async function listOperationalAudit(workspaceId: string, limit = 100) {
+async function listOperationalAudit(workspaceId: string, limit = 100, options: any = {}) {
+  if (!workspaceId) return [];
   const connection = appwriteConnection();
   if (!connection) throw new Error('A conexão de auditoria com o Appwrite não está configurada.');
   const url = new URL(`${connection.baseUrl}/tablesdb/6a68ce8c000a36a44d98/tables/gaveblue_wefrotas/rows`);
-  url.searchParams.append('queries[]', `equal("workspaceId", ["${workspaceId.replace(/"/g, '')}"])`);
-  url.searchParams.append('queries[]', 'orderDesc("updatedAt")');
-  url.searchParams.append('queries[]', `limit(${Math.max(1, Math.min(Number(limit) || 100, 200))})`);
+  url.searchParams.append('queries[]', JSON.stringify({ method: 'equal', attribute: 'workspaceId', values: [workspaceId] }));
+  url.searchParams.append('queries[]', JSON.stringify({ method: 'orderDesc', attribute: 'updatedAt' }));
+  url.searchParams.append('queries[]', JSON.stringify({ method: 'limit', values: [Math.max(1, Math.min(Number(limit) || 100, 200))] }));
+  if (options.from) url.searchParams.append('queries[]', JSON.stringify({ method: 'greaterThanEqual', attribute: 'updatedAt', values: [options.from] }));
+  if (options.to) url.searchParams.append('queries[]', JSON.stringify({ method: 'lessThanEqual', attribute: 'updatedAt', values: [options.to] }));
+  if (options.cursor) url.searchParams.append('queries[]', JSON.stringify({ method: 'cursorAfter', values: [options.cursor] }));
   const response = await fetch(url, { headers: connection.headers });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(result?.message || 'Não foi possível consultar a auditoria operacional.');
@@ -136,14 +140,50 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, adminRole: platformAdmin.role, user: { id: authData.user.id, email: authData.user.email }, organizations, plans });
     }
 
+    if (action === 'session-list') {
+      const from = String(payload.from || ''), to = String(payload.to || '');
+      const iso = (v: string) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(v) && !Number.isNaN(Date.parse(v)) && new Date(v).toISOString() === v;
+      if (!iso(from) || !iso(to) || from > to) return json(400,{ok:false,error:'Período das sessões inválido.'});
+      const query = admin.from('organizations').select('id,name,appwrite_workspace_id');
+      const {data:organizations,error} = payload.organizationId ? await query.eq('id',String(payload.organizationId)) : await query;
+      if (error) throw error;
+      let limited = false;
+      const lists = await Promise.all((organizations || []).map(async (org: any) => {
+        if (!org.appwrite_workspace_id) return [];
+        const digest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(org.appwrite_workspace_id)));
+        const scope = 'access-' + Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,28);
+        const rows = await listOperationalAudit(scope,200,{from,to});
+        if(rows.length>=200) limited=true;
+        return rows.flatMap((row: any) => {
+          try {
+            const s = JSON.parse(row.snapshot);
+            if (s.kind !== 'platform-session' || s.organizationWorkspace !== org.appwrite_workspace_id) return [];
+            return [{id:String(row.$id || row.id),organizationId:org.id,organizationName:org.name,
+              actorId:s.actorId,actorName:s.actorName,actorEmail:s.actorEmail,startedAt:s.startedAt,
+              lastSeenAt:s.lastSeenAt,lastActivityAt:s.lastActivityAt,closedAt:s.closedAt,browser:s.browser,system:s.system}];
+          } catch { return []; }
+        });
+      }));
+      return json(200,{ok:true,sessions:lists.flat().sort((a: any,b: any)=>String(b.lastSeenAt).localeCompare(String(a.lastSeenAt))),limited,serverTime:new Date().toISOString()});
+    }
+
     if (action === 'audit-list') {
+      const pageSize = Math.floor(Math.max(1, Math.min(Number(payload.limit) || 100, 200)));
+      const validIso = (value: any) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString() === value;
+      if ((payload.from && !validIso(payload.from)) || (payload.to && !validIso(payload.to)) || (payload.from && payload.to && payload.from > payload.to)) return json(400, { ok: false, error: 'Período de auditoria inválido.' });
+      const cursors = payload.cursors && typeof payload.cursors === 'object' && !Array.isArray(payload.cursors) ? payload.cursors : {};
+      const nextCursors: Record<string, string | null> = {};
       const organizationId = String(payload.organizationId || '').trim();
       const query = admin.from('organizations').select('id,name,appwrite_workspace_id,organization_members(email,appwrite_user_id)');
       const { data: organizations, error } = organizationId ? await query.eq('id', organizationId) : await query;
       if (error) throw error;
       const rows = await Promise.all((organizations || []).map(async (organization: any) => {
-        const members = new Map((organization.organization_members || []).map((member: any) => [String(member.appwrite_user_id || ''), String(member.email || '')]));
-        const auditRows = await listOperationalAudit(String(organization.appwrite_workspace_id || ''), payload.limit);
+        if (Object.prototype.hasOwnProperty.call(cursors, organization.id) && cursors[organization.id] === null) { nextCursors[organization.id] = null; return []; }
+        const cursor = cursors[organization.id];
+        if (cursor && (typeof cursor !== 'string' || !/^[a-zA-Z0-9._-]{1,36}$/.test(cursor))) throw new Error('Cursor da auditoria inválido. Atualize a consulta.');
+        const members = new Map((organization.organization_members || []).filter((member: any) => member.appwrite_user_id).map((member: any) => [String(member.appwrite_user_id), String(member.email || '')]));
+        const auditRows = await listOperationalAudit(String(organization.appwrite_workspace_id || ''), pageSize, {from:payload.from,to:payload.to,cursor});
+        nextCursors[organization.id] = auditRows.length === pageSize ? String(auditRows[auditRows.length - 1].$id || auditRows[auditRows.length - 1].id) : null;
         return auditRows.flatMap((row: any) => {
           try {
             const event = JSON.parse(String(row.snapshot || '{}'));
@@ -151,15 +191,17 @@ Deno.serve(async (req) => {
             return [{
               id: String(row.$id || row.id || ''), organizationId: organization.id, organizationName: organization.name,
               at: String(event.createdAt || row.updatedAt || row.$updatedAt || ''), actorId: String(event.actorId || row.updatedBy || ''),
-              actorEmail: members.get(String(event.actorId || row.updatedBy || '')) || 'Usuário não identificado',
-              action: String(event.action || 'operação'), targetId: String(event.targetId || ''), result: String(event.result || 'success'),
-              before: event.before || null, after: event.after || null
+              actorEmail: String(event.actorEmail || '') || members.get(String(event.actorId || row.updatedBy || '')) || 'Usuário não identificado',
+              actorName: String(event.actorName || ''),
+              action: String(event.action || 'operação'), targetId: String(event.targetId || ''), result: String(event.result || 'unknown'),
+              before: event.before || null, after: event.after || null, justification: String(event.justification || '')
             }];
           } catch (_) { return []; }
         });
       }));
-      const events = rows.flat().sort((a: any, b: any) => String(b.at).localeCompare(String(a.at))).slice(0, Math.max(1, Math.min(Number(payload.limit) || 100, 200)));
-      return json(200, { ok: true, events });
+      // Preserve every fetched row: a global slice would skip events when each tenant cursor advances.
+      const events = rows.flat().sort((a: any, b: any) => String(b.at).localeCompare(String(a.at)));
+      return json(200, { ok: true, auditVersion: 2, events, cursors: nextCursors, hasMore: Object.values(nextCursors).some(Boolean) });
     }
 
     if (action === 'organization-save') {
