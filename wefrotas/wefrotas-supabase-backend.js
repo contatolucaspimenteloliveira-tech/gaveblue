@@ -62,7 +62,9 @@
   function ensureClient() {
     if (!isConfigured()) throw new Error('O Supabase do WeFrotas ainda não foi configurado.');
     if (!client) client = global.supabase.createClient(config.url, config.anonKey, {
-      auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true },
+      // Admin and WeFrotas share an origin/project, but not a login. Never
+      // adopt, copy or clear the SDK's default Admin session during cutover.
+      auth: { storageKey:`wefrotas-auth-${new URL(config.url).origin}-v1`, persistSession:true, autoRefreshToken:true, detectSessionInUrl:true },
       realtime: { params: { eventsPerSecond: 20 } }
     });
     return client;
