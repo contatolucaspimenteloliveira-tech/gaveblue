@@ -8,6 +8,7 @@
     let deletedOrders = [];
     let centralPendingRecords = [];
     let centralPendingLoading = false;
+    let centralPendingRefreshRequest = null;
     let centralPendingError = '';
     let centralPendingLoaded = false;
     let centralPendingAutoRefreshTimer = null;
@@ -1837,6 +1838,9 @@
       wefrotasIndexedDbSnapshotKey = `tenant:${organization.id}:${organization.workspaceId}`;
       wefrotasLocalSnapshotUpdatedAt = '';
       centralPendingRecords = [];
+      centralPendingRefreshRequest = null;
+      centralPendingLoading = false;
+      centralPendingError = '';
       centralPushDevices = [];
       centralHomeBanners = [];
       resetWefrotasUsers();
@@ -10482,6 +10486,31 @@
       }).join('');
     }
 
+    function getCentralPendingContextKey() {
+      const backend = window.WeFrotasBackend;
+      const user = backend?.getUser?.();
+      const organization = backend?.getOrganizationContext?.() || {};
+      return JSON.stringify([user?.id || user?.$id || '', organization.id || '', organization.workspaceId || organization.slug || '']);
+    }
+
+    function getCentralPendingServerVersion(timestamp) {
+      // Only server envelope/event timestamps are supplied here, never a
+      // driver's date or the browser clock. Retain PostgreSQL microseconds.
+      const value = String(timestamp || '');
+      const milliseconds = Date.parse(value);
+      if (!Number.isFinite(milliseconds)) return 0;
+      const fraction = value.match(/\.(\d+)(?:Z|[+-]\d{2}:?\d{2})$/i)?.[1] || '';
+      return milliseconds * 1000 + Number(fraction.padEnd(6, '0').slice(3, 6));
+    }
+
+    function trackCentralPendingRefreshChange(rowId, record, timestamp = record?.$updatedAt) {
+      const request = centralPendingRefreshRequest;
+      if (!rowId || !request || request.contextKey !== getCentralPendingContextKey()) return;
+      // Keep only the final confirmed state per ID while a list request is in
+      // flight. A deletion is a tombstone, not a row that a stale list may revive.
+      request.changes.set(rowId, { record: record ? { ...record } : null, version: getCentralPendingServerVersion(timestamp) });
+    }
+
     async function refreshCentralPendingRecords({ silent = false } = {}) {
       if (centralPendingLoading) return;
       if (!window.WeFrotasBackend?.getUser?.()) {
@@ -10499,15 +10528,28 @@
       }
 
       centralPendingLoading = true;
+      const request = { contextKey: getCentralPendingContextKey(), changes: new Map() };
+      centralPendingRefreshRequest = request;
       let shouldRenderAfterLoad = !silent;
       centralPendingError = '';
       setCentralPendingLoadingIndicator(true);
       if (!silent && !centralPendingLoaded) renderCentralPendingRecords();
       try {
         const result = await window.WeFrotasBackend.listCentralPendingRecords(150);
+        if (centralPendingRefreshRequest !== request || request.contextKey !== getCentralPendingContextKey()) return;
         // Status is authoritative on the server. A similar amount, supplier or
         // receipt is not sufficient evidence to approve another record.
-        const nextRecords = Array.isArray(result) ? result : (Array.isArray(result?.rows) ? result.rows : []);
+        const received = Array.isArray(result) ? result : (Array.isArray(result?.rows) ? result.rows : []);
+        const merged = new Map(received.map(record => [getCentralPendingRecordId(record), record]));
+        for (const [rowId, change] of request.changes) {
+          const { record, version } = change;
+          // Realtime delivery can itself lag behind the GET snapshot. Keep a
+          // demonstrably newer server row instead of blindly replaying events.
+          if (version && getCentralPendingServerVersion(merged.get(rowId)?.$updatedAt) > version) continue;
+          if (record) merged.set(rowId, { ...merged.get(rowId), ...record });
+          else merged.delete(rowId);
+        }
+        const nextRecords = [...merged.values()];
         const currentSignature = JSON.stringify(centralPendingRecords.map(item => [item.$id || item.id, item.$updatedAt || item.atualizadoEm || '', item.status || '', item.resolucao || '']));
         const nextSignature = JSON.stringify(nextRecords.map(item => [item.$id || item.id, item.$updatedAt || item.atualizadoEm || '', item.status || '', item.resolucao || '']));
         const changed = currentSignature !== nextSignature || !centralPendingLoaded;
@@ -10516,11 +10558,16 @@
         renderPushIndividualRecipients();
         shouldRenderAfterLoad = changed;
       } catch (error) {
-        centralPendingError = `Não foi possível carregar a Central: ${error?.message || 'erro desconhecido'}`;
+        if (centralPendingRefreshRequest === request && request.contextKey === getCentralPendingContextKey()) {
+          centralPendingError = `Não foi possível carregar a Central: ${error?.message || 'erro desconhecido'}`;
+        }
       } finally {
-        centralPendingLoading = false;
-        setCentralPendingLoadingIndicator(false);
-        if (shouldRenderAfterLoad || centralPendingError) renderCentralPendingRecords();
+        if (centralPendingRefreshRequest === request) {
+          centralPendingRefreshRequest = null;
+          centralPendingLoading = false;
+          setCentralPendingLoadingIndicator(false);
+          if (request.contextKey === getCentralPendingContextKey() && (shouldRenderAfterLoad || centralPendingError)) renderCentralPendingRecords();
+        }
       }
     }
 
@@ -10546,9 +10593,12 @@
     async function setCentralPendingRecordStatus(record, data) {
       const rowId = getCentralPendingRecordId(record);
       if (!rowId) throw new Error('Não foi possível atualizar o status do registro na Central.');
+      const contextKey = getCentralPendingContextKey();
       const result = await executeCentralPushAdmin({ action: 'central-record-update', recordId: rowId, ...data });
+      if (contextKey !== getCentralPendingContextKey()) return;
       const updated = result?.record || {};
       centralPendingRecords = centralPendingRecords.map(item => getCentralPendingRecordId(item) === rowId ? { ...item, ...updated, ...data } : item);
+      trackCentralPendingRefreshChange(rowId, { ...record, ...updated, ...data }, updated.$updatedAt || '');
       if (getCentralPendingStatus({ ...record, ...updated, ...data }).className !== 'pending') selectedCentralPending.delete(rowId);
       renderCentralPendingRecords();
     }
@@ -10556,6 +10606,7 @@
     function setCentralPendingRecordStatusLocally(record, data) {
       const rowId = getCentralPendingRecordId(record);
       centralPendingRecords = centralPendingRecords.map(item => getCentralPendingRecordId(item) === rowId ? { ...item, ...data } : item);
+      trackCentralPendingRefreshChange(rowId, { ...record, ...data }, data?.$updatedAt || '');
       selectedCentralPending.delete(rowId);
       renderCentralPendingRecords();
     }
@@ -10610,9 +10661,16 @@
       if (!rowId) return;
       const deleted = (event?.events || []).some(name => /\.delete$/.test(String(name)));
       const index = centralPendingRecords.findIndex(item => String(item?.$id || item?.id || '') === rowId);
+      const timestamp = deleted ? event?.commitTimestamp : record.$updatedAt;
+      const eventVersion = getCentralPendingServerVersion(timestamp);
+      const recentChange = centralPendingRefreshRequest?.contextKey === getCentralPendingContextKey()
+        ? centralPendingRefreshRequest.changes.get(rowId) : null;
+      if (eventVersion && recentChange?.version > eventVersion) return;
+      if (index >= 0 && eventVersion && getCentralPendingServerVersion(centralPendingRecords[index].$updatedAt) > eventVersion) return;
       if (deleted) { if (index >= 0) centralPendingRecords.splice(index, 1); }
       else if (index >= 0) centralPendingRecords[index] = { ...centralPendingRecords[index], ...record };
       else centralPendingRecords.unshift(record);
+      trackCentralPendingRefreshChange(rowId, deleted ? null : centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId), timestamp);
       centralPendingLoaded = true;
       renderCentralPendingRecords();
       renderPushIndividualRecipients();
@@ -10883,9 +10941,12 @@
       openPromptModal({
         mode: 'confirm', title: 'Excluir registros', text: `Excluir ${records.length} registro(s) da Central? Essa ação não poderá ser desfeita.`, confirmLabel: 'Excluir', cancelLabel: 'Cancelar',
         onConfirm: async () => {
+          const contextKey = getCentralPendingContextKey();
           try {
             await Promise.all(records.map(record => executeCentralPushAdmin({ action: 'central-record-delete', recordId: getCentralPendingRecordId(record) })));
+            if (contextKey !== getCentralPendingContextKey()) return;
             const ids = new Set(records.map(getCentralPendingRecordId));
+            ids.forEach(id => trackCentralPendingRefreshChange(id, null));
             centralPendingRecords = centralPendingRecords.filter(record => !ids.has(getCentralPendingRecordId(record)));
             selectedCentralPending.clear();
             renderCentralPendingRecords();

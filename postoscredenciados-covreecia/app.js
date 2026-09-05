@@ -1709,15 +1709,32 @@ async function getCentralOfflineSubmissions() {
   return submissions;
 }
 
-async function deleteCentralOfflineSubmission(id) {
+async function deleteCentralOfflineSubmission(id, expectedWorkspaceId = centralOrganizationContext.workspaceId) {
+  const workspaceId = String(expectedWorkspaceId || '').trim();
+  if (!workspaceId || workspaceId !== centralOrganizationContext.workspaceId) throw new Error('A empresa mudou antes de confirmar a limpeza do envio offline.');
   const database = await openCentralDeviceStateDb();
-  await new Promise((resolve, reject) => {
-    const transaction = database.transaction(CENTRAL_PENDING_UPLOADS_STORE, 'readwrite');
-    transaction.objectStore(CENTRAL_PENDING_UPLOADS_STORE).delete(id);
-    transaction.oncomplete = resolve;
-    transaction.onerror = () => reject(transaction.error);
-  });
-  database.close();
+  try {
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction(CENTRAL_PENDING_UPLOADS_STORE, 'readwrite');
+      const store = transaction.objectStore(CENTRAL_PENDING_UPLOADS_STORE);
+      let validationError = null;
+      const request = store.get(id);
+      request.onsuccess = () => {
+        const item = request.result;
+        if (!item) return; // Already removed by another successful worker.
+        if (workspaceId !== centralOrganizationContext.workspaceId
+            || String(item.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG) !== workspaceId) {
+          validationError = new Error('O envio offline pertence a outra empresa e foi preservado.');
+          transaction.abort();
+          return;
+        }
+        store.delete(id);
+      };
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(validationError || transaction.error || new Error('A limpeza do envio offline não foi confirmada.'));
+      transaction.onabort = () => reject(validationError || transaction.error || new Error('A limpeza do envio offline foi interrompida.'));
+    });
+  } finally { database.close(); }
 }
 
 function getDriverProfile() {
@@ -3780,6 +3797,16 @@ async function clearCentralRetryPayload(rowId = '', expectedWorkspaceId = '') {
   }
 }
 
+function isCentralRetryPayloadAcknowledged(rowId, expectedWorkspaceId) {
+  const scope = getCentralRetryQueueScope();
+  if (String(expectedWorkspaceId || '') !== scope.workspaceId || !/^[a-zA-Z0-9._:-]{8,80}$/.test(String(rowId || ''))) return false;
+  const itemKey = `${scope.itemPrefix}${encodeURIComponent(String(rowId))}`;
+  const marker = parseCentralRetryJson(localStorage.getItem(itemKey));
+  return Boolean(marker && String(marker.rowId || '') === String(rowId)
+    && marker.workspaceId === scope.workspaceId && !marker.data
+    && typeof marker.acknowledgedAt === 'string' && Number.isFinite(Date.parse(marker.acknowledgedAt)));
+}
+
 async function saveCentralRegistroWithRetry(payload) {
   const queued = await saveCentralRetryPayload(payload);
   if (!queued) throw Object.assign(new Error('Não foi possível guardar este registro no aparelho antes do envio. Mantenha a tela aberta.'), { localQueueConfirmed: false });
@@ -4425,6 +4452,19 @@ async function processCentralOfflineSubmissions() {
     const submissions = await getCentralOfflineSubmissions();
     for (const submission of submissions) {
       try {
+        const workspaceId = String(submission.workspaceId || submission.payload?.data?.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG);
+        if (workspaceId !== centralOrganizationContext.workspaceId
+            || String(submission.payload?.data?.workspaceId || workspaceId) !== workspaceId
+            || String(submission.payload?.rowId || '') !== String(submission.id || '')) {
+          throw new Error('A identidade do envio offline não foi confirmada. A cópia foi preservada.');
+        }
+        // A server-confirmed item may remain in IndexedDB if its deletion
+        // failed or the separate retry worker acknowledged it first.
+        if (isCentralRetryPayloadAcknowledged(submission.id, workspaceId)) {
+          await deleteCentralOfflineSubmission(submission.id, workspaceId);
+          synchronized += 1;
+          continue;
+        }
         const formData = submission.formData || {};
         let receiptUrl = String(submission.receiptUrl || '');
         if (!receiptUrl) {
@@ -4466,8 +4506,14 @@ async function processCentralOfflineSubmissions() {
           : buildFuelWhatsAppMessage(formData, isComplete, receiptUrl);
         submission.payload.data.comprovanteUrl = receiptUrl;
         submission.payload.data.mensagemWhatsapp = mensagem;
-        await saveCentralRegistroWithRetry(submission.payload);
-        await deleteCentralOfflineSubmission(submission.id);
+        try {
+          if (!isCentralRetryPayloadAcknowledged(submission.id, workspaceId)) await saveCentralRegistroWithRetry(submission.payload);
+        } catch (error) {
+          // The other worker can acknowledge the same ID while this worker
+          // waits for its receipt/local queue. Do not recreate that record.
+          if (!isCentralRetryPayloadAcknowledged(submission.id, workspaceId)) throw error;
+        }
+        await deleteCentralOfflineSubmission(submission.id, workspaceId);
         saveCentralLastSentRecord({ ...submission.offlineRecord, receiptUrl });
         synchronized += 1;
       } catch (error) {
@@ -4490,11 +4536,107 @@ async function processCentralOfflineSubmissions() {
   }
 }
 
+const centralFormSubmissionsInProgress = new Set();
+const centralFormPendingAttempts = new Map();
+
+function centralFormAttemptKey(formId, workspaceId = centralOrganizationContext.workspaceId) {
+  if (!workspaceId) throw new Error('Confirme a empresa antes de enviar.');
+  return `${workspaceId}:${formId}`;
+}
+
+function centralFormAttemptSignature({ type, formData, receiptUrl, profile }) {
+  // The displayed clock advances between clicks; it is not a draft edit.
+  const { file, horaFormatada, dataFormatada, ...fields } = formData;
+  return JSON.stringify(canonicalCentralRetryPayload({ type, fields, receiptUrl,
+    file: file ? { name: file.name, size: file.size, lastModified: file.lastModified, type: file.type } : null,
+    driverId: profile?.driverId || '', vehicleId: profile?.vehicleId || '', plate: profile?.plate || '' }));
+}
+
+function checkCentralFormPendingAttempt(formId, draft) {
+  const key = centralFormAttemptKey(formId), previous = centralFormPendingAttempts.get(key);
+  if (!previous) return null;
+  const confirmed = previous.confirmed || isCentralRetryPayloadAcknowledged(previous.payload.rowId, previous.workspaceId);
+  if (previous.signature !== centralFormAttemptSignature(draft)) {
+    if (!confirmed) throw new Error('Já existe um envio deste formulário aguardando confirmação. Os campos foram alterados; aguarde a confirmação ou restaure os dados da tentativa pendente. Nenhum novo registro foi criado.');
+    centralFormPendingAttempts.delete(key);
+    return null;
+  }
+  previous.confirmed = confirmed;
+  return previous;
+}
+
+function getCentralFormPendingAttempt(formId, draft) {
+  const previous = checkCentralFormPendingAttempt(formId, draft);
+  if (previous) return previous;
+  const workspaceId = centralOrganizationContext.workspaceId;
+  const attempt = { key: centralFormAttemptKey(formId, workspaceId), workspaceId,
+    signature: centralFormAttemptSignature(draft), payload: buildCentralRegistroPayload(draft), confirmed: false, whatsAppOpened: false };
+  centralFormPendingAttempts.set(attempt.key, attempt);
+  return attempt;
+}
+
+async function saveCentralFormPendingAttempt(attempt) {
+  if (attempt.workspaceId !== centralOrganizationContext.workspaceId) throw new Error('A empresa mudou. O envio anterior foi preservado na empresa de origem.');
+  if (!attempt.confirmed && !isCentralRetryPayloadAcknowledged(attempt.payload.rowId, attempt.workspaceId)) {
+    try {
+      await saveCentralRegistroWithRetry(attempt.payload);
+      attempt.confirmed = true;
+    } catch (error) {
+      // A concurrent retry worker may already have confirmed this exact ID.
+      if (isCentralRetryPayloadAcknowledged(attempt.payload.rowId, attempt.workspaceId)) attempt.confirmed = true;
+      else {
+        if (error?.localQueueConfirmed === false && attempt.workspaceId === centralOrganizationContext.workspaceId) {
+          try {
+            if (!getCentralRetryPayloads().some(item => String(item.rowId) === String(attempt.payload.rowId))) centralFormPendingAttempts.delete(attempt.key);
+          } catch (_) { /* Unknown local state must keep the original attempt. */ }
+        }
+        throw error;
+      }
+    }
+  } else attempt.confirmed = true;
+  if (attempt.workspaceId !== centralOrganizationContext.workspaceId) throw new Error('O envio foi confirmado na empresa de origem. A tela da outra empresa não foi alterada.');
+}
+
+function preserveChangedCentralFormDraft(attempt, draft) {
+  if (attempt.signature === centralFormAttemptSignature(draft)) return false;
+  showSuccessMessage('O envio anterior foi confirmado na Central. Os campos alterados durante a espera foram mantidos; revise-os antes de fazer outro envio.');
+  return true;
+}
+
+async function runCentralFormSubmission(formId, submit) {
+  // Claim the form before any await (including the driver-profile check).
+  // Repeated taps must share one submission, not generate new record IDs.
+  if (centralFormSubmissionsInProgress.has(formId)) return;
+  centralFormSubmissionsInProgress.add(formId);
+  const form = document.getElementById(formId);
+  const buttons = Array.from(form?.querySelectorAll('button[type="submit"], input[type="submit"]') || []);
+  const previousDisabled = buttons.map(button => button.disabled);
+  const previousBusy = form?.getAttribute('aria-busy');
+  try {
+    buttons.forEach(button => { button.disabled = true; });
+    form?.setAttribute('aria-busy', 'true');
+    return await submit(String(centralOrganizationContext.workspaceId || ''));
+  } catch (error) {
+    console.error('Não foi possível concluir o envio do formulário da Central.', error);
+    showErrorMessage(error?.message || 'Não foi possível concluir este envio. Os dados do formulário foram mantidos.');
+  } finally {
+    centralFormSubmissionsInProgress.delete(formId);
+    buttons.forEach((button, index) => { button.disabled = previousDisabled[index]; });
+    if (previousBusy == null) form?.removeAttribute('aria-busy');
+    else form?.setAttribute('aria-busy', previousBusy);
+  }
+}
+
 async function submitFuelForm(e) {
   e.preventDefault();
+  return runCentralFormSubmission('fuel-form', submitFuelFormOnce);
+}
+
+async function submitFuelFormOnce(expectedWorkspaceId) {
 
   const profile = await requireAuthorizedDriverProfile();
   if (!profile) return;
+  if (expectedWorkspaceId !== centralOrganizationContext.workspaceId) throw new Error('A empresa mudou durante a validação. Confira os dados antes de enviar.');
 
   const formData = getFuelFormData();
   if (normalizeDirectoryValue(formData.motorista) !== normalizeDirectoryValue(profile.name)) {
@@ -4503,6 +4645,9 @@ async function submitFuelForm(e) {
   }
   const uploadKey = getFuelReceiptUploadKey(formData);
   const isComplete = currentFuelFormMode === 'completo';
+  const draft = { type: isComplete ? 'abastecimento' : 'abastecimento_rapido', formData,
+    receiptUrl: uploadedFuelReceipt?.result?.secure_url || '', profile };
+  const previousAttempt = checkCentralFormPendingAttempt('fuel-form', draft);
 
   if (!formData.file) {
     showErrorMessage('Por favor, selecione uma foto do comprovante');
@@ -4514,7 +4659,7 @@ async function submitFuelForm(e) {
     return;
   }
 
-  if (uploadedFuelReceipt.result.offline) {
+  if (uploadedFuelReceipt.result.offline && !previousAttempt) {
     const cloudPayload = buildCentralRegistroPayload({
       type: isComplete ? 'abastecimento' : 'abastecimento_rapido',
       formData,
@@ -4558,27 +4703,23 @@ async function submitFuelForm(e) {
 
   const mensagem = buildFuelWhatsAppMessage(formData, isComplete, uploadedFuelReceipt.result.secure_url);
 
-  const cloudPayload = buildCentralRegistroPayload({
-    type: isComplete ? 'abastecimento' : 'abastecimento_rapido',
-    formData,
-    receiptUrl: uploadedFuelReceipt.result.secure_url,
-    mensagem
-  });
+  const attempt = getCentralFormPendingAttempt('fuel-form', { ...draft, mensagem });
+  const cloudPayload = attempt.payload;
 
-  const centralSavePromise = saveCentralRegistroWithRetry(cloudPayload);
-  const shouldOpenWhatsApp = navigator.onLine;
-  if (shouldOpenWhatsApp) openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
-  let queuedAfterUpload = false;
+  const centralSavePromise = saveCentralFormPendingAttempt(attempt);
+  if (navigator.onLine && !attempt.whatsAppOpened) {
+    attempt.whatsAppOpened = true;
+    openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, cloudPayload.data.mensagemWhatsapp);
+  }
 
   try {
     await centralSavePromise;
   } catch (error) {
     console.error('Erro ao registrar abastecimento no Supabase:', error);
-    if (error?.localQueueConfirmed && (error?.isNetworkError || !navigator.onLine)) queuedAfterUpload = true;
-    else {
-      showErrorMessage(getCentralCloudErrorMessage(error));
-      return;
-    }
+    showErrorMessage(error?.localQueueConfirmed
+      ? 'Este envio está guardado e ainda aguarda confirmação. Tente novamente sem alterar os campos: será usado o mesmo registro, sem duplicar.'
+      : getCentralCloudErrorMessage(error));
+    return;
   }
 
   saveDriverNameSuggestion(formData.motorista);
@@ -4588,29 +4729,37 @@ async function submitFuelForm(e) {
     protocol: cloudPayload.data.protocolo,
     type: cloudPayload.data.tipo,
     date: formData.data,
-    time: formData.horaFormatada,
+    time: cloudPayload.data.hora,
     value: isComplete && formData.valor ? formData.valor : '',
     numericValue: isComplete ? (parseCentralMoney(formData.valor) || 0) : 0,
     supplier: formData.posto,
-    receiptUrl: uploadedFuelReceipt.result.secure_url,
+    receiptUrl: cloudPayload.data.comprovanteUrl,
     status: 'pendente'
   });
+  if (preserveChangedCentralFormDraft(attempt, {
+    type: currentFuelFormMode === 'completo' ? 'abastecimento' : 'abastecimento_rapido', formData: getFuelFormData(),
+    receiptUrl: uploadedFuelReceipt?.result?.secure_url || '', profile: getDriverProfile()
+  })) return;
   document.getElementById('fuel-form').reset();
   document.getElementById('fuel-form-modal').classList.add('hidden');
   resetFuelPhotoState();
   setFuelDateToToday();
   applyFuelFormMode('rapido');
   populateDriverOptions();
-  showSuccessMessage(queuedAfterUpload
-    ? 'Registro guardado. A Central concluirá o envio quando a internet voltar.'
-    : 'WhatsApp aberto. Envie a mensagem para validar o abastecimento.');
+  centralFormPendingAttempts.delete(attempt.key);
+  showSuccessMessage('Registro confirmado na Central. Envie também a mensagem aberta no WhatsApp.');
 }
 
 async function submitLooseNoteForm(e) {
   e.preventDefault();
+  return runCentralFormSubmission('loose-note-form', submitLooseNoteFormOnce);
+}
+
+async function submitLooseNoteFormOnce(expectedWorkspaceId) {
 
   const profile = await requireAuthorizedDriverProfile();
   if (!profile) return;
+  if (expectedWorkspaceId !== centralOrganizationContext.workspaceId) throw new Error('A empresa mudou durante a validação. Confira os dados antes de enviar.');
 
   const formData = getLooseNoteFormData();
   if (normalizeDirectoryValue(formData.motorista) !== normalizeDirectoryValue(profile.name)) {
@@ -4618,6 +4767,8 @@ async function submitLooseNoteForm(e) {
     return;
   }
   const uploadKey = getLooseNoteReceiptUploadKey(formData);
+  const draft = { type: 'servico', formData, receiptUrl: uploadedLooseNoteReceipt?.result?.secure_url || '', profile };
+  const previousAttempt = checkCentralFormPendingAttempt('loose-note-form', draft);
 
   if (!formData.motorista || !formData.fornecedor || !formData.tipoServico || !formData.valor || !formData.data) {
     showErrorMessage('Preencha motorista, fornecedor, tipo do servi\u00e7o, valor e data.');
@@ -4634,7 +4785,7 @@ async function submitLooseNoteForm(e) {
     return;
   }
 
-  if (uploadedLooseNoteReceipt.result.offline) {
+  if (uploadedLooseNoteReceipt.result.offline && !previousAttempt) {
     const cloudPayload = buildCentralRegistroPayload({
       type: 'servico',
       formData,
@@ -4673,27 +4824,23 @@ async function submitLooseNoteForm(e) {
 
   const mensagem = buildLooseWhatsAppMessage(formData, uploadedLooseNoteReceipt.result.secure_url);
 
-  const cloudPayload = buildCentralRegistroPayload({
-    type: 'servico',
-    formData,
-    receiptUrl: uploadedLooseNoteReceipt.result.secure_url,
-    mensagem
-  });
+  const attempt = getCentralFormPendingAttempt('loose-note-form', { ...draft, mensagem });
+  const cloudPayload = attempt.payload;
 
-  const centralSavePromise = saveCentralRegistroWithRetry(cloudPayload);
-  const shouldOpenWhatsApp = navigator.onLine;
-  if (shouldOpenWhatsApp) openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
-  let queuedAfterUpload = false;
+  const centralSavePromise = saveCentralFormPendingAttempt(attempt);
+  if (navigator.onLine && !attempt.whatsAppOpened) {
+    attempt.whatsAppOpened = true;
+    openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, cloudPayload.data.mensagemWhatsapp);
+  }
 
   try {
     await centralSavePromise;
   } catch (error) {
     console.error('Erro ao registrar servi\u00e7o no Supabase:', error);
-    if (error?.localQueueConfirmed && (error?.isNetworkError || !navigator.onLine)) queuedAfterUpload = true;
-    else {
-      showErrorMessage(getCentralCloudErrorMessage(error));
-      return;
-    }
+    showErrorMessage(error?.localQueueConfirmed
+      ? 'Este envio está guardado e ainda aguarda confirmação. Tente novamente sem alterar os campos: será usado o mesmo registro, sem duplicar.'
+      : getCentralCloudErrorMessage(error));
+    return;
   }
 
   saveDriverNameSuggestion(formData.motorista);
@@ -4702,17 +4849,18 @@ async function submitLooseNoteForm(e) {
     protocol: cloudPayload.data.protocolo,
     type: cloudPayload.data.tipo,
     date: formData.data,
-    time: formData.horaFormatada,
+    time: cloudPayload.data.hora,
     value: formData.valor || '',
     numericValue: parseCentralMoney(formData.valor) || 0,
     supplier: formData.fornecedor,
-    receiptUrl: uploadedLooseNoteReceipt.result.secure_url,
+    receiptUrl: cloudPayload.data.comprovanteUrl,
     status: 'pendente'
   });
+  if (preserveChangedCentralFormDraft(attempt, { type: 'servico', formData: getLooseNoteFormData(),
+    receiptUrl: uploadedLooseNoteReceipt?.result?.secure_url || '', profile: getDriverProfile() })) return;
   closeLooseNoteForm();
-  showSuccessMessage(queuedAfterUpload
-    ? 'Registro guardado. A Central concluirá o envio quando a internet voltar.'
-    : 'WhatsApp aberto. Envie a mensagem para validar o registro de serviços.');
+  centralFormPendingAttempts.delete(attempt.key);
+  showSuccessMessage('Registro confirmado na Central. Envie também a mensagem aberta no WhatsApp.');
 }
 
 function showSuccessMessage(message) {

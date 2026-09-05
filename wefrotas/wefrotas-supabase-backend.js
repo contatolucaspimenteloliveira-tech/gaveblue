@@ -351,10 +351,72 @@
     return { revision:Number(data?.revision)||0, updatedAt:data?.updatedAt||'', initialized:data?.initialized===true, snapshot };
   }
 
+  const PRIVATE_ASSET_SIGN_TTL_SECONDS = 31536000;
+  const PRIVATE_ASSET_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
+  const PRIVATE_ASSET_RENEW_MARGIN_MS = 60 * 1000;
+  const privateAssetUrlCache = new Map();
+  let privateAssetUrlCacheContext = '';
+
   function privateAssetPath(value, organizationId) {
     if(typeof value!=='string'||value.length>1024||/[\\%?#:\u0000-\u001f\u007f]/.test(value))return '';
     const parts=value.split('/');
     return parts.length>=3&&parts[0]===organizationId&&parts.every(part=>part&&part!=='.'&&part!=='..')?value:'';
+  }
+
+  function validatePrivateAssetSignature(value, path, bucket, requestedAt) {
+    try {
+      const url = new URL(value);
+      if (url.protocol !== 'https:' || url.origin !== new URL(config.url).origin || url.username || url.password || url.hash
+        || decodeURIComponent(url.pathname) !== `/storage/v1/object/sign/${bucket}/${path}`) return null;
+      const token = url.searchParams.get('token');
+      if (!token) return null;
+      let expiresAt = requestedAt + PRIVATE_ASSET_SIGN_TTL_SECONDS * 1000;
+      // Supabase currently returns a JWT. Respect a shorter server expiry;
+      // never extend validity based on the browser cache or a previous URL.
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        const claims = JSON.parse(global.atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, '=')));
+        if (!Number.isFinite(claims.exp) || claims.exp <= 0) return null;
+        expiresAt = Math.min(expiresAt, claims.exp * 1000);
+      }
+      if (expiresAt <= Date.now()) return null;
+      return { url: url.href, validUntil: Math.min(requestedAt + PRIVATE_ASSET_CACHE_MAX_AGE_MS, expiresAt - PRIVATE_ASSET_RENEW_MARGIN_MS) };
+    } catch (_) { return null; }
+  }
+
+  async function getPrivateAssetSignature(path, scope) {
+    assertContext(scope);
+    const bucket = config.assetsBucket || 'wefrotas-assets';
+    const cacheContext = JSON.stringify([scope.organizationId, scope.userId, scope.epoch, bucket]);
+    if (privateAssetUrlCacheContext !== cacheContext) {
+      privateAssetUrlCache.clear();
+      privateAssetUrlCacheContext = cacheContext;
+    }
+    const cached = privateAssetUrlCache.get(path);
+    if (cached?.promise) return cached.promise;
+    if (cached?.url && cached.validUntil > Date.now()) return cached.url;
+    privateAssetUrlCache.delete(path);
+    // Bound memory while retaining only this organization/session generation.
+    while (privateAssetUrlCache.size >= 512) privateAssetUrlCache.delete(privateAssetUrlCache.keys().next().value);
+    const entry = { promise: null, url: '', validUntil: 0 };
+    const requestedAt = Date.now();
+    entry.promise = (async () => {
+      const { data, error } = await ensureClient().storage.from(bucket).createSignedUrl(path, PRIVATE_ASSET_SIGN_TTL_SECONDS);
+      assertContext(scope);
+      if (error) return '';
+      const signature = validatePrivateAssetSignature(data?.signedUrl, path, bucket, requestedAt);
+      if (!signature) return '';
+      entry.url = signature.url;
+      entry.validUntil = signature.validUntil;
+      return signature.url;
+    })();
+    privateAssetUrlCache.set(path, entry);
+    try { return await entry.promise; }
+    finally {
+      entry.promise = null;
+      if (privateAssetUrlCache.get(path) === entry && (!entry.url || entry.validUntil <= Date.now())) privateAssetUrlCache.delete(path);
+    }
   }
 
   async function refreshPrivateAssetUrls(snapshot, scope = captureContext()) {
@@ -375,9 +437,8 @@
     });
     const paths=[...new Set(assetReferences.map(reference=>reference.path))];
     if(!paths.length)return snapshot;
-    const store=ensureClient().storage.from(config.assetsBucket||'wefrotas-assets');
     const signedByPath=new Map();
-    await Promise.all(paths.map(async path=>{const{data,error}=await store.createSignedUrl(path,31536000);if(!error&&data?.signedUrl)signedByPath.set(path,data.signedUrl);}));
+    await Promise.all(paths.map(async path=>{const url=await getPrivateAssetSignature(path,scope);if(url)signedByPath.set(path,url);}));
     assertContext(scope);
     assetReferences.forEach(({item,path,urlField})=>{const url=signedByPath.get(path);if(url){const fragment=String(item[urlField]||'').match(/#.*$/)?.[0]||'';item[urlField]=url+fragment;}});
     return snapshot;
@@ -413,7 +474,10 @@
       if(!isCurrentContext(scope))return;
       const row=payload.eventType==='DELETE'?payload.old:payload.new;
       if(!row?.entity_id)return;
-      centralListener?.({events:[`wefrotas_central_records.${payload.eventType==='DELETE'?'delete':'update'}`],payload:{...row.data,$id:row.entity_id,id:row.entity_id,status:row.status,workspaceId:scope.workspaceId}});
+      centralListener?.({events:[`wefrotas_central_records.${payload.eventType==='DELETE'?'delete':'update'}`],
+        ...(payload.commit_timestamp ? {commitTimestamp:payload.commit_timestamp} : {}),
+        payload:{...row.data,$id:row.entity_id,id:row.entity_id,status:row.status,workspaceId:scope.workspaceId,
+          ...(row.created_at ? {$createdAt:row.created_at} : {}),...(row.updated_at ? {$updatedAt:row.updated_at} : {})}});
     }).subscribe();
   }
 
@@ -705,7 +769,8 @@
   async function listCentralPendingRecords(limit=150) {
     const scope=captureContext();const {data,error,count}=await ensureClient().from('wefrotas_central_records').select('*',{count:'exact'}).eq('organization_id',scope.organizationId).order('occurred_at',{ascending:false}).limit(Math.min(500,Math.max(1,Number(limit)||150)));
     assertContext(scope);if(error)throw error;
-    const rows=(data||[]).map(row=>({...row.data,$id:row.entity_id,id:row.entity_id,workspaceId:scope.workspaceId,status:row.status}));
+    const rows=(data||[]).map(row=>({...row.data,$id:row.entity_id,id:row.entity_id,workspaceId:scope.workspaceId,status:row.status,
+      ...(row.created_at ? {$createdAt:row.created_at} : {}),...(row.updated_at ? {$updatedAt:row.updated_at} : {})}));
     return{rows,total:Number(count) || rows.length};
   }
 
