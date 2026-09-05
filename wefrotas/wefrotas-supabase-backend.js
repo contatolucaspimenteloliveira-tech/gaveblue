@@ -681,6 +681,7 @@
         assertContext(scope);if(error)throw error;body={ok:true,...data};
       }
       else if(payload.action==='central-record-delete') {await deleteCentralPendingRecord(payload.recordId);body={ok:true};}
+      else if(payload.action==='central-banner-delete') {await deleteCentralHomeBanner(payload.rowId);body={ok:true};}
       else body=await callAdminFunction(payload);
       return execution(body,200);
     } catch(error){return execution({ok:false,error:error.message,code:error.code||500,type:error.name||''},Number(error.code)||500);}
@@ -735,13 +736,21 @@
     const id=String(value.id||value.$id||crypto.randomUUID());const row={organization_id:scope.organizationId,entity_id:id,active:value.active!==false,sort_order:Number(value.sortOrder)||0,data:{...value,id}};
     const{data,error}=await ensureClient().from('wefrotas_banners').upsert(row,{onConflict:'organization_id,entity_id'}).select().single();assertContext(scope);if(error)throw error;return{...data.data,$id:id};
   }
+  async function upsertCentralHomeBanner(rowId,value) {
+    // Existing screens pass (rowId, data), while create passes one object.
+    if(arguments.length===1)return upsertBanner(rowId);
+    assertPermission('manageSettings');
+    if(typeof rowId!=='string'||!rowId.trim())throw new Error('O identificador do banner é inválido.');
+    if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Os dados do banner são inválidos.');
+    return upsertBanner({...value,id:rowId,$id:rowId});
+  }
   async function updateCentralHomeBanner(id,patch={}) {
     assertPermission('manageSettings');const scope=captureContext();
     const {data,error}=await ensureClient().from('wefrotas_banners').select('*').eq('organization_id',scope.organizationId).eq('entity_id',String(id)).single();
     assertContext(scope);if(error)throw error;
     return upsertBanner({...data.data,...patch,id:String(id),$id:String(id)});
   }
-  async function deleteCentralHomeBanner(id){assertPermission('manageSettings');const scope=captureContext();const{error}=await ensureClient().from('wefrotas_banners').delete().eq('organization_id',scope.organizationId).eq('entity_id',String(id));assertContext(scope);if(error)throw error;return true;}
+  async function deleteCentralHomeBanner(id){assertPermission('manageSettings');if(typeof id!=='string'||!id.trim())throw new Error('O identificador do banner é inválido.');const scope=captureContext();const{error}=await ensureClient().from('wefrotas_banners').delete().eq('organization_id',scope.organizationId).eq('entity_id',id);assertContext(scope);if(error)throw error;return true;}
 
   async function syncCentralDriverDirectory(snapshotValue=snapshotGetter?.()||{}) {
     assertPermission('syncSnapshot');
@@ -760,7 +769,7 @@
     listCentralPendingRecords,updateCentralPendingRecord,deleteCentralPendingRecord,
     uploadCentralBanner:file=>uploadFile(file,'banners'),deleteCentralBannerFile:deleteFile,
     uploadCentralCityImage:file=>uploadFile(file,'cities'),deleteCentralCityImage:deleteFile,
-    listCentralHomeBanners,createCentralHomeBanner:upsertBanner,upsertCentralHomeBanner:upsertBanner,updateCentralHomeBanner,deleteCentralHomeBanner,
+    listCentralHomeBanners,createCentralHomeBanner:upsertBanner,upsertCentralHomeBanner,updateCentralHomeBanner,deleteCentralHomeBanner,
     syncCentralDriverDirectory
   });
 })(window);
