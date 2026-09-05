@@ -1,4 +1,4 @@
-const CENTRAL_RELEASE = '20260905-central-stability-1';
+const CENTRAL_RELEASE = '20260905-central-app-polish-1';
 const CENTRAL_SCOPE_KEY = new URL(self.registration.scope).pathname.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'root';
 const CACHE_PREFIX = `central-registros-static-${CENTRAL_SCOPE_KEY}-v`;
 const CACHE_NAME = `${CACHE_PREFIX}${CENTRAL_RELEASE}`;
@@ -12,7 +12,7 @@ const STATIC_ASSETS = Array.from(new Set([
   CENTRAL_SOURCE_SHELL_URL,
   CENTRAL_MANIFEST_URL,
   './styles.css?v=20260905-supabase-push-confirmed-1',
-  './app.js?v=20260905-central-stability-1',
+  './app.js?v=20260905-central-app-polish-1',
   './assets/brand/covre-e-cia.png',
   './assets/home/hero-posto.png',
   './assets/home/hero-revisao-km-desktop.jpeg',
@@ -201,19 +201,71 @@ self.addEventListener('sync', (event) => {
   );
 });
 
+function resolveCentralNotificationTarget(data = {}) {
+  const scopeUrl = new URL(self.registration.scope);
+  let targetUrl;
+  try {
+    targetUrl = new URL(String(data?.url || './'), scopeUrl);
+    if (targetUrl.origin !== scopeUrl.origin || targetUrl.username || targetUrl.password ||
+        !['https:', 'http:'].includes(targetUrl.protocol)) targetUrl = new URL(scopeUrl);
+  } catch (error) {
+    targetUrl = new URL(scopeUrl);
+  }
+
+  // The same Central is installed under two manifest identities. A notification
+  // must stay in the receiving installation's scope instead of moving a legacy
+  // PWA to /central/ and triggering the browser's out-of-scope address bar.
+  const isCentralEntry = /^\/(?:central|postoscredenciados-covreecia)(?:\/(?:index\.html)?)?$/.test(targetUrl.pathname);
+  const workspaceId = String(data?.workspaceId || '').trim();
+  const hasWorkspace = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(workspaceId);
+  const targetWorkspace = hasWorkspace ? workspaceId : targetUrl.searchParams.get('empresa') || '';
+  if (isCentralEntry) {
+    // The legacy shell is Covre-only and ignores empresa. Other companies must
+    // use the neutral shell; staying standalone never takes priority over tenant.
+    targetUrl.pathname = scopeUrl.pathname === '/postoscredenciados-covreecia/' &&
+      targetWorkspace && targetWorkspace !== 'covre-e-cia' ? '/central/' : scopeUrl.pathname;
+  }
+  if (isCentralEntry || targetUrl.pathname.startsWith(scopeUrl.pathname)) {
+    if (hasWorkspace) targetUrl.searchParams.set('empresa', workspaceId);
+  }
+  return targetUrl;
+}
+
+async function openCentralNotificationTarget(targetUrl) {
+  const scopeUrl = new URL(self.registration.scope);
+  const targetWorkspace = targetUrl.searchParams.get('empresa') || '';
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true }).catch(() => []);
+  const existing = clients.find((client) => {
+    try {
+      const clientUrl = new URL(client.url);
+      // Never navigate another company's already-open Central or another app.
+      const clientWorkspace = clientUrl.searchParams.get('empresa') ||
+        (scopeUrl.pathname === '/postoscredenciados-covreecia/' ? 'covre-e-cia' : '');
+      return targetUrl.origin === scopeUrl.origin && targetUrl.pathname.startsWith(scopeUrl.pathname) &&
+        clientUrl.origin === scopeUrl.origin && clientUrl.pathname.startsWith(scopeUrl.pathname) &&
+        clientWorkspace === targetWorkspace;
+    } catch (error) { return false; }
+  });
+  if (existing) {
+    try {
+      // Focusing the same URL must not reload an in-progress form.
+      const opened = existing.url === targetUrl.href ? existing : await existing.navigate(targetUrl.href);
+      if (opened) return await opened.focus();
+    } catch (error) {
+      // A window may disappear between matchAll() and focus().
+    }
+  }
+  return self.clients.openWindow(targetUrl.href);
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = new URL(event.notification?.data?.url || './', self.location.href).href;
-  event.waitUntil(
-    markCentralNotificationRead(event.notification?.data?.notificationId).catch(() => null).then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true })).then((clients) => {
-      const existing = clients.find((client) => client.url.startsWith(self.registration.scope));
-      if (existing) {
-        existing.navigate(targetUrl);
-        return existing.focus();
-      }
-      return self.clients.openWindow(targetUrl);
-    })
-  );
+  const targetUrl = resolveCentralNotificationTarget(event.notification?.data);
+  event.waitUntil(Promise.all([
+    // Notification history cannot delay or prevent opening the installed app.
+    markCentralNotificationRead(event.notification?.data?.notificationId).catch(() => null),
+    openCentralNotificationTarget(targetUrl)
+  ]));
 });
 
 self.addEventListener('fetch', (event) => {
@@ -227,7 +279,7 @@ self.addEventListener('fetch', (event) => {
   if (requestUrl.origin !== self.location.origin) {
     if (!['image', 'script', 'style', 'font'].includes(request.destination)) return;
     event.respondWith(
-      caches.match(request).then((cachedResponse) => {
+      caches.open(CACHE_NAME).then((cache) => cache.match(request)).then((cachedResponse) => {
         const networkResponse = fetch(request).then((response) => {
           if (response.ok || response.type === 'opaque') {
             caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
@@ -245,24 +297,36 @@ self.addEventListener('fetch', (event) => {
   }
 
   const isNavigation = request.mode === 'navigate';
-  const networkRequest = isNavigation
+  // /central/ fetches its shared HTML shell instead of navigating to it.
+  // Treat that fetch and the manifest as documents too; stale-while-revalidate
+  // could otherwise boot an old app from a different installation's cache.
+  const documentUrl = [CENTRAL_SHELL_URL, CENTRAL_SOURCE_SHELL_URL, CENTRAL_MANIFEST_URL]
+    .find((url) => new URL(url).pathname === requestUrl.pathname);
+  const isAppDocument = isNavigation || !!documentUrl;
+  const networkRequest = isAppDocument
     ? new Request(request, { cache: 'no-store' })
     : request;
 
-  if (isNavigation) {
+  if (isAppDocument) {
+    const cacheKey = isNavigation ? CENTRAL_SHELL_URL : documentUrl;
     event.respondWith(
       fetch(networkRequest)
-        .then((response) => {
-          caches.open(CACHE_NAME).then((cache) => cache.put(CENTRAL_SHELL_URL, response.clone()));
+        .then(async (response) => {
+          if (!response.ok) throw new Error('Central app document unavailable');
+          // A quota/storage failure must not discard a valid online page.
+          try { await (await caches.open(CACHE_NAME)).put(cacheKey, response.clone()); } catch (error) {}
           return response;
         })
-        .catch(() => caches.match(CENTRAL_SHELL_URL))
+        .catch(async () => {
+          const cached = await (await caches.open(CACHE_NAME)).match(cacheKey);
+          return cached || new Response('', { status: 503, statusText: 'Offline app unavailable' });
+        })
     );
     return;
   }
 
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
+    caches.open(CACHE_NAME).then((cache) => cache.match(request)).then((cachedResponse) => {
       const networkResponse = fetch(networkRequest).then((response) => {
         if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
         return response;

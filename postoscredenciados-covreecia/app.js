@@ -3842,6 +3842,9 @@ function renderCentralHistoryPendingNotice(organization = centralOrganizationCon
 
 function applyCentralOrganizationBranding(organization = {}) {
   renderCentralHistoryPendingNotice(organization);
+  // Keep the installed app's status bar consistent with both manifests.
+  // Company/action colors belong to the page, not the Android app chrome.
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#2563eb');
   const name = String(organization.name || 'Central de Registros').trim();
   const branding = organization.branding || {};
   const institutional = organization.institutional || {};
@@ -3852,7 +3855,6 @@ function applyCentralOrganizationBranding(organization = {}) {
   const secondaryColor = String(branding.secondaryColor || '');
   if (/^#[0-9a-f]{6}$/i.test(primaryColor)) {
     document.documentElement.style.setProperty('--tenant-primary', primaryColor);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', primaryColor);
   }
   if (/^#[0-9a-f]{6}$/i.test(secondaryColor)) document.documentElement.style.setProperty('--tenant-secondary', secondaryColor);
   document.title = `Central de Registros | ${name}`;
