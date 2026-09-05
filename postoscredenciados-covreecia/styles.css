@@ -1178,6 +1178,49 @@ body.driver-profile-open .mobile-bottom-nav {
   height: 1rem;
 }
 
+.central-reconfiguration-overlay[hidden] { display: none !important; }
+.central-reconfiguration-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: grid;
+  place-items: center;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  background: rgba(15, 23, 42, .45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.central-reconfiguration-dialog {
+  width: min(100%, 28rem);
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(1.2rem, 5vw, 2rem);
+  border: 1px solid rgba(255,255,255,.9);
+  border-radius: 1.6rem;
+  background: #fff;
+  color: #334155;
+  box-shadow: 0 24px 80px rgba(15,23,42,.24);
+  font-size: .9rem;
+  line-height: 1.6;
+}
+.central-reconfiguration-icon { display: grid; place-items: center; width: 3rem; height: 3rem; margin-bottom: 1rem; border-radius: 1rem; background: #eff6ff; color: #2563eb; }
+.central-reconfiguration-icon svg { width: 1.5rem; height: 1.5rem; }
+.central-reconfiguration-kicker { margin: 0 0 .4rem; color: #2563eb; font-size: .68rem; font-weight: 800; letter-spacing: .12em; }
+.central-reconfiguration-dialog h2 { margin: 0 0 .9rem; color: #0f172a; font-size: clamp(1.3rem,5vw,1.6rem); font-weight: 800; line-height: 1.2; letter-spacing: -.035em; }
+.central-reconfiguration-steps { list-style: decimal; margin: 1rem 0; padding-left: 1.3rem; }
+.central-reconfiguration-steps li + li { margin-top: .3rem; }
+.central-reconfiguration-preservation { padding: .8rem 1rem; border-radius: .9rem; background: #f1f5f9; color: #475569; font-size: .79rem; }
+.central-reconfiguration-actions { display: grid; gap: .5rem; margin-top: 1.25rem; }
+.central-reconfiguration-actions button { min-height: 2.8rem; padding: .7rem 1rem; border-radius: .85rem; font-size: .85rem; font-weight: 750; }
+#central-reconfiguration-start { display: flex; align-items: center; justify-content: center; gap: .7rem; background: #2563eb; color: #fff; }
+#central-reconfiguration-start:hover { background: #1d4ed8; }
+#central-reconfiguration-later { background: transparent; color: #64748b; }
+.central-reconfiguration-actions button:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
+body.central-reconfiguration-open { overflow: hidden; }
+body.central-reconfiguration-open .mobile-bottom-nav { visibility: hidden; }
+
 .driver-directory-message {
   margin-top: 1rem;
   border-radius: 0.95rem;
@@ -1376,7 +1419,7 @@ body.driver-profile-open .mobile-bottom-nav {
   line-height: 1.08;
 }
 
-.driver-profile-overlay[data-guided="true"] .driver-profile-close,
+.driver-profile-overlay[data-guided="true"]:not([data-reconfiguration-cancelable="true"]) .driver-profile-close,
 .driver-profile-overlay[data-guided="true"] #driver-profile-skip {
   display: none !important;
 }

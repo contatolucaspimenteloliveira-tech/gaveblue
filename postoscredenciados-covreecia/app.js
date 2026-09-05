@@ -1356,20 +1356,112 @@ function setFuelDateToToday() {
   }
 }
 
+let centralApplicationRefreshInProgress = false;
+
+function hasCentralWorkBeforeRefresh() {
+  const editing = ['fuel-form-modal', 'loose-note-modal', 'driver-profile-modal',
+    'receipt-camera-modal', 'receipt-validation-modal'].some((id) => {
+    const modal = document.getElementById(id);
+    return modal && !modal.classList.contains('hidden');
+  });
+  return editing || centralFormSubmissionsInProgress.size > 0 || centralRetryInProgress ||
+    centralOfflineSyncInProgress || !!fuelReceiptUploadPromise || !!looseNoteReceiptUploadPromise;
+}
+
+function waitForCentralWorkerUpdate(registration, timeoutMs = 15000) {
+  // update() only checks the script. Installation/precache and clients.claim()
+  // can finish later; reloading after a fixed delay can boot the old shell again.
+  // This updates web content, not the Android WebAPK/installed manifest timer.
+  return new Promise((resolve, reject) => {
+    const workers = new Set();
+    const initialActive = registration.active;
+    let candidate = registration.installing || registration.waiting || null;
+    let checked = false;
+    let finished = false;
+    const finish = (error) => {
+      if (finished) return;
+      finished = true;
+      window.clearTimeout(timer);
+      registration.removeEventListener('updatefound', inspect);
+      navigator.serviceWorker.removeEventListener('controllerchange', inspect);
+      workers.forEach((worker) => worker.removeEventListener('statechange', inspect));
+      if (error) reject(error); else resolve();
+    };
+    const watch = (worker) => {
+      if (!worker || workers.has(worker)) return;
+      workers.add(worker);
+      worker.addEventListener('statechange', inspect);
+    };
+    function inspect() {
+      if (finished) return;
+      const next = registration.installing || registration.waiting ||
+        (registration.active !== initialActive ? registration.active : null);
+      if (next) candidate = next;
+      watch(candidate);
+      if (candidate?.state === 'redundant') {
+        finish(new Error('A atualização não foi instalada. Tente novamente com uma conexão estável.'));
+        return;
+      }
+      if (candidate?.state === 'installed') candidate.postMessage('SKIP_WAITING');
+      if (!checked) return;
+      const active = candidate || registration.active;
+      if (active?.state === 'activated' && navigator.serviceWorker.controller === active) finish();
+    }
+    const timer = window.setTimeout(() => finish(new Error(
+      'A atualização ainda está sendo preparada. Aguarde alguns instantes e toque em atualizar novamente.'
+    )), timeoutMs);
+    registration.addEventListener('updatefound', inspect);
+    navigator.serviceWorker.addEventListener('controllerchange', inspect);
+    inspect();
+    Promise.resolve().then(() => registration.update()).then(() => {
+      checked = true;
+      inspect();
+    }, (error) => finish(error));
+  });
+}
+
 async function refreshCentralApplication() {
+  if (centralApplicationRefreshInProgress) return;
+  if (hasCentralWorkBeforeRefresh()) {
+    showErrorMessage('Conclua o envio ou feche o formulário antes de atualizar. Seus dados serão preservados.');
+    return;
+  }
+  centralApplicationRefreshInProgress = true;
   const button = document.getElementById('home-refresh-button');
+  const previousTitle = button?.getAttribute('title');
   if (button) {
     button.disabled = true;
     button.classList.add('is-refreshing');
+    button.setAttribute('title', 'Preparando atualização segura…');
   }
   try {
-    const registration = await navigator.serviceWorker.getRegistration();
-    await registration?.update();
-    registration?.waiting?.postMessage('SKIP_WAITING');
-    window.setTimeout(() => window.location.reload(), 240);
+    if ('serviceWorker' in navigator) {
+      const scopePath = isNeutralCentralEntry() ? '/central/' : '/postoscredenciados-covreecia/';
+      let registration = await navigator.serviceWorker.getRegistration(scopePath);
+      // An old root worker must not be treated as this Central's registration.
+      if (!registration || new URL(registration.scope).pathname !== scopePath) {
+        registration = await registerServiceWorker();
+      }
+      if (!registration) throw new Error('Não foi possível preparar a atualização. Confira a conexão e tente novamente.');
+      await waitForCentralWorkerUpdate(registration);
+    }
+    // The driver may have started editing while installation was running.
+    if (hasCentralWorkBeforeRefresh()) {
+      showErrorMessage('Atualização pronta. Conclua o envio ou feche o formulário e toque em atualizar novamente.');
+      return;
+    }
+    window.location.reload();
   } catch (error) {
     console.warn('Não foi possível procurar atualização do aplicativo.', error);
-    window.location.reload();
+    showErrorMessage(error?.message || 'Não foi possível atualizar agora. Seus dados foram preservados; tente novamente.');
+  } finally {
+    centralApplicationRefreshInProgress = false;
+    if (button) {
+      button.disabled = false;
+      button.classList.remove('is-refreshing');
+      if (previousTitle === null) button.removeAttribute('title');
+      else button.setAttribute('title', previousTitle);
+    }
   }
 }
 
@@ -2044,6 +2136,109 @@ function renderProfilePage() {
   }).join('');
 }
 
+const CENTRAL_RECONFIGURATION_NOTICE_VERSION = '20260905-server-incident-1';
+const CENTRAL_RECONFIGURATION_NOTICE_KEY = 'gaveblue:central-reconfiguration-notice';
+let centralReconfigurationDeferredWorkspace = '';
+let centralReconfigurationRequestedWorkspace = '';
+let centralReconfigurationReturnFocus = null;
+let centralStartupNavigationReady = false;
+let centralStartupNavigationTimer = null;
+
+function getCentralReconfigurationWorkspace() {
+  const slug = String(centralOrganizationContext?.slug || '');
+  return slug && slug === getRequestedCentralOrganizationSlug()
+    && slug === String(centralOrganizationContext?.workspaceId || '') ? slug : '';
+}
+
+function shouldShowCentralReconfigurationNotice() {
+  const workspace = getCentralReconfigurationWorkspace();
+  if (!workspace || centralReconfigurationDeferredWorkspace === workspace) return false;
+  try {
+    return localStorage.getItem(`${CENTRAL_RECONFIGURATION_NOTICE_KEY}:${workspace}`) !== CENTRAL_RECONFIGURATION_NOTICE_VERSION;
+  } catch (error) { return true; }
+}
+
+function isCentralReconfigurationNoticeOpen() {
+  const notice = document.getElementById('central-reconfiguration-notice');
+  return !!notice && !notice.hidden;
+}
+
+function showCentralReconfigurationNotice() {
+  const notice = document.getElementById('central-reconfiguration-notice');
+  if (!notice || !shouldShowCentralReconfigurationNotice()) return false;
+  // Never interrupt a form opened while the company/directory was loading.
+  if (document.querySelector('#fuel-form-modal:not(.hidden), #loose-note-modal:not(.hidden), #driver-profile-modal:not(.hidden), #loading-modal:not(.hidden)')) {
+    centralReconfigurationDeferredWorkspace = getCentralReconfigurationWorkspace();
+    return false;
+  }
+  centralReconfigurationReturnFocus = document.activeElement;
+  notice.hidden = false;
+  notice.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('central-reconfiguration-open');
+  document.getElementById('central-reconfiguration-start')?.focus({ preventScroll: true });
+  return true;
+}
+
+function hideCentralReconfigurationNotice() {
+  const notice = document.getElementById('central-reconfiguration-notice');
+  if (notice) { notice.hidden = true; notice.setAttribute('aria-hidden', 'true'); }
+  document.body.classList.remove('central-reconfiguration-open');
+  if (centralReconfigurationReturnFocus?.isConnected) centralReconfigurationReturnFocus.focus();
+}
+
+function continueCentralStartupNavigation() {
+  if (!centralStartupNavigationReady || centralStartupNavigationTimer !== null || isCentralReconfigurationNoticeOpen() || centralReconfigurationRequestedWorkspace) return;
+  const workspace = getCentralReconfigurationWorkspace();
+  const hash = window.location.hash;
+  if (!workspace || (hash !== '#meus-envios' && !shouldOpenDriverOnboarding())) return;
+  centralStartupNavigationTimer = window.setTimeout(() => {
+    centralStartupNavigationTimer = null;
+    // A driver can open a form or change company while startup is completing.
+    if (workspace !== getCentralReconfigurationWorkspace() || hash !== window.location.hash
+      || isCentralReconfigurationNoticeOpen() || centralReconfigurationRequestedWorkspace
+      || hasCentralWorkBeforeRefresh() || document.querySelector('#loading-modal:not(.hidden)')) return;
+    if (hash === '#meus-envios') openMySubmissions();
+    else if (shouldOpenDriverOnboarding()) openDriverProfile();
+  }, hash === '#meus-envios' ? 350 : 450);
+}
+
+function deferCentralReconfigurationNotice() {
+  centralReconfigurationDeferredWorkspace = getCentralReconfigurationWorkspace();
+  hideCentralReconfigurationNotice();
+  // This is only a session deferral, never an acknowledgment or profile reset.
+  continueCentralStartupNavigation();
+}
+
+function startCentralReconfiguration() {
+  const workspace = getCentralReconfigurationWorkspace();
+  if (!workspace) return;
+  centralReconfigurationDeferredWorkspace = workspace;
+  centralReconfigurationRequestedWorkspace = workspace;
+  hideCentralReconfigurationNotice();
+  openDriverProfile('reconfigure');
+}
+
+function completeCentralReconfigurationNotice() {
+  const workspace = getCentralReconfigurationWorkspace();
+  if (!workspace || centralReconfigurationRequestedWorkspace !== workspace) return;
+  try { localStorage.setItem(`${CENTRAL_RECONFIGURATION_NOTICE_KEY}:${workspace}`, CENTRAL_RECONFIGURATION_NOTICE_VERSION); }
+  catch (error) { /* The completed profile must not fail because notice storage is unavailable. */ }
+  centralReconfigurationDeferredWorkspace = workspace;
+  centralReconfigurationRequestedWorkspace = '';
+}
+
+function handleCentralReconfigurationKeydown(event) {
+  if (!isCentralReconfigurationNoticeOpen()) return false;
+  if (event.key === 'Escape') { event.preventDefault(); deferCentralReconfigurationNotice(); }
+  if (event.key === 'Tab') {
+    const first = document.getElementById('central-reconfiguration-start');
+    const last = document.getElementById('central-reconfiguration-later');
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }
+  return true;
+}
+
 function shouldOpenDriverOnboarding() {
   const completedVersion = String(localStorage.getItem(centralTenantStorageKey(DRIVER_ONBOARDING_VERSION_KEY)) || '').trim();
   if (!completedVersion) return true;
@@ -2258,6 +2453,12 @@ function setDriverOnboardingStep(stepId) {
 
 function isGuidedDriverOnboarding() {
   return document.getElementById('driver-profile-modal')?.dataset.guided === 'true';
+}
+
+function canCancelCentralReconfiguration() {
+  // Captured when opening: a previously configured driver may leave the
+  // incident review if the directory/network fails. Initial setup stays locked.
+  return document.getElementById('driver-profile-modal')?.dataset.reconfigurationCancelable === 'true';
 }
 
 function returnToSuggestedVehicle() {
@@ -2496,6 +2697,7 @@ async function finishGuidedOnboarding(options = {}) {
   if (kicker) kicker.textContent = 'TUDO CERTO';
   if (title) title.textContent = 'Seu acesso está pronto!';
   setDriverOnboardingStep('driver-onboarding-ready-step');
+  completeCentralReconfigurationNotice();
 }
 function finishGuidedOnboardingAndClose() {
   closeDriverProfile();
@@ -2517,7 +2719,7 @@ async function skipDriverOnboarding() {
 function openDriverProfile(mode = 'profile') {
   const modal = document.getElementById('driver-profile-modal');
   const profile = getDriverProfile();
-  const guided = shouldOpenDriverOnboarding();
+  const guided = mode === 'reconfigure' || shouldOpenDriverOnboarding();
   document.getElementById('driver-profile-overview')?.classList.add('hidden');
   document.getElementById('driver-directory-loading')?.classList.add('hidden');
   document.getElementById('driver-directory-error')?.classList.add('hidden');
@@ -2525,7 +2727,10 @@ function openDriverProfile(mode = 'profile') {
   const search = document.getElementById('driver-profile-search');
   modal?.classList.remove('hidden');
   modal?.setAttribute('aria-hidden', 'false');
-  if (modal) modal.dataset.guided = String(guided);
+  if (modal) {
+    modal.dataset.guided = String(guided);
+    modal.dataset.reconfigurationCancelable = String(mode === 'reconfigure' && isStoredDriverProfileComplete(profile));
+  }
   document.body.classList.add('driver-profile-open');
   if (profile && mode !== 'edit' && !guided) {
     setDriverProfileDismissibility(false);
@@ -2577,8 +2782,9 @@ async function openDriverVehicleEditor() {
 }
 
 function setDriverProfileDismissibility(isOnboarding) {
-  document.getElementById('driver-profile-close')?.classList.toggle('hidden', isOnboarding);
-  document.getElementById('driver-profile-backdrop')?.classList.toggle('driver-profile-backdrop--locked', isOnboarding);
+  const locked = isOnboarding && !canCancelCentralReconfiguration();
+  document.getElementById('driver-profile-close')?.classList.toggle('hidden', locked);
+  document.getElementById('driver-profile-backdrop')?.classList.toggle('driver-profile-backdrop--locked', locked);
 }
 
 function startDriverProfileEditing() {
@@ -2611,10 +2817,12 @@ function startDriverProfileEditing() {
 }
 
 function closeDriverProfile() {
-  if (isGuidedDriverOnboarding() && !isStoredDriverProfileComplete()) return;
+  if (isGuidedDriverOnboarding() && !isStoredDriverProfileComplete() && !canCancelCentralReconfiguration()) return;
+  centralReconfigurationRequestedWorkspace = '';
   const modal = document.getElementById('driver-profile-modal');
   modal?.classList.add('hidden');
   modal?.setAttribute('aria-hidden', 'true');
+  if (modal) modal.dataset.reconfigurationCancelable = 'false';
   document.body.classList.remove('driver-profile-open');
   window.clearTimeout(driverDirectorySearchTimer);
   driverDirectorySearchTimer = null;
@@ -5850,6 +6058,7 @@ window.addEventListener('DOMContentLoaded', async function() {
     return;
   }
   await ensureCentralDeviceStateRestored();
+  showCentralReconfigurationNotice();
   populateDriverOptions();
   if (window.lucide) {
     lucide.createIcons();
@@ -5985,11 +6194,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderHomeDriverArea();
   refreshMySubmissions({ silent: true });
   await loadCentralOnboardingConfig();
-  if (window.location.hash === '#meus-envios') window.setTimeout(() => openMySubmissions(), 350);
-  else if (shouldOpenDriverOnboarding()) window.setTimeout(() => openDriverProfile(), 450);
+  centralStartupNavigationReady = true;
+  continueCentralStartupNavigation();
 });
 
 window.addEventListener('keydown', (event) => {
+  if (handleCentralReconfigurationKeydown(event)) return;
   const onboardingOpen = [
     'driver-onboarding-driver-step',
     'driver-onboarding-vehicle-step',
@@ -6001,7 +6211,8 @@ window.addEventListener('keydown', (event) => {
     'driver-onboarding-ready-step'
   ].some((id) => !document.getElementById(id)?.classList.contains('hidden'));
 
-  if (event.key === 'Escape' && !document.getElementById('driver-profile-modal')?.classList.contains('hidden') && !onboardingOpen) {
+  if (event.key === 'Escape' && !document.getElementById('driver-profile-modal')?.classList.contains('hidden') &&
+      (!onboardingOpen || canCancelCentralReconfiguration())) {
     closeDriverProfile();
   } else if (event.key === 'Escape' && !document.getElementById('my-submissions-modal')?.classList.contains('hidden')) {
     closeMySubmissions();

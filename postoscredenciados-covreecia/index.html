@@ -19,7 +19,7 @@
   </noscript>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css">
-  <link rel="stylesheet" href="./styles.css?v=20260905-supabase-push-confirmed-1">
+  <link rel="stylesheet" href="./styles.css?v=20260905-central-reconfiguration-1">
  </head>
  <body class="h-full flex flex-col">
   <div id="app-container" class="flex flex-col h-full w-full bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 overflow-hidden">
@@ -1107,6 +1107,23 @@
     </div>
    </div>
   </div>
+  <div id="central-reconfiguration-notice" class="central-reconfiguration-overlay" hidden aria-hidden="true">
+   <section class="central-reconfiguration-dialog" role="alertdialog" aria-modal="true" aria-labelledby="central-reconfiguration-title" aria-describedby="central-reconfiguration-description" tabindex="-1">
+    <span class="central-reconfiguration-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3 2 20h20L12 3Z" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9v5m0 3h.01" stroke-width="2" stroke-linecap="round"/></svg></span>
+    <p class="central-reconfiguration-kicker">AVISO IMPORTANTE</p>
+    <h2 id="central-reconfiguration-title">Vamos reconfigurar sua Central</h2>
+    <p id="central-reconfiguration-description">Tivemos uma instabilidade no servidor que afetou o sistema de envios da Central. Para continuar enviando seus registros, é necessário revisar a configuração deste aparelho.</p>
+    <ol class="central-reconfiguration-steps">
+     <li>Confirme seu nome e a placa do veículo.</li>
+     <li>Revise as permissões de câmera e notificações.</li>
+    </ol>
+    <p class="central-reconfiguration-preservation">Não desinstale o app nem limpe os dados. A revisão não apaga seus registros ou envios pendentes.</p>
+    <div class="central-reconfiguration-actions">
+     <button id="central-reconfiguration-start" type="button" onclick="startCentralReconfiguration()">Configurar novamente <span aria-hidden="true">→</span></button>
+     <button id="central-reconfiguration-later" type="button" onclick="deferCentralReconfigurationNotice()">Lembrar na próxima abertura</button>
+    </div>
+   </section>
+  </div>
   <nav class="mobile-bottom-nav" aria-label="Navega&ccedil;&atilde;o principal">
    <button type="button" class="mobile-nav-item active" data-mobile-nav="home" onclick="goToWelcome()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m3 11 9-8 9 8v10h-6v-6H9v6H3V11Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1131,6 +1148,6 @@
     <span>Configura&ccedil;&otilde;es</span>
    </button>
   </nav>
-  <script src="./app.js?v=20260905-central-app-polish-1"></script>
+  <script src="./app.js?v=20260905-central-reconfiguration-1"></script>
  </body>
 </html>
