@@ -81,6 +81,17 @@ const pages = {
               <h3 class="text-xl sm:text-2xl font-bold text-white mb-3">OPF</h3>
               <p class="text-slate-300 leading-relaxed">Emita ordens de pagamento financeiro com uma interface centralizada para lançamentos, cadastros e conferência operacional.</p>
             </a>
+            <a href="/phone-flip-simulator/" class="group rounded-[1.5rem] sm:rounded-[1.75rem] border border-emerald-400/25 bg-gradient-to-br from-emerald-500/10 via-slate-900/90 to-slate-950/90 p-5 sm:p-7 hover:border-emerald-400/50 transition-all relative overflow-hidden">
+              <span class="absolute top-5 right-5 px-3 py-1 rounded-full bg-emerald-500 text-white text-xs font-bold shadow-lg">Jogo</span>
+              <div class="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-400/20 flex items-center justify-center mb-5">
+                <svg class="w-7 h-7 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2.5" stroke-width="2"></rect><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 5h4m-4 10 4-4m-4 0h4v4m-3 4h2" /></svg>
+              </div>
+              <h3 class="text-xl sm:text-2xl font-bold text-white mb-3">Phone Flip Simulator</h3>
+              <p class="text-slate-300 leading-relaxed">Comece com R$ 5.000 virtuais, compre celulares usados e negocie cada revenda. Avalie riscos, construa sua reputação e faça seu patrimônio crescer.</p>
+              <span class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-emerald-300">Jogar grátis
+                <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-6-6 6 6-6 6" /></svg>
+              </span>
+            </a>
             <div class="rounded-[1.5rem] sm:rounded-[1.75rem] border border-amber-400/25 bg-amber-500/[0.06] p-5 sm:p-7 relative overflow-hidden">
               <span class="absolute top-5 right-5 px-3 py-1 rounded-full bg-slate-800 text-amber-200 text-xs font-bold shadow-lg border border-amber-400/20">Bloqueado</span>
               <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-400/20 flex items-center justify-center mb-5">
