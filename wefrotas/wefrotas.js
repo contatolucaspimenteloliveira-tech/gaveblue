@@ -3137,13 +3137,27 @@
 
     function normalizeCentralCityRecord(city) {
       return {
+        // Keep durable image aliases and server metadata during load/save.
+        // Reducing this row to display fields previously erased imageFileId
+        // and storagePath on unrelated snapshot saves.
+        ...(city && typeof city === 'object' && !Array.isArray(city) ? city : {}),
         id: String(city?.id || generateId()),
         name: String(city?.name || city?.nome || '').trim(),
         imageUrl: String(city?.imageUrl || city?.imagemUrl || '').trim(),
-        fileId: String(city?.fileId || '').trim(),
         active: city?.active !== false && city?.ativo !== false,
         featured: city?.featured === true || city?.destaque === true
       };
+    }
+
+    function getCentralCityStoragePath(city) {
+      // Only an explicit durable field can authorize image cleanup. Never
+      // reconstruct a path from a signed URL or send an old Appwrite ID.
+      const value = city?.imageFileId || city?.storagePath || city?.fileId;
+      const organizationId = String(window.WeFrotasBackend?.getOrganizationContext?.()?.id || '');
+      if (!organizationId || typeof value !== 'string' || value.length > 1024 || /[\\%?#:\u0000-\u001f\u007f]/.test(value)) return '';
+      const parts = value.split('/');
+      return parts.length >= 3 && parts[0] === organizationId && parts[1] === 'cities'
+        && parts.every((part) => part && part !== '.' && part !== '..') ? value : '';
     }
 
     function ensureSupplierCitiesRegistered() {
@@ -4954,11 +4968,24 @@
       if (saveButton) saveButton.disabled = true;
       setCentralCityFeedback('Salvando cidade e sincronizando o aplicativo...');
       try {
-        let uploaded = current ? { fileId: current.fileId, imageUrl: current.imageUrl } : null;
+        const previousStoragePath = getCentralCityStoragePath(current);
+        let uploaded = current || null;
         if (file) uploaded = await window.WeFrotasBackend.uploadCentralCityImage(file);
         if (!uploaded?.imageUrl) throw new Error('Não foi possível salvar a imagem da cidade.');
+        const uploadedStoragePath = file ? getCentralCityStoragePath(uploaded) : '';
+        if (file && !uploadedStoragePath) throw new Error('O upload não confirmou o identificador da imagem nesta empresa.');
         const previousName = current?.name || '';
-        const next = { id: current?.id || generateId(), name, active, featured: current?.featured === true, fileId: uploaded.fileId, imageUrl: uploaded.imageUrl };
+        const next = normalizeCentralCityRecord({
+          ...(current || {}), id: current?.id || generateId(), name, active, featured: current?.featured === true,
+          ...(Object.prototype.hasOwnProperty.call(current || {}, 'nome') ? { nome: name } : {}),
+          ...(Object.prototype.hasOwnProperty.call(current || {}, 'ativo') ? { ativo: active } : {}),
+          ...(file ? {
+            // All supported aliases must move together when replacing a photo;
+            // the API prefers imageFileId over storagePath and fileId.
+            fileId: uploadedStoragePath, imageFileId: uploadedStoragePath, storagePath: uploadedStoragePath,
+            imageUrl: uploaded.imageUrl
+          } : {})
+        });
         centralCities = current ? centralCities.map((city) => city.id === current.id ? next : city) : [...centralCities, next];
         if (current && normalizeComparableText(previousName) !== normalizeComparableText(name)) {
           allSuppliers = allSuppliers.map((supplier) => normalizeComparableText(supplier.tipo) === 'posto' && normalizeComparableText(supplier.cidade) === normalizeComparableText(previousName)
@@ -4970,7 +4997,10 @@
         renderCentralCities();
         closeCentralCityModal();
         showToast(current ? 'Cidade atualizada com sucesso.' : 'Cidade cadastrada com sucesso.');
-        if (file && current?.fileId && current.fileId !== uploaded.fileId) window.WeFrotasBackend.deleteCentralCityImage(current.fileId).catch(() => {});
+        if (file && previousStoragePath && previousStoragePath !== uploadedStoragePath
+            && !centralCities.some((city) => getCentralCityStoragePath(city) === previousStoragePath)) {
+          window.WeFrotasBackend.deleteCentralCityImage(previousStoragePath).catch(() => {});
+        }
       } catch (error) {
         setCentralCityFeedback(error?.message || 'Não foi possível salvar a cidade.', 'error');
       } finally {
@@ -4981,13 +5011,18 @@
     async function toggleCentralCity(id) {
       const city = centralCities.find((item) => String(item.id) === String(id));
       if (!city) return;
+      const previousActive = city.active;
+      const previousAtivo = city.ativo;
+      const hasLegacyActive = Object.prototype.hasOwnProperty.call(city, 'ativo');
       city.active = !city.active;
+      if (hasLegacyActive) city.ativo = city.active;
       try {
         await persistCentralConfigurationImmediately();
         renderCentralCities();
         showToast(city.active ? 'Cidade ativada no aplicativo.' : 'Cidade ocultada do aplicativo.');
       } catch (error) {
-        city.active = !city.active;
+        city.active = previousActive;
+        if (hasLegacyActive) city.ativo = previousAtivo;
         await saveToLocalStorage().catch(() => {});
         renderCentralCities();
         showToast(error?.message || 'Não foi possível atualizar a cidade no aplicativo.');
@@ -5029,7 +5064,10 @@
         renderCentralCities();
         renderAll();
         showToast('Cidade excluída com sucesso.');
-        if (city.fileId) window.WeFrotasBackend.deleteCentralCityImage(city.fileId).catch(() => {});
+        const storagePath = getCentralCityStoragePath(city);
+        if (storagePath && !centralCities.some((item) => getCentralCityStoragePath(item) === storagePath)) {
+          window.WeFrotasBackend.deleteCentralCityImage(storagePath).catch(() => {});
+        }
       } catch (error) {
         if (!centralCities.some((item) => String(item.id) === String(id))) {
           centralCities.splice(Math.max(0, cityIndex), 0, city);
