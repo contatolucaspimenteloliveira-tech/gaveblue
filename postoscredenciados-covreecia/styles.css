@@ -760,6 +760,33 @@ body.driver-profile-open .mobile-bottom-nav {
   backdrop-filter: blur(18px);
 }
 
+.central-history-pending-notice {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #f5d28a;
+  border-radius: 0.8rem;
+  background: #fff8e8;
+  color: #704711;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.central-history-pending-notice[hidden] { display: none !important; }
+.central-history-pending-notice strong { display: block; font-weight: 700; }
+.central-history-pending-notice p { margin: 0.2rem 0 0; }
+.central-history-pending-notice--persistent {
+  flex: 0 0 auto;
+  width: min(calc(100% - 1.5rem), 80rem);
+  margin: 0.65rem auto 0;
+}
+.central-history-pending-notice--history { margin: 0.75rem 0; }
+
+@media (max-width: 380px) {
+  .central-history-pending-notice { padding: 0.6rem 0.7rem; font-size: 0.75rem; }
+}
+
 .home-app-header-inner {
   position: relative;
   display: flex;

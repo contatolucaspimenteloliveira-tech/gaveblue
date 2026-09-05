@@ -23,8 +23,8 @@
     if(!config.url||!config.anonKey||!window.supabase){resultNode.textContent='Configuração Supabase indisponível.';return;}
     client=window.supabase.createClient(config.url,config.anonKey,{auth:{persistSession:true,autoRefreshToken:true}});
     const{data:{session}}=await client.auth.getSession();if(!session){resultNode.textContent='Entre primeiro no painel administrativo.';organizations.innerHTML='<option value="">Sessão administrativa ausente</option>';return;}
-    const{data,error}=await client.from('organizations').select('id,name,appwrite_workspace_id').order('name');if(error){resultNode.textContent=error.message;return;}
-    organizations.innerHTML='<option value="">Selecione a empresa</option>'+data.map(item=>`<option value="${item.id}" data-workspace="${item.appwrite_workspace_id}">${item.name}</option>`).join('');
+    const{data,error}=await client.from('organizations').select('id,name,slug').order('name');if(error){resultNode.textContent=error.message;return;}
+    organizations.innerHTML='<option value="">Selecione a empresa</option>'+data.map(item=>`<option value="${item.id}" data-workspace="${item.slug}">${item.name}</option>`).join('');
   }
   fileInput.addEventListener('change',async()=>{try{const file=fileInput.files?.[0];if(!file)return;candidates=extract(JSON.parse(await file.text()));renderCandidates();resultNode.textContent=`${candidates.length} versão(ões) independentes encontradas. Escolha uma explicitamente.`;}catch(error){candidates=[];renderCandidates();resultNode.textContent=`Backup inválido: ${error.message}`;}});
   organizations.addEventListener('change',()=>{importButton.disabled=!organizations.value||!candidatesNode.querySelector('input:checked');});

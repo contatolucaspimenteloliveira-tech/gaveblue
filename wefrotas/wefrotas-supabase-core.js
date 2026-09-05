@@ -39,9 +39,29 @@
     if (Array.isArray(value)) return value.map(canonical);
     if (!value || typeof value !== 'object') return value;
     return Object.keys(value).sort().reduce((result, key) => {
-      result[key] = canonical(value[key]);
+      result[key] = canonical(stablePrivateAssetUrl(value, key));
       return result;
     }, {});
+  }
+
+  function stablePrivateAssetUrl(record, key) {
+    const value = record[key];
+    const storagePath = key === 'vehicleImageUrl'
+      ? record.vehicleImageFileId || record.storagePath || record.fileId
+      : key === 'imageUrl' ? record.imageFileId || record.storagePath || record.fileId : '';
+    if (typeof value !== 'string' || typeof storagePath !== 'string' || !storagePath) return value;
+    // Only the temporary signature of an identified Supabase private object is
+    // ignored. Host, bucket, path, transformation/download parameters and all
+    // unrelated URLs remain part of the row's conflict comparison.
+    const match = value.match(/^(https:\/\/[^/?#]+)(\/storage\/v1\/object\/sign\/[^/?#]+\/([^?#]+))(\?[^#]*)?(#.*)?$/);
+    if (!match) return value;
+    try {
+      if (decodeURIComponent(match[3]) !== storagePath) return value;
+      const parameters = (match[4] || '').slice(1).split('&').filter(Boolean);
+      const stableParameters = parameters.filter(parameter => decodeURIComponent(parameter.split('=')[0]) !== 'token');
+      if (stableParameters.length === parameters.length) return value;
+      return match[1] + match[2] + (stableParameters.length ? '?' + stableParameters.join('&') : '') + (match[5] || '');
+    } catch (_) { return value; }
   }
 
   function equal(left, right) {

@@ -15,11 +15,10 @@ const CLOUDINARY_CLOUD_NAME = 'anh49kkl';
 const CLOUDINARY_UPLOAD_PRESET = 'comprovantes_frota';
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 const FUEL_WHATSAPP_NUMBER = '5527999884208';
-const CENTRAL_APPWRITE_ENABLED = true;
-const CENTRAL_APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
-const CENTRAL_APPWRITE_PROJECT_ID = '6a68cb3e00312ec0a3fd';
-const CENTRAL_APPWRITE_DATABASE_ID = '6a68ce8c000a36a44d98';
-const CENTRAL_APPWRITE_TABLE_ID = 'central_registros_pendentes';
+const CENTRAL_CLOUD_ENABLED = true;
+const CENTRAL_SUPABASE_URL = 'https://wkssfugzghwifaddagfr.supabase.co';
+const CENTRAL_SUPABASE_ANON_KEY = 'sb_publishable_XuQH9K6Lu7dfUEq_pBpWpQ_89PY2_Xl';
+const CENTRAL_API_FUNCTION = 'central-api';
 const CENTRAL_DEFAULT_ORGANIZATION_SLUG = 'covre-e-cia';
 const CENTRAL_ORGANIZATION_SLUG_KEY = 'gaveblue:central-organization-slug';
 const CENTRAL_ORGANIZATION_CONTEXT_KEY_PREFIX = 'gaveblue:central-organization-context:';
@@ -46,8 +45,8 @@ function centralTenantStorageKey(baseKey) {
 function isNeutralCentralEntry() {
   return /^\/central(?:\/|$)/i.test(window.location.pathname);
 }
-const CENTRAL_APPWRITE_ORIGIN = 'postoscredenciados-covreecia';
-const CENTRAL_APPWRITE_RETRY_KEY = 'postoscredenciados-covreecia:appwrite-pending-record';
+const CENTRAL_CLOUD_ORIGIN = 'central-supabase';
+const CENTRAL_PENDING_RECORDS_KEY = 'postoscredenciados-covreecia:cloud-pending-record-v2';
 const CENTRAL_DRIVER_DIRECTORY_CACHE_KEY = 'postoscredenciados-covreecia:driver-directory-cache-v2';
 const CENTRAL_STATION_DIRECTORY_CACHE_KEY = 'postoscredenciados-covreecia:station-directory-cache-v1';
 const CENTRAL_DEVICE_STATE_DB = 'central-registros-device-state-v1';
@@ -71,8 +70,8 @@ const DRIVER_PROFILE_PERMISSION_ERROR = 'Este motorista não tem permissão para
 const OTHER_DRIVER_OPTION = 'OUTRO (ESPECIFICAR)';
 const PWA_INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
 const PWA_DISMISS_DAYS = 7;
-const CENTRAL_PUSH_FUNCTION_ID = 'central-push';
-const CENTRAL_PUSH_PUBLIC_KEY = 'BK6Dhnrl6Wr4nO4PtE-ZlnW7ttRe0vtA3b7ssZsa7S9bGdR8gcBBu9SNuNBoMntUkcMBkAOAcgvhMJalNysihgw';
+const CENTRAL_PUSH_PUBLIC_KEY = 'BAeZUHqUhNiP4sHVX6jOtLxi5CdbwhydXRvoLreuZ3W_xS1dh-1F9pTM3H8OixE29nePY95nalKKQiEsovgoLmE';
+const CENTRAL_PUSH_PUBLIC_KEY_STORAGE_KEY = 'gaveblue:central-push-public-key-v1';
 const CENTRAL_PUSH_PROMPT_DISMISSED_KEY = 'central-push-prompt-dismissed';
 const CENTRAL_PUSH_SUBSCRIPTION_ID_KEY = 'central-push-subscription-id';
 const CENTRAL_DEVICE_HEARTBEAT_INTERVAL_MS = 15000;
@@ -645,37 +644,22 @@ async function fetchCentralWithRetry(url, options = {}, retryOptions = {}) {
 }
 
 async function executeCentralPushFunction(payload, retryOptions = {}) {
-  const endpoint = CENTRAL_APPWRITE_ENDPOINT + '/functions/' + CENTRAL_PUSH_FUNCTION_ID + '/executions';
+  const endpoint = `${CENTRAL_SUPABASE_URL}/functions/v1/${CENTRAL_API_FUNCTION}`;
   const response = await fetchCentralWithRetry(endpoint, {
     method: 'POST',
-    credentials: 'include',
     headers: {
       'content-type': 'application/json',
-      'x-appwrite-project': CENTRAL_APPWRITE_PROJECT_ID
+      apikey: CENTRAL_SUPABASE_ANON_KEY,
+      authorization: `Bearer ${CENTRAL_SUPABASE_ANON_KEY}`
     },
-    body: JSON.stringify({
-      body: JSON.stringify({ organizationSlug: centralOrganizationContext.slug, ...payload }),
-      async: false,
-      method: 'POST',
-      path: '/',
-      headers: { 'content-type': 'application/json' }
-    })
+    body: JSON.stringify({ organizationSlug: centralOrganizationContext.slug, ...payload })
   }, retryOptions);
 
-  const execution = await response.json().catch(() => ({}));
+  const result = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(execution?.message || 'Não foi possível conectar ao serviço de notificações.');
+    throw new Error(result?.error || result?.message || 'Não foi possível conectar ao serviço da Central.');
   }
-
-  let result = {};
-  try {
-    result = JSON.parse(execution.responseBody || '{}');
-  } catch (error) {
-    result = {};
-  }
-  if (execution.status === 'failed' || result.ok === false) {
-    throw new Error(result.error || execution.errors || 'Não foi possível ativar as notificações.');
-  }
+  if (result.ok === false) throw new Error(result.error || 'O serviço da Central recusou a operação.');
   return result;
 }
 
@@ -775,6 +759,95 @@ function saveCentralPushSubscriptionId(subscriptionId) {
 
 function getCentralPushSubscriptionId() {
   return String(localStorage.getItem(centralTenantStorageKey(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY)) || '').trim();
+}
+
+const centralPushSubscriptionTasks = new WeakMap();
+const centralPushSubscriptionProofs = new WeakMap();
+
+function readCentralPushApplicationKey(subscription) {
+  try {
+    const key = subscription?.options?.applicationServerKey;
+    if (ArrayBuffer.isView(key)) return new Uint8Array(key.buffer, key.byteOffset, key.byteLength);
+    if (Object.prototype.toString.call(key) === '[object ArrayBuffer]') return new Uint8Array(key);
+  } catch (error) { /* Older engines may not expose subscription options. */ }
+  return null;
+}
+
+function centralPushKeysEqual(left, right) {
+  return !!left && left.byteLength === right.byteLength && left.every((byte, index) => byte === right[index]);
+}
+
+async function ensureCentralPushSubscription(registration) {
+  if (centralPushSubscriptionTasks.has(registration)) return centralPushSubscriptionTasks.get(registration);
+  const operation = (async () => {
+    // This helper never requests permission. Only the existing user-gesture
+    // handler can do that, and a revoked permission must not destroy a working
+    // subscription before the browser permits its replacement.
+    const assertPermission = () => {
+      if (!('Notification' in window) || Notification.permission !== 'granted') {
+        throw new Error('Autorize as notificações antes de renovar a inscrição deste aparelho.');
+      }
+    };
+    assertPermission();
+    const expectedKey = urlBase64ToUint8Array(CENTRAL_PUSH_PUBLIC_KEY);
+    if (expectedKey.length !== 65 || expectedKey[0] !== 4 || !globalThis.crypto?.subtle) {
+      throw new Error('Não foi possível validar a chave de notificações. A inscrição anterior foi preservada.');
+    }
+    // Validate the configured P-256 point before any unsubscribe, not after it.
+    await globalThis.crypto.subtle.importKey('raw', expectedKey, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+    const options = { userVisibleOnly: true, applicationServerKey: expectedKey };
+    if (typeof registration.pushManager.permissionState === 'function'
+        && await registration.pushManager.permissionState(options) !== 'granted') {
+      throw new Error('A permissão de notificações deste aparelho precisa ser confirmada.');
+    }
+    let subscription = await registration.pushManager.getSubscription();
+    const scope = String(registration.scope || '');
+    const proofKey = scope ? `${CENTRAL_PUSH_PUBLIC_KEY_STORAGE_KEY}:registration:${encodeURIComponent(scope)}` : '';
+    let proof = centralPushSubscriptionProofs.get(registration);
+    if (!proof && proofKey) {
+      try { proof = JSON.parse(localStorage.getItem(proofKey) || 'null'); } catch (error) { /* No proof. */ }
+    }
+    const remember = (value) => {
+      const confirmed = { scope, endpoint: String(value.endpoint || ''), publicKey: CENTRAL_PUSH_PUBLIC_KEY };
+      centralPushSubscriptionProofs.set(registration, confirmed);
+      if (proofKey && confirmed.endpoint) {
+        try { localStorage.setItem(proofKey, JSON.stringify(confirmed)); } catch (error) { /* In-memory proof remains usable. */ }
+      }
+      return value;
+    };
+    const matches = (value) => {
+      const actualKey = readCentralPushApplicationKey(value);
+      if (actualKey) return centralPushKeysEqual(actualKey, expectedKey);
+      // Never trust the old origin-wide marker. An opaque legacy subscription
+      // is trusted only if THIS scope+endpoint was created/verified by us.
+      return !!scope && !!value?.endpoint && proof?.scope === scope
+        && proof.endpoint === value.endpoint && proof.publicKey === CENTRAL_PUSH_PUBLIC_KEY;
+    };
+    if (subscription && matches(subscription)) return remember(subscription);
+    if (subscription) {
+      assertPermission();
+      await subscription.unsubscribe();
+      subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        // A concurrent tab may have renewed this registration. Otherwise do
+        // not pretend that a failed unsubscribe changed its key.
+        if (matches(subscription)) return remember(subscription);
+        throw new Error('Não foi possível renovar a inscrição de notificações. Tente novamente.');
+      }
+    }
+    assertPermission();
+    subscription = await registration.pushManager.subscribe(options);
+    const actualKey = readCentralPushApplicationKey(subscription);
+    if (actualKey && !centralPushKeysEqual(actualKey, expectedKey)) {
+      throw new Error('A inscrição retornou uma chave de notificações diferente da configurada.');
+    }
+    // If subscribe fails after unsubscribe the browser cannot restore the old
+    // subscription. Propagate the failure; retain device records and queues.
+    return remember(subscription);
+  })();
+  centralPushSubscriptionTasks.set(registration, operation);
+  try { return await operation; }
+  finally { centralPushSubscriptionTasks.delete(registration); }
 }
 
 function getCentralDeviceId() {
@@ -918,13 +991,7 @@ async function enableCentralPushNotifications() {
     }
 
     const registration = await navigator.serviceWorker.ready;
-    let subscription = await registration.pushManager.getSubscription();
-    if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(CENTRAL_PUSH_PUBLIC_KEY)
-      });
-    }
+    const subscription = await ensureCentralPushSubscription(registration);
 
     const result = await executeCentralPushFunction({
       action: 'subscribe',
@@ -965,15 +1032,9 @@ function setupCentralPushExperience() {
     const permissionAlreadyGranted = Notification.permission === 'granted';
     try {
       const registration = await navigator.serviceWorker.ready;
-      let subscription = permissionAlreadyGranted
-        ? await registration.pushManager.getSubscription()
+      const subscription = permissionAlreadyGranted
+        ? await ensureCentralPushSubscription(registration)
         : null;
-      if (permissionAlreadyGranted && !subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(CENTRAL_PUSH_PUBLIC_KEY)
-        });
-      }
       if (subscription) {
         document.getElementById('central-push-prompt')?.remove();
         refreshCentralNotificationSetting();
@@ -1383,13 +1444,15 @@ function getCentralDeviceStateSnapshot() {
     onboardingVersion: localStorage.getItem(centralTenantStorageKey(DRIVER_ONBOARDING_VERSION_KEY)) || '',
     deviceId: localStorage.getItem(centralTenantStorageKey(CENTRAL_DEVICE_ID_KEY)) || '',
     subscriptionId: localStorage.getItem(centralTenantStorageKey(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY)) || '',
-    pendingRecords: localStorage.getItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY)) || '',
+    pendingRecords: JSON.stringify(getCentralRetryPayloads()),
     updatedAt: new Date().toISOString()
   };
 }
 
 function persistCentralDeviceState() {
-  const snapshot = getCentralDeviceStateSnapshot();
+  let snapshot;
+  try { snapshot = getCentralDeviceStateSnapshot(); }
+  catch (_) { console.warn('A cópia local precisa de revisão. O backup anterior foi preservado.'); return Promise.resolve(false); }
   centralDeviceStateWritePromise = centralDeviceStateWritePromise.catch(() => false).then(async () => {
     let database;
     try {
@@ -1397,7 +1460,7 @@ function persistCentralDeviceState() {
       await new Promise((resolve, reject) => {
         const transaction = database.transaction(CENTRAL_DEVICE_STATE_STORE, 'readwrite');
         const store = transaction.objectStore(CENTRAL_DEVICE_STATE_STORE);
-        const request = store.get(centralTenantStorageKey(CENTRAL_DEVICE_STATE_RECORD_KEY));
+        const request = store.get(snapshot.key);
         request.onsuccess = () => {
           const previous = request.result || {};
           // Perfil, onboarding e identificador nunca devem ser apagados por uma
@@ -1412,6 +1475,7 @@ function persistCentralDeviceState() {
         request.onerror = () => reject(request.error);
         transaction.oncomplete = resolve;
         transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error || new Error('A cópia local foi interrompida.'));
       });
       return true;
     } catch (error) {
@@ -1497,7 +1561,7 @@ async function restoreCentralDeviceState() {
     recover(centralTenantStorageKey(DRIVER_ONBOARDING_VERSION_KEY), state.onboardingVersion);
     recover(centralTenantStorageKey(CENTRAL_DEVICE_ID_KEY), state.deviceId);
     recover(centralTenantStorageKey(CENTRAL_PUSH_SUBSCRIPTION_ID_KEY), state.subscriptionId);
-    recover(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY), state.pendingRecords);
+    recover(centralTenantStorageKey(CENTRAL_PENDING_RECORDS_KEY), state.pendingRecords);
     return true;
   } catch (error) {
     console.warn('Não foi possível recuperar a cópia de segurança do perfil.', error);
@@ -1525,13 +1589,15 @@ async function saveCentralOfflineSubmission(submission) {
     throw new Error('Limite de 20 registros offline atingido. Conecte o aparelho para sincronizar.');
   }
   const database = await openCentralDeviceStateDb();
-  await new Promise((resolve, reject) => {
-    const transaction = database.transaction(CENTRAL_PENDING_UPLOADS_STORE, 'readwrite');
-    transaction.objectStore(CENTRAL_PENDING_UPLOADS_STORE).put(submission);
-    transaction.oncomplete = resolve;
-    transaction.onerror = () => reject(transaction.error || new Error('Falha ao guardar o registro offline.'));
-  });
-  database.close();
+  try {
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction(CENTRAL_PENDING_UPLOADS_STORE, 'readwrite');
+      transaction.objectStore(CENTRAL_PENDING_UPLOADS_STORE).put(submission);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error('Falha ao guardar o registro offline.'));
+      transaction.onabort = () => reject(transaction.error || new Error('A gravação offline foi interrompida.'));
+    });
+  } finally { database.close(); }
 }
 
 async function getCentralOfflineSubmissions() {
@@ -2447,6 +2513,7 @@ function formatHistoryDate(record) {
 }
 
 function renderMySubmissions() {
+  renderCentralHistoryPendingNotice();
   const list = document.getElementById('my-submissions-list');
   const summary = document.getElementById('my-submissions-summary');
   if (!list || !summary) return;
@@ -2504,6 +2571,7 @@ async function refreshMySubmissions(options = {}) {
 }
 
 function openMySubmissions() {
+  renderCentralHistoryPendingNotice();
   const modal = document.getElementById('my-submissions-modal');
   modal?.classList.remove('hidden');
   modal?.setAttribute('aria-hidden', 'false');
@@ -3173,10 +3241,19 @@ function openLooseNoteForm() {
   prepareLooseNoteForm();
 }
 
-async function copyCentralLink() {
-  const link = 'https://gaveblue.com.br/postoscredenciados-covreecia/';
+function getCentralShareUrl() {
+  const slug = String(centralOrganizationContext.slug || '').trim();
+  if (!centralOrganizationContext.workspaceId || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    throw new Error('Abra a Central pelo link da sua empresa antes de compartilhar.');
+  }
+  const url = new URL('https://gaveblue.com.br/central/');
+  url.searchParams.set('empresa', slug);
+  return url.href;
+}
 
+async function copyCentralLink() {
   try {
+    const link = getCentralShareUrl();
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(link);
     } else {
@@ -3193,15 +3270,18 @@ async function copyCentralLink() {
     showSuccessMessage('Link copiado com sucesso.');
   } catch (error) {
     console.error('Erro ao copiar link:', error);
-    showSuccessMessage('N\u00e3o foi poss\u00edvel copiar o link. Tente novamente.');
+    showErrorMessage(error?.message || 'Não foi possível copiar o link. Tente novamente.');
   }
 }
 
 async function shareCentralLink() {
+  let link;
+  try { link = getCentralShareUrl(); }
+  catch (error) { showErrorMessage(error?.message || 'Não foi possível identificar a empresa.'); return; }
   const shareData = {
     title: 'Central de Registros',
     text: 'Acesse a Central de Registros:',
-    url: 'https://gaveblue.com.br/postoscredenciados-covreecia/'
+    url: link
   };
 
   if (navigator.share) {
@@ -3445,18 +3525,22 @@ function cleanCentralPayload(payload) {
 function buildCentralRegistroPayload({ type, formData, receiptUrl, mensagem }) {
   const protocol = createCentralProtocol();
   const now = new Date();
+  const profile = getDriverProfile();
   const basePayload = {
     workspaceId: centralOrganizationContext.workspaceId,
     tipo: type,
     status: 'pendente',
     protocolo: protocol,
     motorista: formData.motorista,
+    driverId: profile?.driverId || undefined,
+    vehicleId: profile?.vehicleId || undefined,
+    plate: profile?.plate || undefined,
     data: formData.data,
     hora: formData.horaFormatada,
     km: parseKmValue(formData.km) || undefined,
     comprovanteUrl: receiptUrl,
     mensagemWhatsapp: mensagem,
-    origem: CENTRAL_APPWRITE_ORIGIN,
+    origem: CENTRAL_CLOUD_ORIGIN,
     deviceId: getCentralDeviceId(),
     pushSubscriptionId: getCentralPushSubscriptionId() || undefined,
     criadoEm: now.toISOString()
@@ -3492,63 +3576,126 @@ function buildCentralRegistroPayload({ type, formData, receiptUrl, mensagem }) {
   };
 }
 
-async function saveCentralRegistroToAppwrite(payload) {
-  if (!CENTRAL_APPWRITE_ENABLED) {
-    return { ok: false, skipped: true };
+async function saveCentralRegistroToCloud(payload) {
+  if (!CENTRAL_CLOUD_ENABLED) {
+    throw new Error('O envio à Central está temporariamente indisponível. A cópia local foi preservada.');
   }
 
-  const result = await executeCentralPushFunction({ action: 'central-record-create', rowId: payload.rowId, data: payload.data }, { attempts: 3, timeoutMs: 10000 });
-  return result.record || { alreadyExists: result.alreadyExists === true };
+  const organizationSlug = String(payload?.data?.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG);
+  const result = await executeCentralPushFunction({ action: 'central-record-create', organizationSlug, rowId: payload.rowId, data: payload.data }, { attempts: 3, timeoutMs: 10000 });
+  if (result?.ok !== true || String(result.record?.$id || result.record?.id || '') !== String(payload.rowId)) {
+    throw new Error('O servidor não confirmou o identificador deste registro. A cópia local foi preservada.');
+  }
+  return result.record;
+}
+
+function getCentralRetryQueueScope() {
+  const workspaceId = String(centralOrganizationContext.workspaceId || '').trim();
+  if (!workspaceId) throw new Error('A empresa da fila local ainda não foi confirmada.');
+  const legacyKey = centralTenantStorageKey(CENTRAL_PENDING_RECORDS_KEY);
+  return { workspaceId, legacyKey, itemPrefix: `${legacyKey}:item:` };
+}
+
+function parseCentralRetryJson(raw) {
+  try { return raw ? JSON.parse(raw) : null; }
+  catch (_) { throw new Error('A fila local precisa ser recuperada. Nenhum registro pendente foi substituído.'); }
+}
+
+function canonicalCentralRetryPayload(value) {
+  if (Array.isArray(value)) return value.map(canonicalCentralRetryPayload);
+  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalCentralRetryPayload(value[key])]));
+  return value;
+}
+
+function readCentralRetryQueue(scope = getCentralRetryQueueScope()) {
+  const legacy = parseCentralRetryJson(localStorage.getItem(scope.legacyKey));
+  const rows = legacy === null ? [] : Array.isArray(legacy) ? legacy : legacy?.rowId ? [legacy] : null;
+  if (!rows) throw new Error('A fila local possui um formato inesperado. Os registros foram preservados.');
+  const byId = new Map(), acknowledged = new Set();
+  const add = (payload) => {
+    if (!payload || !/^[a-zA-Z0-9._:-]{8,80}$/.test(String(payload.rowId || '')) || !payload.data || typeof payload.data !== 'object') {
+      throw new Error('Há um registro inválido na fila local. A cópia foi preservada para recuperação.');
+    }
+    const payloadWorkspace = String(payload.data.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG);
+    if (payloadWorkspace !== scope.workspaceId) return;
+    const id = String(payload.rowId), previous = byId.get(id);
+    if (previous && JSON.stringify(canonicalCentralRetryPayload(previous)) !== JSON.stringify(canonicalCentralRetryPayload(payload))) {
+      throw new Error('Há duas versões de um registro pendente. As cópias foram preservadas para revisão.');
+    }
+    byId.set(id, payload);
+  };
+  rows.forEach(add);
+  // One key per record avoids lost updates between browser tabs. The legacy
+  // queue remains readable while older installations finish their uploads.
+  const itemKeys = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (key?.startsWith(scope.itemPrefix)) itemKeys.push(key);
+  }
+  for (const key of itemKeys) {
+    const item = parseCentralRetryJson(localStorage.getItem(key));
+    if (!item) continue;
+    if (item.acknowledgedAt && item.workspaceId === scope.workspaceId) acknowledged.add(String(item.rowId));
+    else add(item);
+  }
+  acknowledged.forEach((id) => byId.delete(id));
+  return { queue: [...byId.values()], acknowledged };
 }
 
 async function saveCentralRetryPayload(payload) {
   try {
-    const stored = JSON.parse(localStorage.getItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY)) || '[]');
-    const queue = Array.isArray(stored) ? stored : (stored && typeof stored === 'object' ? [stored] : []);
-    const nextQueue = queue.filter((item) => String(item?.rowId || '') !== String(payload?.rowId || ''));
-    nextQueue.push(payload);
-    localStorage.setItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY), JSON.stringify(nextQueue.slice(-20)));
+    const scope = getCentralRetryQueueScope(), rowId = String(payload?.rowId || '');
+    if (!/^[a-zA-Z0-9._:-]{8,80}$/.test(rowId) || !payload?.data || String(payload.data.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG) !== scope.workspaceId) return false;
+    const { queue, acknowledged } = readCentralRetryQueue(scope);
+    if (acknowledged.has(rowId)) return false;
+    const existing = queue.find((item) => String(item.rowId) === rowId);
+    if (existing && JSON.stringify(canonicalCentralRetryPayload(existing)) !== JSON.stringify(canonicalCentralRetryPayload(payload))) return false;
+    const itemKey = `${scope.itemPrefix}${encodeURIComponent(rowId)}`, serialized = JSON.stringify(payload);
+    localStorage.setItem(itemKey, serialized);
+    if (localStorage.getItem(itemKey) !== serialized) throw new Error('A gravação local não foi confirmada.');
     await persistCentralDeviceState();
     return true;
   } catch (error) {
-    console.warn('Não foi possível guardar o registro pendente para nova tentativa.', error);
+    console.warn('Não foi possível confirmar a gravação da fila local. As cópias anteriores foram preservadas.');
     return false;
   }
 }
 
 function getCentralRetryPayloads() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY)) || '[]');
-    return Array.isArray(stored) ? stored : (stored && typeof stored === 'object' ? [stored] : []);
-  } catch (error) {
-    return [];
-  }
+  return readCentralRetryQueue().queue;
 }
 
-async function clearCentralRetryPayload(rowId = '') {
+async function clearCentralRetryPayload(rowId = '', expectedWorkspaceId = '') {
   try {
-    if (!rowId) {
-      localStorage.removeItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY));
-      await persistCentralDeviceState();
-      return true;
-    }
-    const nextQueue = getCentralRetryPayloads().filter((item) => String(item?.rowId || '') !== String(rowId));
-    if (nextQueue.length) localStorage.setItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY), JSON.stringify(nextQueue));
-    else localStorage.removeItem(centralTenantStorageKey(CENTRAL_APPWRITE_RETRY_KEY));
+    if (!/^[a-zA-Z0-9._:-]{8,80}$/.test(String(rowId))) return false;
+    const scope = getCentralRetryQueueScope();
+    if (expectedWorkspaceId && expectedWorkspaceId !== scope.workspaceId) return false;
+    const itemKey = `${scope.itemPrefix}${encodeURIComponent(String(rowId))}`;
+    // The small confirmation marker prevents an older tab or device-state
+    // backup from restoring an already acknowledged legacy queue entry.
+    const marker = JSON.stringify({ rowId: String(rowId), workspaceId: scope.workspaceId, acknowledgedAt: new Date().toISOString() });
+    localStorage.setItem(itemKey, marker);
+    if (localStorage.getItem(itemKey) !== marker) throw new Error('A confirmação local não foi gravada.');
     await persistCentralDeviceState();
     return true;
   } catch (error) {
-    console.warn('Não foi possível limpar o registro pendente da Central.', error);
+    console.warn('O servidor confirmou o envio, mas a limpeza da fila local permanece pendente.');
     return false;
   }
 }
 
 async function saveCentralRegistroWithRetry(payload) {
   const queued = await saveCentralRetryPayload(payload);
-  if (!queued) throw new Error('Não foi possível guardar este registro no aparelho antes do envio.');
-  const result = await saveCentralRegistroToAppwrite(payload);
-  await clearCentralRetryPayload(payload.rowId);
-  return result;
+  if (!queued) throw Object.assign(new Error('Não foi possível guardar este registro no aparelho antes do envio. Mantenha a tela aberta.'), { localQueueConfirmed: false });
+  try {
+    const result = await saveCentralRegistroToCloud(payload);
+    await clearCentralRetryPayload(payload.rowId, String(payload.data?.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG));
+    return result;
+  } catch (error) {
+    const failure = error instanceof Error ? error : new Error('A Central ainda não confirmou este envio.');
+    failure.localQueueConfirmed = true;
+    throw failure;
+  }
 }
 
 function getRequestedCentralOrganizationSlug() {
@@ -3560,7 +3707,18 @@ function getRequestedCentralOrganizationSlug() {
   return String(querySlug || storedSlug || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 48);
 }
 
+function renderCentralHistoryPendingNotice(organization = centralOrganizationContext) {
+  // Provisional Covre cutover: this is an explicit recovery notice, not an
+  // empty-history result or a persisted/dismissible preference of the device.
+  const visible = organization?.slug === 'covre-e-cia' && organization?.workspaceId === 'covre-e-cia'
+    && getRequestedCentralOrganizationSlug() === 'covre-e-cia';
+  document.querySelectorAll('[data-central-history-pending]').forEach((notice) => {
+    notice.hidden = !visible;
+  });
+}
+
 function applyCentralOrganizationBranding(organization = {}) {
+  renderCentralHistoryPendingNotice(organization);
   const name = String(organization.name || 'Central de Registros').trim();
   const branding = organization.branding || {};
   const institutional = organization.institutional || {};
@@ -3640,15 +3798,17 @@ async function loadCentralOrganizationContext() {
 
 async function retryPendingCentralRegistro() {
   if (centralRetryInProgress || !navigator.onLine) return;
-  const queue = getCentralRetryPayloads();
+  let queue;
+  try { queue = getCentralRetryPayloads(); }
+  catch (_) { console.warn('A fila de envios locais precisa de revisão; todos os dados foram preservados.'); return; }
   if (!queue.length) return;
   centralRetryInProgress = true;
   try {
     for (const payload of queue) {
       try {
-        await saveCentralRegistroToAppwrite(payload);
-        await clearCentralRetryPayload(payload.rowId);
-        console.info('Registro pendente da Central foi salvo no Appwrite.');
+        await saveCentralRegistroToCloud(payload);
+        await clearCentralRetryPayload(payload.rowId, String(payload.data?.workspaceId || CENTRAL_DEFAULT_ORGANIZATION_SLUG));
+        console.info('Registro pendente da Central foi confirmado no Supabase.');
       } catch (error) {
         console.warn('Ainda não foi possível reenviar um registro pendente da Central.', error);
       }
@@ -3658,8 +3818,8 @@ async function retryPendingCentralRegistro() {
   }
 }
 
-function getCentralAppwriteErrorMessage(error) {
-  if (error?.isNetworkError || /failed to fetch|network|sem conexão/i.test(String(error?.message || ''))) {
+function getCentralCloudErrorMessage(error) {
+  if (error?.localQueueConfirmed && (error?.isNetworkError || /failed to fetch|network|sem conexão/i.test(String(error?.message || '')))) {
     return 'A conexão oscilou. O registro ficou salvo neste aparelho e será enviado automaticamente quando a Central reconectar.';
   }
   const message = String(error?.message || 'Erro desconhecido ao gravar na Central.');
@@ -4259,16 +4419,16 @@ async function submitFuelForm(e) {
   }
 
   if (uploadedFuelReceipt.result.offline) {
-    const appwritePayload = buildCentralRegistroPayload({
+    const cloudPayload = buildCentralRegistroPayload({
       type: isComplete ? 'abastecimento' : 'abastecimento_rapido',
       formData,
       receiptUrl: '',
       mensagem: ''
     });
     const offlineRecord = {
-      id: appwritePayload.rowId,
-      protocol: appwritePayload.data.protocolo,
-      type: appwritePayload.data.tipo,
+      id: cloudPayload.rowId,
+      protocol: cloudPayload.data.protocolo,
+      type: cloudPayload.data.tipo,
       date: formData.data,
       time: formData.horaFormatada,
       value: isComplete && formData.valor ? formData.valor : '',
@@ -4283,7 +4443,7 @@ async function submitFuelForm(e) {
         kind: 'fuel',
         formData,
         receiptFile: uploadedFuelReceipt.offlineFile || formData.file,
-        payload: appwritePayload,
+        payload: cloudPayload,
         offlineRecord
       });
     } catch (error) {
@@ -4302,14 +4462,14 @@ async function submitFuelForm(e) {
 
   const mensagem = buildFuelWhatsAppMessage(formData, isComplete, uploadedFuelReceipt.result.secure_url);
 
-  const appwritePayload = buildCentralRegistroPayload({
+  const cloudPayload = buildCentralRegistroPayload({
     type: isComplete ? 'abastecimento' : 'abastecimento_rapido',
     formData,
     receiptUrl: uploadedFuelReceipt.result.secure_url,
     mensagem
   });
 
-  const centralSavePromise = saveCentralRegistroWithRetry(appwritePayload);
+  const centralSavePromise = saveCentralRegistroWithRetry(cloudPayload);
   const shouldOpenWhatsApp = navigator.onLine;
   if (shouldOpenWhatsApp) openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
   let queuedAfterUpload = false;
@@ -4317,10 +4477,10 @@ async function submitFuelForm(e) {
   try {
     await centralSavePromise;
   } catch (error) {
-    console.error('Erro ao registrar abastecimento no Appwrite:', error);
-    if (error?.isNetworkError || !navigator.onLine) queuedAfterUpload = true;
+    console.error('Erro ao registrar abastecimento no Supabase:', error);
+    if (error?.localQueueConfirmed && (error?.isNetworkError || !navigator.onLine)) queuedAfterUpload = true;
     else {
-      showErrorMessage(getCentralAppwriteErrorMessage(error));
+      showErrorMessage(getCentralCloudErrorMessage(error));
       return;
     }
   }
@@ -4328,9 +4488,9 @@ async function submitFuelForm(e) {
   saveDriverNameSuggestion(formData.motorista);
   saveLastFuelEntry({ motorista: formData.motorista, cidade: formData.cidade, posto: formData.posto });
   saveCentralLastSentRecord({
-    id: appwritePayload.rowId,
-    protocol: appwritePayload.data.protocolo,
-    type: appwritePayload.data.tipo,
+    id: cloudPayload.rowId,
+    protocol: cloudPayload.data.protocolo,
+    type: cloudPayload.data.tipo,
     date: formData.data,
     time: formData.horaFormatada,
     value: isComplete && formData.valor ? formData.valor : '',
@@ -4379,16 +4539,16 @@ async function submitLooseNoteForm(e) {
   }
 
   if (uploadedLooseNoteReceipt.result.offline) {
-    const appwritePayload = buildCentralRegistroPayload({
+    const cloudPayload = buildCentralRegistroPayload({
       type: 'servico',
       formData,
       receiptUrl: '',
       mensagem: ''
     });
     const offlineRecord = {
-      id: appwritePayload.rowId,
-      protocol: appwritePayload.data.protocolo,
-      type: appwritePayload.data.tipo,
+      id: cloudPayload.rowId,
+      protocol: cloudPayload.data.protocolo,
+      type: cloudPayload.data.tipo,
       date: formData.data,
       time: formData.horaFormatada,
       value: formData.valor || '',
@@ -4403,7 +4563,7 @@ async function submitLooseNoteForm(e) {
         kind: 'loose',
         formData,
         receiptFile: uploadedLooseNoteReceipt.offlineFile || formData.file,
-        payload: appwritePayload,
+        payload: cloudPayload,
         offlineRecord
       });
     } catch (error) {
@@ -4417,14 +4577,14 @@ async function submitLooseNoteForm(e) {
 
   const mensagem = buildLooseWhatsAppMessage(formData, uploadedLooseNoteReceipt.result.secure_url);
 
-  const appwritePayload = buildCentralRegistroPayload({
+  const cloudPayload = buildCentralRegistroPayload({
     type: 'servico',
     formData,
     receiptUrl: uploadedLooseNoteReceipt.result.secure_url,
     mensagem
   });
 
-  const centralSavePromise = saveCentralRegistroWithRetry(appwritePayload);
+  const centralSavePromise = saveCentralRegistroWithRetry(cloudPayload);
   const shouldOpenWhatsApp = navigator.onLine;
   if (shouldOpenWhatsApp) openWhatsAppDirect(FUEL_WHATSAPP_NUMBER, mensagem);
   let queuedAfterUpload = false;
@@ -4432,19 +4592,19 @@ async function submitLooseNoteForm(e) {
   try {
     await centralSavePromise;
   } catch (error) {
-    console.error('Erro ao registrar servi\u00e7o no Appwrite:', error);
-    if (error?.isNetworkError || !navigator.onLine) queuedAfterUpload = true;
+    console.error('Erro ao registrar servi\u00e7o no Supabase:', error);
+    if (error?.localQueueConfirmed && (error?.isNetworkError || !navigator.onLine)) queuedAfterUpload = true;
     else {
-      showErrorMessage(getCentralAppwriteErrorMessage(error));
+      showErrorMessage(getCentralCloudErrorMessage(error));
       return;
     }
   }
 
   saveDriverNameSuggestion(formData.motorista);
   saveCentralLastSentRecord({
-    id: appwritePayload.rowId,
-    protocol: appwritePayload.data.protocolo,
-    type: appwritePayload.data.tipo,
+    id: cloudPayload.rowId,
+    protocol: cloudPayload.data.protocolo,
+    type: cloudPayload.data.tipo,
     date: formData.data,
     time: formData.horaFormatada,
     value: formData.valor || '',

@@ -1,12 +1,7 @@
-const CENTRAL_RELEASE = '20260831-profile-directory-3';
+const CENTRAL_RELEASE = '20260904-supabase-provisional-2';
 const CENTRAL_SCOPE_KEY = new URL(self.registration.scope).pathname.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'root';
 const CACHE_PREFIX = `central-registros-static-${CENTRAL_SCOPE_KEY}-v`;
 const CACHE_NAME = `${CACHE_PREFIX}${CENTRAL_RELEASE}`;
-const APPWRITE_AUTH_CACHE = 'central-registros-appwrite-auth-v1';
-const APPWRITE_ENDPOINT_ORIGIN = 'https://nyc.cloud.appwrite.io';
-const APPWRITE_PROJECT_ID = '6a68cb3e00312ec0a3fd';
-const APPWRITE_CENTRAL_ROWS_PATH = '/v1/tablesdb/6a68ce8c000a36a44d98/tables/central_registros_pendentes/rows';
-const APPWRITE_FALLBACK_CACHE_KEY = new URL('./__central_appwrite_fallback_cookie__', self.location.href).href;
 const CENTRAL_ASSET_BASE_URL = new URL(self.CENTRAL_ASSET_BASE || './', self.location.href);
 const CENTRAL_SHELL_URL = new URL(self.CENTRAL_SHELL_URL || './index.html', self.location.href).href;
 const CENTRAL_SOURCE_SHELL_URL = new URL(self.CENTRAL_SOURCE_SHELL_URL || './index.html', self.location.href).href;
@@ -16,8 +11,8 @@ const STATIC_ASSETS = Array.from(new Set([
   CENTRAL_SHELL_URL,
   CENTRAL_SOURCE_SHELL_URL,
   CENTRAL_MANIFEST_URL,
-  './styles.css?v=20260829-canonical-driver-links-1',
-  './app.js?v=20260831-profile-directory-3',
+  './styles.css?v=20260904-supabase-provisional-2',
+  './app.js?v=20260904-supabase-provisional-2',
   './assets/brand/covre-e-cia.png',
   './assets/home/hero-posto.png',
   './assets/home/hero-revisao-km-desktop.jpeg',
@@ -134,21 +129,15 @@ self.addEventListener('activate', (event) => {
       ))
       .then(() => self.clients.claim())
       .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
-      .then((clients) => Promise.all(clients.map((client) => {
+      .then((clients) => clients.forEach((client) => {
         const clientUrl = new URL(client.url);
         if (!clientUrl.href.startsWith(self.registration.scope)) {
-          return null;
+          return;
         }
-
-        if (clientUrl.searchParams.get('central-release') === CENTRAL_RELEASE) {
-          return null;
-        }
-
-        // Atualiza também páginas antigas que ainda não possuem o listener de
-        // controllerchange. A navegação acontece uma única vez por release.
-        clientUrl.searchParams.set('central-release', CENTRAL_RELEASE);
-        return client.navigate(clientUrl.href).catch(() => null);
-      })))
+        // A release must never reload a driver's in-progress form or discard
+        // a receipt selected in memory. New navigation picks up this worker.
+        client.postMessage({ type: 'CENTRAL_UPDATE_AVAILABLE', release: CENTRAL_RELEASE });
+      }))
   );
 });
 
@@ -227,146 +216,9 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-async function readAppwriteFallbackCookie() {
-  try {
-    const cache = await caches.open(APPWRITE_AUTH_CACHE);
-    const response = await cache.match(APPWRITE_FALLBACK_CACHE_KEY);
-    return response ? await response.text() : '';
-  } catch (error) {
-    console.warn('Central: não foi possível recuperar a sessão anônima do Appwrite.', error);
-    return '';
-  }
-}
-
-async function writeAppwriteFallbackCookie(value) {
-  if (!value) return;
-  try {
-    const cache = await caches.open(APPWRITE_AUTH_CACHE);
-    await cache.put(
-      APPWRITE_FALLBACK_CACHE_KEY,
-      new Response(value, {
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'Cache-Control': 'no-store'
-        }
-      })
-    );
-  } catch (error) {
-    console.warn('Central: não foi possível persistir a sessão anônima do Appwrite.', error);
-  }
-}
-
-async function clearAppwriteFallbackCookie() {
-  try {
-    const cache = await caches.open(APPWRITE_AUTH_CACHE);
-    await cache.delete(APPWRITE_FALLBACK_CACHE_KEY);
-  } catch (error) {
-    console.warn('Central: não foi possível limpar a sessão anônima do Appwrite.', error);
-  }
-}
-
-function buildAppwriteRequest(request, fallbackCookie = '') {
-  const headers = new Headers(request.headers);
-
-  // O formato de resposta é opcional. Não congelamos a Central em uma versão
-  // antiga do protocolo do Appwrite; deixamos o Cloud responder no formato atual.
-  headers.delete('X-Appwrite-Response-Format');
-
-  if (fallbackCookie) {
-    headers.set('X-Fallback-Cookies', fallbackCookie);
-  }
-
-  return new Request(request, {
-    headers,
-    credentials: 'include'
-  });
-}
-
-async function createAnonymousAppwriteSession() {
-  const headers = new Headers({
-    'Content-Type': 'application/json',
-    'X-Appwrite-Project': APPWRITE_PROJECT_ID
-  });
-
-  const storedFallbackCookie = await readAppwriteFallbackCookie();
-  if (storedFallbackCookie) {
-    headers.set('X-Fallback-Cookies', storedFallbackCookie);
-  }
-
-  const response = await fetch(`${APPWRITE_ENDPOINT_ORIGIN}/v1/account/sessions/anonymous`, {
-    method: 'POST',
-    headers,
-    body: '{}',
-    credentials: 'include'
-  });
-
-  if (!response.ok && response.status !== 409) {
-    throw new Error(`Falha ao criar sessão anônima no Appwrite (${response.status}).`);
-  }
-
-  const fallbackCookie = response.headers.get('X-Fallback-Cookies') || '';
-  if (fallbackCookie) {
-    await writeAppwriteFallbackCookie(fallbackCookie);
-  }
-
-  return fallbackCookie || storedFallbackCookie;
-}
-
-function isAppwriteAuthError(response) {
-  return response && (response.status === 401 || response.status === 403);
-}
-
-async function handleCentralAppwriteWrite(request) {
-  // 1) Mantém compatibilidade com a permissão antiga de visitante (Role.guests/any).
-  let guestResponse = null;
-  let guestError = null;
-  try {
-    guestResponse = await fetch(buildAppwriteRequest(request.clone()));
-  } catch (error) {
-    guestError = error;
-  }
-  if (guestResponse && !isAppwriteAuthError(guestResponse)) {
-    return guestResponse;
-  }
-
-  // 2) Se já há sessão anônima salva, tenta como Role.users antes de criar outra.
-  let fallbackCookie = await readAppwriteFallbackCookie();
-  if (fallbackCookie) {
-    try {
-      const authenticatedResponse = await fetch(buildAppwriteRequest(request.clone(), fallbackCookie));
-      if (!isAppwriteAuthError(authenticatedResponse)) {
-        return authenticatedResponse;
-      }
-      await clearAppwriteFallbackCookie();
-      fallbackCookie = '';
-    } catch (error) {
-      guestError = guestError || error;
-    }
-  }
-
-  // 3) Cria uma sessão anônima e repete a gravação. Role.users() no Appwrite
-  // inclui usuários anônimos, preservando a Central sem exigir login do motorista.
-  try {
-    fallbackCookie = await createAnonymousAppwriteSession();
-    return await fetch(buildAppwriteRequest(request.clone(), fallbackCookie));
-  } catch (error) {
-    console.error('Central: falha no fallback de autenticação do Appwrite.', error);
-    throw guestError || error;
-  }
-}
-
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const requestUrl = new URL(request.url);
-
-  if (
-    request.method === 'POST'
-    && requestUrl.origin === APPWRITE_ENDPOINT_ORIGIN
-    && requestUrl.pathname === APPWRITE_CENTRAL_ROWS_PATH
-  ) {
-    event.respondWith(handleCentralAppwriteWrite(request));
-    return;
-  }
 
   if (request.method !== 'GET') {
     return;

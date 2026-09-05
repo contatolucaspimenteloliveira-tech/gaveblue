@@ -5,15 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WeFrotas - GaveBlue</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/_sdk/element_sdk.js"></script>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./wefrotas.css?v=20260901-standard-date-pickers-2">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260904-contingency-1">
-  
+  <style>
+    .central-history-notice { margin-bottom: 16px; padding: 14px 16px; border: 1px solid #fcd34d; border-radius: 16px; background: #fffbeb; color: #78350f; font-size: 13px; line-height: 1.6; }
+    .central-history-notice[hidden] { display: none; }
+    .central-history-notice strong { display: block; margin-bottom: 3px; }
+    .central-history-notice p { margin: 0; }
+  </style>
 </head>
 <body class="auth-locked">
   <div id="search-focus-overlay" class="search-focus-overlay hidden"></div>
@@ -1009,6 +1012,10 @@
         </section>
 
         <section id="panel-documentos" class="module-panel content-card orders-page-shell p-4 sm:p-6 central-source-panel">
+          <aside id="central-history-pending-notice" class="central-history-notice" role="note" aria-label="Histórico da Central pendente de recuperação" hidden>
+            <strong>Histórico da Central pendente de recuperação</strong>
+            <p>Os registros anteriores à migração ainda não estão disponíveis nesta lista. Os dados originais foram preservados para recuperação. Novos envios são gravados no Supabase; uma lista vazia não significa ausência de registros antigos. Não reenvie registros antigos apenas por não aparecerem aqui.</p>
+          </aside>
           <div class="central-pending-workspace">
             <div class="central-pending-summary">
               <div>
@@ -1790,14 +1797,11 @@
     </div>
   </div>
 
-  <script src="./appwrite-config.js?v=20260821-driver-history-1"></script>
-  <script src="./vendor/appwrite-sdk-26.2.0.js?v=26.2.0"></script>
-  <script src="./wefrotas-backend.js?v=20260904-contingency-2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./supabase-config.js?v=20260904-supabase-preview-1"></script>
-  <script src="./wefrotas-supabase-core.js?v=20260904-supabase-preview-1"></script>
-  <script src="./wefrotas-supabase-backend.js?v=20260904-supabase-preview-1"></script>
-  <script src="./wefrotas.js?v=20260904-contingency-2"></script>
+  <script src="./supabase-config.js?v=20260904-supabase-provisional-2"></script>
+  <script src="./wefrotas-supabase-core.js?v=20260904-supabase-provisional-2"></script>
+  <script src="./wefrotas-supabase-backend.js?v=20260904-supabase-provisional-2"></script>
+  <script src="./wefrotas.js?v=20260904-supabase-provisional-2"></script>
   <script src="./wefrotas-presence.js?v=20260904-contingency-2"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
   <script src="./wefrotas-date-picker.js?v=20260901-standard-date-pickers-2"></script>

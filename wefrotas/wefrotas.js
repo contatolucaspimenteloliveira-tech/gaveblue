@@ -106,6 +106,10 @@
     let currentModalType = null;
     let currentEditingId = null;
     let currentFinanceEntryType = null;
+    let currentFinanceCentralSource = null;
+    let currentFinanceFormSession = 0;
+    let financeFormSaveInProgress = false;
+    let wefrotasRecoveryRequired = null;
     let contingencySaveNoticeUntil = 0;
     let vehicleImagePreviewObjectUrl = '';
     let activeModule = 'home';
@@ -249,8 +253,8 @@
     }
 
     function getAuthenticatedUserDisplayName(user) {
-      const appwriteName = String(user?.name || '').trim();
-      if (appwriteName) return appwriteName;
+      const profileName = String(user?.name || '').trim();
+      if (profileName) return profileName;
       const emailName = String(user?.email || '').split('@')[0].trim();
       return emailName || 'Usuário';
     }
@@ -288,6 +292,7 @@
     });
 
     function hasWefrotasPermission(permission) {
+      if (wefrotasRecoveryRequired && permission !== 'read') return false;
       return wefrotasUiPermissionMatrix[currentWefrotasRoleLabel]?.has(permission) === true;
     }
 
@@ -1804,6 +1809,7 @@
     }
 
     function saveToLocalStorage() {
+      if (wefrotasRecoveryRequired) return Promise.resolve();
       if (!wefrotasStorageWorkspace || !window.WeFrotasBackend?.isSnapshotReady?.()) return Promise.resolve();
       const workspace = wefrotasStorageWorkspace;
       const snapshotKey = wefrotasIndexedDbSnapshotKey;
@@ -1852,6 +1858,7 @@
     }
 
     async function persistOperationalDataImmediately() {
+      if (wefrotasRecoveryRequired) throw new Error('Revise as cópias preservadas antes de continuar os lançamentos.');
       await saveToLocalStorage();
       const backend = window.WeFrotasBackend;
       if (!backend?.getUser?.() || !backend?.syncNow) throw new Error('Sessão online indisponível. Gravação não confirmada.');
@@ -1977,9 +1984,6 @@
       }
       if (normalized.includes('missing scope') || normalized.includes('unauthorized') || normalized.includes('permission')) {
         return 'Seu acesso não tem permissão para esta ação. Entre novamente ou fale com o administrador.';
-      }
-      if (normalized.includes('appwrite') && normalized.includes('configured')) {
-        return 'O acesso online ainda não foi configurado corretamente.';
       }
       if (normalized.includes('session') && normalized.includes('active')) {
         return 'Já existe uma sessão ativa. Estamos recuperando seu acesso.';
@@ -2142,6 +2146,7 @@
       try {
         await loadAuthorizedOrganizationContext();
         const result = await backend.adoptRemoteOrUploadLocal();
+        setWeFrotasRecoveryGate(null);
         window.clearTimeout(preparingTimer);
         preparingTimer = null;
         await finishOnlineAuthChecking();
@@ -2155,10 +2160,14 @@
       } catch (error) {
         window.clearTimeout(preparingTimer);
         console.error('Sessão recuperada, mas os dados continuam pendentes.', error);
+        if (error?.reconciliationRequired) {
+          enterWeFrotasRecovery(error);
+          return { mode: 'reconciliation-required', error };
+        }
         toggleOnlineLogin(true, 'Não foi possível confirmar os dados da empresa. Tente entrar novamente.');
         updateOnlineStatus({
           state: 'error',
-          message: `Conectado, mas a sincronização está pendente: ${error?.message || 'erro no Appwrite'}`,
+          message: `Conectado, mas a sincronização está pendente: ${error?.message || 'erro no Supabase'}`,
           user
         });
         return { mode: 'local-pending', error };
@@ -2197,11 +2206,12 @@
         try {
           await loadAuthorizedOrganizationContext();
           await backend.adoptRemoteOrUploadLocal();
+          setWeFrotasRecoveryGate(null);
         } catch (syncError) {
           console.error('Login concluído com sincronização pendente.', syncError);
           updateOnlineStatus({
             state: 'error',
-            message: `Conectado, mas a sincronização está pendente: ${syncError?.message || 'erro no Appwrite'}`,
+            message: `Conectado, mas a sincronização está pendente: ${syncError?.message || 'erro no Supabase'}`,
             user
           });
           throw syncError;
@@ -2217,8 +2227,12 @@
           showToast('WeFrotas Online conectado.');
         } else showToast('Modo de contingência ativo. As alterações ficarão protegidas neste dispositivo.');
       } catch (error) {
-        if (signedIn && !backend.isDatabaseReadQuotaError?.(error) && error?.code !== 412) await backend.signOut().catch(() => {});
-        toggleOnlineLogin(true, translateOnlineAuthError(error));
+        if (signedIn && error?.reconciliationRequired) {
+          enterWeFrotasRecovery(error);
+        } else {
+          if (signedIn && !backend.isDatabaseReadQuotaError?.(error) && error?.code !== 412) await backend.signOut().catch(() => {});
+          toggleOnlineLogin(true, translateOnlineAuthError(error));
+        }
       } finally {
         onlineLoginInProgress = false;
         setOnlineLoginLoading(false);
@@ -2245,6 +2259,7 @@
       } finally {
         toggleOnlinePlatformLoading(false);
         onlineLogoutInProgress = false;
+        setWeFrotasRecoveryGate(null);
         if (logoutButton) {
           logoutButton.disabled = false;
           logoutButton.textContent = previousLabel;
@@ -2254,6 +2269,10 @@
     }
 
     async function syncWeFrotasOnline({ quiet = false } = {}) {
+      if (wefrotasRecoveryRequired) {
+        if (!quiet) await window.reviewPendingWeFrotasChanges();
+        return;
+      }
       try {
         const result = await window.WeFrotasBackend?.refreshFromServer();
         if (result?.mode === 'local-pending') {
@@ -2289,14 +2308,78 @@
     window.logoutWeFrotasOnline = logoutWeFrotasOnline;
     window.syncWeFrotasOnline = syncWeFrotasOnline;
 
+    function setWeFrotasRecoveryGate(error) {
+      wefrotasRecoveryRequired = error || null;
+      const active = Boolean(error);
+      document.body.classList.toggle('wefrotas-recovery-required', active);
+      document.querySelectorAll('.app-main-shell, #app-sidebar').forEach(node => {
+        if (active) {
+          if (!Object.hasOwn(node.dataset, 'recoveryWasInert')) node.dataset.recoveryWasInert = String(Boolean(node.inert));
+          node.inert = true;
+        } else if (Object.hasOwn(node.dataset, 'recoveryWasInert')) {
+          node.inert = node.dataset.recoveryWasInert === 'true';
+          delete node.dataset.recoveryWasInert;
+        }
+      });
+      document.getElementById('wefrotas-recovery-gate')?.remove();
+      if (!active) return;
+      const overlay = document.createElement('section');
+      overlay.id = 'wefrotas-recovery-gate';
+      overlay.setAttribute('role', 'region');
+      overlay.setAttribute('aria-labelledby', 'wefrotas-recovery-title');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:11000;display:grid;place-items:center;padding:20px;background:rgba(238,243,251,.93);backdrop-filter:blur(10px);overflow:auto;';
+      const card = document.createElement('div');
+      card.style.cssText = 'width:min(600px,100%);box-sizing:border-box;padding:28px;background:#fff;border:1px solid #dbe4f0;border-radius:22px;box-shadow:0 20px 60px #20395b22;color:#17243a;';
+      const title = document.createElement('h2');
+      title.id = 'wefrotas-recovery-title'; title.textContent = 'Seu acesso está confirmado. Vamos revisar os dados.';
+      const reason = document.createElement('p'); reason.textContent = error.message || 'Há cópias locais preservadas que precisam de revisão.';
+      const note = document.createElement('p');
+      note.textContent = 'Os lançamentos ficam bloqueados nesta tela até você escolher a cópia do servidor. Você pode comparar e baixar todas as fontes antes de continuar.';
+      const actions = document.createElement('div'); actions.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;';
+      for (const [label, handler, primary] of [
+        ['Comparar e baixar as cópias', () => window.reviewPendingWeFrotasChanges(), true],
+        ['Carregar servidor com backup', () => window.recoverWeFrotasFromServer(), false],
+        ['Baixar cópia deste computador', () => exportSystemBackup(), false],
+        ['Sair da conta', () => logoutWeFrotasOnline(), false]
+      ]) {
+        const button = document.createElement('button');
+        button.type = 'button'; button.textContent = label; button.onclick = handler;
+        button.style.cssText = `padding:11px 15px;border-radius:12px;border:1px solid #cddaf0;background:${primary ? '#245cf4' : '#f6f9fd'};color:${primary ? '#fff' : '#17243a'};font:inherit;cursor:pointer;`;
+        actions.append(button);
+      }
+      card.append(title, reason, note, actions); overlay.append(card); document.body.append(overlay);
+      actions.querySelector('button')?.focus();
+    }
+
+    function enterWeFrotasRecovery(error) {
+      window.clearInterval(centralPendingAutoRefreshTimer);
+      toggleOnlineLogin(false);
+      setWeFrotasRecoveryGate(error);
+      updateOnlineStatus({ state: 'error', message: error.message, user: window.WeFrotasBackend?.getUser?.() });
+      scheduleOnlineIdleLogout();
+    }
+
+    function getWeFrotasRecoveryDifferenceFields(backup) {
+      if (Array.isArray(backup?.differingFields)) return backup.differingFields;
+      const local = backup?.localSnapshot || {}, remote = backup?.serverSnapshot || {};
+      return [...new Set([...Object.keys(local), ...Object.keys(remote)])]
+        .filter(key => JSON.stringify(local[key]) !== JSON.stringify(remote[key]));
+    }
+
     window.recoverWeFrotasFromServer = async function () {
-      if (!window.confirm('Preservar as pendências locais em backup e carregar a versão atual do servidor? Nenhum dado será enviado ou substituído no servidor.')) return;
+      if (!window.confirm('Preservar as pendências locais em backup e carregar a versão atual do servidor? Nenhum dado será enviado ou substituído no servidor.')) return false;
       try {
         const { backup } = await window.WeFrotasBackend.recoverFromServer({ confirmed: true });
-        downloadBlob(`wefrotas_conciliacao_${Date.now()}.json`, new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' }));
-        showToast(`Cópia do servidor carregada. Backup preservado. Campos para conciliação: ${backup.differingFields.join(', ') || 'nenhum'}.`);
+        setWeFrotasRecoveryGate(null);
+        renderAll(); updateManagerIdentityUi(); startCentralPendingAutoRefresh();
+        refreshCentralPendingRecords({ silent: true }).catch(error => console.warn('A Central ainda está atualizando.', error));
+        try { downloadBlob(`wefrotas_conciliacao_${Date.now()}.json`, new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' })); }
+        catch (error) { console.warn('Backup preservado no navegador; download não concluído.', error); }
+        showToast(`Cópia do servidor carregada. Backup preservado. Campos para revisão: ${getWeFrotasRecoveryDifferenceFields(backup).join(', ') || 'nenhum'}.`);
+        return true;
       } catch (error) {
         showToast(`Recuperação não concluída: ${error?.message || 'erro desconhecido'}`);
+        return false;
       }
     };
 
@@ -2311,44 +2394,52 @@
         const title = document.createElement('h2');
         title.id = 'wefrotas-reconciliation-title'; title.textContent = 'Revisar pendências deste computador';
         const explanation = document.createElement('p');
-        explanation.textContent = 'As duas cópias já estão preservadas em backup. Nada está selecionado. Confira cada diferença e marque somente o que deve substituir ou entrar no servidor. Diferenças antigas também podem aparecer: não são necessariamente alterações novas. Não serão feitas exclusões automáticas.';
+        explanation.textContent = 'Comparação somente para leitura. Diferenças antigas também podem aparecer e não representam necessariamente alterações novas. Baixe as fontes para uma revisão completa ou carregue a cópia do servidor com backup das pendências. Esta tela não envia alterações ao servidor.';
         const list = document.createElement('div');
         list.style.cssText = 'max-height:48vh;overflow:auto;margin:16px 0;';
         const labels = { orders: 'OS', finance: 'Despesa', vehicles: 'Veículo', drivers: 'Motorista', suppliers: 'Fornecedor' };
-        for (const item of review.candidates) {
+        const candidates = [];
+        for (const [field, changes] of Object.entries(review.delta || {})) {
+          const remote = new Map((Array.isArray(review.serverSnapshot?.[field]) ? review.serverSnapshot[field] : []).map(item => [String(item.id), item]));
+          for (const after of changes?.upserts || []) candidates.push({ field, id: after.id, before: remote.get(String(after.id)) || null, after });
+          for (const id of changes?.deletes || []) candidates.push({ field, id, before: remote.get(String(id)) || null, after: null });
+        }
+        for (const item of candidates) {
           const card = document.createElement('section');
           card.style.cssText = 'padding:12px;border-bottom:1px solid #e2e8f0;';
-          const label = document.createElement('label');
+          const label = document.createElement('div');
           label.style.cssText = 'display:flex;gap:10px;align-items:flex-start;';
-          const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.value = item.key;
           const text = document.createElement('span');
-          const name = item.after.numero || item.after.nome || item.after.descricao || item.after.placa || item.id;
-          text.textContent = `${labels[item.field]} ${name} — servidor: ${item.before ? (item.before.status || 'existente') : 'não existe'} → local: ${item.after.status || 'alterado'}`;
-          label.append(checkbox, text); card.append(label);
+          const entity = item.after || item.before || {};
+          const name = entity.numero || entity.nome || entity.descricao || entity.placa || item.id;
+          text.textContent = `${labels[item.field] || item.field} ${name} — servidor: ${item.before ? (item.before.status || 'existente') : 'não existe'}; neste computador: ${item.after ? (item.after.status || 'existente ou alterado') : 'ausente'}`;
+          label.append(text); card.append(label);
           const details = document.createElement('details');
           const summary = document.createElement('summary'); summary.textContent = 'Comparar todos os campos';
           const pre = document.createElement('pre'); pre.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;';
           pre.textContent = JSON.stringify({ servidor: item.before, nesteComputador: item.after }, null, 2);
           details.append(summary, pre); card.append(details); list.append(card);
         }
-        if (!review.candidates.length) list.textContent = 'Nenhuma diferença recuperável nos cadastros. Você pode carregar a cópia do servidor em Configurações → Backup.';
+        if (!candidates.length) list.textContent = 'Nenhuma diferença entre os cadastros desta cópia e o servidor. Confira também as fontes preservadas abaixo.';
+        const sources = document.createElement('details');
+        const sourcesTitle = document.createElement('summary'); sourcesTitle.textContent = `Ver fontes completas e ${(review.otherPendingJournals || []).length} pendência(s) de outras abas`;
+        const sourceData = document.createElement('pre'); sourceData.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;';
+        sourceData.textContent = JSON.stringify(review, null, 2); sources.append(sourcesTitle, sourceData); list.append(sources);
         const status = document.createElement('p'); status.setAttribute('role', 'status');
-        const actions = document.createElement('div'); actions.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;';
+        const actions = document.createElement('div'); actions.style.cssText = 'display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-end;';
         const close = document.createElement('button'); close.textContent = 'Fechar sem alterar'; close.type = 'button'; close.onclick = () => dialog.close();
-        const save = document.createElement('button'); save.textContent = 'Confirmar selecionados no servidor'; save.type = 'button';
+        const exportButton = document.createElement('button'); exportButton.textContent = 'Baixar todas as fontes'; exportButton.type = 'button';
+        exportButton.onclick = () => downloadBlob(`wefrotas_revisao_${Date.now()}.json`, new Blob([JSON.stringify(review, null, 2)], { type: 'application/json;charset=utf-8' }));
+        const save = document.createElement('button'); save.textContent = 'Carregar servidor com backup'; save.type = 'button';
         save.style.cssText = 'background:#245cf4;color:white;padding:10px 16px;border-radius:10px;';
         save.onclick = async () => {
-          const keys = [...list.querySelectorAll('input:checked')].map(input => input.value);
-          if (!keys.length) { status.textContent = 'Selecione as alterações que deseja recuperar.'; return; }
-          if (!window.confirm(`Confirmar ${keys.length} alteração(ões) selecionada(s) no servidor? As demais diferenças ficarão apenas no backup preservado.`)) return;
           save.disabled = true; close.disabled = true;
           try {
-            const result = await window.WeFrotasBackend.reconcileSelectedPending({ keys, confirmed: true });
-            dialog.close(); showToast(`${result.recovered} alteração(ões) confirmada(s) no servidor. Backup mantido.`);
+            if (await window.recoverWeFrotasFromServer()) dialog.close();
           } catch (error) { status.textContent = error.message || 'Recuperação não confirmada.'; }
           finally { save.disabled = false; close.disabled = false; }
         };
-        actions.append(close, save); dialog.append(title, explanation, list, status, actions);
+        actions.append(close, exportButton, save); dialog.append(title, explanation, list, status, actions);
         document.body.append(dialog); dialog.showModal();
       } catch (error) { showToast(`Não foi possível abrir a revisão: ${error.message}`); }
     };
@@ -2362,7 +2453,7 @@
       try {
         const backup = JSON.parse(localStorage.getItem(keys[0]));
         const lines = [`Backup: ${backup.createdAt}. As duas cópias estão preservadas. Nenhum dado será alterado.`];
-        for (const field of backup.differingFields || []) {
+        for (const field of getWeFrotasRecoveryDifferenceFields(backup)) {
           const local = backup.localSnapshot[field], remote = backup.serverSnapshot[field];
           if (Array.isArray(local) && Array.isArray(remote) && [...local, ...remote].every(item => item && item.id)) {
             const localById = new Map(local.map(item => [String(item.id), item]));
@@ -3510,9 +3601,13 @@
       });
     }
 
-    function openImportedFuelLaunch(importedData) {
+    function openImportedFuelLaunch(importedData, centralRecord = null) {
       openCadastroModal('finance');
       loadFinanceForm('combustivel');
+      currentFinanceCentralSource = centralRecord ? {
+        recordId: getCentralPendingRecordId(centralRecord),
+        organizationId: String(window.WeFrotasBackend?.getOrganizationContext?.()?.id || '')
+      } : null;
 
       const supplier = resolveFuelSupplierByImportedName(importedData.posto);
       const driver = resolveDriverByImportedName(importedData.motorista);
@@ -3578,9 +3673,13 @@
       showImportResolutionFeedback(pendingFields, 'Abastecimento importado. Revise os dados e finalize o lançamento.');
     }
 
-    function openImportedLooseNoteLaunch(importedData) {
+    function openImportedLooseNoteLaunch(importedData, centralRecord = null) {
       openCadastroModal('finance');
       loadFinanceForm('despesa');
+      currentFinanceCentralSource = centralRecord ? {
+        recordId: getCentralPendingRecordId(centralRecord),
+        organizationId: String(window.WeFrotasBackend?.getOrganizationContext?.()?.id || '')
+      } : null;
 
       const expenseSuppliers = allSuppliers.filter((supplier) => supplier.tipo !== 'posto');
       const supplier = resolveSupplierByRelevantTerms(importedData.fornecedor, expenseSuppliers);
@@ -3812,10 +3911,10 @@
     }
 
     const wefrotasRoleDefinitions = Object.freeze({
-      'wefrotas-admin': { label: 'Administrador', appwriteLabel: 'admin', description: 'Acesso total, inclusive usuários, configurações e ações críticas.' },
-      'wefrotas-gestor': { label: 'Gestor', appwriteLabel: 'gestor', description: 'Gerencia a operação e os cadastros, mas não administra contas de acesso.' },
-      'wefrotas-aprovador': { label: 'Aprovador', appwriteLabel: 'aprovador', description: 'Analisa, aprova, rejeita e audita registros da Central.' },
-      'wefrotas-consulta': { label: 'Consulta', appwriteLabel: 'consulta', description: 'Acesso de leitura, sem alterações operacionais.' }
+      'wefrotas-admin': { label: 'Administrador', description: 'Acesso total, inclusive usuários, configurações e ações críticas.' },
+      'wefrotas-gestor': { label: 'Gestor', description: 'Gerencia a operação e os cadastros, mas não administra contas de acesso.' },
+      'wefrotas-aprovador': { label: 'Aprovador', description: 'Analisa, aprova, rejeita e audita registros da Central.' },
+      'wefrotas-consulta': { label: 'Consulta', description: 'Acesso de leitura, sem alterações operacionais.' }
     });
 
     function getWefrotasRoleDefinition(role) {
@@ -5478,6 +5577,8 @@
     window.clearVehicleImageSelection = clearVehicleImageSelection;
 
     function openCadastroModal(type) {
+      currentFinanceFormSession += 1;
+      currentFinanceCentralSource = null;
       currentModalType = type;
       currentEditingId = null;
       currentFinanceEntryType = null;
@@ -5842,6 +5943,8 @@
     }
 
     function closeCadastroModal() {
+      currentFinanceFormSession += 1;
+      currentFinanceCentralSource = null;
       document.getElementById('modal-backdrop').classList.remove('show');
       closeCustomSelects();
       document.getElementById('cadastro-form').reset();
@@ -5958,13 +6061,13 @@
             await window.WeFrotasBackend.syncNow(buildStorageSnapshot());
           } catch (syncError) {
             console.error('Falha ao sincronizar o backup restaurado.', syncError);
-            showToast('Backup restaurado neste dispositivo, mas o Appwrite não confirmou a sincronização.');
+            showToast('Backup restaurado neste dispositivo, mas o Supabase não confirmou a sincronização.');
             return;
           }
           showToast('Backup restaurado e sincronizado para todos os usuários.', {
             notify: true,
             notifyTitle: 'Backup importado',
-            notifyMessage: `Os dados de ${file.name} foram restaurados e enviados ao Appwrite.`
+            notifyMessage: `Os dados de ${file.name} foram restaurados e enviados ao Supabase.`
           });
         } catch (error) {
           console.error(error);
@@ -10233,7 +10336,18 @@
       document.getElementById('central-pending-loading-indicator')?.classList.toggle('hidden', !visible);
     }
 
+    function renderCentralHistoryPendingNotice() {
+      const node = document.getElementById('central-history-pending-notice');
+      const organizationId = window.WeFrotasBackend?.getOrganizationContext?.()?.id;
+      const pendingOrganizations = window.WEFROTAS_SUPABASE_CONFIG?.centralHistoryPendingOrganizationIds;
+      const pending = Boolean(window.WeFrotasBackend?.getUser?.() && organizationId &&
+        Array.isArray(pendingOrganizations) && pendingOrganizations.includes(organizationId));
+      if (node) node.hidden = !pending;
+      return pending;
+    }
+
     function renderCentralPendingRecords() {
+      const historyPending = renderCentralHistoryPendingNotice();
       const list = document.getElementById('central-pending-list');
       if (!list) return;
       const rows = getCentralPendingSortedRows();
@@ -10261,7 +10375,9 @@
         return;
       }
       if (!rows.length) {
-        list.innerHTML = '<tr><td colspan="7" class="central-pending-empty">Nenhum registro recebido da Central até agora.</td></tr>';
+        list.innerHTML = `<tr><td colspan="7" class="central-pending-empty">${historyPending
+          ? 'Nenhum registro disponível para estes filtros. O histórico anterior à migração está pendente de recuperação.'
+          : 'Nenhum registro recebido da Central para estes filtros.'}</td></tr>`;
         return;
       }
 
@@ -10312,20 +10428,9 @@
       if (!silent && !centralPendingLoaded) renderCentralPendingRecords();
       try {
         const result = await window.WeFrotasBackend.listCentralPendingRecords(150);
-        const pendingRepairs = [];
-        const nextRecords = (Array.isArray(result?.rows) ? result.rows : []).map((record) => {
-          const linkedEntry = findCentralFinanceDuplicate(record);
-          if (!linkedEntry || getCentralPendingStatus(record).className !== 'pending') return record;
-          linkFinanceEntryToCentralRecord(linkedEntry, record);
-          pendingRepairs.push({ record, entry: linkedEntry });
-          return {
-            ...record,
-            status: 'aprovado',
-            importadoEm: record.importadoEm || linkedEntry.createdAt || '',
-            lancamentoFinanceiroId: linkedEntry.id,
-            resolucao: record.resolucao || 'Aprovado e lançado no financeiro.'
-          };
-        });
+        // Status is authoritative on the server. A similar amount, supplier or
+        // receipt is not sufficient evidence to approve another record.
+        const nextRecords = Array.isArray(result) ? result : (Array.isArray(result?.rows) ? result.rows : []);
         const currentSignature = JSON.stringify(centralPendingRecords.map(item => [item.$id || item.id, item.$updatedAt || item.atualizadoEm || '', item.status || '', item.resolucao || '']));
         const nextSignature = JSON.stringify(nextRecords.map(item => [item.$id || item.id, item.$updatedAt || item.atualizadoEm || '', item.status || '', item.resolucao || '']));
         const changed = currentSignature !== nextSignature || !centralPendingLoaded;
@@ -10333,7 +10438,6 @@
         centralPendingLoaded = true;
         renderPushIndividualRecipients();
         shouldRenderAfterLoad = changed;
-        pendingRepairs.forEach(({ record, entry }) => repairCentralApprovedStatus(record, entry));
       } catch (error) {
         centralPendingError = `Não foi possível carregar a Central: ${error?.message || 'erro desconhecido'}`;
       } finally {
@@ -10344,6 +10448,7 @@
     }
 
     function prepareCentralPendingRecord(rowId) {
+      if (!requireWefrotasPermission('approveRecords', 'Seu perfil não permite revisar registros para aprovação.')) return;
       const record = centralPendingRecords.find(item => getCentralPendingRecordId(item) === rowId);
       if (!record) {
         showToast('Registro da Central não encontrado. Atualize a lista e tente novamente.');
@@ -10355,9 +10460,9 @@
         return;
       }
       if (importedData.type === 'loose_note' || importedData.type === 'service') {
-        openImportedLooseNoteLaunch(importedData);
+        openImportedLooseNoteLaunch(importedData, record);
       } else {
-        openImportedFuelLaunch(importedData);
+        openImportedFuelLaunch(importedData, record);
       }
     }
 
@@ -10412,6 +10517,7 @@
       if (!subscriptionId && !deviceId) return { skipped: true, reason: 'missing-device-link' };
       return executeCentralPushAdmin({
         action: 'notify',
+        recordId: getCentralPendingRecordId(record),
         subscriptionId,
         deviceId,
         notificationId: `central-approved-${getCentralPendingRecordId(record)}-${Date.now()}`,
@@ -10437,18 +10543,96 @@
 
     async function persistApprovedCentralFinance(record, entry) {
       const backend = window.WeFrotasBackend;
-      // A manager may already have local edits (including the imported entry).
-      // Confirm those before the server append changes the snapshot version.
+      // Flush existing edits before one atomic server operation approves the
+      // record and creates its financial entry. The draft is not queued locally.
       if (backend?.hasPermission?.('syncSnapshot')) await persistOperationalDataImmediately();
       const result = await executeCentralPushAdmin({
-        action: 'central-finance-append',
-        centralRecordId: getCentralPendingRecordId(record),
+        action: 'central-record-approve',
+        recordId: getCentralPendingRecordId(record),
         entry
       });
-      // The append writes on the server. Re-read its canonical snapshot/version
-      // instead of queueing an old whole-company snapshot over that write.
-      await backend.adoptRemoteOrUploadLocal();
+      if (result.record) setCentralPendingRecordStatusLocally(record, result.record);
+      await backend.refreshFromServer();
       return result;
+    }
+
+    async function persistFinanceFormEntry(payload, successMessage, expectedSession = currentFinanceFormSession) {
+      if (expectedSession !== currentFinanceFormSession || currentModalType !== 'finance') return false;
+      if (financeFormSaveInProgress) {
+        showToast('Aguarde a confirmação do lançamento em andamento.');
+        return false;
+      }
+      const source = currentFinanceCentralSource;
+      const permission = source ? 'approveRecords' : 'editOperations';
+      if (!requireWefrotasPermission(permission, source
+        ? 'Seu perfil não permite aprovar registros.'
+        : 'Seu perfil não permite salvar lançamentos financeiros.')) return false;
+      if (!(Number(payload.total) > 0)) {
+        showToast('Informe um valor maior que zero para salvar o lançamento.');
+        return false;
+      }
+      const organizationId = String(window.WeFrotasBackend?.getOrganizationContext?.()?.id || '');
+      const record = source ? centralPendingRecords.find(item => getCentralPendingRecordId(item) === source.recordId) : null;
+      if (source && (!source.organizationId || source.organizationId !== organizationId || !record)) {
+        showToast('O registro ou a empresa mudou. Atualize a Central e abra a revisão novamente.');
+        return false;
+      }
+      if (source && payload.orderId) {
+        showToast('Conclua a aprovação sem OS. Depois, aloque a despesa na OS desejada pelo Financeiro.');
+        return false;
+      }
+      if (source && centralApprovalInProgress.has(source.recordId)) {
+        showToast('Este registro já está sendo aprovado. Aguarde a conclusão.');
+        return false;
+      }
+      const submitButton = document.getElementById('modal-submit-btn');
+      const submitLabel = submitButton?.querySelector('span');
+      const previousLabel = submitLabel?.textContent;
+      financeFormSaveInProgress = true;
+      if (source) centralApprovalInProgress.add(source.recordId);
+      if (submitButton) submitButton.disabled = true;
+      if (submitLabel) submitLabel.textContent = 'Confirmando no servidor...';
+      try {
+        if (source) {
+          // Keep the reviewed fields as a draft until approval and its financial
+          // entry commit together. Never enqueue an unlinked local expense.
+          await persistApprovedCentralFinance(record, {
+            ...payload, id: `central-${source.recordId}`, centralRecordId: source.recordId,
+            orderId: '', kind: 'despesa', kindLabel: 'Despesa'
+          });
+          notifyCentralRecordApproval(record).catch(error => console.warn('Aprovação salva; aviso ao aparelho não confirmado.', error));
+        } else {
+          if (currentEditingId) {
+            if (!allFinanceEntries.some(entry => entry.id === currentEditingId)) throw new Error('O lançamento foi removido. Atualize a lista antes de salvar.');
+            allFinanceEntries = allFinanceEntries.map(entry => entry.id === currentEditingId ? { ...entry, ...payload } : entry);
+          } else {
+            const id = generateId();
+            allFinanceEntries.unshift({ id, createdAt: new Date().toISOString(), ...payload });
+            // A failed confirmation keeps this same draft ID for a safe retry.
+            currentEditingId = id;
+          }
+          advanceOrderStatusOnFinancialAllocation(payload.orderId || '');
+          renderAll();
+          await persistOperationalDataImmediately();
+        }
+        if (organizationId !== String(window.WeFrotasBackend?.getOrganizationContext?.()?.id || '')) return false;
+        renderAll();
+        if (expectedSession === currentFinanceFormSession) closeCadastroModal();
+        showToast(source ? 'Registro aprovado e lançado no financeiro.' : successMessage);
+        return true;
+      } catch (error) {
+        showToast(source
+          ? `Aprovação não confirmada: ${error?.message || 'falha na conexão'}. Os campos continuam disponíveis para revisão.`
+          : `Lançamento NÃO confirmado no servidor. A cópia local está pendente: ${error?.message || 'falha na conexão'}.`);
+        return false;
+      } finally {
+        financeFormSaveInProgress = false;
+        if (source) centralApprovalInProgress.delete(source.recordId);
+        if (expectedSession === currentFinanceFormSession) {
+          if (submitButton) submitButton.disabled = false;
+          if (submitLabel) submitLabel.textContent = previousLabel || 'Salvar lançamento';
+        }
+      }
     }
 
     async function approveCentralPendingRecord(rowId) {
@@ -10459,17 +10643,8 @@
 
       const existingEntry = findCentralFinanceDuplicate(record);
       if (existingEntry) {
-        linkFinanceEntryToCentralRecord(existingEntry, record);
-        const approvalData = {
-          status: 'aprovado',
-          importadoEm: record.importadoEm || existingEntry.createdAt || new Date().toISOString(),
-          lancamentoFinanceiroId: existingEntry.id,
-          resolucao: 'Aprovado e lançado no financeiro.'
-        };
         try {
           await persistApprovedCentralFinance(record, existingEntry);
-          await setCentralPendingRecordStatus(record, approvalData);
-          setCentralPendingRecordStatusLocally(record, approvalData);
           notifyCentralRecordApproval(record).catch((error) => console.warn('Registro aprovado, mas o aparelho não recebeu o aviso.', error));
           showToast('Este registro já estava lançado. O status da Central foi corrigido.');
         } catch (error) {
@@ -10504,7 +10679,7 @@
         return;
       }
 
-      const financeId = generateId();
+      const financeId = `central-${rowId}`;
       const entry = isService ? {
         id: financeId, centralRecordId: getCentralPendingRecordId(record), createdAt: new Date().toISOString(), entryType: 'despesa', orderId: '', vehicleId: '', kind: 'despesa', kindLabel: 'Despesa',
         supplierId: supplier.id, supplierType: supplier.tipo, fornecedor: supplier.nome, nf: 'REGISTRO DE SERVIÇOS', km: imported.km || '', comprovanteUrl: imported.comprovanteUrl || record.comprovanteUrl || '',
@@ -10516,21 +10691,13 @@
         dataVencimento: '', nf: '', total, observacoes: imported.cidade ? `Cidade informada na Central: ${imported.cidade}` : '', groupedIntoId: '', workflowStatus: 'pendente', closedExpense: false, discount: 0
       };
 
-      const approvalData = { status: 'aprovado', importadoEm: new Date().toISOString(), lancamentoFinanceiroId: financeId, resolucao: 'Aprovado e lançado no financeiro.' };
       centralApprovalInProgress.add(rowId);
-      allFinanceEntries.unshift(entry);
-      renderAll();
       try {
-        // O Financeiro é persistido e confirmado no Appwrite antes de a Central
-        // receber o status aprovado. Assim o lançamento aparece imediatamente e
-        // nunca fica uma aprovação remota sem o respectivo registro financeiro.
         await persistApprovedCentralFinance(record, entry);
-        await setCentralPendingRecordStatus(record, approvalData);
-        setCentralPendingRecordStatusLocally(record, approvalData);
         notifyCentralRecordApproval(record).catch((error) => console.warn('Registro aprovado, mas o aparelho não recebeu o aviso.', error));
         showToast('Registro aprovado e lançado no financeiro.');
       } catch (error) {
-        showToast(`O lançamento já está visível no Financeiro, mas a confirmação da Central ficou pendente: ${error?.message || 'erro desconhecido'}`);
+        showToast(`Aprovação não confirmada: ${error?.message || 'erro desconhecido'}. Atualize a lista antes de tentar novamente.`);
       } finally {
         centralApprovalInProgress.delete(rowId);
       }
@@ -10544,6 +10711,7 @@
       }
       return executeCentralPushAdmin({
         action: 'notify',
+        recordId: getCentralPendingRecordId(record),
         subscriptionId,
         deviceId,
         notificationId: `central-rejected-${getCentralPendingRecordId(record)}-${Date.now()}`,
@@ -14388,6 +14556,10 @@
 
     document.getElementById('cadastro-form').addEventListener('submit', async function (event) {
       event.preventDefault();
+      if (wefrotasRecoveryRequired) {
+        showToast('Revise as cópias preservadas antes de continuar os lançamentos.');
+        return;
+      }
       if (currentModalType === 'vehicle') {
         const numeroFrota = document.getElementById('vehicle-frota').value.trim();
         const placa = document.getElementById('vehicle-placa').value.trim();
@@ -14627,6 +14799,7 @@
       }
 
       if (currentModalType === 'finance') {
+        const submissionSession = currentFinanceFormSession;
         const entryType = currentFinanceEntryType || 'despesa';
         const kind = document.getElementById('finance-kind').value;
         const supplierSearch = document.getElementById('finance-supplier-search')?.value || '';
@@ -14702,18 +14875,9 @@
             discount: 0
           };
 
-          const persistFuelEntry = () => {
-            if (currentEditingId) {
-              allFinanceEntries = allFinanceEntries.map(entry => entry.id === currentEditingId ? { ...entry, ...payload } : entry);
-              showToast('Abastecimento atualizado com sucesso.');
-            } else {
-              allFinanceEntries.unshift({ id: generateId(), createdAt: new Date().toISOString(), ...payload });
-              showToast('Abastecimento registrado com sucesso.');
-            }
-            saveToLocalStorage();
-            renderAll();
-            closeCadastroModal();
-          };
+          const persistFuelEntry = () => persistFinanceFormEntry(payload,
+            currentEditingId ? 'Abastecimento atualizado e sincronizado.' : 'Abastecimento registrado e sincronizado.',
+            submissionSession);
 
           const similarFuelEntry = findSimilarFuelEntry({
             vehicleId,
@@ -14733,7 +14897,7 @@
             return;
           }
 
-          persistFuelEntry();
+          await persistFuelEntry();
           return;
         }
 
@@ -14780,17 +14944,10 @@
           observacoes
         };
 
-        if (currentEditingId) {
-          allFinanceEntries = allFinanceEntries.map(entry => entry.id === currentEditingId ? { ...entry, ...payload } : entry);
-          showToast('Lançamento atualizado com sucesso.');
-        } else {
-          allFinanceEntries.unshift({ id: generateId(), createdAt: new Date().toISOString(), ...payload });
-          showToast(orderId ? 'Lançamento vinculado a OS com sucesso.' : 'Lançamento salvo sem OS. Você pode alocar depois.');
-        }
-        advanceOrderStatusOnFinancialAllocation(orderId);
-        saveToLocalStorage();
-        renderAll();
-        closeCadastroModal();
+        await persistFinanceFormEntry(payload, currentEditingId
+          ? 'Lançamento atualizado e sincronizado.'
+          : orderId ? 'Lançamento vinculado à OS e sincronizado.' : 'Lançamento salvo e sincronizado sem OS. Você pode alocar depois.',
+        submissionSession);
         return;
       }
 
