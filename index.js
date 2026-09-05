@@ -92,6 +92,17 @@ const pages = {
                 <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-6-6 6 6-6 6" /></svg>
               </span>
             </a>
+            <a href="/transportadora-simulator/" class="group rounded-[1.5rem] sm:rounded-[1.75rem] border border-cyan-400/25 bg-gradient-to-br from-cyan-500/10 via-slate-900/90 to-slate-950/90 p-5 sm:p-7 hover:border-cyan-400/50 transition-all relative overflow-hidden">
+              <span class="absolute top-5 right-5 px-3 py-1 rounded-full bg-cyan-500 text-white text-xs font-bold shadow-lg">Jogo</span>
+              <div class="w-14 h-14 rounded-2xl bg-cyan-500/15 border border-cyan-400/20 flex items-center justify-center mb-5">
+                <svg class="w-7 h-7 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h11v12H3V5zm11 5h4l3 4v3h-7"/><circle cx="7" cy="18" r="2" stroke-width="2"/><circle cx="18" cy="18" r="2" stroke-width="2"/></svg>
+              </div>
+              <h3 class="text-xl sm:text-2xl font-bold text-white mb-3">Transportadora Simulator</h3>
+              <p class="text-slate-300 leading-relaxed">Comece com uma Fiorino e R$ 2.000 virtuais. Faça entregas em um mapa 3D, compre veículos, contrate motoristas e transforme sua transportadora em um império logístico.</p>
+              <span class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-cyan-300">Jogar grátis
+                <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-6-6 6 6-6 6" /></svg>
+              </span>
+            </a>
             <div class="rounded-[1.5rem] sm:rounded-[1.75rem] border border-amber-400/25 bg-amber-500/[0.06] p-5 sm:p-7 relative overflow-hidden">
               <span class="absolute top-5 right-5 px-3 py-1 rounded-full bg-slate-800 text-amber-200 text-xs font-bold shadow-lg border border-amber-400/20">Bloqueado</span>
               <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-400/20 flex items-center justify-center mb-5">
