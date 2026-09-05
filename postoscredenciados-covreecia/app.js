@@ -977,6 +977,95 @@ function renderCentralPushPrompt() {
   document.body.appendChild(prompt);
 }
 
+function waitForCentralPushServiceWorker() {
+  return new Promise((resolve, reject) => {
+    let registration;
+    let settled = false;
+    const observedWorkers = new Set();
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      registration?.removeEventListener('updatefound', inspect);
+      observedWorkers.forEach((worker) => worker.removeEventListener('statechange', inspect));
+      if (error) reject(error); else resolve(registration);
+    };
+    const inspect = () => {
+      if (registration.active?.state === 'activated') return finish();
+      [registration.installing, registration.waiting, registration.active].filter(Boolean).forEach((worker) => {
+        if (!observedWorkers.has(worker)) {
+          observedWorkers.add(worker);
+          worker.addEventListener('statechange', inspect);
+        }
+      });
+    };
+    const timeout = window.setTimeout(() => finish(new Error('O serviço de notificações não ficou pronto. Toque para tentar novamente.')), 15000);
+    Promise.resolve().then(() => registerServiceWorker()).then((value) => {
+      if (settled) return;
+      if (!value) return finish(new Error('Não foi possível preparar o serviço de notificações. Tente novamente.'));
+      const expectedScope = isNeutralCentralEntry() ? '/central/' : '/postoscredenciados-covreecia/';
+      if (!String(value.scope || '').endsWith(expectedScope)) {
+        return finish(new Error('O serviço de notificações não pertence a esta Central. Tente novamente.'));
+      }
+      // navigator.serviceWorker.ready may still describe an old root worker.
+      // Use only the registration explicitly installed for this Central scope.
+      registration = value;
+      registration.addEventListener('updatefound', inspect);
+      inspect();
+    }).catch(finish);
+  });
+}
+
+// Browser permission/subscription and server registration are different facts.
+// Confirm afresh on each page load; an old stored ID is not a server receipt.
+const centralPushRegistrationStates = new Map();
+const centralPushRegistrationOperations = new Map();
+
+function getCentralPushRegistrationState(subscription) {
+  const state = centralPushRegistrationStates.get(centralOrganizationContext.slug);
+  if (!state) return 'unconfirmed';
+  if (state.status === 'confirmed' && (!subscription || state.endpoint !== subscription.endpoint)) return 'unconfirmed';
+  return state.status;
+}
+
+async function syncCentralPushRegistration() {
+  const organizationSlug = centralOrganizationContext.slug;
+  if (centralPushRegistrationOperations.has(organizationSlug)) return centralPushRegistrationOperations.get(organizationSlug);
+  const operation = (async () => {
+    centralPushRegistrationStates.set(organizationSlug, { status: 'pending' });
+    refreshCentralNotificationSetting();
+    try {
+      const registration = await waitForCentralPushServiceWorker();
+      const subscription = await ensureCentralPushSubscription(registration);
+      if (organizationSlug !== centralOrganizationContext.slug) throw new Error('A empresa foi alterada. Tente novamente.');
+      const result = await executeCentralPushFunction({
+        action: 'subscribe',
+        subscription: subscription.toJSON(),
+        deviceId: getCentralDeviceId(),
+        userAgent: navigator.userAgent
+      });
+      const subscriptionId = String(result?.subscriptionId || '').trim();
+      if (!subscriptionId) throw new Error('O servidor não confirmou a inscrição de notificações. Tente novamente.');
+      if (organizationSlug !== centralOrganizationContext.slug) throw new Error('A empresa foi alterada. Tente novamente.');
+      saveCentralPushSubscriptionId(subscriptionId);
+      await syncCentralDeviceProfile({ silent: true });
+      startCentralDeviceHeartbeat();
+      centralPushRegistrationStates.set(organizationSlug, { status: 'confirmed', endpoint: subscription.endpoint });
+      return result;
+    } catch (error) {
+      // Keep a valid local subscription for retry; no unsubscribe on a failed
+      // server upsert, and no new permission prompt when already granted.
+      centralPushRegistrationStates.set(organizationSlug, { status: 'failed' });
+      throw error;
+    } finally {
+      refreshCentralNotificationSetting();
+    }
+  })();
+  centralPushRegistrationOperations.set(organizationSlug, operation);
+  try { return await operation; }
+  finally { centralPushRegistrationOperations.delete(organizationSlug); }
+}
+
 async function enableCentralPushNotifications() {
   const button = document.getElementById('central-push-enable');
   if (button) {
@@ -985,24 +1074,12 @@ async function enableCentralPushNotifications() {
   }
 
   try {
-    const permission = await Notification.requestPermission();
+    const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
     if (permission !== 'granted') {
       throw new Error('A permissão de notificações não foi autorizada.');
     }
 
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await ensureCentralPushSubscription(registration);
-
-    const result = await executeCentralPushFunction({
-      action: 'subscribe',
-      subscription: subscription.toJSON(),
-      deviceId: getCentralDeviceId(),
-      userAgent: navigator.userAgent
-    });
-
-    saveCentralPushSubscriptionId(result.subscriptionId);
-    await syncCentralDeviceProfile({ silent: true });
-    startCentralDeviceHeartbeat();
+    await syncCentralPushRegistration();
     localStorage.removeItem(centralTenantStorageKey(CENTRAL_PUSH_PROMPT_DISMISSED_KEY));
     document.getElementById('central-push-prompt')?.remove();
     showSuccessMessage('Notificações ativadas neste celular.');
@@ -1015,6 +1092,8 @@ async function enableCentralPushNotifications() {
     }
     showErrorMessage(error?.message || 'Não foi possível ativar as notificações.');
     return false;
+  } finally {
+    refreshCentralNotificationSetting();
   }
 }
 
@@ -1030,36 +1109,13 @@ function setupCentralPushExperience() {
     }
 
     const permissionAlreadyGranted = Notification.permission === 'granted';
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = permissionAlreadyGranted
-        ? await ensureCentralPushSubscription(registration)
-        : null;
-      if (subscription) {
-        document.getElementById('central-push-prompt')?.remove();
-        refreshCentralNotificationSetting();
-        try {
-          const result = await executeCentralPushFunction({
-            action: 'subscribe',
-            subscription: subscription.toJSON(),
-            deviceId: getCentralDeviceId(),
-            userAgent: navigator.userAgent
-          });
-          saveCentralPushSubscriptionId(result.subscriptionId);
-          await syncCentralDeviceProfile({ silent: true });
-          startCentralDeviceHeartbeat();
-        } catch (error) {
-          // A inscrição local continua válida. Uma falha temporária ao renovar
-          // o cadastro no servidor não deve pedir autorização novamente.
-          console.warn('Não foi possível renovar a inscrição de push no servidor.', error);
-        }
-        return;
-      }
-    } catch (error) {
-      console.warn('Não foi possível consultar a inscrição de push.', error);
-    }
-
     if (permissionAlreadyGranted) {
+      try {
+        await syncCentralPushRegistration();
+        document.getElementById('central-push-prompt')?.remove();
+      } catch (error) {
+        console.warn('Não foi possível renovar a inscrição de push no servidor.', error);
+      }
       document.getElementById('central-push-prompt')?.remove();
       refreshCentralNotificationSetting();
       return;
@@ -1073,7 +1129,7 @@ async function getCentralPushSubscription() {
   if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
     return null;
   }
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await waitForCentralPushServiceWorker();
   return registration.pushManager.getSubscription();
 }
 
@@ -1081,6 +1137,7 @@ async function refreshCentralNotificationSetting() {
   const toggle = document.getElementById('central-notification-toggle');
   const status = document.getElementById('central-notification-status');
   if (!toggle || !status) return;
+  toggle.setAttribute('aria-busy', 'false');
 
   const supported = 'Notification' in window && 'PushManager' in window && 'serviceWorker' in navigator;
   if (!supported) {
@@ -1100,14 +1157,36 @@ async function refreshCentralNotificationSetting() {
   }
 
   try {
+    if (getCentralPushRegistrationState(null) === 'pending') {
+      toggle.disabled = true;
+      toggle.setAttribute('aria-busy', 'true');
+      toggle.setAttribute('aria-checked', 'false');
+      toggle.classList.remove('is-active');
+      status.textContent = 'Sincronizando notificações com o servidor...';
+      return;
+    }
+    if (getCentralPushRegistrationState(null) === 'failed') {
+      toggle.disabled = false;
+      toggle.setAttribute('aria-checked', 'false');
+      toggle.classList.remove('is-active');
+      status.textContent = 'Não foi possível confirmar no servidor. Toque para tentar novamente.';
+      return;
+    }
     const subscription = Notification.permission === 'granted' ? await getCentralPushSubscription() : null;
-    const enabled = Boolean(subscription);
+    const registrationState = getCentralPushRegistrationState(subscription);
+    if (registrationState === 'pending') return refreshCentralNotificationSetting();
+    const enabled = Boolean(subscription) && registrationState === 'confirmed';
     toggle.disabled = false;
     toggle.setAttribute('aria-checked', String(enabled));
     toggle.classList.toggle('is-active', enabled);
-    status.textContent = enabled ? 'Ativadas neste aparelho.' : 'Desativadas neste aparelho.';
+    if (enabled) status.textContent = 'Inscrição confirmada no servidor para este aparelho.';
+    else if (registrationState === 'failed') status.textContent = 'Não foi possível confirmar no servidor. Toque para tentar novamente.';
+    else if (subscription) status.textContent = 'Inscrição local encontrada. Toque para sincronizar com o servidor.';
+    else status.textContent = 'Desativadas neste aparelho.';
   } catch (error) {
     toggle.disabled = false;
+    toggle.setAttribute('aria-checked', 'false');
+    toggle.classList.remove('is-active');
     status.textContent = 'Não foi possível consultar o estado agora.';
   }
 }
@@ -1119,6 +1198,7 @@ async function disableCentralPushNotifications() {
     await subscription.unsubscribe();
   }
   saveCentralPushSubscriptionId('');
+  centralPushRegistrationStates.delete(centralOrganizationContext.slug);
   localStorage.setItem(centralTenantStorageKey(CENTRAL_PUSH_PROMPT_DISMISSED_KEY), String(Date.now()));
   showSuccessMessage('Notificações desativadas neste celular.');
 }
@@ -1129,7 +1209,7 @@ async function toggleCentralPushNotifications() {
   toggle.disabled = true;
   try {
     const subscription = await getCentralPushSubscription();
-    if (subscription) {
+    if (subscription && getCentralPushRegistrationState(subscription) === 'confirmed') {
       await disableCentralPushNotifications();
     } else {
       await enableCentralPushNotifications();
@@ -1192,16 +1272,22 @@ async function toggleCentralCameraPermission() {
   }
 }
 
+let centralServiceWorkerRegistrationPromise = null;
+
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) {
-    return;
+    return Promise.resolve(null);
   }
+  if (centralServiceWorkerRegistrationPromise) return centralServiceWorkerRegistrationPromise;
 
-  window.addEventListener('load', () => {
-    const serviceWorkerUrl = isNeutralCentralEntry() ? '/central/sw.js' : './sw.js';
-    navigator.serviceWorker.register(serviceWorkerUrl, { updateViaCache: 'none' })
+  centralServiceWorkerRegistrationPromise = new Promise((resolve) => {
+    const register = () => {
+      const serviceWorkerUrl = isNeutralCentralEntry() ? '/central/sw.js' : './sw.js';
+      Promise.resolve().then(() => navigator.serviceWorker.register(serviceWorkerUrl, { updateViaCache: 'none' }))
       .then((registration) => {
-        registration.update();
+        // Updating an already registered worker is optional and may fail
+        // offline; it must not invalidate this successful registration.
+        Promise.resolve().then(() => registration.update()).catch(() => null);
 
         if (registration.waiting) {
           registration.waiting.postMessage('SKIP_WAITING');
@@ -1215,9 +1301,19 @@ function registerServiceWorker() {
             }
           });
         });
+        resolve(registration);
       })
-      .catch(() => null);
+      .catch(() => {
+        centralServiceWorkerRegistrationPromise = null;
+        resolve(null);
+      });
+    };
+    // Organization/device restore is asynchronous: load may have already
+    // fired before initialization reaches this function.
+    if (document.readyState === 'complete') register();
+    else window.addEventListener('load', register, { once: true });
   });
+  return centralServiceWorkerRegistrationPromise;
 }
 
 window.addEventListener('beforeinstallprompt', (event) => {

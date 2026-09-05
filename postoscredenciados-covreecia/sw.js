@@ -1,4 +1,4 @@
-const CENTRAL_RELEASE = '20260904-supabase-provisional-2';
+const CENTRAL_RELEASE = '20260905-supabase-push-confirmed-1';
 const CENTRAL_SCOPE_KEY = new URL(self.registration.scope).pathname.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'root';
 const CACHE_PREFIX = `central-registros-static-${CENTRAL_SCOPE_KEY}-v`;
 const CACHE_NAME = `${CACHE_PREFIX}${CENTRAL_RELEASE}`;
@@ -11,8 +11,8 @@ const STATIC_ASSETS = Array.from(new Set([
   CENTRAL_SHELL_URL,
   CENTRAL_SOURCE_SHELL_URL,
   CENTRAL_MANIFEST_URL,
-  './styles.css?v=20260904-supabase-provisional-2',
-  './app.js?v=20260904-supabase-provisional-2',
+  './styles.css?v=20260905-supabase-push-confirmed-1',
+  './app.js?v=20260905-supabase-push-confirmed-1',
   './assets/brand/covre-e-cia.png',
   './assets/home/hero-posto.png',
   './assets/home/hero-revisao-km-desktop.jpeg',
