@@ -4182,28 +4182,50 @@
       node.className = 'push-broadcast-feedback' + (type ? ' is-' + type : '');
     }
 
+    function getPushContextKey() {
+      const backend = window.WeFrotasBackend;
+      const organization = backend?.getOrganizationContext?.();
+      return `${backend?.getUser?.()?.$id || ''}|${organization?.id || ''}|${organization?.workspaceId || ''}`;
+    }
+
+    function getPushIndividualRecipients() {
+      const activeDevices = [...new Map(centralPushDevices
+        .filter(device => device.active === true && /^[a-f0-9]{36}$/i.test(device.id))
+        .map(device => [device.id, device])).values()];
+      const recipients = activeDevices.map(device => {
+        const label = `${describeCentralDevice(device.userAgent)} • ID ${device.id.slice(-6).toUpperCase()}`;
+        return { value: `device:${device.id}`, pushSubscriptionId: device.id, recipientLabel: label };
+      });
+      // A historical record is only a label; the current active subscription
+      // must still belong to this company's server-confirmed device list.
+      [...centralPendingRecords]
+        .filter(record => activeDevices.some(device => device.id === record?.pushSubscriptionId))
+        .sort((a, b) => String(b?.criadoEm || b?.data || '').localeCompare(String(a?.criadoEm || a?.data || '')))
+        .forEach(record => {
+          const id = getCentralPendingRecordId(record);
+          if (!id) return;
+          const driver = record.motorista || 'Motorista não informado';
+          const label = `${driver} • ${getCentralPendingRecordType(record)} • ID ${record.pushSubscriptionId.slice(-6).toUpperCase()}`;
+          recipients.push({ value: `record:${id}`, pushSubscriptionId: record.pushSubscriptionId, recipientLabel: label });
+        });
+      return recipients;
+    }
+
     function renderPushIndividualRecipients() {
       const select = document.getElementById('push-individual-record');
       if (!select) return;
       const previous = select.value;
-      const eligible = [...centralPendingRecords]
-        .filter(record => String(record?.pushSubscriptionId || '').trim())
-        .sort((a, b) => String(b?.criadoEm || b?.data || '').localeCompare(String(a?.criadoEm || a?.data || '')));
-      select.innerHTML = '<option value="">Selecione um registro com aparelho vinculado</option>' + eligible.map(record => {
-        const id = getCentralPendingRecordId(record);
-        const driver = record?.motorista || 'Motorista não informado';
-        const type = getCentralPendingRecordType(record);
-        const date = String(record?.data || record?.criadoEm || '').slice(0, 10);
-        const dateLabel = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date.split('-').reverse().join('/') : date;
-        return `<option value="${escapeHtml(id)}">${escapeHtml(driver)} • ${escapeHtml(type)}${dateLabel ? ' • ' + escapeHtml(dateLabel) : ''}</option>`;
+      const eligible = getPushIndividualRecipients();
+      select.innerHTML = '<option value="">Selecione um aparelho autorizado</option>' + eligible.map(recipient => {
+        return `<option value="${escapeHtml(recipient.value)}">${escapeHtml(recipient.recipientLabel)}</option>`;
       }).join('');
-      if (eligible.some(record => getCentralPendingRecordId(record) === previous)) select.value = previous;
+      select.value = eligible.some(recipient => recipient.value === previous) ? previous : '';
     }
 
     function getSelectedPushRecipient() {
       if (document.getElementById('push-audience-mode')?.value !== 'individual') return null;
-      const rowId = document.getElementById('push-individual-record')?.value || '';
-      return centralPendingRecords.find(record => getCentralPendingRecordId(record) === rowId) || null;
+      const value = document.getElementById('push-individual-record')?.value || '';
+      return getPushIndividualRecipients().find(recipient => recipient.value === value) || null;
     }
 
     function updatePushAudienceMode() {
@@ -4217,25 +4239,31 @@
       if (sendLabel) sendLabel.textContent = individual ? 'Enviar para este aparelho' : 'Enviar para todos';
       if (safetyTitle) safetyTitle.textContent = individual ? 'Envio individual' : 'Envio geral';
       if (safetyDescription) safetyDescription.textContent = individual
-        ? 'O destino vem da inscrição técnica anexada ao registro. IP, localização e cadastro do motorista não são usados.'
+        ? 'Somente o aparelho selecionado desta empresa receberá o envio. Confira o sistema e o ID antes de confirmar.'
         : 'Não exige cadastro de motorista. Cada aparelho recebe somente depois que o usuário autorizar.';
     }
 
     async function refreshPushSubscriberStats() {
+      const requestId = refreshPushSubscriberStats.requestId = (refreshPushSubscriberStats.requestId || 0) + 1;
+      const contextKey = getPushContextKey();
       const countNode = document.getElementById('push-subscriber-count');
       const statusNode = document.getElementById('push-subscriber-status');
       if (statusNode) statusNode.textContent = 'Atualizando...';
       try {
         const result = await executeCentralPushAdmin({ action: 'stats' });
+        if (requestId !== refreshPushSubscriberStats.requestId || contextKey !== getPushContextKey()) return;
         centralPushSubscriberTotal = Number(result.subscribers || 0);
-        if (Array.isArray(result.devices)) centralPushDevices = result.devices.map(normalizeCentralPushDevice).filter(item => item.id);
+        centralPushDevices = Array.isArray(result.devices) ? result.devices.map(normalizeCentralPushDevice).filter(item => item.id) : [];
         if (countNode) countNode.textContent = String(centralPushSubscriberTotal);
         if (statusNode) statusNode.textContent = 'Aparelhos autorizados a receber';
       } catch (error) {
+        if (requestId !== refreshPushSubscriberStats.requestId || contextKey !== getPushContextKey()) return;
+        centralPushDevices = [];
         if (countNode) countNode.textContent = '—';
         if (statusNode) statusNode.textContent = error?.message || 'Canal ainda não configurado';
       }
       renderCentralDevices();
+      renderPushIndividualRecipients();
     }
 
     function normalizeCentralPushDevice(device = {}) {
@@ -4249,7 +4277,7 @@
         linkUpdatedAt: String(device.linkUpdatedAt || '').trim(),
         linkAppliedAt: String(device.linkAppliedAt || '').trim(),
         linkConfigured: device.linkConfigured === true,
-        active: device.active !== false
+        active: device.active === true
       };
     }
 
@@ -4521,22 +4549,31 @@
         return;
       }
 
-      const individual = document.getElementById('push-audience-mode')?.value === 'individual';
+      const audienceMode = document.getElementById('push-audience-mode')?.value;
+      if (!['all', 'individual'].includes(audienceMode)) return;
+      const contextKey = getPushContextKey();
+      const individual = audienceMode === 'individual';
       const recipient = getSelectedPushRecipient();
       if (individual && !recipient) {
-        setPushBroadcastFeedback('Selecione um registro que tenha aparelho vinculado.', 'error');
+        setPushBroadcastFeedback('Selecione um aparelho autorizado desta empresa.', 'error');
         return;
       }
 
       openPromptModal({
         title: individual ? 'Enviar para este aparelho?' : 'Enviar notificação para todos?',
         text: individual
-          ? `A mensagem será enviada somente ao aparelho do registro de ${recipient?.motorista || 'motorista não informado'}.`
+          ? `A mensagem será enviada somente para ${recipient.recipientLabel}.`
           : 'A mensagem será disparada para todos os aparelhos inscritos na Central de Registros.',
         mode: 'confirm',
         confirmLabel: 'Enviar agora',
         cancelLabel: 'Revisar',
-        onConfirm: sendPushBroadcast
+        onConfirm: () => {
+          if (contextKey !== getPushContextKey() || document.getElementById('push-audience-mode')?.value !== audienceMode || (individual && getSelectedPushRecipient()?.pushSubscriptionId !== recipient.pushSubscriptionId)) {
+            setPushBroadcastFeedback('O destinatário mudou. Revise e confirme o envio novamente.', 'error');
+            return;
+          }
+          return sendPushBroadcast();
+        }
       });
     }
 
@@ -4550,10 +4587,12 @@
       const title = titleInput?.value.trim() || '';
       const body = bodyInput?.value.trim() || '';
       if (!title || !body) return;
-      const individual = document.getElementById('push-audience-mode')?.value === 'individual';
+      const audienceMode = document.getElementById('push-audience-mode')?.value;
+      if (!['all', 'individual'].includes(audienceMode)) return;
+      const individual = audienceMode === 'individual';
       const recipient = getSelectedPushRecipient();
       if (individual && !recipient?.pushSubscriptionId) {
-        setPushBroadcastFeedback('O registro selecionado não possui aparelho vinculado.', 'error');
+        setPushBroadcastFeedback('O aparelho selecionado não está mais autorizado. Atualize a lista.', 'error');
         return;
       }
 
@@ -4572,13 +4611,13 @@
           body,
           url: urlInput?.value || './'
         });
-        const sent = Number(result.sent ?? (result.ok ? 1 : 0));
+        const sent = Number(result.sent || 0);
         const failed = Number(result.failed || 0);
         setPushBroadcastFeedback(
           individual
-            ? (sent ? 'Notificação enviada ao aparelho selecionado.' : 'O aparelho não confirmou o recebimento.')
-            : sent + ' aparelho(s) receberam o envio' + (failed ? '; ' + failed + ' falharam.' : '.'),
-          failed ? 'warning' : 'success'
+            ? (sent ? 'Envio aceito pelo serviço push para o aparelho selecionado. Confirme o recebimento no aparelho.' : 'Nenhum envio foi confirmado pelo serviço push.')
+            : sent + ' envio(s) aceitos pelo serviço push' + (failed ? '; ' + failed + ' falharam.' : '.'),
+          failed || !sent ? 'warning' : 'success'
         );
         titleInput.value = '';
         bodyInput.value = '';
