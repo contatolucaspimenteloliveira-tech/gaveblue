@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./wefrotas.css?v=20260901-standard-date-pickers-2">
   <link rel="stylesheet" href="./wefrotas-login.css?v=20260904-contingency-1">
+  <link rel="stylesheet" href="./wefrotas-db-capacity.css?v=20260906-db-capacity-1">
   <style>
     .central-history-notice { margin-bottom: 16px; padding: 14px 16px; border: 1px solid #fcd34d; border-radius: 16px; background: #fffbeb; color: #78350f; font-size: 13px; line-height: 1.6; }
     .central-history-notice[hidden] { display: none; }
@@ -398,6 +399,20 @@
             <div id="home-maintenance-table" class="home-maintenance-compact"></div>
           </div>
           <div id="home-storage-card" class="storage-dashboard-card mt-6">
+            <section id="home-db-capacity" class="db-capacity" aria-labelledby="db-capacity-title">
+              <div class="db-capacity-heading">
+                <div><p class="storage-dashboard-kicker">Banco na nuvem · Supabase</p><h3 id="db-capacity-title" class="storage-dashboard-title">Espaço do banco de dados</h3></div>
+                <button id="db-capacity-refresh" type="button" onclick="WeFrotasCapacity.refresh(true)">Atualizar</button>
+              </div>
+              <p id="db-capacity-status" role="status">Aguardando consulta ao servidor.</p>
+              <div id="db-capacity-values" hidden>
+                <div class="db-capacity-numbers"><strong id="db-capacity-used">—</strong><span id="db-capacity-limit">—</span><b id="db-capacity-percent">—</b></div>
+                <div id="db-capacity-meter" class="db-capacity-meter" role="progressbar" aria-label="Uso do banco Supabase" aria-valuemin="0" aria-valuemax="100"><span id="db-capacity-fill"></span></div>
+                <p id="db-capacity-updated" class="db-capacity-detail"></p>
+                <p class="db-capacity-detail">Total do projeto, compartilhado pelas empresas. Referência: plano Free, 500 MB, confirmado em 06/09/2026. Revisar o limite se mudar de plano.</p>
+              </div>
+              <p class="db-capacity-detail">Alertas em 70%, 85% e 95%. Este indicador não mede tráfego nem substitui backup.</p>
+            </section>
             <div>
               <p class="storage-dashboard-kicker">Armazenamento local</p>
               <h3 class="storage-dashboard-title">Capacidade do sistema</h3>
@@ -1800,8 +1815,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./supabase-config.js?v=20260904-supabase-auth-isolation-3"></script>
   <script src="./wefrotas-supabase-core.js?v=20260904-supabase-auth-isolation-3"></script>
-  <script src="./wefrotas-supabase-backend.js?v=20260905-central-stability-1"></script>
-  <script src="./wefrotas.js?v=20260905-central-stability-1"></script>
+  <script src="./wefrotas-supabase-backend.js?v=20260906-db-capacity-1"></script>
+  <script src="./wefrotas-db-capacity.js?v=20260906-db-capacity-1"></script>
+  <script src="./wefrotas.js?v=20260906-db-capacity-1"></script>
   <script src="./wefrotas-presence.js?v=20260904-contingency-2"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
   <script src="./wefrotas-date-picker.js?v=20260901-standard-date-pickers-2"></script>

@@ -719,6 +719,14 @@
 
   function execution(body,status=200){return{status:status>=400?'failed':'completed',responseStatusCode:status,responseBody:JSON.stringify(body),errors:status>=400?body.error||'Erro':''};}
 
+  async function getDatabaseCapacity() {
+    const scope = captureContext();
+    const { data, error } = await ensureClient().rpc('wefrotas_database_capacity');
+    assertContext(scope);
+    if (error) throw error;
+    return data;
+  }
+
   async function callAdminFunction(payload) {
     const {data,error}=await ensureClient().functions.invoke(config.adminFunction||'wefrotas-admin',{
       body:{...payload,organizationId:payload.organizationId||organizationContext.id}
@@ -827,7 +835,7 @@
   global.WeFrotasBackend=Object.freeze({
     config,isConfigured,initialize,signIn,signOut,setOrganizationContext,isSnapshotReady:()=>snapshotReady&&!applyingSnapshot,isContingencyMode:()=>false,
     isDatabaseReadQuotaError:()=>false,getOrganizationContext:()=>organizationContext,getUser:()=>currentUser,updateAuthenticatedUserName,
-    executeAdministrativeFunction,getAccessRole,hasPermission,loadRemoteSnapshot:async()=> (await loadRemote()).snapshot,
+    executeAdministrativeFunction,getDatabaseCapacity,getAccessRole,hasPermission,loadRemoteSnapshot:async()=> (await loadRemote()).snapshot,
     adoptRemoteOrUploadLocal,queueSnapshot,syncNow,recoverFromServer,refreshFromServer,inspectPendingReconciliation,
     reconcileSelectedPending:async()=>{throw new Error('Recarregue a versão Supabase e reaplique manualmente apenas as alterações desejadas.');},
     uploadReceipt:file=>uploadFile(file,'receipts'),uploadVehicleImage:file=>uploadFile(file,'vehicles'),

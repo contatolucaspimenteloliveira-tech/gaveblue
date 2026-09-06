@@ -2506,6 +2506,7 @@
     }
 
     function renderStorageDashboard() {
+      window.WeFrotasCapacity?.refresh();
       const summaryNode = document.getElementById('home-storage-summary');
       const usedNode = document.getElementById('home-storage-used');
       const freeNode = document.getElementById('home-storage-free');
