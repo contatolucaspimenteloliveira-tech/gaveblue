@@ -755,6 +755,24 @@
       });
     }
 
+    function calculateExpenseCloseTotal(base, discount) {
+      const baseCents = toCurrencyCents(base);
+      const discountCents = toCurrencyCents(discount);
+      if (!Number.isFinite(baseCents) || !Number.isFinite(discountCents) || baseCents < 0 || discountCents < 0 || discountCents > baseCents) return null;
+      return (baseCents - discountCents) / 100;
+    }
+
+    function syncExpenseCloseTotal() {
+      const base = document.getElementById('finance-close-base-total');
+      const discount = document.getElementById('finance-close-discount');
+      const total = document.getElementById('finance-close-total');
+      if (!base || !discount || !total) return null;
+      const result = calculateExpenseCloseTotal(parseCurrencyInputValue(base.value), parseCurrencyInputValue(discount.value));
+      discount.setCustomValidity(result === null ? 'O desconto deve estar entre zero e o valor bruto.' : '');
+      total.value = result === null ? '' : formatCurrencyInputValue(result);
+      return result;
+    }
+
     function syncFuelGroupingTotals() {
       const baseInput = document.getElementById('finance-group-base-total');
       const totalInput = document.getElementById('finance-group-total');
@@ -9191,12 +9209,16 @@
           <input class="soft-input w-full" id="finance-close-data-vencimento" type="date">
         </div>
         <div class="field-wrap">
+          <label>Valor bruto</label>
+          <input class="soft-input w-full" id="finance-close-base-total" type="text" inputmode="numeric" value="${formatCurrencyInputValue(Number(entry.total || 0) + Number(entry.discount || 0))}">
+        </div>
+        <div class="field-wrap">
           <label>Desconto</label>
           <input class="soft-input w-full" id="finance-close-discount" type="text" inputmode="numeric" value="${formatCurrencyInputValue(Number(entry.discount || 0))}">
         </div>
         <div class="field-wrap">
           <label>Valor final</label>
-          <input class="soft-input w-full" id="finance-close-total" type="text" inputmode="numeric" value="${formatCurrencyInputValue(Number(entry.total || 0))}">
+          <input class="soft-input w-full" id="finance-close-total" type="text" readonly aria-label="Valor final calculado" value="${formatCurrencyInputValue(Number(entry.total || 0))}">
         </div>
         <div class="field-wrap full">
           <label>${requiredLabel('Alocar na OS')}</label>
@@ -9227,6 +9249,13 @@
         labelGetter: getOrderAutocompleteLabel,
         resolver: resolveOrderFromSearch
       });
+      ['finance-close-base-total', 'finance-close-discount'].forEach(id => {
+        const input = document.getElementById(id);
+        applyCurrencyMaskToInput(input);
+        input.addEventListener('input', syncExpenseCloseTotal);
+        input.addEventListener('change', syncExpenseCloseTotal);
+      });
+      syncExpenseCloseTotal();
       setModalSubmitState(true, 'Fechar despesa');
     }
 
@@ -15241,7 +15270,11 @@
         }
         const dataVencimento = document.getElementById('finance-close-data-vencimento').value;
         const nf = normalizeFinanceNoteLabel(document.getElementById('finance-close-nf').value.trim());
-        const total = parseCurrencyInputValue(document.getElementById('finance-close-total').value || 0);
+        const total = syncExpenseCloseTotal();
+        if (total === null) {
+          showToast('Confira o valor bruto e o desconto antes de fechar a despesa.');
+          return;
+        }
         const discount = parseCurrencyInputValue(document.getElementById('finance-close-discount').value || 0);
         const observacoes = document.getElementById('finance-close-observacoes').value.trim();
         const linkedOrder = orderId ? allOrders.find(item => item.id === orderId) : null;
