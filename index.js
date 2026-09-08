@@ -29,28 +29,28 @@ const pages = {
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
             <a href="https://gaveblue.com.br/recibos/" class="group rounded-[1.5rem] sm:rounded-[1.75rem] border border-slate-700/50 bg-white/[0.04] p-5 sm:p-7 hover:bg-white/[0.06] hover:border-blue-400/40 transition-all relative overflow-hidden">
-              <span class="absolute top-5 right-5 px-3 py-1 rounded-full bg-emerald-500 text-white text-xs font-bold shadow-lg">Grátis</span>
+              <span class="module-badge module-badge--free">Grátis</span>
               <div class="w-14 h-14 rounded-2xl bg-blue-500/15 border border-blue-400/20 flex items-center justify-center mb-5">
                 <svg class="w-7 h-7 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               </div>
               <h3 class="text-xl sm:text-2xl font-bold text-white mb-3">WeRecibos</h3>
               <p class="text-slate-300 leading-relaxed">Crie recibos online com rapidez e mais apresentação, ideal para quem precisa emitir documentos de forma prática e profissional.</p>
             </a>
-            <a href="https://gaveblue.com.br/wefrotas/" class="group rounded-[1.5rem] sm:rounded-[1.75rem] border border-slate-700/50 bg-white/[0.04] p-5 sm:p-7 hover:bg-white/[0.06] hover:border-indigo-400/40 transition-all relative overflow-hidden">
-              <span class="absolute top-5 right-5 px-3 py-1 rounded-full bg-red-500 text-white text-xs font-bold shadow-lg">Novo</span>
-              <div class="w-14 h-14 rounded-2xl bg-indigo-500/15 border border-indigo-400/20 flex items-center justify-center mb-5">
-                <svg class="w-7 h-7 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h11v9H3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4l3 3v2h-7z"/><circle cx="7" cy="18" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg>
-              </div>
-              <h3 class="text-xl sm:text-2xl font-bold text-white mb-3">WeFrotas</h3>
-              <p class="text-slate-300 leading-relaxed">Gerencie veículos, motoristas, ordens de serviço, financeiro e relatórios em uma central pensada para operações de frota.</p>
-            </a>
             <a href="https://gaveblue.com.br/wetasks/" class="group rounded-[1.5rem] sm:rounded-[1.75rem] border border-slate-700/50 bg-white/[0.04] p-5 sm:p-7 hover:bg-white/[0.06] hover:border-amber-400/40 transition-all relative overflow-hidden">
-              <span class="absolute top-5 right-5 px-3 py-1 rounded-full bg-red-500 text-white text-xs font-bold shadow-lg">Novo</span>
+              <span class="module-badge module-badge--free">Grátis</span>
               <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-400/20 flex items-center justify-center mb-5">
                 <svg class="w-7 h-7 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6h11M9 12h11M9 18h11M5 6h.01M5 12h.01M5 18h.01" /></svg>
               </div>
               <h3 class="text-xl sm:text-2xl font-bold text-white mb-3">WeTasks</h3>
               <p class="text-slate-300 leading-relaxed">Organize tarefas, acompanhe demandas e mantenha a rotina mais clara com um módulo pensado para produtividade diária.</p>
+            </a>
+            <a href="/wefrotas/conheca/" class="group rounded-[1.5rem] sm:rounded-[1.75rem] border border-slate-700/50 bg-white/[0.04] p-5 sm:p-7 hover:bg-white/[0.06] hover:border-indigo-400/40 transition-all relative overflow-hidden">
+              <span class="module-badge module-badge--premium"><span aria-hidden="true">★</span> Premium</span>
+              <div class="w-14 h-14 rounded-2xl bg-indigo-500/15 border border-indigo-400/20 flex items-center justify-center mb-5">
+                <svg class="w-7 h-7 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h11v9H3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4l3 3v2h-7z"/><circle cx="7" cy="18" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg>
+              </div>
+              <h3 class="text-xl sm:text-2xl font-bold text-white mb-3">WeFrotas</h3>
+              <p class="text-slate-300 leading-relaxed">Gerencie veículos, motoristas, ordens de serviço, financeiro e relatórios em uma central pensada para operações de frota.</p>
             </a>
             <a href="https://gaveblue.com.br/weconsultas/" class="group rounded-[1.5rem] sm:rounded-[1.75rem] border border-slate-700/50 bg-white/[0.04] p-5 sm:p-7 hover:bg-white/[0.06] hover:border-purple-400/40 transition-all relative overflow-hidden">
               <div class="w-14 h-14 rounded-2xl bg-purple-500/15 border border-purple-400/20 flex items-center justify-center mb-5">
@@ -103,21 +103,6 @@ const pages = {
                 <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-6-6 6 6-6 6" /></svg>
               </span>
             </a>
-            <div class="rounded-[1.5rem] sm:rounded-[1.75rem] border border-amber-400/25 bg-amber-500/[0.06] p-5 sm:p-7 relative overflow-hidden">
-              <span class="absolute top-5 right-5 px-3 py-1 rounded-full bg-slate-800 text-amber-200 text-xs font-bold shadow-lg border border-amber-400/20">Bloqueado</span>
-              <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-400/20 flex items-center justify-center mb-5">
-                <svg class="w-7 h-7 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2h-1V9a5 5 0 00-10 0v2H6a2 2 0 00-2 2v6a2 2 0 002 2zm3-10V9a3 3 0 016 0v2H9z" /></svg>
-              </div>
-              <h3 class="text-xl sm:text-2xl font-bold text-white mb-3">WePeople</h3>
-              <p class="text-slate-300 leading-relaxed">Módulo de departamento pessoal já preparado na estrutura, mas ainda bloqueado até a próxima liberação oficial.</p>
-            </div>
-            <div class="rounded-[1.5rem] sm:rounded-[1.75rem] border border-dashed border-slate-600/60 bg-slate-900/30 p-5 sm:p-7">
-              <div class="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-5">
-                <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-              </div>
-              <h3 class="text-xl sm:text-2xl font-bold text-slate-200 mb-3">Novos módulos em breve</h3>
-            <p class="text-slate-400 leading-relaxed">A plataforma continua evoluindo com novas utilidades e recursos pensados para expandir o ecossistema da GaveBlue.</p>
-            </div>
           </div>
         </section>
         <section class="custom-solutions-section mt-12 sm:mt-16 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-700/50 bg-gradient-to-br from-slate-900/90 via-slate-950/85 to-slate-900/90 p-5 sm:p-8 lg:p-10 shadow-2xl shadow-fuchsia-950/20">
@@ -131,13 +116,13 @@ const pages = {
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4z" /></svg>
                   Quero um app assim
                 </a>
-                <a href="https://gaveblue.com.br/postoscredenciados-covreecia/" target="_self" rel="noopener noreferrer" class="custom-solutions-secondary inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-slate-300">
+                <a href="/catalogo/" target="_self" rel="noopener noreferrer" class="custom-solutions-secondary inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-slate-300">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" /></svg>
                   Ver projetos
                 </a>
               </div>
             </div>
-            <a href="https://gaveblue.com.br/postoscredenciados-covreecia/" target="_self" rel="noopener noreferrer" class="custom-solutions-visual block rounded-[1.5rem] border border-fuchsia-400/20 bg-white/[0.04] p-3 shadow-xl shadow-fuchsia-950/20 transition hover:border-fuchsia-300/40 hover:bg-white/[0.06]">
+            <a href="/catalogo/" target="_self" rel="noopener noreferrer" class="custom-solutions-visual block rounded-[1.5rem] border border-fuchsia-400/20 bg-white/[0.04] p-3 shadow-xl shadow-fuchsia-950/20 transition hover:border-fuchsia-300/40 hover:bg-white/[0.06]">
               <div class="overflow-hidden rounded-[1.1rem] border border-white/10 bg-slate-950/70">
                 <img src="https://i.imgur.com/y5VFWvr.png" alt="Material promocional de aplicativo desenvolvido para o Grupo Cover" class="w-full h-auto object-cover" loading="lazy">
               </div>
