@@ -11,6 +11,21 @@
   };
   const oldBuild = buildReportData, oldTitle = getReportTitleByType, oldFilters = getReportFilters;
   const oldOrders = getFilteredReportOrders, oldContext = getReportDateContextLabel;
+  if (typeof setFilterValue === 'function') {
+    const originalSetFilterValue = setFilterValue;
+    setFilterValue = (id, value) => {
+      if (id === 'report-filter-type' && ['cost', 'fuel_liters_per_km'].includes(value)) {
+        originalSetFilterValue('report-filter-fuel-view', value);
+        value = 'fuel_register';
+      }
+      originalSetFilterValue(id, value);
+      if (id === 'report-filter-type') {
+        for (const [wrap, type] of [['report-situation-wrap','orders'],['report-horizon-wrap','deadlines'],['report-fuel-view-wrap','fuel_register']]) {
+          const node = document.getElementById(wrap); if (node) node.hidden = value !== type;
+        }
+      }
+    };
+  }
   const cell = value => ({text: value === null || value === undefined || value === '' ? 'Não informado' : String(value)});
   const table = (filters, headers, values, note, summary = []) => ({
     title: titles[filters.type], meta: `Período: ${getReportPeriodLabel(filters)} • Veículo: ${getReportVehicleLabel(filters.vehicleId)} • ${note}`,
