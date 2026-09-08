@@ -2010,6 +2010,20 @@ function getDriverProfileForDisplay() {
     plate: row.plate, vehicleImageUrl: row.vehicleImageUrl || '' };
 }
 
+function renderCachedCentralHome() {
+  const slug = getRequestedCentralOrganizationSlug();
+  if (!slug) return;
+  // Preview only: scope the saved profile to the requested tenant without
+  // marking the server context verified or enabling submission/navigation.
+  const previousContext = centralOrganizationContext;
+  try {
+    centralOrganizationContext = { ...previousContext, slug };
+    renderHomeDriverArea();
+  } finally {
+    centralOrganizationContext = previousContext;
+  }
+}
+
 function renderHomeDriverArea() {
   const profile = getDriverProfileForDisplay();
   const lastSent = centralSubmissionHistoryLoaded ? centralSubmissionHistory[0] || null : getCentralLastSentRecord();
@@ -6169,6 +6183,7 @@ function renderCityImageCards() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  renderCachedCentralHome();
   try {
     await loadCentralOrganizationContext();
   } catch (error) {
@@ -6178,6 +6193,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
   applyCentralTenantFallbacks();
   await ensureCentralDeviceStateRestored();
+  renderHomeDriverArea();
   updateCentralConnectivityStatus();
   restoreManagedCentralStationsCache();
   renderCityImageCards();
