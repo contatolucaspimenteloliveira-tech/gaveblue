@@ -15,15 +15,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    <link rel="stylesheet" href="./weconsultas.css" />
+    <link rel="stylesheet" href="./weconsultas.css?v=20260908-refresh-1" />
+<link rel="stylesheet" href="/lib/tools-refresh.css?v=20260908-1">
 </head>
 
-<body class="text-white flex flex-col min-h-full">
+<body class="text-white flex flex-col min-h-full" data-tool="weconsultas">
   <div id="search-focus-overlay" class="search-focus-overlay hidden"></div>
   <header class="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 h-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full min-h-16 py-3 sm:py-0 flex items-center justify-between gap-3">
-      <a href="https://gaveblue.com" target="_self" rel="noopener noreferrer">
-        <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo GaveBlue" class="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" />
+      <a href="/" target="_self" rel="noopener noreferrer">
+        <img src="/assets/gaveblue-logo-white.png" alt="Logo GaveBlue" class="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" />
       </a>
       <div class="flex items-center gap-2 sm:gap-3">
         <button id="mobile-search-btn" class="flex items-center justify-center p-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-600/70 transition-all text-white sm:hidden" aria-label="Pesquisar módulo">
@@ -54,7 +55,7 @@
     <div class="max-w-7xl mx-auto">
       <div id="hero-block" class="mb-6">
         <h1 id="hero-title" class="text-4xl sm:text-5xl font-extrabold text-center mb-2">
-          Consulte dados empresariais <span id="hero-gradient" class="gradient-text">com mais agilidade</span>
+          WeConsultas <span id="hero-gradient" class="gradient-text">Informação ao seu alcance.</span>
         </h1>
         <p id="hero-subtitle" class="text-center text-slate-300 text-lg">
           Acesse consultas úteis como CEP e CNPJ em uma experiência simples, rápida e pensada para facilitar sua rotina.
@@ -69,56 +70,8 @@
         </div>
       </div>
 
-      <section id="home-tab" class="tab-panel block mb-12">
-        <div class="grid lg:grid-cols-[1.25fr_0.9fr] gap-6">
-          <div class="card-gradient rounded-3xl p-8 border border-slate-700/40">
-            <span class="inline-flex px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-sm font-semibold mb-5">Visão geral</span>
-            <h2 class="text-2xl sm:text-3xl font-bold text-white mb-4">Uma central de consultas para rotinas mais rápidas</h2>
-            <p class="text-slate-300 leading-relaxed mb-6">O WeConsultas foi pensado para agilizar tarefas operacionais e verificações do dia a dia. Aqui você concentra consultas úteis em uma interface simples, organizada e pronta para evoluir com novos módulos.</p>
-            <div class="grid sm:grid-cols-2 gap-4">
-              <div class="rounded-2xl bg-slate-900/50 border border-slate-700/40 p-4">
-                <h3 class="text-white font-semibold mb-2">Consultas disponíveis</h3>
-                <p class="text-slate-400 text-sm">Acesse rapidamente recursos como consulta de CEP e consulta de CNPJ.</p>
-              </div>
-              <div class="rounded-2xl bg-slate-900/50 border border-slate-700/40 p-4">
-                <h3 class="text-white font-semibold mb-2">Expansão contínua</h3>
-                <p class="text-slate-400 text-sm">Novas utilidades podem ser adicionadas sem perder a consistência visual da ferramenta.</p>
-              </div>
-            </div>
-            <div class="mt-5 rounded-2xl bg-slate-900/50 border border-slate-700/40 p-4">
-              <h3 class="text-white font-semibold mb-2">Transparência e conformidade</h3>
-              <p class="text-slate-400 text-sm leading-relaxed">As consultas exibem informações públicas obtidas por meios legalmente permitidos. O uso da ferramenta respeita o acesso Ã  informação e trata os dados com responsabilidade, sem qualquer proposta de uso indevido ou ilegal.</p>
-            </div>
-          </div>
-          <div class="card-gradient rounded-3xl p-8 border border-slate-700/40">
-            <h3 class="text-xl font-bold text-white mb-5">O que você encontra aqui</h3>
-            <div class="space-y-4">
-              <div class="rounded-2xl bg-slate-900/50 border border-slate-700/40 p-4">
-                <p class="text-white font-semibold">Consulta de CEP</p>
-                <p class="text-slate-400 text-sm mt-1">Busque endereços e dados básicos com resposta rápida.</p>
-              </div>
-              <div class="rounded-2xl bg-slate-900/50 border border-slate-700/40 p-4">
-                <p class="text-white font-semibold">Consulta de CNPJ</p>
-                <p class="text-slate-400 text-sm mt-1">Verifique informações empresariais em poucos passos.</p>
-              </div>
-              <div class="rounded-2xl bg-slate-900/50 border border-slate-700/40 p-4">
-                <p class="text-white font-semibold">Novos módulos em breve</p>
-                <p class="text-slate-400 text-sm mt-1">A ferramenta está pronta para receber mais consultas e validações.</p>
-              </div>
-            </div>
-            <div class="mt-6 hidden sm:block">
-              <button onclick="switchTab('content'); document.getElementById('cards-container').scrollIntoView({ behavior: 'smooth', block: 'start' });" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl btn-primary text-white font-semibold">
-                CONSULTAR AGORA
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="content-tab" class="tab-panel hidden mb-12">
+      <section id="home-tab" class="hidden"></section>
+      <section id="content-tab" class="tab-panel block mb-12">
         <section id="cards-container" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <button onclick="openScreen('cep')" class="feature-card card-gradient rounded-2xl p-6 text-left">
           <svg class="w-8 h-8 text-blue-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,7 +146,7 @@
             <div class="space-y-4 text-slate-300">
               <div>
                 <p class="font-semibold text-white">1. Acesse as funcionalidades</p>
-                <p class="text-sm text-slate-400 mt-1">Clique em <strong>Consultar Agora</strong> para abrir os cards de consulta disponíveis.</p>
+                <p class="text-sm text-slate-400 mt-1">Escolha uma das consultas disponíveis na página inicial.</p>
               </div>
               <div>
                 <p class="font-semibold text-white">2. Preencha os dados</p>
@@ -348,7 +301,7 @@
     <div class="max-w-7xl mx-auto py-6">
       <div class="flex flex-col lg:flex-row items-center justify-between gap-5">
         <div class="flex justify-center lg:justify-start w-full lg:w-auto">
-          <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo GaveBlue" class="h-10 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" onclick="window.location.href='https://gaveblue.com';">
+          <img src="/assets/gaveblue-logo-white.png" alt="Logo GaveBlue" class="h-10 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" onclick="window.location.href='/';">
         </div>
 
         <div class="flex items-center justify-center gap-2 w-full lg:w-auto">
@@ -364,7 +317,7 @@
         </div>
 
         <div class="text-center lg:text-right w-full lg:w-auto">
-          <a href="https://gaveblue.com" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-white transition-colors text-sm block">gaveblue.com</a>
+          <a href="/" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-white transition-colors text-sm block">gaveblue.com.br</a>
           <p class="text-slate-500 text-xs mt-1">© 2026 GaveBlue - Todos os direitos reservados</p>
         </div>
       </div>
@@ -375,16 +328,6 @@
     <span id="error-message"></span>
   </div>
 
-    <script src="./weconsultas.js?v=20260829-exit-url-1"></script>
+    <script src="./weconsultas.js?v=20260908-refresh-1"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-

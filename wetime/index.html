@@ -343,13 +343,14 @@
     }
   </style>
   <style>@view-transition { navigation: auto; }</style>
+<link rel="stylesheet" href="/lib/tools-refresh.css?v=20260908-1">
 </head>
-<body class="text-white">
+<body class="text-white" data-tool="wetime">
   <div id="search-focus-overlay" class="search-focus-overlay hidden"></div>
   <header class="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 h-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-3">
-      <a href="https://gaveblue.com" target="_self" rel="noopener noreferrer">
-        <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo GaveBlue" class="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy">
+      <a href="/" target="_self" rel="noopener noreferrer">
+        <img src="/assets/gaveblue-logo-white.png" alt="Logo GaveBlue" class="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity" loading="lazy">
       </a>
       <div class="relative flex items-center gap-3">
         <div class="global-search">
@@ -443,11 +444,11 @@
           </div>
 
           <div class="mt-6 text-center">
-            <a href="https://gaveblue.com/wetasks" target="_self" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/10 text-slate-300 hover:text-white hover:bg-white/[0.08] transition-all text-sm font-medium">
+            <a href="/wetasks/" target="_self" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/10 text-slate-300 hover:text-white hover:bg-white/[0.08] transition-all text-sm font-medium">
               <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" />
               </svg>
-              Adicionar tarefa para daqui a 5 minutos
+              Organizar tarefas no WeTasks
             </a>
           </div>
 
@@ -458,7 +459,7 @@
 
   <footer id="footer" class="border-t border-slate-700/50 bg-slate-950/35 px-4 sm:px-6 py-6 mt-4">
     <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-5">
-      <img src="https://i.imgur.com/Zih5jH8.png" alt="Logo GaveBlue" class="h-10 w-auto" loading="lazy">
+      <img src="/assets/gaveblue-logo-white.png" alt="Logo GaveBlue" class="h-10 w-auto" loading="lazy">
       <div class="flex items-center justify-center gap-3">
         <a href="https://instagram.com/gaveblue" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 border border-white/15 hover:bg-white/15 transition-all" title="Instagram">
           <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" ry="5" stroke-width="2"></rect><circle cx="12" cy="12" r="4" stroke-width="2"></circle><circle cx="17" cy="7" r="1.2" fill="currentColor"></circle></svg>
@@ -471,7 +472,7 @@
         </a>
       </div>
       <div class="text-center lg:text-right">
-        <a href="https://gaveblue.com" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-white transition-colors text-base block">gaveblue.com</a>
+        <a href="/" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-white transition-colors text-base block">gaveblue.com.br</a>
         <p class="text-slate-500 text-sm mt-1">© 2026 GaveBlue — Todos os direitos reservados</p>
       </div>
     </div>
@@ -512,18 +513,18 @@
     const globalSearchResultsEl = document.getElementById('global-search-results');
     const searchFocusOverlayEl = document.getElementById('search-focus-overlay');
     const ecosystemModules = [
-      { name: 'WeTime', description: 'Relógio online e painel de horário', url: 'https://gaveblue.com/wetime' },
-      { name: 'WeRecibos', description: 'Gerador de recibos', url: 'https://gaveblue.com/recibos' },
-      { name: 'WeConsultas', description: 'Consultas empresariais', url: 'https://gaveblue.com/weconsultas' },
-      { name: 'WeFrotas', description: 'Gestão de frotas', url: 'https://gaveblue.com/wefrotas' },
-      { name: 'WeDevs', description: 'Ferramentas e utilidades dev', url: 'https://gaveblue.com/wedevs' },
-      { name: 'WeTasks', description: 'Tarefas e organização', url: 'https://gaveblue.com/wetasks' }
+      { name: 'WeTime', description: 'Relógio online e painel de horário', url: '/wetime/' },
+      { name: 'WeRecibos', description: 'Gerador de recibos', url: '/recibos/' },
+      { name: 'WeConsultas', description: 'Consultas empresariais', url: '/weconsultas/' },
+      { name: 'WeFrotas', description: 'Gestão de frotas', url: '/wefrotas/conheca/' },
+      { name: 'WeDevs', description: 'Ferramentas e utilidades dev', url: '/wedevs/' },
+      { name: 'WeTasks', description: 'Tarefas e organização', url: '/wetasks/' }
     ];
     let filteredModules = [];
     let highlightedModuleIndex = -1;
 
     function sairApp() {
-      window.location.href = 'https://gaveblue.com';
+      window.location.href = '/';
     }
 
     function escapeHtml(value) {

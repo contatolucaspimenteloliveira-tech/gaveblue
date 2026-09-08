@@ -1,4 +1,4 @@
-﻿let lastCnpjData = null;
+let lastCnpjData = null;
     let lastCnpjDigits = null;
     let cepMode = 'direct';
 
@@ -31,12 +31,12 @@
     const globalSearchResultsEl = document.getElementById('global-search-results');
     const searchFocusOverlayEl = document.getElementById('search-focus-overlay');
     const ecosystemModules = [
-      { name: 'WeTime', description: 'Relógio online e painel de horário', url: 'https://gaveblue.com/wetime' },
-      { name: 'WeRecibos', description: 'Gerador de recibos', url: 'https://gaveblue.com/recibos' },
-      { name: 'WeConsultas', description: 'Consultas empresariais', url: 'https://gaveblue.com/weconsultas' },
-      { name: 'WeFrotas', description: 'Gestão de frotas', url: 'https://gaveblue.com/wefrotas' },
-      { name: 'WeDevs', description: 'Ferramentas e utilidades dev', url: 'https://gaveblue.com/wedevs' },
-      { name: 'WeTasks', description: 'Tarefas e organização', url: 'https://gaveblue.com/wetasks' }
+      { name: 'WeTime', description: 'Relógio online e painel de horário', url: '/wetime/' },
+      { name: 'WeRecibos', description: 'Gerador de recibos', url: '/recibos/' },
+      { name: 'WeConsultas', description: 'Consultas empresariais', url: '/weconsultas/' },
+      { name: 'WeFrotas', description: 'Gestão de frotas', url: '/wefrotas/conheca/' },
+      { name: 'WeDevs', description: 'Ferramentas e utilidades dev', url: '/wedevs/' },
+      { name: 'WeTasks', description: 'Tarefas e organização', url: '/wetasks/' }
     ];
     let filteredModules = [];
     let highlightedModuleIndex = -1;
@@ -157,7 +157,7 @@
     }
 
     function sairApp() {
-      window.location.href = 'https://gaveblue.com.br/';
+      window.location.href = '/';
     }
 
     globalSearchInputEl.addEventListener('input', (event) => {
@@ -259,7 +259,7 @@
       document.getElementById('ibge-input').value = '';
       document.getElementById('holidays-input').value = '';
       switchCepMode('direct');
-      switchTab('home');
+      switchTab('content');
       document.getElementById('hero-title').scrollIntoView({ behavior: 'smooth' });
     }
 
