@@ -1,42 +1,42 @@
-/* GaveBlue: linguagem visual compartilhada das ferramentas. */
-body[data-tool]{background:#f5f8fd;color:#172b4d;background-attachment:initial}
-body[data-tool] header{background:#fff!important;border-color:#e0e8f4!important;box-shadow:0 3px 20px #18365906;backdrop-filter:none!important}
-body[data-tool] header img,body[data-tool] footer img{filter:brightness(0) saturate(100%) invert(34%) sepia(95%) saturate(2134%) hue-rotate(215deg) brightness(93%) contrast(94%);width:155px;height:auto!important;max-width:35vw}
-body[data-tool] footer{background:#fff!important;border-color:#e0e8f4!important}
-body[data-tool] .text-white{color:#172b4d}
-body[data-tool] .text-slate-200,body[data-tool] .text-slate-300{color:#526681}
-body[data-tool] .text-slate-400,body[data-tool] .text-slate-500{color:#677b94}
-body[data-tool] .gradient-text{background:none;color:#2868e8;-webkit-text-fill-color:#2868e8}
-body[data-tool] .card-gradient,body[data-tool] .glass-panel{background:#fff;border:1px solid #dfe8f5;box-shadow:0 12px 35px #17396907;backdrop-filter:none;border-radius:20px}
+/* GaveBlue: ferramentas com profundidade, cor e identidade própria. */
+body[data-tool]{background:#0c1226;color:#f1f5ff;background-attachment:initial}
+body[data-tool] header{background:#101a30!important;border-color:#263351!important;box-shadow:0 3px 20px #18365906;backdrop-filter:none!important}
+body[data-tool] header img,body[data-tool] footer img{filter:none;width:155px;height:auto!important;max-width:35vw}
+body[data-tool] footer{background:#101a30!important;border-color:#263351!important}
+body[data-tool] .text-white{color:#f1f5ff}
+body[data-tool] .text-slate-200,body[data-tool] .text-slate-300{color:#b3c1dd}
+body[data-tool] .text-slate-400,body[data-tool] .text-slate-500{color:#8d9fbf}
+body[data-tool] .gradient-text{background:linear-gradient(100deg,#7daaff,#b3a1ff 65%,#67dcf0);background-clip:text;-webkit-text-fill-color:transparent}
+body[data-tool] .card-gradient,body[data-tool] .glass-panel{background:#131e35;border:1px solid #293754;box-shadow:0 12px 35px #17396907;backdrop-filter:none;border-radius:20px}
 body[data-tool] .card-gradient::before{display:none}
-body[data-tool] .btn-primary{background:#2868e8!important;color:#fff!important;border:1px solid #2868e8;box-shadow:0 5px 14px #2868e818}
+body[data-tool] .btn-primary{background:#2868e8!important;color:#101a30!important;border:1px solid #2868e8;box-shadow:0 5px 14px #2868e818}
 body[data-tool] .btn-primary:hover{background:#1855cc!important}
-body[data-tool] .btn-secondary,body[data-tool] .top-action{background:#f1f5fc;border:1px solid #dce6f5;color:#375b94;box-shadow:none}
+body[data-tool] .btn-secondary,body[data-tool] .top-action{background:#182641;border:1px solid #304263;color:#c5d7f5;box-shadow:none}
 body[data-tool] button:focus-visible,body[data-tool] a:focus-visible{outline:3px solid #3d78ee;outline-offset:4px}
-body[data-tool] input:not(.editor-area),body[data-tool] select{background:#f8faff;color:#193358;border:1px solid #dbe5f3;border-radius:10px}
-body[data-tool] input::placeholder{color:#74869f}
-body[data-tool] .global-search-input{background:#f5f8fd!important;color:#243a5c!important;border-color:#e0e8f4!important;box-shadow:none}
-body[data-tool] .global-search-results{background:#fff;border-color:#dbe5f3;box-shadow:0 15px 45px #18365920;color:#193358}
-body[data-tool] .global-search-item{color:#193358}
-body[data-tool] .global-search-item:hover,body[data-tool] .global-search-item.active{background:#edf4ff}
-body[data-tool] .global-search-kicker,body[data-tool] .global-search-route{color:#657c9f}
+body[data-tool] input:not(.editor-area),body[data-tool] select{background:#101b32;color:#dae7ff;border:1px solid #2c3b5a;border-radius:10px}
+body[data-tool] input::placeholder{color:#8a9fc0}
+body[data-tool] .global-search-input{background:#0c1226!important;color:#d5e5ff!important;border-color:#263351!important;box-shadow:none}
+body[data-tool] .global-search-results{background:#131e35;border-color:#2c3b5a;box-shadow:0 15px 45px #18365920;color:#dae7ff}
+body[data-tool] .global-search-item{color:#dae7ff}
+body[data-tool] .global-search-item:hover,body[data-tool] .global-search-item.active{background:#1b2b49}
+body[data-tool] .global-search-kicker,body[data-tool] .global-search-route{color:#9db2d4}
 body[data-tool] h1,body[data-tool] h2{letter-spacing:-.045em}
 body[data-tool] .feature-card:hover{transform:translateY(-3px);border-color:#8bb1f7;box-shadow:0 15px 30px #2868e811}
-body[data-tool] [class*="bg-slate-900/"],body[data-tool] [class*="bg-slate-800/"],body[data-tool] [class*="bg-white/"]{background-color:#f5f8fd}
-body[data-tool] [class*="border-slate-700"],body[data-tool] [class*="border-white/"]{border-color:#e1e9f5}
+body[data-tool] [class*="bg-slate-900/"],body[data-tool] [class*="bg-slate-800/"],body[data-tool] [class*="bg-white/"]{background-color:#0c1226}
+body[data-tool] [class*="border-slate-700"],body[data-tool] [class*="border-white/"]{border-color:#2a3754}
 /* WeDevs: área de trabalho clara, código com contraste próprio. */
 body[data-tool=wedevs] main{padding-top:26px}
-body[data-tool=wedevs] main>div>section:first-child{padding:24px 28px!important;background:#eaf2ff;border-color:#d8e7fd;box-shadow:none}
+body[data-tool=wedevs] main>div>section:first-child{padding:24px 28px!important;background:#142039;border-color:#35466a;box-shadow:none}
 body[data-tool=wedevs] main>div>section:first-child h2{font-size:30px;line-height:1.2}
 body[data-tool=wedevs] main>div>section:first-child p{max-width:780px;font-size:14px}
 body[data-tool=wedevs] .editor-surface{background:#0e1c31;border:1px solid #223958;border-radius:12px}
 body[data-tool=wedevs] .editor-area{color:transparent;caret-color:#fff}
 body[data-tool=wedevs] .editor-area::placeholder{color:#8195b3}
 body[data-tool=wedevs] .tab-btn.active{background:#2868e8;color:#fff;box-shadow:none}
-body[data-tool=wedevs] .tab-btn.inactive{background:#edf3fc;color:#476289;border-color:#dfe7f5}
+body[data-tool=wedevs] .tab-btn.inactive{background:#182640;color:#b7cbea;border-color:#334566}
 body[data-tool=wedevs] #preview-panel{border-top:3px solid #2868e8}
 body[data-tool=wedevs] #run-btn{background:#2868e8;color:#fff}
-body[data-tool=wedevs] main>div>section:first-child>div>span{background:#dceaff;color:#285bb2;border-color:#c9ddfd}
+body[data-tool=wedevs] main>div>section:first-child>div>span{background:#243763;color:#b9d3ff;border-color:#365286}
 /* WeConsultas: consultas disponíveis já na entrada. */
 body[data-tool=weconsultas] #hero-block{text-align:left;margin:8px 0 30px}
 body[data-tool=weconsultas] #hero-title{text-align:left;font-size:36px;line-height:1.2;max-width:790px}
@@ -45,20 +45,72 @@ body[data-tool=weconsultas] #hero-subtitle{text-align:left;font-size:15px;max-wi
 body[data-tool=weconsultas] #hero-block>div{display:none}
 body[data-tool=weconsultas] #cards-container{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 body[data-tool=weconsultas] #cards-container button{min-height:180px;padding:24px;border-radius:18px}
-body[data-tool=weconsultas] #cards-container button svg{background:#edf4ff;box-sizing:content-box;padding:10px;border-radius:12px;width:24px;height:24px;color:#2868e8}
+body[data-tool=weconsultas] #cards-container button svg{background:#1b2b49;box-sizing:content-box;padding:10px;border-radius:12px;width:24px;height:24px;color:#2868e8}
 body[data-tool=weconsultas] .screen{background:#fff}
 /* WeTime: horário como foco principal. */
 body[data-tool=wetime] #hero-title{font-size:34px;line-height:1.2}
 body[data-tool=wetime] #display-title{font-size:clamp(28px,4vw,44px);line-height:1.2}
 body[data-tool=wetime] #hero-subtitle{font-size:14px;line-height:1.8;max-width:680px}
 body[data-tool=wetime] #clock-card{border-top:4px solid #2868e8;box-shadow:0 22px 60px #1e4a9010}
-body[data-tool=wetime] .clock-digits{background:#f1f6ff;color:#153d7a;border:0;border-radius:16px;font-variant-numeric:tabular-nums;font-size:clamp(46px,10vw,118px)}
-body[data-tool=wetime] #date-heading{font-size:clamp(18px,3vw,27px);font-weight:600;color:#546b8d}
+body[data-tool=wetime] .clock-digits{background:#101b32;color:#e4edff;border:0;border-radius:16px;font-variant-numeric:tabular-nums;font-size:clamp(46px,10vw,118px)}
+body[data-tool=wetime] #date-heading{font-size:clamp(18px,3vw,27px);font-weight:600;color:#bac9e1}
 body[data-tool=wetime] #seconds{color:#2868e8}
-body[data-tool=wetime] .settings-popover{background:#fff;color:#193358;border:1px solid #dbe5f3;box-shadow:0 16px 50px #18365920}
-body[data-tool=wetime] .mode-btn{background:#f1f5fc;color:#375b94}
+body[data-tool=wetime] .settings-popover{background:#131e35;color:#dae7ff;border:1px solid #2c3b5a;box-shadow:0 16px 50px #18365920}
+body[data-tool=wetime] .mode-btn{background:#182641;color:#c5d7f5}
 body[data-tool=wetime] .mode-btn.active{background:#2868e8;color:#fff}
-body[data-tool=wetime].fullscreen-active{background:#f5f8fd}
+body[data-tool=wetime].fullscreen-active{background:#0c1226}
 @media(max-width:700px){body[data-tool=weconsultas] #cards-container{grid-template-columns:repeat(2,minmax(0,1fr))}body[data-tool=weconsultas] #hero-title{font-size:29px}body[data-tool=wedevs] main>div>section:first-child h2{font-size:24px}body[data-tool=wetime] #hero-title{font-size:28px}body[data-tool] header img{width:130px}}
 @media(max-width:400px){body[data-tool=weconsultas] #cards-container{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){body[data-tool] *,body[data-tool] *::before{animation:none!important;transition:none!important}}
+
+/* Aurora azul e violeta, com superfícies de vidro discretas. */
+body[data-tool]{--accent:#8caeff;--glow:rgba(93,118,255,.19);background:radial-gradient(ellipse at 15% 4%,#29397470,transparent 48%),radial-gradient(ellipse at 88% 25%,#48297660,transparent 45%),linear-gradient(150deg,#0a1122,#10172d 55%,#0b1325);background-attachment:fixed}
+body[data-tool] header{background:#0d162be8!important;border-bottom:1px solid #46598455!important;backdrop-filter:blur(20px)!important;box-shadow:0 10px 40px #05091430}
+body[data-tool] footer{background:#0b1323a6!important;border-color:#2b385655!important}
+body[data-tool] .card-gradient,body[data-tool] .glass-panel{background:linear-gradient(145deg,#1d2b46ed,#121d33f5);border:1px solid #43577970;box-shadow:inset 0 1px #ffffff08,0 18px 45px #03081835;border-radius:24px}
+body[data-tool] .top-action,body[data-tool] .btn-secondary{background:linear-gradient(160deg,#29395795,#17243bb0);border-color:#53688d55;box-shadow:inset 0 1px #ffffff09;transition:background .2s,border-color .2s,transform .2s}
+body[data-tool] .top-action:hover,body[data-tool] .btn-secondary:hover{background:#304569;border-color:#7c9bc080;transform:translateY(-1px)}
+body[data-tool] .btn-primary,body[data-tool=wedevs] #run-btn{background:linear-gradient(110deg,#4279ef,#7958ee)!important;color:#fff!important;border:1px solid #8d9bff65;box-shadow:0 7px 22px #535ce02b}
+body[data-tool] input:focus,body[data-tool] select:focus{outline:2px solid #80aaff;outline-offset:2px}
+body[data-tool] .global-search-input{background:#111d35!important;border-color:#40557b65!important}
+body[data-tool] .global-search-icon{color:#93acd5}
+body[data-tool] .global-search-results{background:#14213b;border:1px solid #4b6392;box-shadow:0 20px 55px #03071690}
+body[data-tool] [class*="text-blue-"],body[data-tool] [class*="text-cyan-"]{color:#8fc9ff}
+body[data-tool] [class*="text-purple-"],body[data-tool] [class*="text-violet-"]{color:#bdadff}
+body[data-tool] .feature-card:hover{border-color:#8ea8eb99;transform:translateY(-5px);box-shadow:0 18px 42px #050c234f,0 0 28px var(--glow)}
+/* WeTime: mostrador luminoso, com o relógio como peça central. */
+body[data-tool=wetime]{background:radial-gradient(ellipse at 50% 18%,#33458a55,transparent 58%),radial-gradient(ellipse at 90% 70%,#54347b3d,transparent 50%),#0c1428}
+body[data-tool=wetime] #hero-section{padding-bottom:12px}
+body[data-tool=wetime] #display-title{font-size:clamp(30px,4.2vw,54px);letter-spacing:-.055em}
+body[data-tool=wetime] #clock-card{background:linear-gradient(150deg,#263351aa,#162039ee 58%,#192943e6);border:1px solid #7187c64f;border-top:1px solid #a3b7f67a;border-radius:32px;box-shadow:inset 0 1px #fff1,0 28px 90px #03081380,0 0 70px #5475ee10}
+body[data-tool=wetime] #date-heading{font-size:clamp(17px,2.3vw,25px);font-weight:500;letter-spacing:.015em;color:#b4c5e2}
+body[data-tool=wetime] .clock-digits{background:linear-gradient(155deg,#071225,#101b33);border:1px solid #405a834a;border-radius:24px;box-shadow:inset 0 6px 28px #03081370,0 1px #e0edff0d;font-size:clamp(46px,10vw,128px);letter-spacing:-.06em;color:#e9f1ff;text-shadow:0 0 35px #80b4ff28;font-variant-numeric:tabular-nums}
+body[data-tool=wetime] #seconds{color:#b4a3ff;text-shadow:0 0 32px #9980ff30}
+body[data-tool=wetime] .clock-digits>span:nth-child(even){color:#7099da;opacity:.7}
+body[data-tool=wetime] .analog-clock{background:radial-gradient(circle at 35% 25%,#263c5b,#0a1428 75%);border:8px solid #2f4264;box-shadow:0 0 0 1px #8ea7e04a,inset 0 0 40px #030710,0 18px 60px #03091990}
+body[data-tool=wetime] #settings-popover{background:#14213b;border-color:#526b97;color:#d8e5ff;box-shadow:0 20px 65px #03081599}
+body[data-tool=wetime].fullscreen-active{background:radial-gradient(ellipse at center,#25365c,#080f20)}
+/* WeDevs: área de código com identidade própria. */
+body[data-tool=wedevs] main>div>section:first-child{position:relative;overflow:hidden;background:radial-gradient(ellipse at 95% 5%,#695ad04d,transparent 55%),linear-gradient(110deg,#173348,#1b2442 70%);border-color:#49738b65;box-shadow:inset 0 1px #fff1,0 15px 40px #07102125;padding:27px 30px!important}
+body[data-tool=wedevs] main>div>section:first-child h2{color:#eef6ff;font-size:clamp(25px,3.2vw,39px)}
+body[data-tool=wedevs] main>div>section:first-child>div>span{color:#8de3e3;background:#1c67773d;border:1px solid #55b1bb50;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+body[data-tool=wedevs] .editor-surface{background:#090f1f;border-color:#35496d;border-radius:16px;box-shadow:inset 0 4px 20px #02071360}
+body[data-tool=wedevs] .tab-btn{border-radius:10px}
+body[data-tool=wedevs] .tab-btn.active{background:linear-gradient(125deg,#396ce1,#6554d2);color:#fff;box-shadow:0 4px 16px #4259d43b}
+body[data-tool=wedevs] #preview-panel{border-top:1px solid #778ff0;box-shadow:0 18px 45px #03081835}
+/* WeConsultas: ícones com cor própria e cartões com mais presença. */
+body[data-tool=weconsultas] #hero-block{padding:22px 0 15px;margin-bottom:26px}
+body[data-tool=weconsultas] #hero-title{font-size:clamp(30px,3.7vw,47px);max-width:950px}
+body[data-tool=weconsultas] #hero-title span{font-size:.85em}
+body[data-tool=weconsultas] #cards-container{gap:20px}
+body[data-tool=weconsultas] #cards-container button{--tile:#81b0ff;background:radial-gradient(ellipse at 100% 0%,var(--glow),transparent 70%),linear-gradient(150deg,#202e48,#142039);min-height:190px;padding:27px;transition:transform .2s,box-shadow .2s,border-color .2s;border-radius:22px}
+body[data-tool=weconsultas] #cards-container button:nth-child(2){--tile:#c2a0ff;--glow:#9569ee20}
+body[data-tool=weconsultas] #cards-container button:nth-child(3){--tile:#6ad9bc;--glow:#2bc89e1a}
+body[data-tool=weconsultas] #cards-container button:nth-child(4){--tile:#eeb778;--glow:#e7a34e19}
+body[data-tool=weconsultas] #cards-container button:nth-child(5){--tile:#f69fc5;--glow:#e96da419}
+body[data-tool=weconsultas] #cards-container button svg{color:var(--tile);background:#a4c1ff0d;border:1px solid #a4c1ff1f;border-radius:15px;padding:12px;margin-bottom:20px;box-shadow:inset 0 1px #ffffff0a}
+body[data-tool=weconsultas] #cards-container button h3{font-size:20px;letter-spacing:-.035em}
+body[data-tool=weconsultas] #cards-container button p{color:#aebed8}
+body[data-tool=weconsultas] [id$="-screen"]>.card-gradient{border-color:#617cb455}
+@media(max-width:640px){body[data-tool=wetime] #clock-card{border-radius:24px;padding:22px 15px}body[data-tool=wetime] .clock-digits{padding:24px 8px;border-radius:18px;font-size:clamp(40px,12vw,76px)}body[data-tool=weconsultas] #cards-container{gap:14px}body[data-tool=weconsultas] #cards-container button{padding:20px;min-height:165px}body[data-tool=wedevs] main>div>section:first-child{padding:22px!important}}
+
