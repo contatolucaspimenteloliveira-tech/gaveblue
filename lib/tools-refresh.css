@@ -1,0 +1,64 @@
+/* GaveBlue: linguagem visual compartilhada das ferramentas. */
+body[data-tool]{background:#f5f8fd;color:#172b4d;background-attachment:initial}
+body[data-tool] header{background:#fff!important;border-color:#e0e8f4!important;box-shadow:0 3px 20px #18365906;backdrop-filter:none!important}
+body[data-tool] header img,body[data-tool] footer img{filter:brightness(0) saturate(100%) invert(34%) sepia(95%) saturate(2134%) hue-rotate(215deg) brightness(93%) contrast(94%);width:155px;height:auto!important;max-width:35vw}
+body[data-tool] footer{background:#fff!important;border-color:#e0e8f4!important}
+body[data-tool] .text-white{color:#172b4d}
+body[data-tool] .text-slate-200,body[data-tool] .text-slate-300{color:#526681}
+body[data-tool] .text-slate-400,body[data-tool] .text-slate-500{color:#677b94}
+body[data-tool] .gradient-text{background:none;color:#2868e8;-webkit-text-fill-color:#2868e8}
+body[data-tool] .card-gradient,body[data-tool] .glass-panel{background:#fff;border:1px solid #dfe8f5;box-shadow:0 12px 35px #17396907;backdrop-filter:none;border-radius:20px}
+body[data-tool] .card-gradient::before{display:none}
+body[data-tool] .btn-primary{background:#2868e8!important;color:#fff!important;border:1px solid #2868e8;box-shadow:0 5px 14px #2868e818}
+body[data-tool] .btn-primary:hover{background:#1855cc!important}
+body[data-tool] .btn-secondary,body[data-tool] .top-action{background:#f1f5fc;border:1px solid #dce6f5;color:#375b94;box-shadow:none}
+body[data-tool] button:focus-visible,body[data-tool] a:focus-visible{outline:3px solid #3d78ee;outline-offset:4px}
+body[data-tool] input:not(.editor-area),body[data-tool] select{background:#f8faff;color:#193358;border:1px solid #dbe5f3;border-radius:10px}
+body[data-tool] input::placeholder{color:#74869f}
+body[data-tool] .global-search-input{background:#f5f8fd!important;color:#243a5c!important;border-color:#e0e8f4!important;box-shadow:none}
+body[data-tool] .global-search-results{background:#fff;border-color:#dbe5f3;box-shadow:0 15px 45px #18365920;color:#193358}
+body[data-tool] .global-search-item{color:#193358}
+body[data-tool] .global-search-item:hover,body[data-tool] .global-search-item.active{background:#edf4ff}
+body[data-tool] .global-search-kicker,body[data-tool] .global-search-route{color:#657c9f}
+body[data-tool] h1,body[data-tool] h2{letter-spacing:-.045em}
+body[data-tool] .feature-card:hover{transform:translateY(-3px);border-color:#8bb1f7;box-shadow:0 15px 30px #2868e811}
+body[data-tool] [class*="bg-slate-900/"],body[data-tool] [class*="bg-slate-800/"],body[data-tool] [class*="bg-white/"]{background-color:#f5f8fd}
+body[data-tool] [class*="border-slate-700"],body[data-tool] [class*="border-white/"]{border-color:#e1e9f5}
+/* WeDevs: área de trabalho clara, código com contraste próprio. */
+body[data-tool=wedevs] main{padding-top:26px}
+body[data-tool=wedevs] main>div>section:first-child{padding:24px 28px!important;background:#eaf2ff;border-color:#d8e7fd;box-shadow:none}
+body[data-tool=wedevs] main>div>section:first-child h2{font-size:30px;line-height:1.2}
+body[data-tool=wedevs] main>div>section:first-child p{max-width:780px;font-size:14px}
+body[data-tool=wedevs] .editor-surface{background:#0e1c31;border:1px solid #223958;border-radius:12px}
+body[data-tool=wedevs] .editor-area{color:transparent;caret-color:#fff}
+body[data-tool=wedevs] .editor-area::placeholder{color:#8195b3}
+body[data-tool=wedevs] .tab-btn.active{background:#2868e8;color:#fff;box-shadow:none}
+body[data-tool=wedevs] .tab-btn.inactive{background:#edf3fc;color:#476289;border-color:#dfe7f5}
+body[data-tool=wedevs] #preview-panel{border-top:3px solid #2868e8}
+body[data-tool=wedevs] #run-btn{background:#2868e8;color:#fff}
+body[data-tool=wedevs] main>div>section:first-child>div>span{background:#dceaff;color:#285bb2;border-color:#c9ddfd}
+/* WeConsultas: consultas disponíveis já na entrada. */
+body[data-tool=weconsultas] #hero-block{text-align:left;margin:8px 0 30px}
+body[data-tool=weconsultas] #hero-title{text-align:left;font-size:36px;line-height:1.2;max-width:790px}
+body[data-tool=weconsultas] #hero-title span{display:block;margin-top:8px}
+body[data-tool=weconsultas] #hero-subtitle{text-align:left;font-size:15px;max-width:730px;line-height:1.8}
+body[data-tool=weconsultas] #hero-block>div{display:none}
+body[data-tool=weconsultas] #cards-container{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+body[data-tool=weconsultas] #cards-container button{min-height:180px;padding:24px;border-radius:18px}
+body[data-tool=weconsultas] #cards-container button svg{background:#edf4ff;box-sizing:content-box;padding:10px;border-radius:12px;width:24px;height:24px;color:#2868e8}
+body[data-tool=weconsultas] .screen{background:#fff}
+/* WeTime: horário como foco principal. */
+body[data-tool=wetime] #hero-title{font-size:34px;line-height:1.2}
+body[data-tool=wetime] #display-title{font-size:clamp(28px,4vw,44px);line-height:1.2}
+body[data-tool=wetime] #hero-subtitle{font-size:14px;line-height:1.8;max-width:680px}
+body[data-tool=wetime] #clock-card{border-top:4px solid #2868e8;box-shadow:0 22px 60px #1e4a9010}
+body[data-tool=wetime] .clock-digits{background:#f1f6ff;color:#153d7a;border:0;border-radius:16px;font-variant-numeric:tabular-nums;font-size:clamp(46px,10vw,118px)}
+body[data-tool=wetime] #date-heading{font-size:clamp(18px,3vw,27px);font-weight:600;color:#546b8d}
+body[data-tool=wetime] #seconds{color:#2868e8}
+body[data-tool=wetime] .settings-popover{background:#fff;color:#193358;border:1px solid #dbe5f3;box-shadow:0 16px 50px #18365920}
+body[data-tool=wetime] .mode-btn{background:#f1f5fc;color:#375b94}
+body[data-tool=wetime] .mode-btn.active{background:#2868e8;color:#fff}
+body[data-tool=wetime].fullscreen-active{background:#f5f8fd}
+@media(max-width:700px){body[data-tool=weconsultas] #cards-container{grid-template-columns:repeat(2,minmax(0,1fr))}body[data-tool=weconsultas] #hero-title{font-size:29px}body[data-tool=wedevs] main>div>section:first-child h2{font-size:24px}body[data-tool=wetime] #hero-title{font-size:28px}body[data-tool] header img{width:130px}}
+@media(max-width:400px){body[data-tool=weconsultas] #cards-container{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){body[data-tool] *,body[data-tool] *::before{animation:none!important;transition:none!important}}
