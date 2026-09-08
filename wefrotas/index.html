@@ -1136,22 +1136,37 @@
               <div>
                 <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Relatório</label>
                 <select id="report-filter-type" class="soft-input w-full">
-                  <option value="cost">Custo por KM</option>
-                  <option value="fuel_liters_per_km">Litro por KM</option>
-                  <option value="monthly_vehicle_cost">Custo mensal por veículo</option>
-                  <option value="fuel_register">Registro de abastecimentos</option>
-                  <option value="orders">OS por veículo</option>
-                  <option value="orders_open">OS abertas</option>
-                  <option value="orders_progress">OS em andamento</option>
-                  <option value="orders_closed">OS fechadas</option>
-                  <option value="orders_deleted">OS excluídas</option>
-                  <option value="finance_status">Financeiro por status</option>
-                  <option value="supplier_ranking">Gastos por fornecedor</option>
-                  <option value="maintenance_due">Revisões por KM</option>
-                  <option value="cnh_expiring">CNHs a vencer</option>
-                  <option value="insurance_expiring">Seguros a vencer</option>
+                  <option value="overview">Visão geral de custos</option>
+                  <option value="monthly_vehicle_cost">Custos por veículo</option>
+                  <option value="fuel_register">Abastecimentos e consumo</option>
+                  <option value="irregularities">Irregularidades de abastecimento</option>
+                  <option value="orders">Ordens de serviço</option>
+                  <option value="maintenance_comparison">Manutenção preventiva × corretiva</option>
+                  <option value="availability">Disponibilidade da frota</option>
+                  <option value="vehicle_performance">Desempenho dos veículos</option>
+                  <option value="driver_performance">Desempenho dos motoristas</option>
+                  <option value="fines">Infrações e multas</option>
+                  <option value="finance_status">Despesas e pagamentos</option>
+                  <option value="supplier_ranking">Custos por fornecedor</option>
+                  <option value="deadlines">Pendências e vencimentos</option>
+                  <option value="record_audit">Auditoria de registros</option>
                 </select>
               </div>
+              <div id="report-situation-wrap" hidden>
+                <label for="report-filter-situation">Situação da OS</label>
+                <select id="report-filter-situation" class="soft-input w-full" onchange="applyReportFilters()">
+                  <option value="">Todas</option><option value="aberta">Abertas</option><option value="andamento">Em andamento</option><option value="aguardando_aprovacao">Aguardando aprovação</option><option value="fechada">Concluídas</option><option value="cancelada">Canceladas</option>
+                </select>
+              </div>
+              <div id="report-horizon-wrap" hidden>
+                <label for="report-filter-horizon">Vencimento</label>
+                <select id="report-filter-horizon" class="soft-input w-full" onchange="applyReportFilters()"><option value="">Todos e ausentes</option><option value="overdue">Vencidos</option><option value="7">Vence em 7 dias</option><option value="30">Vence em 30 dias</option><option value="60">Vence em 60 dias</option></select>
+              </div>
+              <div id="report-fuel-view-wrap" hidden>
+                <label for="report-filter-fuel-view">Visão dos abastecimentos</label>
+                <select id="report-filter-fuel-view" class="soft-input w-full" onchange="applyReportFilters()"><option value="fuel_register">Registros detalhados</option><option value="fuel_liters_per_km">Consumo médio (km/L)</option><option value="cost">Custo por km</option></select>
+              </div>
+
               <div>
                 <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Veículo</label>
                 <select id="report-filter-vehicle" class="soft-input w-full">
@@ -1814,6 +1829,7 @@
   <script src="./wefrotas-supabase-backend.js?v=20260906-db-capacity-1"></script>
   <script src="./wefrotas-db-capacity.js?v=20260906-db-capacity-1"></script>
   <script src="./wefrotas.js?v=20260907-expense-discount-1&check=7c768964"></script>
+  <script src="./wefrotas-reports-v2.js?v=20260907-reports-1"></script>
   <script src="./wefrotas-presence.js?v=20260904-contingency-2"></script>
   <script src="./wefrotas-batch-orders.js?v=20260802-1"></script>
   <script src="./wefrotas-date-picker.js?v=20260901-standard-date-pickers-2"></script>
